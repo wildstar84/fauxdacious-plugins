@@ -1,0 +1,4394 @@
+# Serbian translation for Audacious Plugins
+# Copyright (C) Audacious translators
+# This file is distributed under the same license as the Audacious Plugins package.
+#
+# Translators:
+# Мирослав Николић <miroslavnikolic@rocketmail.com>, 2014-2015
+msgid ""
+msgstr ""
+"Project-Id-Version: Audacious Plugins Plugins\n"
+"Report-Msgid-Bugs-To: http://redmine.audacious-media-player.org/\n"
+"POT-Creation-Date: 2016-09-18 19:53+0200\n"
+"PO-Revision-Date: 2016-08-22 12:05+0000\n"
+"Last-Translator: Thomas Lange <thomas-lange2@gmx.de>\n"
+"Language-Team: Serbian (http://www.transifex.com/jlindgren/audacious/"
+"language/sr/)\n"
+"Language: sr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: src/aac/aac.cc:18
+msgid "AAC (Raw) Decoder"
+msgstr "ААЦ (Сирови) декодер"
+
+#: src/adplug/adplug-xmms.cc:42
+msgid "AdPlug (AdLib Player)"
+msgstr "Ад прикључак (АдБибл програм)"
+
+#: src/adplug/adplug-xmms.cc:144 src/modplug/modplugbmp.cc:337
+#: src/psf/plugin.cc:136 src/vtx/vtx.cc:89 src/xsf/plugin.cc:106
+msgid "sequenced"
+msgstr "низовни"
+
+#: src/alarm/alarm.cc:55 src/alarm/interface.cc:79
+msgid "Alarm"
+msgstr "Аларм"
+
+#: src/alarm/alarm.cc:782
+msgid "Set Alarm ..."
+msgstr "Подеси аларм ..."
+
+#: src/alarm/alarm.cc:810
+msgid ""
+"A plugin that can be used to start playing at a certain time.\n"
+"\n"
+"Originally written by Adam Feakin and Daniel Stodden."
+msgstr ""
+"Прикључак који може бити коришћен да започне пуштање у одређено време.\n"
+"\n"
+"Првобитни аутори су Адам Фикин и Данијел Стоден."
+
+#: src/alarm/interface.cc:28
+msgid ""
+"Time\n"
+"  Alarm at:\n"
+"    The time for the alarm to come on.\n"
+"\n"
+"  Quiet after:\n"
+"    Stop alarm after this amount of time.\n"
+"       (if the wakeup dialog is not closed)\n"
+"\n"
+"\n"
+"Days\n"
+"  Day:\n"
+"    Select the days for the alarm to activate.\n"
+"\n"
+"  Time:\n"
+"    Choose the time for the alarm on each day,\n"
+"    or select the toggle button to use the default\n"
+"    time.\n"
+"\n"
+"\n"
+"Volume\n"
+"  Fading:\n"
+"    Fade the volume up to the chosen volume\n"
+"    for this amount of time.\n"
+"\n"
+"  Start at:\n"
+"    Start fading from this volume.\n"
+"\n"
+"  Final:\n"
+"    The volume to stop fading at.  If the fading\n"
+"    time is 0 then set volume to this and start\n"
+"    playing.\n"
+"\n"
+"\n"
+"Options:\n"
+"  Additional Command:\n"
+"    Run this command at the alarm time.\n"
+"\n"
+"  Playlist:\n"
+"    Load this playlist. If no playlist\n"
+"    is given, the current one will be used.\n"
+"    The URL of an mp3/ogg stream\n"
+"    can also be entered here.\n"
+"\n"
+"  Reminder:\n"
+"    Display a reminder when the alarm goes off.\n"
+"    Type the reminder in the input field and enable\n"
+"    the checkbox if you want it to be shown."
+msgstr ""
+"Време\n"
+"  Активирај аларм у:\n"
+"    Време када ће се активирати аларм.\n"
+"\n"
+"  Утишај након: \n"
+"    Зауставља аларм након истека овог времена.\n"
+"       (ако није затворено прозорче буђења)\n"
+"\n"
+"\n"
+"Дани\n"
+"  Дан:\n"
+"    Изаберите којим данима ће бити активиран аларм.\n"
+"\n"
+"  Време:\n"
+"    Изаберите време аларма за сваки дан, или\n"
+"    штиклирајте квадратић да користите основно време.\n"
+"\n"
+"\n"
+"Јачина\n"
+"  Ишчезавање:\n"
+"    Повећава јачину звука до изабране јачине\n"
+"    у овом временском периоду.\n"
+"\n"
+"  Започни при:\n"
+"    Започиње појачавање од ове јачине.\n"
+"\n"
+"  Заврши при:\n"
+"    Јачина при којој ће бити заустављено појачање.\n"
+"    Ако је време појачања 0 онда подешава јачину\n"
+"    на ову и започиње пуштање.\n"
+"\n"
+"\n"
+"Опције:\n"
+"  Додатна наредба:\n"
+"    Покреће ову наредбу за време аларма.\n"
+"\n"
+"  Списак нумера:\n"
+"    Учитава овај списак нумера. Ако није дат\n"
+"    списак нумера, биће коришћене песме\n"
+"    које се тренутно налазе на списку.\n"
+"    Адреса мп3/огг тока може такође\n"
+"    бити унешена овде.\n"
+"\n"
+"  Подсетник:\n"
+"    Приказује подсетник након искључења аларма.\n"
+"    Упишите подсетник у поље за унос и укључите\n"
+"    кућицу за избор ако желите да буде приказиван."
+
+#: src/alarm/interface.cc:78
+msgid "This is your wakeup call."
+msgstr "Ово је ваш позив за буђење."
+
+#: src/alarm/interface.cc:96
+msgid "Your reminder for today is..."
+msgstr "Ваш подсетник за данас је..."
+
+#: src/alarm/interface.cc:98 src/alarm/interface.cc:372
+msgid "Reminder"
+msgstr "Подсетник"
+
+#: src/alarm/interface.cc:122
+msgid "Monday"
+msgstr "Понедељак"
+
+#: src/alarm/interface.cc:122
+msgid "Tuesday"
+msgstr "Уторак"
+
+#: src/alarm/interface.cc:122
+msgid "Wednesday"
+msgstr "Среда"
+
+#: src/alarm/interface.cc:123
+msgid "Thursday"
+msgstr "Четвртак"
+
+#: src/alarm/interface.cc:123
+msgid "Friday"
+msgstr "Петак"
+
+#: src/alarm/interface.cc:123
+msgid "Saturday"
+msgstr "Субота"
+
+#: src/alarm/interface.cc:123
+msgid "Sunday"
+msgstr "Недеља"
+
+#: src/alarm/interface.cc:160 src/alarm/interface.cc:219
+#: src/alarm/interface.cc:234
+msgid "Time"
+msgstr "Време"
+
+#: src/alarm/interface.cc:167
+msgid "Alarm at (default):"
+msgstr "Активирај аларм у (основно):"
+
+#: src/alarm/interface.cc:189
+msgid "h"
+msgstr "часова"
+
+#: src/alarm/interface.cc:192
+msgid "Quiet after:"
+msgstr "Утишај након:"
+
+#: src/alarm/interface.cc:204
+msgid "hours"
+msgstr "сат(а)"
+
+#: src/alarm/interface.cc:215
+msgid "minutes"
+msgstr "минута"
+
+#: src/alarm/interface.cc:224
+msgid "Choose the days for the alarm to come on"
+msgstr "Изаберите којим данима ће се активирати аларм"
+
+#: src/alarm/interface.cc:231
+msgid "Day"
+msgstr "Дан"
+
+#: src/alarm/interface.cc:248 src/bs2b/plugin.cc:130
+msgid "Default"
+msgstr "Основно"
+
+#: src/alarm/interface.cc:277
+msgid "Days"
+msgstr "Дани"
+
+#: src/alarm/interface.cc:286
+msgid "Fading"
+msgstr "Ишчезавање"
+
+#: src/alarm/interface.cc:294 src/console/plugin.cc:41
+#: src/crossfade/crossfade.cc:52 src/crossfade/crossfade.cc:58
+#: src/gtkui/settings.cc:49 src/lirc/lirc.cc:398 src/sid/xs_config.cc:85
+#: src/sid/xs_config.cc:94 src/sid/xs_config.cc:103
+msgid "seconds"
+msgstr "секунде"
+
+#: src/alarm/interface.cc:301 src/alarm/interface.cc:342
+msgid "Volume"
+msgstr "Јачина"
+
+#: src/alarm/interface.cc:306
+msgid "Start at"
+msgstr "Започни при"
+
+#: src/alarm/interface.cc:322
+msgid "Final"
+msgstr "Заврши при"
+
+#: src/alarm/interface.cc:335
+msgid "Current"
+msgstr "Тренутно"
+
+#: src/alarm/interface.cc:348
+msgid "Additional Command"
+msgstr "Додатна наредба"
+
+#: src/alarm/interface.cc:354 src/alarm/interface.cc:377
+msgid "enable"
+msgstr "укључи"
+
+#: src/alarm/interface.cc:361
+msgid "Playlist (optional)"
+msgstr "Списак нумера (необавезно)"
+
+#: src/alarm/interface.cc:365
+msgid "Select a playlist"
+msgstr "Изаберите списак нумера"
+
+#: src/alarm/interface.cc:385
+msgid "Options"
+msgstr "Опције"
+
+#: src/alarm/interface.cc:390
+msgid "What do these options mean?"
+msgstr "Шта значе ове опције?"
+
+#: src/alarm/interface.cc:404
+msgid "Help"
+msgstr "Помоћ"
+
+#: src/albumart/albumart.cc:31 src/albumart-qt/albumart.cc:33
+msgid "Album Art"
+msgstr "Омот албума"
+
+#: src/alsa/alsa.h:64
+msgid "ALSA Output"
+msgstr "Излаз АЛСА-е"
+
+#: src/alsa/config.cc:28
+msgid ""
+"ALSA Output Plugin for Audacious\n"
+"Copyright 2009-2012 John Lindgren\n"
+"\n"
+"My thanks to William Pitcock, author of the ALSA Output Plugin NG, whose "
+"code served as a reference when the ALSA manual was not enough."
+msgstr ""
+"Прикључак излаза АЛСА-е за Безочника\n"
+"Ауторска права 2009-2012 Џон Линдгрин\n"
+"\n"
+"Захваљујем се Вилијаму Питкоку, аутору НГ прикључка излаза АЛСА-е, чији је "
+"код служио као узор када упутство АЛСА-е није било довољно."
+
+#: src/alsa/config.cc:61
+msgid "(no description)"
+msgstr "(без описа)"
+
+#: src/alsa/config.cc:166
+msgid "Default PCM device"
+msgstr "Основни ПЦМ уређај"
+
+#: src/alsa/config.cc:188
+msgid "Default mixer device"
+msgstr "Основни уређај мешача"
+
+#: src/alsa/config.cc:296
+msgid "PCM device:"
+msgstr "ПЦМ уређај:"
+
+#: src/alsa/config.cc:299
+msgid "Mixer device:"
+msgstr "Уређај миксера:"
+
+#: src/alsa/config.cc:302
+msgid "Mixer element:"
+msgstr "Елемент мешача:"
+
+#: src/amidiplug/amidi-plug.cc:41
+msgid "AMIDI-Plug (MIDI Player)"
+msgstr "АМИДИ-Прикључак (МИДИ програм)"
+
+#: src/amidiplug/amidi-plug.cc:435
+msgid ""
+"AMIDI-Plug\n"
+"modular MIDI music player\n"
+"http://www.develia.org/projects.php?p=amidiplug\n"
+"\n"
+"written by Giacomo Lozito\n"
+"<james@develia.org>\n"
+"\n"
+"special thanks to...\n"
+"\n"
+"Clemens Ladisch and Jaroslav Kysela\n"
+"for their cool programs aplaymidi and amixer; those\n"
+"were really useful, along with alsa-lib docs, in order\n"
+"to learn more about the ALSA API\n"
+"\n"
+"Alfredo Spadafina\n"
+"for the nice midi keyboard logo\n"
+"\n"
+"Tony Vroon\n"
+"for the good help with alpha testing"
+msgstr ""
+"АМИДИ-Прикључак\n"
+"Модуларни МИДИ музички програм\n"
+"http://www.develia.org/projects.php?p=amidiplug\n"
+"\n"
+"Написао га је Ђакомо Лоцито\n"
+"< james@develia.org >\n"
+"\n"
+"Посебно су заслужни...\n"
+"\n"
+"Клеменс Ладиш и Јарослав Кисела\n"
+"због њихових програма „aplaymidi“ и „amixer“; који\n"
+"су врло корисни, уз „alsa-lib docs“, како бисмо\n"
+"сазнали више о АЛСА АПИју\n"
+"\n"
+"Алфредо Спадафина\n"
+"који је урадио леп логотип МИДИ тастатуре \n"
+"\n"
+"Тони Врун\n"
+"због одличне помоћи за алфа тестирање"
+
+#: src/amidiplug/i_configure.cc:94
+msgid "Override default gain:"
+msgstr "Препиши основно појачање:"
+
+#: src/amidiplug/i_configure.cc:102
+msgid "Override default polyphony:"
+msgstr "Препиши основну полифонију:"
+
+#: src/amidiplug/i_configure.cc:110
+msgid "Override default reverb:"
+msgstr "Препиши основни одјек:"
+
+#: src/amidiplug/i_configure.cc:112 src/amidiplug/i_configure.cc:120
+msgid "On"
+msgstr "Укљ."
+
+#: src/amidiplug/i_configure.cc:118
+msgid "Override default chorus:"
+msgstr "Препиши основни хор:"
+
+#: src/amidiplug/i_configure.cc:128 src/console/plugin.cc:29
+msgid "<b>Playback</b>"
+msgstr "<b>Пуштање</b>"
+
+#: src/amidiplug/i_configure.cc:129
+msgid "Transpose:"
+msgstr "Премештај:"
+
+#: src/amidiplug/i_configure.cc:131 src/speedpitch/speed-pitch.cc:235
+msgid "semitones"
+msgstr "полутонови"
+
+#: src/amidiplug/i_configure.cc:132
+msgid "Drum shift:"
+msgstr "Промена бубња:"
+
+#: src/amidiplug/i_configure.cc:134
+msgid "note numbers"
+msgstr "бројеви ноте"
+
+#: src/amidiplug/i_configure.cc:135
+msgid "Skip leading silence"
+msgstr "Прескочи водећу тишину"
+
+#: src/amidiplug/i_configure.cc:137
+msgid "Skip trailing silence"
+msgstr "Прескочи пратећу тишину"
+
+#: src/amidiplug/i_configure.cc:141
+msgid "<b>SoundFont</b>"
+msgstr "<b>СаундФонт</b>"
+
+#: src/amidiplug/i_configure.cc:145
+msgid "<b>Synthesizer</b>"
+msgstr "<b>Синтисајзер</b>"
+
+#: src/amidiplug/i_configure.cc:150 src/console/plugin.cc:45
+#: src/filewriter/filewriter.cc:474 src/sid/xs_config.cc:65
+msgid "Sample rate:"
+msgstr "Проток узорка:"
+
+#: src/amidiplug/i_configure.cc:152 src/bs2b/plugin.cc:141
+#: src/console/plugin.cc:47 src/modplug/plugin_main.cc:81
+#: src/resample/resample.cc:201 src/resample/resample.cc:207
+#: src/resample/resample.cc:211 src/resample/resample.cc:215
+#: src/resample/resample.cc:219 src/resample/resample.cc:223
+#: src/resample/resample.cc:227 src/resample/resample.cc:231
+#: src/resample/resample.cc:235 src/resample/resample.cc:239
+#: src/resample/resample.cc:243 src/sid/xs_config.cc:67
+#: src/soxr/sox-resampler.cc:164
+msgid "Hz"
+msgstr "Hz"
+
+#: src/amidiplug/i_configure-fluidsynth.cc:54
+msgid "AMIDI-Plug - select SoundFont file"
+msgstr "АМИДИ прикључак — изаберите СаундФонт датотеку"
+
+#: src/amidiplug/i_configure-fluidsynth.cc:57
+msgid "_Cancel"
+msgstr "От_кажи"
+
+#: src/amidiplug/i_configure-fluidsynth.cc:58
+msgid "_Open"
+msgstr "От_вори"
+
+#: src/amidiplug/i_configure-fluidsynth.cc:227 src/gtkui/columns.cc:46
+msgid "File name"
+msgstr "Назив датотеке"
+
+#: src/amidiplug/i_configure-fluidsynth.cc:231
+msgid "Size (bytes)"
+msgstr "Величина (бајтова)"
+
+#: src/amidiplug/i_fileinfo.cc:165
+msgid "Name:"
+msgstr "Назив:"
+
+#: src/amidiplug/i_fileinfo.cc:183
+msgid "<span size=\"smaller\"> MIDI Info </span>"
+msgstr "<span size=\"smaller\"> МИДИ подаци </span>"
+
+#: src/amidiplug/i_fileinfo.cc:197
+msgid "Format:"
+msgstr "Запис:"
+
+#: src/amidiplug/i_fileinfo.cc:200
+msgid "Length (msec):"
+msgstr "Трајање (msec):"
+
+#: src/amidiplug/i_fileinfo.cc:203
+msgid "No. of Tracks:"
+msgstr "Број нумера:"
+
+#: src/amidiplug/i_fileinfo.cc:209
+msgid "variable"
+msgstr "променљиво"
+
+#: src/amidiplug/i_fileinfo.cc:211
+msgid "BPM:"
+msgstr "БПМ:"
+
+#: src/amidiplug/i_fileinfo.cc:219
+msgid "BPM (wavg):"
+msgstr "БПМ (wavg):"
+
+#: src/amidiplug/i_fileinfo.cc:222
+msgid "Time Div:"
+msgstr "Див време:"
+
+#: src/amidiplug/i_fileinfo.cc:233
+msgid "<span size=\"smaller\"> MIDI Comments and Lyrics </span>"
+msgstr "<span size=\"smaller\"> МИДИ коментари и текстови песама </span>"
+
+#: src/amidiplug/i_fileinfo.cc:280
+msgid "* no comments available in this MIDI file *"
+msgstr "* нема доступних коментара у овој МИДИ датотеци *"
+
+#: src/amidiplug/i_fileinfo.cc:292
+msgid "* no lyrics available in this MIDI file *"
+msgstr "* нема доступних текстова песама у овој МИДИ датотеци *"
+
+#: src/amidiplug/i_fileinfo.cc:302 src/ladspa/plugin.cc:417
+msgid "_Close"
+msgstr "_Затвори"
+
+#: src/amidiplug/i_fileinfo.cc:327
+msgid "  (invalid UTF-8)"
+msgstr "  (неисправан УТФ-8)"
+
+#: src/ampache/ampache.cc:31
+msgid "Ampache Browser"
+msgstr ""
+
+#: src/ampache/ampache.cc:46
+msgid ""
+"Ampache Browser\n"
+"\n"
+"Ampache client for Audacious.\n"
+"\n"
+"License: GNU GPLv3\n"
+"Copyright (C) Róbert Čerňanský and John Lindgren\n"
+msgstr ""
+
+#: src/aosd/aosd.cc:31
+msgid ""
+"Audacious OSD\n"
+"http://www.develia.org/projects.php?p=audacious#aosd\n"
+"\n"
+"Written by Giacomo Lozito <james@develia.org>\n"
+"\n"
+"Based in part on Evan Martin's Ghosd library:\n"
+"http://neugierig.org/software/ghosd/"
+msgstr ""
+"НЕП Безочника\n"
+"http://www.develia.org/projects.php?p=audacious#aosd\n"
+"\n"
+"Написао га је Ђакомо Лоцито < james@develia.org >\n"
+"\n"
+"Делом је заснован на библиотеци „Ghosd“ коју је написао Еван Мартин\n"
+"http://neugierig.org/software/ghosd/"
+
+#: src/aosd/aosd.h:37
+msgid "AOSD (On-Screen Display)"
+msgstr "БОСД (Приказ на екрану)"
+
+#: src/aosd/aosd_style.cc:54
+msgid "Rectangle"
+msgstr "Правоугаоник"
+
+#: src/aosd/aosd_style.cc:59
+msgid "Rounded Rectangle"
+msgstr "Заобљени правоугаоник"
+
+#: src/aosd/aosd_style.cc:64
+msgid "Concave Rectangle"
+msgstr "Удубљен правоугаоник"
+
+#: src/aosd/aosd_style.cc:69
+msgid "None"
+msgstr "Ништа"
+
+#: src/aosd/aosd_trigger.cc:49
+msgid "Playback Start"
+msgstr "Почетак репродукције"
+
+#: src/aosd/aosd_trigger.cc:50
+msgid "Triggers OSD when a playlist entry is played."
+msgstr "Приказује ОСД када почиње репродукција песме."
+
+#: src/aosd/aosd_trigger.cc:55
+msgid "Title Change"
+msgstr "Промена наслова"
+
+#: src/aosd/aosd_trigger.cc:56
+msgid "Triggers OSD when the song title changes (for internet streams)."
+msgstr "Пребацује ОСД када се промени наслов песме (за интернет токове)."
+
+#: src/aosd/aosd_trigger.cc:61
+msgid "Pause On"
+msgstr "Паузирање"
+
+#: src/aosd/aosd_trigger.cc:62
+msgid "Triggers OSD when playback is paused."
+msgstr "Приказује ОСД када је репродукција привремено заустављена."
+
+#: src/aosd/aosd_trigger.cc:67
+msgid "Pause Off"
+msgstr "Отпаузирање"
+
+#: src/aosd/aosd_trigger.cc:68
+msgid "Triggers OSD when playback is unpaused."
+msgstr "Приказује ОСД када је репродукција поново покренута."
+
+#: src/aosd/aosd_ui.cc:162
+msgid "Placement"
+msgstr "Постављање"
+
+#: src/aosd/aosd_ui.cc:195
+msgid "Relative X offset:"
+msgstr "Релативан хоризонтални померај:"
+
+#: src/aosd/aosd_ui.cc:202
+msgid "Relative Y offset:"
+msgstr "Релативан вертикални померај:"
+
+#: src/aosd/aosd_ui.cc:209
+msgid "Max OSD width:"
+msgstr "Највећа ширина приказа:"
+
+#: src/aosd/aosd_ui.cc:220
+msgid "Multi-Monitor options"
+msgstr "Опција више монитора"
+
+#: src/aosd/aosd_ui.cc:224
+msgid "Display OSD using:"
+msgstr "Прикажи ОСД на:"
+
+#: src/aosd/aosd_ui.cc:226
+msgid "all monitors"
+msgstr "свим мониторима"
+
+#: src/aosd/aosd_ui.cc:229
+#, c-format
+msgid "monitor %i"
+msgstr "на монитору бр. %i"
+
+#: src/aosd/aosd_ui.cc:281
+msgid "Timing (ms)"
+msgstr "Време трајања (ms)"
+
+#: src/aosd/aosd_ui.cc:286
+msgid "Display:"
+msgstr "Приказ:"
+
+#: src/aosd/aosd_ui.cc:291
+msgid "Fade in:"
+msgstr "Појављивање:"
+
+#: src/aosd/aosd_ui.cc:296
+msgid "Fade out:"
+msgstr "Ишчезавање:"
+
+#: src/aosd/aosd_ui.cc:360
+msgid "Fonts"
+msgstr "Словни ликови"
+
+#: src/aosd/aosd_ui.cc:367
+#, c-format
+msgid "Font %i:"
+msgstr "Писмо %i:"
+
+#: src/aosd/aosd_ui.cc:381
+msgid "Shadow"
+msgstr "Сенка"
+
+#: src/aosd/aosd_ui.cc:485
+msgid "Render Style"
+msgstr "Стил исцртавања"
+
+#: src/aosd/aosd_ui.cc:501
+msgid "Colors"
+msgstr "Боје"
+
+#: src/aosd/aosd_ui.cc:512
+#, c-format
+msgid "Color %i:"
+msgstr "Боја %i:"
+
+#: src/aosd/aosd_ui.cc:599
+msgid "Enable trigger"
+msgstr "Омогући активирање"
+
+#: src/aosd/aosd_ui.cc:626
+msgid "Event"
+msgstr "Догађај"
+
+#: src/aosd/aosd_ui.cc:653
+msgid "Composite manager detected"
+msgstr "Откривен је композитни управник"
+
+#: src/aosd/aosd_ui.cc:660
+msgid ""
+"Composite manager not detected;\n"
+"unless you know that you have one running, please activate a composite "
+"manager otherwise the OSD won't work properly"
+msgstr ""
+"Није откривен композитни управник;\n"
+"осим ако знате да је један већ покренут, молим покрените композитног "
+"управника јер у супротном ОСД неће радити исправно"
+
+#: src/aosd/aosd_ui.cc:668
+msgid "Composite manager not required for fake transparency"
+msgstr "Композитни управник није потребан за лажну провидност"
+
+#: src/aosd/aosd_ui.cc:705
+msgid "Transparency"
+msgstr "Провидност"
+
+#: src/aosd/aosd_ui.cc:711
+msgid "Fake transparency"
+msgstr "Лажна провидност"
+
+#: src/aosd/aosd_ui.cc:713
+msgid "Real transparency (requires X Composite Ext.)"
+msgstr "Стварна провидност (захтева Х композитно проширење)"
+
+#: src/aosd/aosd_ui.cc:754
+msgid "Composite extension not loaded"
+msgstr "Композитно проширење није учитано"
+
+#: src/aosd/aosd_ui.cc:771
+#, c-format
+msgid "<span font_desc='%s'>Audacious OSD</span>"
+msgstr "<span font_desc='%s'>Безочник — ОСД</span>"
+
+#: src/aosd/aosd_ui.cc:834
+msgid "Position"
+msgstr "Положај"
+
+#: src/aosd/aosd_ui.cc:839
+msgid "Animation"
+msgstr "Анимација"
+
+#: src/aosd/aosd_ui.cc:844
+msgid "Text"
+msgstr "Текст"
+
+#: src/aosd/aosd_ui.cc:849
+msgid "Decoration"
+msgstr "Декорација"
+
+#: src/aosd/aosd_ui.cc:854
+msgid "Trigger"
+msgstr "Укључивање"
+
+#: src/aosd/aosd_ui.cc:859
+msgid "Misc"
+msgstr "Остало"
+
+#: src/aosd/aosd_ui.cc:868
+msgid "Test"
+msgstr "Испробај"
+
+#: src/asx3/asx3.cc:35
+msgid "ASXv3 Playlists"
+msgstr "АСИксв3 списак нумера"
+
+#: src/asx/asx.cc:33
+msgid "ASXv1/ASXv2 Playlists"
+msgstr "АСИксв1/АСИксв2 спискови нумера"
+
+#: src/audpl/audpl.cc:33
+msgid "Audacious Playlists (audpl)"
+msgstr "Безочникови спискови нумера (audpl)"
+
+#: src/blur_scope/blur_scope.cc:39
+msgid "<b>Color</b>"
+msgstr "<b>Боје</b>"
+
+#: src/blur_scope/blur_scope.cc:55
+msgid "Blur Scope"
+msgstr "Обим замућења"
+
+#: src/bs2b/plugin.cc:38
+msgid "Bauer Stereophonic-to-Binaural (BS2B)"
+msgstr "Бојер стереофонски-у-бинаурални (BS2B)"
+
+#: src/bs2b/plugin.cc:129
+msgid "Presets:"
+msgstr "Претподешавања:"
+
+#: src/bs2b/plugin.cc:136
+msgid "Feed level:"
+msgstr "Ниво довода:"
+
+#: src/bs2b/plugin.cc:138
+msgid "x1/10 dB"
+msgstr "x1/10 dB"
+
+#: src/bs2b/plugin.cc:139
+msgid "Cut frequency:"
+msgstr "Учестаност исецања:"
+
+#: src/cairo-spectrum/cairo-spectrum.cc:41
+msgid "Spectrum Analyzer"
+msgstr "Анализатор спектра"
+
+#: src/cdaudio/cdaudio-ng.cc:71
+msgid "Audio CD Plugin"
+msgstr "Прикључак звучног ЦД-а"
+
+#: src/cdaudio/cdaudio-ng.cc:117
+msgid ""
+"Copyright (C) 2007-2012 Calin Crisan <ccrisan@gmail.com> and others.\n"
+"\n"
+"Many thanks to libcdio developers <http://www.gnu.org/software/libcdio/>\n"
+"and to libcddb developers <http://libcddb.sourceforge.net/>.\n"
+"\n"
+"Also thank you to Tony Vroon for mentoring and guiding me.\n"
+"\n"
+"This was a Google Summer of Code 2007 project."
+msgstr ""
+"Ауторска права (C) 2007-2012 Калин Крисан <ccrisan@gmail.com> и остали.\n"
+"\n"
+"Велико хвала „libcdio“ програмерима <http://www.gnu.org/software/libcdio/>\n"
+"и „libcddb“ програмерима <http://libcddb.sourceforge.net/>.\n"
+"\n"
+"Хвала ти такође Тони Врун што си ме саветовао и водио.\n"
+"\n"
+"Беше то Гугл лето пројекта Кôд 2007."
+
+#: src/cdaudio/cdaudio-ng.cc:133
+msgid "<b>Device</b>"
+msgstr "<b>Уређај</b>"
+
+#: src/cdaudio/cdaudio-ng.cc:134
+msgid "Read speed:"
+msgstr "Брзина читања:"
+
+#: src/cdaudio/cdaudio-ng.cc:137
+msgid "Override device:"
+msgstr "Препиши уређај:"
+
+#: src/cdaudio/cdaudio-ng.cc:139
+msgid "<b>Metadata</b>"
+msgstr "<b>Метаподаци</b>"
+
+#: src/cdaudio/cdaudio-ng.cc:140
+msgid "Use CD-Text"
+msgstr "Користи ЦД-текст"
+
+#: src/cdaudio/cdaudio-ng.cc:142
+msgid "Use CDDB"
+msgstr "Користи ЦДБП"
+
+#: src/cdaudio/cdaudio-ng.cc:144
+msgid "Use HTTP instead of CDDBP"
+msgstr "Користи ХТТП уместо ЦДДБП-а"
+
+#: src/cdaudio/cdaudio-ng.cc:147
+msgid "Server:"
+msgstr "Сервер:"
+
+#: src/cdaudio/cdaudio-ng.cc:151
+msgid "Path:"
+msgstr "Путања:"
+
+#: src/cdaudio/cdaudio-ng.cc:155
+msgid "Port:"
+msgstr "Прикључник:"
+
+#: src/cdaudio/cdaudio-ng.cc:241
+msgid "Failed to initialize cdio subsystem."
+msgstr "Нисам успео да започнем цдуи подсистем."
+
+#: src/cdaudio/cdaudio-ng.cc:276
+#, c-format
+msgid "Invalid URI %s."
+msgstr "Неисправна путања „%s“."
+
+#: src/cdaudio/cdaudio-ng.cc:278
+#, c-format
+msgid "Track %d not found."
+msgstr "Нисам пронашао нумеру „%d“."
+
+#: src/cdaudio/cdaudio-ng.cc:280
+#, c-format
+msgid "Track %d is a data track."
+msgstr "Нумера „%d“ је запис података."
+
+#: src/cdaudio/cdaudio-ng.cc:355
+msgid "Error reading audio CD."
+msgstr "Грешка читања звучног диска."
+
+#: src/cdaudio/cdaudio-ng.cc:424
+msgid "Audio CD"
+msgstr "Аудио ЦД"
+
+#: src/cdaudio/cdaudio-ng.cc:459 src/cdaudio/cdaudio-ng.cc:468
+#, c-format
+msgid "Failed to open CD device %s."
+msgstr "Нисам успео да отворим ЦД уређај „%s“."
+
+#: src/cdaudio/cdaudio-ng.cc:471
+msgid "No audio capable CD drive found."
+msgstr "Нисам пронашао уређај за читање ЦД-а."
+
+#: src/cdaudio/cdaudio-ng.cc:496
+msgid "Failed to finish initializing opened CD drive."
+msgstr "Нисам успео да завршим покретање отвореног ЦД уређаја."
+
+#: src/cdaudio/cdaudio-ng.cc:509
+msgid "Failed to retrieve first/last track number."
+msgstr "Нисам успео да пронађем број прве/последње нумере."
+
+#: src/cdaudio/cdaudio-ng.cc:530
+#, c-format
+msgid "Cannot read start/end LSN for track %d."
+msgstr "Не могу да прочитам почетак/крај ЛСН-а за нумеру „%d“."
+
+#: src/cdaudio/cdaudio-ng.cc:612
+msgid "Failed to create the cddb connection."
+msgstr "Нисам успео да направим везу са цд базом података."
+
+#: src/cdaudio/cdaudio-ng.cc:678
+msgid "Failed to query the CDDB server"
+msgstr "Нисам успео да пропитам сервер базе података ЦД-а"
+
+#: src/cdaudio/cdaudio-ng.cc:680
+#, c-format
+msgid "Failed to query the CDDB server: %s"
+msgstr "Нисам успео да пропитам сервер базе података ЦД-а: %s"
+
+#: src/cdaudio/cdaudio-ng.cc:704
+#, c-format
+msgid "Failed to read the cddb info: %s"
+msgstr "Нисам успео да прочитам обавештење базе података цд-а: %s"
+
+#: src/cdaudio/cdaudio-ng.cc:764
+msgid "Drive is empty."
+msgstr "Уређај је празан."
+
+#: src/cdaudio/cdaudio-ng.cc:766
+msgid "Unsupported disk type."
+msgstr "Неподржана врста диска."
+
+#: src/cd-menu-items/cd-menu-items.cc:33
+msgid "Audio CD Menu Items"
+msgstr "Ставке изборника звучног ЦД-а"
+
+#: src/cd-menu-items/cd-menu-items.cc:45
+msgid "Play CD"
+msgstr "Пусти ЦД"
+
+#: src/cd-menu-items/cd-menu-items.cc:45
+msgid "Add CD"
+msgstr "Додај ЦД"
+
+#: src/compressor/compressor.cc:45
+msgid "<b>Compression</b>"
+msgstr "<b>Сажимање</b>"
+
+#: src/compressor/compressor.cc:46
+msgid "Center volume:"
+msgstr "Главна јачина:"
+
+#: src/compressor/compressor.cc:49
+msgid "Dynamic range:"
+msgstr "Динамички опсег:"
+
+#: src/compressor/compressor.cc:57
+msgid ""
+"Dynamic Range Compression Plugin for Audacious\n"
+"Copyright 2010-2014 John Lindgren"
+msgstr ""
+"Прикључак сажимања динамичког опсега за Безочника\n"
+"Ауторска права 2010-2014 Џон Линдгрин"
+
+#: src/compressor/compressor.cc:64
+msgid "Dynamic Range Compressor"
+msgstr "Сажиматељ динамичког опсега"
+
+#: src/console/plugin.cc:15
+msgid ""
+"Console music decoder engine based on Game_Music_Emu 0.5.2\n"
+"Supported formats: AY, GBS, GYM, HES, KSS, NSF, NSFE, SAP, SPC, VGM, VGZ\n"
+"\n"
+"Audacious plugin by:\n"
+"William Pitcock <nenolod@dereferenced.org>\n"
+"Shay Green <gblargg@gmail.com>"
+msgstr ""
+"Мотор конзолног музичког декодера је заснован на „Game_Music_Emu“-у 0.5.2\n"
+"Подржани формати: AY, GBS, GYM, HES, KSS, NSF, NSFE, SAP, SPC, VGM, VGZ\n"
+"Прикључак за Безочника су приредили:\n"
+"Вилијам Питкок <nenolod@dereferenced.org>, \n"
+"Шај Грин <gblargg@gmail.com>"
+
+#: src/console/plugin.cc:30
+msgid "Bass:"
+msgstr "Ниски тонови:"
+
+#: src/console/plugin.cc:33
+msgid "Treble:"
+msgstr "Високи тонови:"
+
+#: src/console/plugin.cc:36
+msgid "Echo:"
+msgstr "Одјек:"
+
+#: src/console/plugin.cc:39
+msgid "Default song length:"
+msgstr "Основно трајање песме:"
+
+#: src/console/plugin.cc:42 src/modplug/plugin_main.cc:62
+msgid "<b>Resampling</b>"
+msgstr "<b>Поновно узорковање</b>"
+
+#: src/console/plugin.cc:43
+msgid "Enable audio resampling"
+msgstr "Укључи поновно узорковање"
+
+#: src/console/plugin.cc:49
+msgid "<b>SPC</b>"
+msgstr "<b>СПЦ</b>"
+
+#: src/console/plugin.cc:50
+msgid "Ignore length from SPC tags"
+msgstr "Занемари трајање из СПЦ ознака"
+
+#: src/console/plugin.cc:52
+msgid "Increase reverb"
+msgstr "Повећај одјек"
+
+#: src/console/plugin.h:26
+msgid "Game Console Music Decoder"
+msgstr "Конзолни музички декодер игре"
+
+#: src/coreaudio/coreaudio.cc:50
+msgid "CoreAudio output"
+msgstr "Коре‑аудио излаз"
+
+#: src/coreaudio/coreaudio.cc:131
+msgid ""
+"CoreAudio Output Plugin for Audacious\n"
+"Copyright 2014 William Pitcock\n"
+"\n"
+"Based on SDL Output Plugin for Audacious\n"
+"Copyright 2010 John Lindgren"
+msgstr ""
+"Прикључак Коре-аудио излаза за Безочника\n"
+"Ауторска права 2014 Вилијам Питкок\n"
+"\n"
+"Засновано на прикључку СДЛ излаза за Безочника:\n"
+"Ауторска права 2010 Џон Линдгрин"
+
+#: src/coreaudio/coreaudio.cc:143
+msgid "Use exclusive mode"
+msgstr "Користи искључиви режим"
+
+#: src/crossfade/crossfade.cc:43
+msgid ""
+"Crossfade Plugin for Audacious\n"
+"Copyright 2010-2014 John Lindgren"
+msgstr ""
+"Прикључак постепеног прелаза за Безочника\n"
+"Ауторска права 2010-2014 Џон Линдгрин"
+
+#: src/crossfade/crossfade.cc:47
+msgid "<b>Crossfade</b>"
+msgstr "<b>Постепени прелаз</b>"
+
+#: src/crossfade/crossfade.cc:48
+msgid "On automatic song change"
+msgstr "При самосталној промени песме"
+
+#: src/crossfade/crossfade.cc:50 src/crossfade/crossfade.cc:56
+msgid "Overlap:"
+msgstr "Преклапање:"
+
+#: src/crossfade/crossfade.cc:54
+msgid "On seek or manual song change"
+msgstr "При премотавању или ручној промени песме"
+
+#: src/crossfade/crossfade.cc:60
+msgid "<b>Tip</b>"
+msgstr "<b>Савет</b>"
+
+#: src/crossfade/crossfade.cc:61
+msgid ""
+"For better crossfading, enable\n"
+"the Silence Removal effect."
+msgstr ""
+"За бољи постепени прелаз, укључите\n"
+"дејство уклањања тишине."
+
+#: src/crossfade/crossfade.cc:71
+msgid "Crossfade"
+msgstr "Постепени прелаз"
+
+#: src/crystalizer/crystalizer.cc:31
+msgid "<b>Crystalizer</b>"
+msgstr "<b>Кристализатор</b>"
+
+#: src/crystalizer/crystalizer.cc:32 src/stereo_plugin/stereo.cc:45
+msgid "Intensity:"
+msgstr "Јакост:"
+
+#: src/crystalizer/crystalizer.cc:43
+msgid "Crystalizer"
+msgstr "Кристализатор"
+
+#: src/cue/cue.cc:41
+msgid "Cue Sheet Plugin"
+msgstr "Прикључак „cue“ табеле"
+
+#: src/delete-files/delete-files.cc:52 src/delete-files/delete-files.cc:161
+#: src/delete-files/delete-files.cc:176
+msgid "Delete Files"
+msgstr "Обриши датотеке"
+
+#: src/delete-files/delete-files.cc:86
+#, c-format
+msgid "Error moving %s to trash: %s."
+msgstr "Грешка премештања „%s“ у смеће: %s."
+
+#: src/delete-files/delete-files.cc:97
+#, c-format
+msgid "Error deleting %s: %s."
+msgstr "Грешка брисања „%s“: %s."
+
+#: src/delete-files/delete-files.cc:128
+#, c-format
+msgid "Error deleting %s: not a local file."
+msgstr "Грешка брисања „%s“: није месна датотека."
+
+#: src/delete-files/delete-files.cc:138
+msgid "Do you want to move the selected files to the trash?"
+msgstr "Да ли желите да преместите изабране датотеке у смеће?"
+
+#: src/delete-files/delete-files.cc:139
+msgid "Move to Trash"
+msgstr "Премести у смеће"
+
+#: src/delete-files/delete-files.cc:144
+msgid "Do you want to permanently delete the selected files?"
+msgstr "Да ли желите трајно да обришете изабране датотеке?"
+
+#: src/delete-files/delete-files.cc:145
+msgid "Delete"
+msgstr "Обриши"
+
+#: src/delete-files/delete-files.cc:159 src/delete-files/delete-files.cc:180
+#: src/skins/search-select.cc:76
+msgid "Cancel"
+msgstr "Откажи"
+
+#: src/delete-files/delete-files.cc:211
+msgid "Delete Selected Files"
+msgstr "Обришите изабране датотеке"
+
+#: src/delete-files/delete-files.cc:231
+msgid "<b>Delete Method</b>"
+msgstr "<b>Начин брисања</b>"
+
+#: src/delete-files/delete-files.cc:232
+msgid "Move to trash instead of deleting immediately"
+msgstr "Преместите у смеће уместо да одмах обришете"
+
+#: src/echo_plugin/echo.cc:9
+msgid ""
+"Echo Plugin\n"
+"By Johan Levin, 1999\n"
+"Surround echo by Carl van Schaik, 1999\n"
+"Updated for Audacious by William Pitcock and John Lindgren, 2010-2014"
+msgstr ""
+"Прикључак одјека\n"
+"Аутор Јохан Левин 1999\n"
+"Одјек окружења је написао Карл ван Шаик, 1999\n"
+"За Безочника су га освежили Вилијам Питкок и Џон Линдгрен, 2010-2014"
+
+#: src/echo_plugin/echo.cc:21
+msgid "<b>Echo</b>"
+msgstr "<b>Одјек</b>"
+
+#: src/echo_plugin/echo.cc:22 src/modplug/plugin_main.cc:76
+#: src/modplug/plugin_main.cc:86
+msgid "Delay:"
+msgstr "Застој:"
+
+#: src/echo_plugin/echo.cc:24 src/modplug/plugin_main.cc:76
+#: src/modplug/plugin_main.cc:86
+msgid "ms"
+msgstr "ms"
+
+#: src/echo_plugin/echo.cc:25
+msgid "Feedback:"
+msgstr "Одзив:"
+
+#: src/echo_plugin/echo.cc:28 src/modplug/plugin_main.cc:90
+msgid "Volume:"
+msgstr "Јачина звука:"
+
+#: src/echo_plugin/echo.cc:39
+msgid "Echo"
+msgstr "Одјек"
+
+#: src/ffaudio/ffaudio-core.cc:49
+msgid "FFmpeg Plugin"
+msgstr "Прикључак ФФмпег-а"
+
+#: src/ffaudio/ffaudio-core.cc:604
+msgid ""
+"Multi-format audio decoding plugin for Audacious using\n"
+"FFmpeg multimedia framework (http://www.ffmpeg.org/)\n"
+"\n"
+"Audacious plugin by:\n"
+"William Pitcock <nenolod@nenolod.net>\n"
+"Matti Hämäläinen <ccr@tnsp.org>"
+msgstr ""
+"Прикључак декодирања вишеобликног звука за Безочника који користи\n"
+"вишемедијски радни оквир ФФмпег-а (http://www.ffmpeg.org/)\n"
+"\n"
+"Прикључак за Безочника су приредили:\n"
+"Вилијам Питкок <nenolod@nenolod.net>\n"
+"Мати Хамалајнен <ccr@tnsp.org>"
+
+#: src/filewriter/filewriter.cc:48
+msgid "FileWriter Plugin"
+msgstr "Прикључак записивања датотека"
+
+#: src/filewriter/filewriter.cc:351
+msgid ""
+"This program is free software; you can redistribute it and/or modify it "
+"under the terms of the GNU General Public License as published by the Free "
+"Software Foundation; either version 2 of the License, or (at your option) "
+"any later version.\n"
+"\n"
+"This program is distributed in the hope that it will be useful, but WITHOUT "
+"ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or "
+"FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for "
+"more details.\n"
+"\n"
+"You should have received a copy of the GNU General Public License along with "
+"this program; if not, write to the Free Software Foundation, Inc., 51 "
+"Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA."
+msgstr ""
+"Овај програм је слободан софтвер; можете га расподељивати и/или мењати под "
+"условима Гнуове опште јавне лиценце коју је објавила Задужбина слободног "
+"софтвера; издања 3 лиценце или (по вашем избору) било којег новијег издања.\n"
+"\n"
+"Овај програм се расподељује у нади да ће бити користан, али БЕЗ ИКАКВЕ "
+"ГАРАНЦИЈЕ; чак и без примењене гаранције ТРЖИШНЕ ВРЕДНОСТИ или "
+"ПРИЛАГОЂЕНОСТИ ОДРЕЂЕНОЈ НАМЕНИ. Погледајте Гнуову Општу јавну лиценцу за "
+"више детаља.\n"
+"\n"
+"Требали сте да примите примерак Гнуове Опште јавне лиценце уз овај програм. "
+"Ако нисте, пишите Задужбини слободног софтвера на адресу: „Free Software "
+"Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, "
+"USA“."
+
+#: src/filewriter/filewriter.cc:378
+msgid "Output file format:"
+msgstr "Формат излазне датотеке:"
+
+#: src/filewriter/filewriter.cc:382
+msgid "Save into original directory"
+msgstr "Сачувај у оригиналном директоријуму"
+
+#: src/filewriter/filewriter.cc:385
+msgid "Save into custom directory:"
+msgstr "Сачувај у произвољном директоријуму:"
+
+#: src/filewriter/filewriter.cc:393
+msgid "Generate file name from:"
+msgstr "Створи назив датотеке из:"
+
+#: src/filewriter/filewriter.cc:394
+msgid "Original file name"
+msgstr "Изворног назива датотеке"
+
+#: src/filewriter/filewriter.cc:397
+msgid "Original file name (no suffix)"
+msgstr "Изворног назива датотеке (без суфикса)"
+
+#: src/filewriter/filewriter.cc:400
+msgid "Original file tag"
+msgstr "Изворне ознаке датотеке"
+
+#: src/filewriter/filewriter.cc:404
+msgid "Prepend track number to file name"
+msgstr "Стави број нумере назива датотеке"
+
+#: src/filewriter/filewriter.cc:410 src/filewriter/filewriter.cc:442
+msgid "Auto"
+msgstr "Самостално"
+
+#: src/filewriter/filewriter.cc:411
+msgid "8000 Hz"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:412
+msgid "11025 Hz"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:413
+msgid "12000 Hz"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:414
+msgid "16000 Hz"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:415
+msgid "22050 Hz"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:416
+msgid "24000 Hz"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:417
+msgid "32000 Hz"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:418
+msgid "44100 Hz"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:419
+msgid "48000 Hz"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:423
+msgid "8 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:424
+msgid "16 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:425
+msgid "32 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:426
+msgid "40 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:427
+msgid "48 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:428
+msgid "56 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:429
+msgid "64 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:430
+msgid "80 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:431
+msgid "96 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:432
+msgid "112 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:433
+msgid "128 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:434
+msgid "160 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:435
+msgid "192 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:436
+msgid "224 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:437
+msgid "256 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:438
+msgid "320 kbps"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:443
+msgid "Joint Stereo"
+msgstr "Удружени стерео"
+
+#: src/filewriter/filewriter.cc:444 src/modplug/plugin_main.cc:61
+#: src/mpg123/mpg123.cc:245
+msgid "Stereo"
+msgstr "Стерео"
+
+#: src/filewriter/filewriter.cc:445 src/modplug/plugin_main.cc:60
+#: src/mpg123/mpg123.cc:245
+msgid "Mono"
+msgstr "Моно"
+
+#: src/filewriter/filewriter.cc:449
+msgid "VBR"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:450
+msgid "ABR"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:471
+msgid "Algorithm quality:"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:477
+msgid "Bitrate:"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:484
+msgid "Compression ratio:"
+msgstr "Однос сажимања:"
+
+#: src/filewriter/filewriter.cc:491
+msgid "Audio mode:"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:494
+msgid "Enforce strict ISO compliance"
+msgstr "Приморај изричиту ИСО сагласност"
+
+#: src/filewriter/filewriter.cc:496
+msgid "Error protection"
+msgstr "Грешка заштите"
+
+#: src/filewriter/filewriter.cc:501
+msgid "Enable VBR/ABR"
+msgstr "Укључи ППБ/СПБ"
+
+#: src/filewriter/filewriter.cc:503
+msgid "Type:"
+msgstr "Врста:"
+
+#: src/filewriter/filewriter.cc:507
+msgid "Minimum bitrate:"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:511
+msgid "Maximum bitrate:"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:515
+msgid "Average bitrate:"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:519
+msgid "VBR quality level:"
+msgstr "Ниво квалитета ППБ-а:"
+
+#: src/filewriter/filewriter.cc:523
+msgid "Strictly enforce minimum bitrate"
+msgstr "Строго спроведи најмањи проток бита"
+
+#: src/filewriter/filewriter.cc:526
+msgid "Omit Xing VBR header"
+msgstr "Изостави Иксинг заглавље ППБ-а"
+
+#: src/filewriter/filewriter.cc:532
+msgid "<b>Frame Headers</b>"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:533
+msgid "Mark as copyright"
+msgstr "Означи као ауторско право"
+
+#: src/filewriter/filewriter.cc:535
+msgid "Mark as original"
+msgstr "Означи као оригинал"
+
+#: src/filewriter/filewriter.cc:537
+msgid "<b>ID3 Tags</b>"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:538
+msgid "Force addition of version 2 tag"
+msgstr "Присили додавање ознаке издања 2"
+
+#: src/filewriter/filewriter.cc:540
+msgid "Only add v1 tag"
+msgstr "Додај само в1 ознаку"
+
+#: src/filewriter/filewriter.cc:542
+msgid "Only add v2 tag"
+msgstr "Додај само в2 ознаку"
+
+#: src/filewriter/filewriter.cc:547
+msgid "Quality"
+msgstr "Квалитет"
+
+#: src/filewriter/filewriter.cc:548
+msgid "VBR/ABR"
+msgstr "ППБ/СПБ"
+
+#: src/filewriter/filewriter.cc:549
+msgid "Tags"
+msgstr "Ознаке"
+
+#: src/filewriter/filewriter.cc:559
+msgid "Quality (0-1):"
+msgstr ""
+
+#: src/filewriter/filewriter.cc:566 src/skins-qt/skins_cfg.cc:304
+#: src/skins/skins_cfg.cc:286
+msgid "General"
+msgstr "Опште"
+
+#: src/flac/flacng.h:35
+msgid "FLAC Decoder"
+msgstr "ФЛАЦ декодер"
+
+#: src/flac/metadata.cc:252 src/wavpack/wavpack.cc:209
+msgid "lossless"
+msgstr "без губитака"
+
+#: src/flac/plugin.cc:169
+msgid ""
+"Original code by\n"
+"Ralf Ertzinger <ralf@skytale.net>\n"
+"\n"
+"http://www.skytale.net/projects/bmp-flac2/"
+msgstr ""
+"Оригинални кôд је написао\n"
+"Ралф Ерцингер <ralf@skytale.net>\n"
+"\n"
+"http://www.skytale.net/projects/bmp-flac2/"
+
+#: src/gio/gio.cc:34
+msgid ""
+"GIO Plugin for Audacious\n"
+"Copyright 2009-2012 John Lindgren"
+msgstr ""
+"ГУИ прикључак за Безочника\n"
+"Ауторска права 2009-2012 Џон Линдгрин"
+
+#: src/gio/gio.cc:42
+msgid "GIO Plugin"
+msgstr "ГУИ прикључак"
+
+#: src/gio/gio.cc:152
+msgid "Read-and-append mode not supported"
+msgstr "Режим читај-и-прикачи није подржан"
+
+#: src/gio/gio.cc:165
+msgid "Invalid open mode"
+msgstr "Неисправан режим отварања"
+
+#: src/glspectrum/gl-spectrum.cc:51
+msgid ""
+"OpenGL Spectrum Analyzer for Audacious\n"
+"Copyright 2013 Christophe Budé, John Lindgren, and Carlo Bramini\n"
+"\n"
+"Based on the XMMS plugin:\n"
+"Copyright 1998-2000 Peter Alm, Mikael Alm, Olle Hallnas, Thomas Nilsson, and "
+"4Front Technologies\n"
+"\n"
+"License: GPLv2+"
+msgstr ""
+"ОпенГЛ анализатор спектра за Безочника\n"
+"Ауторска права 2013 Кристоф Буде, Џон Линдгрин, и Карло Брамини\n"
+"\n"
+"Засновано на ИКсММС прикључку:\n"
+"Ауторска права 1998-2000 Питер Алм, Мајкол Алм, Оле Халнас, Томас Нилсон, и "
+"4Фронт Технологије\n"
+"\n"
+"Дозвола: ОЈЛв2+"
+
+#: src/glspectrum/gl-spectrum.cc:62 src/qtglspectrum/gl-spectrum.cc:53
+msgid "OpenGL Spectrum Analyzer"
+msgstr "ОпенГЛ Анализатор спектра"
+
+#: src/gnomeshortcuts/gnomeshortcuts.cc:38
+msgid "GNOME Shortcuts"
+msgstr "Гномове пречице"
+
+#: src/gnomeshortcuts/gnomeshortcuts.cc:54
+msgid ""
+"GNOME Shortcut Plugin\n"
+"Lets you control the player with GNOME's shortcuts.\n"
+"\n"
+"Copyright (C) 2007-2008 Sascha Hlusiak <contact@saschahlusiak.de>"
+msgstr ""
+"Прикључак Гномових пречица\n"
+"Управљајте пуштачем музике Гномовим пречицама.\n"
+"\n"
+"Ауторска права (C) 2007-2008 Саша Хлусјак <contact@saschahlusiak.de>"
+
+#: src/gtkui/columns.cc:35
+msgid "Entry number"
+msgstr "Број ставке"
+
+#: src/gtkui/columns.cc:36 src/playlist-manager/playlist-manager.cc:222
+#: src/playlist-manager-qt/playlist-manager-qt.cc:160
+#: src/qtui/playlist_model.cc:124
+msgid "Title"
+msgstr "Наслов"
+
+#: src/gtkui/columns.cc:37 src/qtui/playlist_model.cc:126
+msgid "Artist"
+msgstr "Извођач"
+
+#: src/gtkui/columns.cc:38
+msgid "Year"
+msgstr "Година"
+
+#: src/gtkui/columns.cc:39 src/qtui/playlist_model.cc:128
+msgid "Album"
+msgstr "Албум"
+
+#: src/gtkui/columns.cc:40
+msgid "Album artist"
+msgstr "Извођач албума"
+
+#: src/gtkui/columns.cc:41
+msgid "Track"
+msgstr "Нумера"
+
+#: src/gtkui/columns.cc:42
+msgid "Genre"
+msgstr "Жанр"
+
+#: src/gtkui/columns.cc:43
+msgid "Queue position"
+msgstr "Положај колоне"
+
+#: src/gtkui/columns.cc:44
+msgid "Length"
+msgstr "Трајање"
+
+#: src/gtkui/columns.cc:45
+msgid "File path"
+msgstr "Путања датотеке"
+
+#: src/gtkui/columns.cc:47
+msgid "Custom title"
+msgstr "Произвољан наслов"
+
+#: src/gtkui/columns.cc:48
+msgid "Bitrate"
+msgstr "Битски проток"
+
+#: src/gtkui/columns.cc:313
+msgid "Available columns"
+msgstr "Доступни ступци"
+
+#: src/gtkui/columns.cc:339
+msgid "Displayed columns"
+msgstr "Приказани ступци"
+
+#: src/gtkui/layout.cc:72 src/search-tool-qt/search-tool-qt.cc:51
+#: src/search-tool/search-tool.cc:42
+msgid "Search Tool"
+msgstr "Алат за претрагу"
+
+#: src/gtkui/layout.cc:167
+msgid "Dock at Left"
+msgstr "Усидри на лево"
+
+#: src/gtkui/layout.cc:167
+msgid "Dock at Right"
+msgstr "Усидри на десно"
+
+#: src/gtkui/layout.cc:168
+msgid "Dock at Top"
+msgstr "Усидри на врх"
+
+#: src/gtkui/layout.cc:168
+msgid "Dock at Bottom"
+msgstr "Усидри на дно"
+
+#: src/gtkui/layout.cc:168
+msgid "Undock"
+msgstr "Откачи"
+
+#: src/gtkui/layout.cc:168 src/ladspa/plugin.cc:534
+msgid "Disable"
+msgstr "Искључи"
+
+#: src/gtkui/menus.cc:96 src/qtui/menus.cc:55
+#: src/statusicon-qt/statusicon.cc:88 src/statusicon/statusicon.cc:277
+msgid "_Open Files ..."
+msgstr "Отвори _датотеке ..."
+
+#: src/gtkui/menus.cc:97 src/qtui/menus.cc:57
+msgid "Open _URL ..."
+msgstr "Отвори _адресу ..."
+
+#: src/gtkui/menus.cc:98 src/qtui/menus.cc:58
+msgid "_Add Files ..."
+msgstr "Додај да_тотеке ..."
+
+#: src/gtkui/menus.cc:99 src/qtui/menus.cc:60
+msgid "Add U_RL ..."
+msgstr "Додај ад_ресу ..."
+
+#: src/gtkui/menus.cc:101
+msgid "Search _Library"
+msgstr "Претражи _библиотеку"
+
+#: src/gtkui/menus.cc:103 src/qtui/menus.cc:62
+msgid "A_bout ..."
+msgstr "О _програму ..."
+
+#: src/gtkui/menus.cc:104 src/qtui/menus.cc:63
+msgid "_Settings ..."
+msgstr "_Подешавања ..."
+
+#: src/gtkui/menus.cc:105 src/qtui/menus.cc:67
+#: src/statusicon-qt/statusicon.cc:96 src/statusicon/statusicon.cc:285
+msgid "_Quit"
+msgstr "_Изађи"
+
+#: src/gtkui/menus.cc:109 src/gtkui/menus.cc:236 src/qtui/menus.cc:71
+#: src/search-tool-qt/search-tool-qt.cc:707 src/search-tool/search-tool.cc:659
+#: src/statusicon-qt/statusicon.cc:90 src/statusicon/statusicon.cc:279
+msgid "_Play"
+msgstr "Пу_сти"
+
+#: src/gtkui/menus.cc:110 src/qtui/menus.cc:72
+#: src/statusicon-qt/statusicon.cc:91 src/statusicon/statusicon.cc:280
+msgid "Paus_e"
+msgstr "Па_узирај"
+
+#: src/gtkui/menus.cc:111 src/qtui/menus.cc:73
+#: src/statusicon-qt/statusicon.cc:92 src/statusicon/statusicon.cc:281
+msgid "_Stop"
+msgstr "_Заустави"
+
+#: src/gtkui/menus.cc:112 src/qtui/menus.cc:74
+#: src/statusicon-qt/statusicon.cc:89 src/statusicon/statusicon.cc:278
+msgid "Pre_vious"
+msgstr "_Претходно"
+
+#: src/gtkui/menus.cc:113 src/qtui/menus.cc:75
+#: src/statusicon-qt/statusicon.cc:93 src/statusicon/statusicon.cc:282
+msgid "_Next"
+msgstr "С_ледеће"
+
+#: src/gtkui/menus.cc:115 src/qtui/menus.cc:77
+msgid "_Repeat"
+msgstr "_Понови"
+
+#: src/gtkui/menus.cc:116 src/qtui/menus.cc:78
+msgid "S_huffle"
+msgstr "_Насумично"
+
+#: src/gtkui/menus.cc:117 src/qtui/menus.cc:79
+msgid "Shuffle by Albu_m"
+msgstr "Насумично према _албуму"
+
+#: src/gtkui/menus.cc:118 src/qtui/menus.cc:80
+msgid "N_o Playlist Advance"
+msgstr "Н_е напредуј у списку нумера"
+
+#: src/gtkui/menus.cc:119 src/qtui/menus.cc:81
+msgid "Stop A_fter This Song"
+msgstr "Заустави _након ове песме"
+
+#: src/gtkui/menus.cc:121 src/gtkui/menus.cc:220 src/qtui/menus.cc:83
+#: src/qtui/menus.cc:167
+msgid "Song _Info ..."
+msgstr "Подаци о _песми ..."
+
+#: src/gtkui/menus.cc:122
+msgid "Jump to _Time ..."
+msgstr "Пређи на _време ..."
+
+#: src/gtkui/menus.cc:123
+msgid "_Jump to Song ..."
+msgstr "Пређи на _песму ..."
+
+#: src/gtkui/menus.cc:125
+msgid "Set Repeat Point _A"
+msgstr "Постави _А тачку понављања"
+
+#: src/gtkui/menus.cc:126
+msgid "Set Repeat Point _B"
+msgstr "Постави _Б тачку понављања"
+
+#: src/gtkui/menus.cc:127
+msgid "_Clear Repeat Points"
+msgstr "_Очисти тачке понављања"
+
+#: src/gtkui/menus.cc:131 src/gtkui/menus.cc:138 src/gtkui/menus.cc:154
+#: src/qtui/menus.cc:87 src/qtui/menus.cc:94 src/qtui/menus.cc:110
+msgid "By _Title"
+msgstr "Према _наслову"
+
+#: src/gtkui/menus.cc:132 src/qtui/menus.cc:88
+msgid "By _File Name"
+msgstr "Према називу _датотеке"
+
+#: src/gtkui/menus.cc:133 src/qtui/menus.cc:89
+msgid "By File _Path"
+msgstr "Према _путањи датотеке"
+
+#: src/gtkui/menus.cc:137 src/gtkui/menus.cc:153 src/qtui/menus.cc:93
+#: src/qtui/menus.cc:109
+msgid "By Track _Number"
+msgstr "Према броју _нумере"
+
+#: src/gtkui/menus.cc:139 src/gtkui/menus.cc:155 src/qtui/menus.cc:95
+#: src/qtui/menus.cc:111
+msgid "By _Artist"
+msgstr "Према _извођачу"
+
+#: src/gtkui/menus.cc:140 src/gtkui/menus.cc:156 src/qtui/menus.cc:96
+#: src/qtui/menus.cc:112
+msgid "By Al_bum"
+msgstr "Према _албуму"
+
+#: src/gtkui/menus.cc:141 src/gtkui/menus.cc:157 src/qtui/menus.cc:97
+#: src/qtui/menus.cc:113
+msgid "By Albu_m Artist"
+msgstr "Према извођачу албу_ма"
+
+#: src/gtkui/menus.cc:142 src/gtkui/menus.cc:158 src/qtui/menus.cc:98
+#: src/qtui/menus.cc:114
+msgid "By Release _Date"
+msgstr "Према _датуму издавања"
+
+#: src/gtkui/menus.cc:143 src/gtkui/menus.cc:159 src/qtui/menus.cc:99
+#: src/qtui/menus.cc:115
+msgid "By _Genre"
+msgstr "Према _жанру"
+
+#: src/gtkui/menus.cc:144 src/gtkui/menus.cc:160 src/qtui/menus.cc:100
+#: src/qtui/menus.cc:116
+msgid "By _Length"
+msgstr "Према _трајању"
+
+#: src/gtkui/menus.cc:145 src/gtkui/menus.cc:161 src/qtui/menus.cc:101
+#: src/qtui/menus.cc:117
+msgid "By _File Path"
+msgstr "Према _путањи датотеке"
+
+#: src/gtkui/menus.cc:146 src/gtkui/menus.cc:162 src/qtui/menus.cc:102
+#: src/qtui/menus.cc:118
+msgid "By _Custom Title"
+msgstr "Према произвољном _наслову"
+
+#: src/gtkui/menus.cc:148 src/gtkui/menus.cc:164 src/qtui/menus.cc:104
+#: src/qtui/menus.cc:120
+msgid "R_everse Order"
+msgstr "Преокрени п_оредак"
+
+#: src/gtkui/menus.cc:149 src/gtkui/menus.cc:165 src/qtui/menus.cc:105
+#: src/qtui/menus.cc:121
+msgid "_Random Order"
+msgstr "_Случајан поредак"
+
+#: src/gtkui/menus.cc:169 src/qtui/menus.cc:125
+msgid "_Play/Resume"
+msgstr "_Пусти/Настави"
+
+#: src/gtkui/menus.cc:170 src/qtui/menus.cc:126
+msgid "_Refresh"
+msgstr "_Освежи"
+
+#: src/gtkui/menus.cc:172 src/qtui/menus.cc:128
+msgid "_Sort"
+msgstr "Пор_еђај"
+
+#: src/gtkui/menus.cc:173 src/qtui/menus.cc:129
+msgid "Sort Se_lected"
+msgstr "Поређај _означене"
+
+#: src/gtkui/menus.cc:174 src/qtui/menus.cc:130
+msgid "Remove _Duplicates"
+msgstr "Уклони _двоструке"
+
+#: src/gtkui/menus.cc:175 src/qtui/menus.cc:131
+msgid "Remove _Unavailable Files"
+msgstr "Уклони _недоступне датотеке"
+
+#: src/gtkui/menus.cc:177 src/playlist-manager/playlist-manager.cc:241
+#: src/playlist-manager-qt/playlist-manager-qt.cc:319 src/qtui/menus.cc:133
+msgid "_New"
+msgstr "_Ново"
+
+#: src/gtkui/menus.cc:178 src/qtui/menus.cc:134
+msgid "Ren_ame ..."
+msgstr "_Преименуј ..."
+
+#: src/gtkui/menus.cc:179 src/gtkui/menus.cc:238 src/qtui/menus.cc:135
+msgid "Remo_ve"
+msgstr "_Уклони"
+
+#: src/gtkui/menus.cc:181
+msgid "_Import ..."
+msgstr "Ув_ези ..."
+
+#: src/gtkui/menus.cc:182
+msgid "_Export ..."
+msgstr "Из_вези ..."
+
+#: src/gtkui/menus.cc:184
+msgid "Playlist _Manager ..."
+msgstr "Управник списка _нумера ..."
+
+#: src/gtkui/menus.cc:185 src/qtui/menus.cc:141
+msgid "_Queue Manager ..."
+msgstr "Управник _редоследа ..."
+
+#: src/gtkui/menus.cc:189 src/qtui/menus.cc:145
+msgid "Volume _Up"
+msgstr "По_јачај"
+
+#: src/gtkui/menus.cc:190 src/qtui/menus.cc:146
+msgid "Volume _Down"
+msgstr "У_тишај"
+
+#: src/gtkui/menus.cc:192 src/qtui/menus.cc:148
+msgid "_Equalizer ..."
+msgstr "_Уједначавач ..."
+
+#: src/gtkui/menus.cc:193 src/qtui/menus.cc:150
+msgid "E_ffects ..."
+msgstr "_Дејства ..."
+
+#: src/gtkui/menus.cc:195
+msgid "_Record Stream"
+msgstr "_Сними ток"
+
+#: src/gtkui/menus.cc:196
+msgid "Audio _Settings ..."
+msgstr "Подешавања _звука ..."
+
+#: src/gtkui/menus.cc:200
+msgid "Show _Menu Bar"
+msgstr "Прикажи траку _изборника"
+
+#: src/gtkui/menus.cc:201
+msgid "Show I_nfo Bar"
+msgstr "Прикажи траку _података"
+
+#: src/gtkui/menus.cc:202
+msgid "Show Info Bar Vis_ualization"
+msgstr "Прикажи _визуелизацију траке обавештења"
+
+#: src/gtkui/menus.cc:203
+msgid "Show _Status Bar"
+msgstr "Прикажи траку _стања"
+
+#: src/gtkui/menus.cc:205
+msgid "Show _Remaining Time"
+msgstr "Прикажи преостало _време"
+
+#: src/gtkui/menus.cc:207 src/skins/menus.cc:180 src/skins-qt/menus.cc:174
+msgid "_Visualizations ..."
+msgstr "_Визуелизације ..."
+
+#: src/gtkui/menus.cc:211 src/qtui/menus.cc:154
+msgid "_File"
+msgstr "_Датотека"
+
+#: src/gtkui/menus.cc:212 src/qtui/menus.cc:155
+msgid "_Playback"
+msgstr "_Извођење"
+
+#: src/gtkui/menus.cc:213 src/qtui/menus.cc:156
+msgid "P_laylist"
+msgstr "_Списак нумера"
+
+#: src/gtkui/menus.cc:214 src/gtkui/menus.cc:232 src/qtui/menus.cc:157
+#: src/qtui/menus.cc:179
+msgid "_Services"
+msgstr "_Услуге"
+
+#: src/gtkui/menus.cc:215 src/qtui/menus.cc:158
+msgid "_Output"
+msgstr "_Излаз"
+
+#: src/gtkui/menus.cc:216
+msgid "_View"
+msgstr "_Преглед"
+
+#: src/gtkui/menus.cc:221 src/qtui/menus.cc:168
+msgid "_Queue/Unqueue"
+msgstr "_Стави у ред/Избаци из реда"
+
+#: src/gtkui/menus.cc:223 src/qtui/menus.cc:170
+msgid "_Open Containing Folder"
+msgstr "_Отвори садржавајућу фасциклу"
+
+#: src/gtkui/menus.cc:224 src/qtui/menus.cc:171
+msgid "_Refresh Selected"
+msgstr ""
+
+#: src/gtkui/menus.cc:226 src/qtui/menus.cc:173
+msgid "Cu_t"
+msgstr "_Исеци"
+
+#: src/gtkui/menus.cc:227 src/qtui/menus.cc:174
+msgid "_Copy"
+msgstr "У_множи"
+
+#: src/gtkui/menus.cc:228 src/qtui/menus.cc:175
+msgid "_Paste"
+msgstr "У_баци"
+
+#: src/gtkui/menus.cc:229 src/qtui/menus.cc:176
+msgid "Paste at _End"
+msgstr ""
+
+#: src/gtkui/menus.cc:230 src/qtui/menus.cc:177
+msgid "Select _All"
+msgstr "_Изабери све"
+
+#: src/gtkui/menus.cc:237
+msgid "_Rename ..."
+msgstr "_Преименуј ..."
+
+#: src/gtkui/settings.cc:35 src/qtui/settings.cc:53
+msgid "<b>Playlist Tabs</b>"
+msgstr "<b>Језичци списка нумера</b>"
+
+#: src/gtkui/settings.cc:36 src/qtui/settings.cc:55
+msgid "Always show tabs"
+msgstr "Увек прикажи језичке"
+
+#: src/gtkui/settings.cc:38 src/qtui/settings.cc:58
+msgid "Show entry counts"
+msgstr "Прикажи број уноса"
+
+#: src/gtkui/settings.cc:40 src/qtui/settings.cc:60
+msgid "Show close buttons"
+msgstr "Прикажи дугмад затварања"
+
+#: src/gtkui/settings.cc:42 src/qtui/settings.cc:62
+msgid "<b>Playlist Columns</b>"
+msgstr "<b>Ступци списка нумера</b>"
+
+#: src/gtkui/settings.cc:44 src/qtui/settings.cc:64
+msgid "Show column headers"
+msgstr "Прикажи заглавља колона"
+
+#: src/gtkui/settings.cc:46 src/modplug/plugin_main.cc:109
+#: src/skins-qt/skins_cfg.cc:299 src/skins/skins_cfg.cc:281
+msgid "<b>Miscellaneous</b>"
+msgstr "<b>Разно</b>"
+
+#: src/gtkui/settings.cc:47
+msgid "Arrow keys seek by:"
+msgstr "Стралице померају за:"
+
+#: src/gtkui/settings.cc:50
+msgid "Scroll on song change"
+msgstr "Клизај при промени песме"
+
+#: src/gtkui/ui_gtk.cc:76
+msgid "GTK Interface"
+msgstr "ГТК сучеље"
+
+#: src/gtkui/ui_gtk.cc:224 src/skins/main.cc:219 src/skins-qt/main.cc:214
+#, c-format
+msgid "%s - Audacious"
+msgstr "%s — Безочник"
+
+#: src/gtkui/ui_gtk.cc:226 src/qtui/main_window.cc:256
+msgid "Buffering ..."
+msgstr "Баферујем ..."
+
+#: src/gtkui/ui_gtk.cc:229 src/skins/main.cc:221 src/skins-qt/main.cc:216
+msgid "Audacious"
+msgstr "Безочник"
+
+#: src/gtkui/ui_statusbar.cc:63 src/qtui/status_bar.cc:69
+msgid "mono"
+msgstr "моно"
+
+#: src/gtkui/ui_statusbar.cc:65 src/qtui/status_bar.cc:71
+msgid "stereo"
+msgstr "стерео"
+
+#: src/gtkui/ui_statusbar.cc:67 src/qtui/status_bar.cc:73
+#, c-format
+msgid "%d channel"
+msgid_plural "%d channels"
+msgstr[0] "%d канал"
+msgstr[1] "%d канала"
+msgstr[2] "%d канала"
+
+#: src/gtkui/ui_statusbar.cc:75 src/qtui/status_bar.cc:81
+#, c-format
+msgid "%d kHz"
+msgstr "%d kHz"
+
+#: src/gtkui/ui_statusbar.cc:81 src/qtui/status_bar.cc:87
+#, c-format
+msgid "%d kbps"
+msgstr "%d kb/s"
+
+#: src/gtkui/ui_statusbar.cc:107 src/skins/main.cc:452 src/skins-qt/main.cc:433
+msgid "Single mode."
+msgstr "Једноставни режим."
+
+#: src/gtkui/ui_statusbar.cc:109 src/skins/main.cc:454 src/skins-qt/main.cc:435
+msgid "Playlist mode."
+msgstr "Режим списка нумера."
+
+#: src/gtkui/ui_statusbar.cc:117 src/skins/main.cc:460 src/skins-qt/main.cc:441
+msgid "Stopping after song."
+msgstr "Зауставља након песме."
+
+#: src/hotkey/gui.cc:71
+msgid "Previous track"
+msgstr "Претходна нумера"
+
+#: src/hotkey/gui.cc:72 src/notify/osd.cc:69 src/qtui/main_window.cc:100
+#: src/qtui/main_window.cc:216 src/qtui/main_window.cc:217
+#: src/skins/menus.cc:134 src/skins-qt/menus.cc:122
+msgid "Play"
+msgstr "Пусти"
+
+#: src/hotkey/gui.cc:73
+msgid "Pause/Resume"
+msgstr "Паузирај/настави"
+
+#: src/hotkey/gui.cc:74 src/qtui/main_window.cc:101 src/skins/menus.cc:136
+#: src/skins-qt/menus.cc:124
+msgid "Stop"
+msgstr "Заустави"
+
+#: src/hotkey/gui.cc:75
+msgid "Next track"
+msgstr "Следећа нумера"
+
+#: src/hotkey/gui.cc:76
+msgid "Forward 5 seconds"
+msgstr "Унапред 5 секунде"
+
+#: src/hotkey/gui.cc:77
+msgid "Rewind 5 seconds"
+msgstr "Уназад 5 секунде"
+
+#: src/hotkey/gui.cc:78
+msgid "Mute"
+msgstr "Искључи звук"
+
+#: src/hotkey/gui.cc:79
+msgid "Volume up"
+msgstr "Појачај"
+
+#: src/hotkey/gui.cc:80
+msgid "Volume down"
+msgstr "Утишај"
+
+#: src/hotkey/gui.cc:81
+msgid "Jump to file"
+msgstr "Скочи до датотеке"
+
+#: src/hotkey/gui.cc:82
+msgid "Toggle player window(s)"
+msgstr "Укључи/искључи главни прозор"
+
+#: src/hotkey/gui.cc:83
+msgid "Show On-Screen-Display"
+msgstr "Прикажи приказ на екрану"
+
+#: src/hotkey/gui.cc:84
+msgid "Toggle repeat"
+msgstr "Укључи/искључи понављање"
+
+#: src/hotkey/gui.cc:85
+msgid "Toggle shuffle"
+msgstr "Укључи/искључи премештање"
+
+#: src/hotkey/gui.cc:86
+msgid "Toggle stop after current"
+msgstr "Заустави после текуће песме"
+
+#: src/hotkey/gui.cc:87
+msgid "Raise player window(s)"
+msgstr "Издигни главни прозор"
+
+#: src/hotkey/gui.cc:97
+msgid "(none)"
+msgstr "(ништа)"
+
+#: src/hotkey/gui.cc:234
+msgid ""
+"It is not recommended to bind the primary mouse buttons without "
+"modificators.\n"
+"\n"
+"Do you want to continue?"
+msgstr ""
+"Није препоручљиво повезати главну дугмад миша без измењивача.\n"
+"\n"
+"Да ли желите да наставите?"
+
+#: src/hotkey/gui.cc:236
+msgid "Binding mouse buttons"
+msgstr "Повезујем дугмад миша"
+
+#: src/hotkey/gui.cc:391
+msgid ""
+"Press a key combination inside a text field.\n"
+"You can also bind mouse buttons."
+msgstr ""
+"Притисните комбинацију тастера унутар поља за текст.\n"
+"Можете такође да повежете дугмад миша."
+
+#: src/hotkey/gui.cc:396
+msgid "Hotkeys:"
+msgstr "Пречице:"
+
+#: src/hotkey/gui.cc:413
+msgid "<b>Action:</b>"
+msgstr "<b>Радња:</b>"
+
+#: src/hotkey/gui.cc:420
+msgid "<b>Key Binding:</b>"
+msgstr "<b>Свезе тастера:</b>"
+
+#: src/hotkey/gui.cc:468
+msgid "_Add"
+msgstr "_Додај"
+
+#: src/hotkey/plugin.cc:61
+msgid "Global Hotkeys"
+msgstr "Опште пречице"
+
+#: src/hotkey/plugin.cc:80
+msgid ""
+"Global Hotkey Plugin\n"
+"Control the player with global key combinations or multimedia keys.\n"
+"\n"
+"Copyright (C) 2007-2008 Sascha Hlusiak <contact@saschahlusiak.de>\n"
+"\n"
+"Contributers include:\n"
+"Copyright (C) 2006-2007 Vladimir Paskov <vlado.paskov@gmail.com>\n"
+"Copyright (C) 2000-2002 Ville Syrjälä <syrjala@sci.fi>,\n"
+" Bryn Davies <curious@ihug.com.au>,\n"
+" Jonathan A. Davis <davis@jdhouse.org>,\n"
+" Jeremy Tan <nsx@nsx.homeip.net>"
+msgstr ""
+"Прикључак општих пречица\n"
+"Управљајте програмом користећи комбинације општих тастера или "
+"мултимедијалних тастера.\n"
+"\n"
+"Ауторска права (C) 2007-2008 Саша Хласјак <contact@saschahlusiak.de>\n"
+"\n"
+"Остали сарадници:\n"
+"Ауторска права (C) 2006-2007 Владимир Пасков <vlado.paskov@gmail.com>\n"
+"Ауторска права (C) 2000-2002 Вил Сирјала <syrjala@sci.fi>\n"
+" Брајан Девис <curious@ihug.com.au>\n"
+" Џонатан А. Давис <davis@jdhouse.org>\n"
+" Џереми Тан <nsx@nsx.homeip.net>"
+
+#: src/jack/jack-ng.cc:50
+msgid "JACK Output"
+msgstr "ЏЕК излаз"
+
+#: src/jack/jack-ng.cc:115
+msgid "Automatically connect to output ports"
+msgstr "Самостално повезивање на прикључнике излаза"
+
+#: src/jack/jack-ng.cc:156
+#, c-format
+msgid "Only %d JACK output ports were found but %d are required."
+msgstr "Нашао сам само %d излазна прикључка ЏЕК-а али су потребна %d."
+
+#: src/jack/jack-ng.cc:172
+#, c-format
+msgid "Failed to connect to JACK port %s."
+msgstr "Нисам успео да се повежем на прикључник ЏЕК-а „%s“."
+
+#: src/jack/jack-ng.cc:192
+msgid ""
+"JACK supports only floating-point audio.  You must change the output bit "
+"depth to floating-point in Audacious settings."
+msgstr ""
+"ЏЕК подржава само звук покретног зареза.  Морате изменити дубину излазног "
+"бита на покретни зарез у подешавањима Безочника."
+
+#: src/jack/jack-ng.cc:205
+msgid "Failed to connect to the JACK server; is it running?"
+msgstr "Нисам успео да се повежем на сервер ЏЕК-а; да ли је покренут?"
+
+#: src/jack/jack-ng.cc:281
+#, c-format
+msgid ""
+"The JACK server requires a sample rate of %d Hz, but Audacious is playing at "
+"%d Hz.  Please use the Sample Rate Converter effect to correct the mismatch."
+msgstr ""
+"ЏЕК сервер захтева проток узорка од %d Hz, али Безочник пушта при %d Hz.  "
+"Користите дејство претварача протока узорка да исправите несагласност."
+
+#: src/ladspa/plugin.cc:415
+#, c-format
+msgid "%s Settings"
+msgstr "Подешавања за %s"
+
+#: src/ladspa/plugin.cc:481
+msgid "Module paths:"
+msgstr "Путање модула:"
+
+#: src/ladspa/plugin.cc:486
+msgid ""
+"<small>Separate multiple paths with a colon.\n"
+"These paths are searched in addition to LADSPA_PATH.\n"
+"After adding new paths, press Enter to scan for new plugins.</small>"
+msgstr ""
+"<small>Раздвојте више путања са две тачке.\n"
+"Те путање су тражене као додатне уз „ЛАДСПА ПУТАЊА“.\n"
+"Након додавања нових путања, притисните Унеси да потражите нове прикључке.</"
+"small>"
+
+#: src/ladspa/plugin.cc:502
+msgid "Available plugins:"
+msgstr "Доступни прикључци:"
+
+#: src/ladspa/plugin.cc:515 src/modplug/plugin_main.cc:95
+#: src/modplug/plugin_main.cc:98 src/modplug/plugin_main.cc:101
+#: src/modplug/plugin_main.cc:104
+msgid "Enable"
+msgstr "Укључи"
+
+#: src/ladspa/plugin.cc:521
+msgid "Enabled plugins:"
+msgstr "Укључени прикључци:"
+
+#: src/ladspa/plugin.cc:537
+msgid "Settings"
+msgstr "Подешавања"
+
+#: src/ladspa/plugin.cc:554
+msgid ""
+"LADSPA Host for Audacious\n"
+"Copyright 2011 John Lindgren"
+msgstr ""
+"ЛАДСПА домаћин за Безочника\n"
+"Ауторска права 2011 Џон Линдгрин"
+
+#: src/ladspa/plugin.h:78
+msgid "LADSPA Host"
+msgstr "ЛАДСПА домаћин"
+
+#: src/lirc/lirc.cc:55
+msgid "LIRC Plugin"
+msgstr "ЛИРЦ прикључак"
+
+#: src/lirc/lirc.cc:382
+msgid ""
+"A simple plugin to control Audacious using the LIRC remote control daemon\n"
+"\n"
+"Adapted for Audacious by:\n"
+"Tony Vroon <chainsaw@gentoo.org>\n"
+"Joonas Harjumäki <jharjuma@gmail.com>\n"
+"\n"
+"Based on the XMMS LIRC plugin by:\n"
+"Carl van Schaik <carl@leg.uct.ac.za>\n"
+"Christoph Bartelmus <xmms@bartelmus.de>\n"
+"Andrew O. Shadoura <bugzilla@tut.by>\n"
+"\n"
+"For more information about LIRC, see http://lirc.org."
+msgstr ""
+"Једноставан прикључак за управљање Безочником коришћењем демона даљинског "
+"управљања ЛИРЦ-а\n"
+"\n"
+"За Безочника су га прилагодили:\n"
+"Тони Врун <chainsaw@gentoo.org>\n"
+"Јунас Харјумаки <jharjuma@gmail.com>\n"
+"\n"
+"Заснован на ЛИРЦ прикључку ИксММЦ-а који су написали:\n"
+"Карл ван Шаик <carl@leg.uct.ac.za>\n"
+"Кристоф Бартелмус <xmms@bartelmus.de>\n"
+"Ендрју О. Шадура <bugzilla@tut.by>\n"
+"\n"
+"Да сазнате више о ЛИРЦ-у, погледајте „http://lirc.org“."
+
+#: src/lirc/lirc.cc:393
+msgid "<b>Connection</b>"
+msgstr "<b>Веза</b>"
+
+#: src/lirc/lirc.cc:394
+msgid "Reconnect to LIRC server"
+msgstr "Поново се повежи са ЛИРЦ сервером"
+
+#: src/lirc/lirc.cc:396
+msgid "Wait before reconnecting:"
+msgstr "Сачекај пре поновног повезивања:"
+
+#: src/lyricwiki/lyricwiki.cc:41 src/lyricwiki-qt/lyricwiki.cc:68
+msgid "LyricWiki Plugin"
+msgstr "Прикључак за Лирик вики"
+
+#: src/lyricwiki/lyricwiki.cc:134 src/lyricwiki-qt/lyricwiki.cc:152
+msgid "No lyrics available"
+msgstr "Нема доступних текстова"
+
+#: src/lyricwiki/lyricwiki.cc:256 src/lyricwiki/lyricwiki.cc:265
+#: src/lyricwiki/lyricwiki.cc:282 src/lyricwiki/lyricwiki.cc:291
+#: src/lyricwiki/lyricwiki.cc:306 src/lyricwiki-qt/lyricwiki.cc:273
+#: src/lyricwiki-qt/lyricwiki.cc:282 src/lyricwiki-qt/lyricwiki.cc:299
+#: src/lyricwiki-qt/lyricwiki.cc:308 src/lyricwiki-qt/lyricwiki.cc:323
+#: src/qtui/dialog_windows.cc:38
+msgid "Error"
+msgstr "Грешка"
+
+#: src/lyricwiki/lyricwiki.cc:257 src/lyricwiki/lyricwiki.cc:283
+#: src/lyricwiki-qt/lyricwiki.cc:274 src/lyricwiki-qt/lyricwiki.cc:300
+#, c-format
+msgid "Unable to fetch %s"
+msgstr "Не могу да довучем „%s“"
+
+#: src/lyricwiki/lyricwiki.cc:266 src/lyricwiki/lyricwiki.cc:292
+#: src/lyricwiki-qt/lyricwiki.cc:283 src/lyricwiki-qt/lyricwiki.cc:309
+#, c-format
+msgid "Unable to parse %s"
+msgstr "Не могу да обрадим „%s“"
+
+#: src/lyricwiki/lyricwiki.cc:298 src/lyricwiki-qt/lyricwiki.cc:315
+msgid "Looking for lyrics ..."
+msgstr "Тражим текст песме ..."
+
+#: src/lyricwiki/lyricwiki.cc:306 src/lyricwiki-qt/lyricwiki.cc:323
+msgid "Missing song metadata"
+msgstr "Недостају метаподаци песме"
+
+#: src/lyricwiki/lyricwiki.cc:317 src/lyricwiki-qt/lyricwiki.cc:334
+msgid "Connecting to lyrics.wikia.com ..."
+msgstr "Повезујем се на „lyrics.wikia.com“ ..."
+
+#: src/lyricwiki/lyricwiki.cc:358 src/lyricwiki-qt/lyricwiki.cc:412
+msgid "Edit lyrics ..."
+msgstr "Уреди текстове песама ..."
+
+#: src/m3u/m3u.cc:32
+msgid "M3U Playlists"
+msgstr "М3У списак нумера"
+
+#: src/metronom/metronom.cc:44
+msgid "Tact Generator"
+msgstr "Генератор такта"
+
+#: src/metronom/metronom.cc:145
+#, c-format
+msgid "Tact generator: %d bpm"
+msgstr "Генератор такта: %d отк/мин"
+
+#: src/metronom/metronom.cc:147
+#, c-format
+msgid "Tact generator: %d bpm %d/%d"
+msgstr "Генератор такта: %d отк/мин %d/%d"
+
+#: src/metronom/metronom.cc:234
+msgid ""
+"A Tact Generator by Martin Strauss <mys@faveve.uni-stuttgart.de>\n"
+"\n"
+"To use it, add a URL: tact://beats*num/den\n"
+"e.g. tact://77 to play 77 beats per minute\n"
+"or tact://60*3/4 to play 60 bpm in 3/4 tacts"
+msgstr ""
+"Генератор такта је написао Мартин Штраус <mys@faveve.uni-stuttgart.de>\n"
+"\n"
+"Да га користите, додајте адресу: „tact://beats*num/den“\n"
+"нпр.: „tact://77“ да добијете 77 откуцаја у минуту\n"
+"или: „tact://60*3/4“ да добијете 60 отк./мин у 3/4 такту"
+
+#: src/mixer/mixer.cc:38
+msgid "Channel Mixer"
+msgstr "Мешач канала"
+
+#: src/mixer/mixer.cc:227
+msgid ""
+"Channel Mixer Plugin for Audacious\n"
+"Copyright 2011-2012 John Lindgren and Michał Lipski"
+msgstr ""
+"Прикључак мешача канала за Безочника\n"
+"Ауторска права 2011-2012 Џон Линдгрин и Михал Липски"
+
+#: src/mixer/mixer.cc:231
+msgid "<b>Channel Mixer</b>"
+msgstr "<b>Мешач канала</b>"
+
+#: src/mixer/mixer.cc:232
+msgid "Output channels:"
+msgstr "Излазни канали:"
+
+#: src/mms/mms.cc:35
+msgid "MMS Plugin"
+msgstr "ММС прикључак"
+
+#: src/mms/mms.cc:82
+msgid "Error connecting to MMS server"
+msgstr "Грешка повезивања на ММС сервер"
+
+#: src/modplug/modplugbmp.h:57
+msgid "ModPlug (Module Player)"
+msgstr "Мод прикључак (Програм за модле)"
+
+#: src/modplug/plugin_main.cc:56
+msgid "<b>Resolution</b>"
+msgstr "<b>Резолуција</b>"
+
+#: src/modplug/plugin_main.cc:57
+msgid "8-bit"
+msgstr "8 бита"
+
+#: src/modplug/plugin_main.cc:58
+msgid "16-bit"
+msgstr "16 бита"
+
+#: src/modplug/plugin_main.cc:59
+msgid "<b>Channels</b>"
+msgstr "<b>Бр. канала</b>"
+
+#: src/modplug/plugin_main.cc:63
+msgid "Nearest (fastest)"
+msgstr "Најближе (најбрже)"
+
+#: src/modplug/plugin_main.cc:64
+msgid "Linear (fast)"
+msgstr "Линеарно (брзо)"
+
+#: src/modplug/plugin_main.cc:65
+msgid "Spline (good)"
+msgstr "Сп-крива (добро)"
+
+#: src/modplug/plugin_main.cc:66
+msgid "Polyphase (best)"
+msgstr "Полифазни (најбоље)"
+
+#: src/modplug/plugin_main.cc:67
+msgid "<b>Sample rate</b>"
+msgstr "<b>Проток узорка:</b>"
+
+#: src/modplug/plugin_main.cc:68
+msgid "22 kHz"
+msgstr "22 kHz"
+
+#: src/modplug/plugin_main.cc:69
+msgid "44 kHz"
+msgstr "44 kHz"
+
+#: src/modplug/plugin_main.cc:70
+msgid "48 kHz"
+msgstr "48 kHz"
+
+#: src/modplug/plugin_main.cc:71
+msgid "96 kHz"
+msgstr "96 kHz"
+
+#: src/modplug/plugin_main.cc:75 src/modplug/plugin_main.cc:80
+#: src/modplug/plugin_main.cc:85
+msgid "Level:"
+msgstr "Ниво:"
+
+#: src/modplug/plugin_main.cc:81
+msgid "Cutoff:"
+msgstr "Прекид:"
+
+#: src/modplug/plugin_main.cc:94
+msgid "<b>Reverb</b>"
+msgstr "<b>Одјек</b>"
+
+#: src/modplug/plugin_main.cc:97
+msgid "<b>Bass Boost</b>"
+msgstr "<b>Прираст баса</b>"
+
+#: src/modplug/plugin_main.cc:100
+msgid "<b>Surround</b>"
+msgstr "<b>Окружење</b>"
+
+#: src/modplug/plugin_main.cc:103
+msgid "<b>Preamp</b>"
+msgstr "<b>Претпојачање</b>"
+
+#: src/modplug/plugin_main.cc:110
+msgid "Oversample"
+msgstr "Преклапање"
+
+#: src/modplug/plugin_main.cc:111
+msgid "Noise reduction"
+msgstr "Смањење буке"
+
+#: src/modplug/plugin_main.cc:112
+msgid "Play Amiga MODs"
+msgstr "Пуштај Амига МОД-е"
+
+#: src/modplug/plugin_main.cc:113
+msgid "<b>Repeat</b>"
+msgstr "<b>Понови</b>"
+
+#: src/modplug/plugin_main.cc:114
+msgid "Repeat count:"
+msgstr "Број понављања:"
+
+#: src/modplug/plugin_main.cc:115
+msgid "To repeat forever, set the repeat count to -1."
+msgstr "За непрекидно понављање, поставите број понављања на -1."
+
+#: src/modplug/plugin_main.cc:128 src/sid/xs_config.cc:106
+msgid "These settings will take effect when Audacious is restarted."
+msgstr ""
+"Ова подешавања ће ступити у дејство након поновног покретања Безочника."
+
+#: src/mpg123/mpg123.cc:54
+msgid "MPG123 Plugin"
+msgstr "МПГ123 прикључак"
+
+#: src/mpg123/mpg123.cc:80
+msgid "<b>Advanced</b>"
+msgstr "<b>Напредно</b>"
+
+#: src/mpg123/mpg123.cc:81
+msgid "Use accurate length calculation (slow)"
+msgstr "Користи тачан прорачун трајања (споро)"
+
+#: src/mpg123/mpg123.cc:245
+msgid "Surround"
+msgstr "Окружење"
+
+#: src/mpris2/plugin.cc:38
+msgid "MPRIS 2 Server"
+msgstr "МПРИС 2 сервер"
+
+#: src/neon/neon.cc:97
+msgid "Neon HTTP/HTTPS Plugin"
+msgstr "Неон ХТТП/ХХТПС прикључак"
+
+#: src/neon/neon.cc:526
+msgid "Error parsing redirect"
+msgstr "Грешка обраде преусмерења"
+
+#: src/neon/neon.cc:540
+msgid "Unknown HTTP error"
+msgstr "Непозната ХТТП грешка"
+
+#: src/neon/neon.cc:574
+msgid "Error parsing URL"
+msgstr "Грешка обраде адресе"
+
+#: src/neon/neon.cc:637
+msgid "Too many redirects"
+msgstr "Превише преусмерења"
+
+#: src/notify/event.cc:95
+msgid "Stopped"
+msgstr "Заустављено"
+
+#: src/notify/event.cc:95
+msgid "Audacious is not playing."
+msgstr "Безочник не пушта песме."
+
+#: src/notify/notify.cc:39
+msgid "Desktop Notifications"
+msgstr "Обавештења радне површи"
+
+#: src/notify/notify.cc:57
+msgid ""
+"Desktop Notifications Plugin for Audacious\n"
+"Copyright (C) 2010 Maximilian Bogner\n"
+"Copyright (C) 2011-2013 John Lindgren and Jean-Alexandre Anglès d'Auriac\n"
+"\n"
+"This plugin is free software: you can redistribute it and/or modify it under "
+"the terms of the GNU General Public License as published by the Free "
+"Software Foundation, either version 3 of the License, or (at your option) "
+"any later version.\n"
+"\n"
+"This plugin is distributed in the hope that it will be useful, but WITHOUT "
+"ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or "
+"FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for "
+"more details.\n"
+"\n"
+"You should have received a copy of the GNU General Public License along with "
+"this program.  If not, see <http://www.gnu.org/licenses/>."
+msgstr ""
+"Прикључак обавештавања радне површи за Безочника\n"
+"Ауторска права (C) 2010 Максимилијан Богнер\n"
+"Ауторска права (C) 2011 Џон Линдгрин и Жан-Александр Англе д'Орјак\n"
+"\n"
+"Овај прикључак је слободан софтвер: можете га прослеђивати\n"
+"и/или мењати под условима Гнуове опште јавне лиценце коју је\n"
+"објавила Задужбина слободног софтвера, било издања 3 те\n"
+"лиценце, или (по вашем избору) било којег новијег издања.\n"
+"\n"
+"Овај прикључак се расподељује у нади да ће бити користан,\n"
+"али БЕЗ ИКАКВЕ ГАРАНЦИЈЕ; чак и без примењене гаранције\n"
+"ТРЖИШНЕ ВРЕДНОСТИ или ПРИЛАГОЂЕНОСТИ ОДРЕЂЕНОЈ НАМЕНИ. \n"
+"Погледајте Гнуову општу јавну лиценцу за више детаља.\n"
+"\n"
+"Требали сте да примите примерак Гнуове опште јавне лиценце уз овај\n"
+"програм. Ако нисте, погледајте <http://www.gnu.org/licenses/>."
+
+#: src/notify/notify.cc:102
+msgid "Show playback controls"
+msgstr "Прикажи дугмад за пуштање"
+
+#: src/notify/notify.cc:104
+msgid "Always show notification"
+msgstr "Звек прикажи обавештења"
+
+#: src/notify/notify.cc:106
+msgid "Include album name in notification"
+msgstr "Укључи назив албума у обавештењу"
+
+#: src/notify/osd.cc:58
+msgid "Show"
+msgstr "Прикажи"
+
+#: src/notify/osd.cc:66 src/qtui/main_window.cc:222 src/qtui/main_window.cc:223
+#: src/skins/menus.cc:135 src/skins-qt/menus.cc:123
+msgid "Pause"
+msgstr "Паузирај"
+
+#: src/notify/osd.cc:73 src/qtui/main_window.cc:103 src/skins/menus.cc:138
+#: src/skins-qt/menus.cc:126
+msgid "Next"
+msgstr "Следећа"
+
+#: src/oss4/oss.h:75
+msgid "OSS4 Output"
+msgstr "ОСС4 излаз"
+
+#: src/oss4/oss.h:77
+msgid "OSS3 Output"
+msgstr "ОСС3 излаз"
+
+#: src/oss4/plugin.cc:35
+msgid "Default device"
+msgstr "Основни уређај"
+
+#: src/oss4/plugin.cc:78
+msgid "Audio device:"
+msgstr "Звучни уређај:"
+
+#: src/oss4/plugin.cc:81
+msgid "Use alternate device:"
+msgstr "Користи алтернативни уређај:"
+
+#: src/oss4/plugin.cc:85
+msgid "Save volume between sessions."
+msgstr "Сачувајте јачину звука између сесија."
+
+#: src/oss4/plugin.cc:87
+msgid "Enable format conversions made by the OSS software."
+msgstr "Укључује претварање формата направљено ОСС софтвером."
+
+#: src/oss4/plugin.cc:89
+msgid "Enable exclusive mode to prevent virtual mixing."
+msgstr "Укључује искључиви режим да спречи виртуално мешање."
+
+#: src/oss4/plugin.cc:101
+msgid ""
+"OSS4 Output Plugin for Audacious\n"
+"Copyright 2010-2012 Michał Lipski\n"
+"\n"
+"I would like to thank people on #audacious, especially Tony Vroon and John "
+"Lindgren and of course the authors of the previous OSS plugin."
+msgstr ""
+"Прикључак ОСС4 излаза за Безочника\n"
+"Ауторска права 2010-2012 Михал Липски\n"
+"\n"
+"Желим да се захвалим људима на „#audacious“, нарочито Тони Вруну и Џону "
+"Линдгрину и наравно ауторима претходног ОСС прикључка."
+
+#: src/playlist-manager/playlist-manager.cc:37
+#: src/playlist-manager-qt/playlist-manager-qt.cc:40
+msgid "Playlist Manager"
+msgstr "Управник списка нумера"
+
+#: src/playlist-manager/playlist-manager.cc:223
+#: src/playlist-manager-qt/playlist-manager-qt.cc:162
+msgid "Entries"
+msgstr "Уноси"
+
+#: src/playlist-manager/playlist-manager.cc:243
+#: src/playlist-manager-qt/playlist-manager-qt.cc:327
+msgid "_Remove"
+msgstr "_Уклони"
+
+#: src/playlist-manager/playlist-manager.cc:244
+#: src/playlist-manager-qt/playlist-manager-qt.cc:322
+msgid "Ren_ame"
+msgstr "_Преименуј"
+
+#: src/pls/pls.cc:35
+msgid "PLS Playlists"
+msgstr "ПЛС спискови нумера"
+
+#: src/psf/plugin.cc:45
+msgid "OpenPSF PSF1/PSF2 Decoder"
+msgstr "ОпенПСФ ПСФ1/ПСФ2 декодер"
+
+#: src/pulse/pulse_audio.cc:40
+msgid "PulseAudio Output"
+msgstr "Пулс‑аудио излаз"
+
+#: src/pulse/pulse_audio.cc:494
+msgid ""
+"Audacious PulseAudio Output Plugin\n"
+"\n"
+"This program is free software; you can redistribute it and/or modify it "
+"under the terms of the GNU General Public License as published by the Free "
+"Software Foundation; either version 2 of the License, or (at your option) "
+"any later version.\n"
+"\n"
+"This program is distributed in the hope that it will be useful, but WITHOUT "
+"ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or "
+"FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for "
+"more details.\n"
+"\n"
+"You should have received a copy of the GNU General Public License along with "
+"this program; if not, write to the Free Software Foundation, Inc., 51 "
+"Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA."
+msgstr ""
+
+#: src/qtaudio/qtaudio.cc:44
+msgid "QtMultimedia Output"
+msgstr "Излаз Кут мултимедија"
+
+#: src/qtaudio/qtaudio.cc:72
+msgid ""
+"QtMultimedia Audio Output Plugin for Audacious\n"
+"Copyright 2014 William Pitcock\n"
+"\n"
+"Based on SDL Output Plugin for Audacious\n"
+"Copyright 2010 John Lindgren"
+msgstr ""
+"Прикључак аудио излаза Кут мултимедија за Безочника\n"
+"Ауторска права 2014 Вилијам Питкок\n"
+"\n"
+"Засновано на прикључку СДЛ излаза за Безочника\n"
+"Ауторска права 2010 Џон Линдгрин"
+
+#: src/qtglspectrum/gl-spectrum.cc:41
+msgid ""
+"OpenGL Spectrum Analyzer for Audacious\n"
+"Copyright 2013 Christophe Budé, John Lindgren, and Carlo Bramini\n"
+"Copyright 2014 William Pitcock\n"
+"\n"
+"Based on the XMMS plugin:\n"
+"Copyright 1998-2000 Peter Alm, Mikael Alm, Olle Hallnas, Thomas Nilsson, and "
+"4Front Technologies\n"
+"\n"
+"License: GPLv2+"
+msgstr ""
+"ОпенГЛ анализатор спектра за Безочника\n"
+"Ауторска права 2013 Кристоф Буде, Џон Линдгрин, и Карло Брамини\n"
+"Ауторска права 2014 Вилијам Питкок\n"
+"\n"
+"Засновано на ИКсММС прикључку:\n"
+"Ауторска права 1998-2000 Питер Алм, Мајкол Алм, Оле Халнас, Томас Нилсон, и "
+"4Фронт Технологије\n"
+"\n"
+"Дозвола: ОЈЛв2+"
+
+#: src/qtui/dialog_windows.cc:31
+msgid "Working ..."
+msgstr "Радим ..."
+
+#: src/qtui/dialog_windows.cc:43
+msgid "Information"
+msgstr ""
+
+#: src/qtui/filter_input.cc:44 src/skins/search-select.cc:76
+msgid "Search"
+msgstr "Потражи"
+
+#: src/qtui/main_window.cc:95
+msgid "Open Files"
+msgstr "Отвори датотеке"
+
+#: src/qtui/main_window.cc:97
+msgid "Add Files"
+msgstr "Додај датотеке"
+
+#: src/qtui/main_window.cc:102 src/skins/menus.cc:137 src/skins-qt/menus.cc:125
+msgid "Previous"
+msgstr "Претходна"
+
+#: src/qtui/main_window.cc:108 src/skins/menus.cc:128 src/skins-qt/menus.cc:116
+msgid "Repeat"
+msgstr "Понови"
+
+#: src/qtui/main_window.cc:110 src/skins/menus.cc:129 src/skins-qt/menus.cc:117
+msgid "Shuffle"
+msgstr "Насумично"
+
+#: src/qtui/menus.cc:56
+msgid "_Open Folder ..."
+msgstr "Отвори _фасциклу ..."
+
+#: src/qtui/menus.cc:59
+msgid "_Add Folder ..."
+msgstr "_Додај фасциклу ..."
+
+#: src/qtui/menus.cc:65
+msgid "_Log Inspector ..."
+msgstr "Надзорник _дневника ..."
+
+#: src/qtui/qtui.cc:42
+msgid "Qt Interface"
+msgstr "Кут сучеље"
+
+#: src/resample/resample.cc:43
+msgid "Sample Rate Converter"
+msgstr "Претварач протока узорка"
+
+#: src/resample/resample.cc:183
+msgid ""
+"Sample Rate Converter Plugin for Audacious\n"
+"Copyright 2010-2012 John Lindgren"
+msgstr ""
+"Прикључак Претварача протока узорка за Безочника\n"
+"Ауторска права 2010-2012 Џон Линдгрин"
+
+#: src/resample/resample.cc:187
+msgid "Skip/repeat samples"
+msgstr "Прескочи/понови узорке"
+
+#: src/resample/resample.cc:188
+msgid "Linear interpolation"
+msgstr "Линијско уметање"
+
+#: src/resample/resample.cc:189
+msgid "Fast sinc interpolation"
+msgstr "Брзо уметање усклађења"
+
+#: src/resample/resample.cc:190
+msgid "Medium sinc interpolation"
+msgstr "Средње уметање усклађења"
+
+#: src/resample/resample.cc:191
+msgid "Best sinc interpolation"
+msgstr "Најбоље уметање усклађења"
+
+#: src/resample/resample.cc:195
+msgid "<b>Conversion</b>"
+msgstr "<b>Претварање</b>"
+
+#: src/resample/resample.cc:196
+msgid "Method:"
+msgstr "Метод:"
+
+#: src/resample/resample.cc:199 src/soxr/sox-resampler.cc:162
+msgid "Rate:"
+msgstr "Проток:"
+
+#: src/resample/resample.cc:202
+msgid "<b>Rate Mappings</b>"
+msgstr "<b>Мапирање протока</b>"
+
+#: src/resample/resample.cc:203
+msgid "Use rate mappings"
+msgstr "Користи мапирање протока"
+
+#: src/resample/resample.cc:205
+msgid "8 kHz:"
+msgstr "8 kHz:"
+
+#: src/resample/resample.cc:209
+msgid "16 kHz:"
+msgstr "16 kHz:"
+
+#: src/resample/resample.cc:213
+msgid "22.05 kHz:"
+msgstr "22.05 kHz:"
+
+#: src/resample/resample.cc:217
+msgid "32.0 kHz:"
+msgstr "32.0 kHz:"
+
+#: src/resample/resample.cc:221
+msgid "44.1 kHz:"
+msgstr "44.1 kHz:"
+
+#: src/resample/resample.cc:225
+msgid "48 kHz:"
+msgstr "48 kHz:"
+
+#: src/resample/resample.cc:229
+msgid "88.2 kHz:"
+msgstr "88.2 kHz:"
+
+#: src/resample/resample.cc:233
+msgid "96 kHz:"
+msgstr "96 kHz:"
+
+#: src/resample/resample.cc:237
+msgid "176.4 kHz:"
+msgstr "176.4 kHz:"
+
+#: src/resample/resample.cc:241
+msgid "192 kHz:"
+msgstr "192 kHz:"
+
+#: src/scrobbler2/config_window.cc:19
+msgid "Checking Last.fm access ..."
+msgstr ""
+
+#: src/scrobbler2/config_window.cc:27
+msgid ""
+"Your scrobbles are being saved on your computer temporarily.  They will be "
+"submitted as soon as Audacious is allowed access."
+msgstr ""
+
+#: src/scrobbler2/config_window.cc:33
+#, c-format
+msgid "Permission granted.  Scrobbling for user %s."
+msgstr ""
+
+#: src/scrobbler2/config_window.cc:37
+msgid ""
+"Permission denied.  Open the following URL in a browser, allow Audacious "
+"access to your account, and then click 'Check Permission' again:"
+msgstr ""
+
+#: src/scrobbler2/config_window.cc:47
+msgid "There was a problem contacting Last.fm."
+msgstr ""
+
+#: src/scrobbler2/config_window.cc:86
+msgid "Check Permission"
+msgstr ""
+
+#: src/scrobbler2/config_window.cc:87
+msgid "Revoke Permission"
+msgstr ""
+
+#: src/scrobbler2/config_window.cc:91
+msgid "You need to allow Audacious to scrobble tracks to your Last.fm account."
+msgstr ""
+
+#: src/scrobbler2/scrobbler.cc:29
+msgid "Scrobbler 2.0"
+msgstr "Скроблер 2.0"
+
+#: src/scrobbler2/scrobbler.cc:224
+msgid ""
+"The Scrobbler plugin could not be started.\n"
+"There might be a problem with your installation."
+msgstr ""
+"Прикључак Скроблера не може бити покренут.\n"
+"Можда је проблем са вашом инсталацијом."
+
+#: src/scrobbler2/scrobbler.cc:289
+msgid ""
+"Audacious Scrobbler Plugin 2.0 by Pitxyoki,\n"
+"\n"
+"Copyright © 2012-2013 Luís M. Picciochi Oliveira <Pitxyoki@Gmail.com>\n"
+"\n"
+"Thanks to John Lindgren for giving me a hand at the beginning of this "
+"project.\n"
+"\n"
+msgstr ""
+"Безочников прикључак скроблера 2.0 је написао Питксјоки,\n"
+"\n"
+"Ауторска права © 2012-2013 Луис М. Пићоки Оливеира <Pitxyoki@Gmail.com>\n"
+"\n"
+"Захваљујем се Џону Линдгрину што ми је помогао на почетку овог пројекта.\n"
+"\n"
+
+#: src/scrobbler2/scrobbler_communication.cc:638
+msgid ""
+"Audacious is now using an improved version of the Last.fm Scrobbler.\n"
+"Please check the Preferences for the Scrobbler plugin."
+msgstr ""
+"Безочник сада користи побољшано издање Ласт.фм-овог Скроблера.\n"
+"Проверите у поставкама за прикључком Скроблера."
+
+#: src/sdlout/sdlout.cc:43
+msgid "SDL Output"
+msgstr "СДЛ излаз"
+
+#: src/sdlout/sdlout.cc:72
+msgid ""
+"SDL Output Plugin for Audacious\n"
+"Copyright 2010 John Lindgren"
+msgstr ""
+"Прикључак СДЛ излаза за Безочника\n"
+"Ауторска права 2010 Џон Линдгрин"
+
+#: src/search-tool-qt/search-tool-qt.cc:195
+#: src/search-tool-qt/search-tool-qt.cc:203 src/search-tool/search-tool.cc:128
+#: src/search-tool/search-tool.cc:136
+msgid "Library"
+msgstr "Библиотека"
+
+#: src/search-tool-qt/search-tool-qt.cc:485 src/search-tool/search-tool.cc:418
+#, c-format
+msgid "%d result"
+msgid_plural "%d results"
+msgstr[0] "%d резултат"
+msgstr[1] "%d резултата"
+msgstr[2] "%d резултата"
+
+#: src/search-tool-qt/search-tool-qt.cc:491 src/search-tool/search-tool.cc:424
+#, c-format
+msgid "(%d hidden)"
+msgid_plural "(%d hidden)"
+msgstr[0] "(%d скривена)"
+msgstr[1] "(%d скривене)"
+msgstr[2] "(%d скривених)"
+
+#: src/search-tool-qt/search-tool-qt.cc:683 src/search-tool/search-tool.cc:612
+#, c-format
+msgid "%d song"
+msgid_plural "%d songs"
+msgstr[0] "%d песма"
+msgstr[1] "%d песме"
+msgstr[2] "%d песама"
+
+#: src/search-tool-qt/search-tool-qt.cc:690 src/search-tool/search-tool.cc:619
+msgid "of this genre"
+msgstr "овог жанра"
+
+#: src/search-tool-qt/search-tool-qt.cc:696 src/search-tool/search-tool.cc:625
+msgid "on"
+msgstr " "
+
+#: src/search-tool-qt/search-tool-qt.cc:696 src/search-tool/search-tool.cc:625
+msgid "by"
+msgstr "изводи"
+
+#: src/search-tool-qt/search-tool-qt.cc:708 src/search-tool/search-tool.cc:661
+msgid "_Create Playlist"
+msgstr "_Направи списак нумера"
+
+#: src/search-tool-qt/search-tool-qt.cc:709 src/search-tool/search-tool.cc:663
+msgid "_Add to Playlist"
+msgstr "_Додај у списак нумера"
+
+#: src/search-tool-qt/search-tool-qt.cc:725 src/search-tool/search-tool.cc:752
+msgid "Search library"
+msgstr "Претражите библиотеку"
+
+#: src/search-tool-qt/search-tool-qt.cc:728 src/search-tool/search-tool.cc:756
+msgid ""
+"To import your music library into Audacious, choose a folder and then click "
+"the \"refresh\" icon."
+msgstr ""
+"Да увезете вашу музичку библиотеку у Безочнику, изаберите фасциклу и затим "
+"кликните на иконицу „освежи“."
+
+#: src/search-tool-qt/search-tool-qt.cc:734 src/search-tool/search-tool.cc:765
+msgid "Please wait ..."
+msgstr "Молим сачекајте ..."
+
+#: src/search-tool/search-tool.cc:793
+msgid "Choose Folder"
+msgstr "Изаберите фасциклу"
+
+#: src/sid/xmms-sid.cc:43
+msgid "SID Player"
+msgstr "СИД пуштач"
+
+#: src/sid/xs_config.cc:61
+msgid "<b>Output</b>"
+msgstr "<b>Излаз</b>"
+
+#: src/sid/xs_config.cc:62
+msgid "Channels:"
+msgstr "Бр. канала:"
+
+#: src/sid/xs_config.cc:68
+msgid "<b>Emulation</b>"
+msgstr "<b>Опонашање</b>"
+
+#: src/sid/xs_config.cc:69
+msgid "Emulate MOS 8580 (default: MOS 6581)"
+msgstr "Опонашај МОС 8580 (основно: МОС 6581)"
+
+#: src/sid/xs_config.cc:71
+msgid "Do not automatically select chip model"
+msgstr "Не бирај сам модел чипа"
+
+#: src/sid/xs_config.cc:73
+msgid "Emulate filter"
+msgstr "Опонашај пропусник"
+
+#: src/sid/xs_config.cc:75
+msgid "Clock speed:"
+msgstr "Брзина сата:"
+
+#: src/sid/xs_config.cc:78
+msgid "Do not automatically select clock speed"
+msgstr "Не бирај сам брзину сата"
+
+#: src/sid/xs_config.cc:80
+msgid "<b>Playback time</b>"
+msgstr "<b>Време пуштања</b>"
+
+#: src/sid/xs_config.cc:81
+msgid "Set maximum playback time:"
+msgstr "Подеси највеће време пуштања:"
+
+#: src/sid/xs_config.cc:87
+msgid "Use only when song length is unknown"
+msgstr "Користи само када је трајање песме непознато"
+
+#: src/sid/xs_config.cc:90
+msgid "Set minimum playback time:"
+msgstr "Подеси најмање време пуштања:"
+
+#: src/sid/xs_config.cc:96
+msgid "<b>Subtunes</b>"
+msgstr "<b>Субтјунс</b>"
+
+#: src/sid/xs_config.cc:97
+msgid "Enable subtunes"
+msgstr "Укључите субтјунсе"
+
+#: src/sid/xs_config.cc:99
+msgid "Ignore subtunes shorter than:"
+msgstr "Занемари субтјунсе краће од:"
+
+#: src/sid/xs_config.cc:105
+msgid "<b>Note</b>"
+msgstr "<b>Напомена</b>"
+
+#: src/silence-removal/silence-removal.cc:39
+msgid "Silence Removal"
+msgstr "Уклањање тишине"
+
+#: src/silence-removal/silence-removal.cc:58
+msgid ""
+"Silence Removal Plugin for Audacious\n"
+"Copyright 2014 John Lindgren"
+msgstr ""
+"Прикључак уклањања тишине за Безочника\n"
+"Ауторска права 2014 Џон Линдгрин"
+
+#: src/silence-removal/silence-removal.cc:67
+msgid "<b>Silence Removal</b>"
+msgstr "<b>Уклањање тишине</b>"
+
+#: src/silence-removal/silence-removal.cc:68
+msgid "Threshold:"
+msgstr "Осетљивост:"
+
+#: src/silence-removal/silence-removal.cc:70
+msgid "dB"
+msgstr "dB"
+
+#: src/skins/actions.cc:45 src/skins-qt/actions.cc:43
+msgid "Repeat points cleared."
+msgstr "Понови очишћене тачке."
+
+#: src/skins/actions.cc:60 src/skins-qt/actions.cc:58
+msgid "Repeat point A set."
+msgstr "Понови скуп тачке А."
+
+#: src/skins/actions.cc:65 src/skins-qt/actions.cc:63
+msgid "Repeat point B set."
+msgstr "Понови скуп тачке Б."
+
+#: src/skins/equalizer.cc:224 src/skins-qt/equalizer.cc:220
+msgid "Preamp"
+msgstr "Претпојачање"
+
+#: src/skins/equalizer.cc:228 src/skins-qt/equalizer.cc:224
+msgid "31 Hz"
+msgstr "31 Hz"
+
+#: src/skins/equalizer.cc:229 src/skins-qt/equalizer.cc:225
+msgid "63 Hz"
+msgstr "63 Hz"
+
+#: src/skins/equalizer.cc:229 src/skins-qt/equalizer.cc:225
+msgid "125 Hz"
+msgstr "125 Hz"
+
+#: src/skins/equalizer.cc:229 src/skins-qt/equalizer.cc:225
+msgid "250 Hz"
+msgstr "250 Hz"
+
+#: src/skins/equalizer.cc:229 src/skins-qt/equalizer.cc:225
+msgid "500 Hz"
+msgstr "500 Hz"
+
+#: src/skins/equalizer.cc:229 src/skins-qt/equalizer.cc:225
+msgid "1 kHz"
+msgstr "1 kHz"
+
+#: src/skins/equalizer.cc:230 src/skins-qt/equalizer.cc:226
+msgid "2 kHz"
+msgstr "2 kHz"
+
+#: src/skins/equalizer.cc:230 src/skins-qt/equalizer.cc:226
+msgid "4 kHz"
+msgstr "4 kHz"
+
+#: src/skins/equalizer.cc:230 src/skins-qt/equalizer.cc:226
+msgid "8 kHz"
+msgstr "8 kHz"
+
+#: src/skins/equalizer.cc:230 src/skins-qt/equalizer.cc:226
+msgid "16 kHz"
+msgstr "16 kHz"
+
+#: src/skins/equalizer.cc:271 src/skins-qt/equalizer.cc:267
+msgid "Audacious Equalizer"
+msgstr "Уједначавач Безочника"
+
+#: src/skins/main.cc:695 src/skins-qt/main.cc:648
+#, c-format
+msgid "Seek to %d:%-2.2d / %d:%-2.2d"
+msgstr "Тражи до: %d:%-2.2d / %d:%-2.2d"
+
+#: src/skins/main.cc:712 src/skins-qt/main.cc:665
+#, c-format
+msgid "Volume: %d%%"
+msgstr "Јачина звука: %d%%"
+
+#: src/skins/main.cc:725 src/skins-qt/main.cc:678
+#, c-format
+msgid "Balance: %d%% left"
+msgstr "Уравнотеженост: %d%% леви"
+
+#: src/skins/main.cc:727 src/skins-qt/main.cc:680
+msgid "Balance: center"
+msgstr "Уравнотеженост: центрирано"
+
+#: src/skins/main.cc:729 src/skins-qt/main.cc:682
+#, c-format
+msgid "Balance: %d%% right"
+msgstr "Уравнотеженост: %d%% десни"
+
+#: src/skins/main.cc:822 src/skins-qt/main.cc:775
+msgid "Options Menu"
+msgstr "Изборник опција"
+
+#: src/skins/main.cc:826 src/skins-qt/main.cc:779
+msgid "Disable 'Always On Top'"
+msgstr "Искључи „Увек у првом плану“"
+
+#: src/skins/main.cc:828 src/skins-qt/main.cc:781
+msgid "Enable 'Always On Top'"
+msgstr "Укључи „Увек у првом плану“"
+
+#: src/skins/main.cc:831 src/skins-qt/main.cc:784
+msgid "File Info Box"
+msgstr "Поље података датотеке"
+
+#: src/skins/main.cc:834 src/skins/menus.cc:172 src/skins-qt/main.cc:787
+#: src/skins-qt/menus.cc:164
+msgid "Double Size"
+msgstr "Двострука величина"
+
+#: src/skins/main.cc:837 src/skins-qt/main.cc:790
+msgid "Visualizations"
+msgstr "Визуализације"
+
+#: src/skins/menus.cc:80 src/skins-qt/menus.cc:67
+msgid "Recording on"
+msgstr "Снимање је укључено"
+
+#: src/skins/menus.cc:80 src/skins-qt/menus.cc:67
+msgid "Recording off"
+msgstr "Снимање је искључено"
+
+#: src/skins/menus.cc:99 src/skins-qt/menus.cc:86
+msgid "Volume Up"
+msgstr "Појачај"
+
+#: src/skins/menus.cc:100 src/skins-qt/menus.cc:87
+msgid "Volume Down"
+msgstr "Утишај"
+
+#: src/skins/menus.cc:102 src/skins-qt/menus.cc:89
+msgid "Effects ..."
+msgstr "Дејства ..."
+
+#: src/skins/menus.cc:104 src/skins-qt/menus.cc:91
+msgid "Record Stream"
+msgstr "Сними ток"
+
+#: src/skins/menus.cc:105 src/skins-qt/menus.cc:92
+msgid "Audio Settings ..."
+msgstr "Подешавања звука ..."
+
+#: src/skins/menus.cc:109 src/skins-qt/menus.cc:96
+msgid "Open Files ..."
+msgstr "Отвори датотеке ..."
+
+#: src/skins/menus.cc:110 src/skins-qt/menus.cc:98
+msgid "Open URL ..."
+msgstr "Отвори адресу ..."
+
+#: src/skins/menus.cc:111
+msgid "Search Library"
+msgstr "Претражи библиотеку"
+
+#: src/skins/menus.cc:113 src/skins-qt/menus.cc:101
+msgid "Playback"
+msgstr "Пуштање"
+
+#: src/skins/menus.cc:114 src/skins-qt/menus.cc:102
+msgid "Playlist"
+msgstr "Списак нумера"
+
+#: src/skins/menus.cc:115 src/skins-qt/menus.cc:103
+msgid "Output"
+msgstr "Излаз"
+
+#: src/skins/menus.cc:116 src/skins-qt/menus.cc:104
+msgid "View"
+msgstr "Поглед"
+
+#: src/skins/menus.cc:118 src/skins/menus.cc:184 src/skins/menus.cc:197
+#: src/skins/menus.cc:264 src/skins-qt/menus.cc:106 src/skins-qt/menus.cc:178
+#: src/skins-qt/menus.cc:192 src/skins-qt/menus.cc:257
+msgid "Services"
+msgstr "Услуге"
+
+#: src/skins/menus.cc:120 src/skins-qt/menus.cc:108
+msgid "About ..."
+msgstr "О програму ..."
+
+#: src/skins/menus.cc:121 src/skins-qt/menus.cc:109
+msgid "Settings ..."
+msgstr "Подешавања ..."
+
+#: src/skins/menus.cc:122 src/skins-qt/menus.cc:110
+msgid "Quit"
+msgstr "Изађи"
+
+#: src/skins/menus.cc:126 src/skins/menus.cc:254 src/skins-qt/menus.cc:114
+#: src/skins-qt/menus.cc:247
+msgid "Song Info ..."
+msgstr "Подаци о песми ..."
+
+#: src/skins/menus.cc:130 src/skins-qt/menus.cc:118
+msgid "Shuffle by Album"
+msgstr "Насумично према албуму"
+
+#: src/skins/menus.cc:131 src/skins-qt/menus.cc:119
+msgid "No Playlist Advance"
+msgstr "Не напредуј у списку нумера"
+
+#: src/skins/menus.cc:132 src/skins-qt/menus.cc:120
+msgid "Stop After This Song"
+msgstr "Заустави након ове песме"
+
+#: src/skins/menus.cc:140 src/skins-qt/menus.cc:128
+msgid "Set A-B Repeat"
+msgstr "Постави А—Б понављања"
+
+#: src/skins/menus.cc:141 src/skins-qt/menus.cc:129
+msgid "Clear A-B Repeat"
+msgstr "Очисти А—Б понављања"
+
+#: src/skins/menus.cc:143 src/skins-qt/menus.cc:132
+msgid "Jump to Song ..."
+msgstr "Пређи на песму ..."
+
+#: src/skins/menus.cc:144 src/skins-qt/menus.cc:133
+msgid "Jump to Time ..."
+msgstr "Пређи на време ..."
+
+#: src/skins/menus.cc:148 src/skins-qt/menus.cc:138
+msgid "Play/Resume"
+msgstr "Пусти/Настави"
+
+#: src/skins/menus.cc:150 src/skins-qt/menus.cc:140
+msgid "New Playlist"
+msgstr "Нови списак нумера"
+
+#: src/skins/menus.cc:151 src/skins-qt/menus.cc:141
+msgid "Rename Playlist ..."
+msgstr "Преименуј списак нумера ..."
+
+#: src/skins/menus.cc:152 src/skins-qt/menus.cc:142
+msgid "Remove Playlist"
+msgstr "Нови списак нумера"
+
+#: src/skins/menus.cc:154 src/skins-qt/menus.cc:144
+msgid "Previous Playlist"
+msgstr "Претходни списак нумера"
+
+#: src/skins/menus.cc:155 src/skins-qt/menus.cc:145
+msgid "Next Playlist"
+msgstr "Следећи списак нумера"
+
+#: src/skins/menus.cc:157 src/skins-qt/menus.cc:148
+msgid "Import Playlist ..."
+msgstr "Увези списак нумера ..."
+
+#: src/skins/menus.cc:158 src/skins-qt/menus.cc:149
+msgid "Export Playlist ..."
+msgstr "Извези списак нумера ..."
+
+#: src/skins/menus.cc:160 src/skins-qt/menus.cc:152
+msgid "Playlist Manager ..."
+msgstr "Управник списка нумера ..."
+
+#: src/skins/menus.cc:161 src/skins-qt/menus.cc:153
+msgid "Queue Manager ..."
+msgstr "Управник редоследа ..."
+
+#: src/skins/menus.cc:163 src/skins-qt/menus.cc:155
+msgid "Refresh Playlist"
+msgstr "Освежи списак нумера"
+
+#: src/skins/menus.cc:167 src/skins-qt/menus.cc:159
+msgid "Show Playlist Editor"
+msgstr "Прикажи уређивач списка нумера"
+
+#: src/skins/menus.cc:168 src/skins-qt/menus.cc:160
+msgid "Show Equalizer"
+msgstr "Прикажи уједначавач"
+
+#: src/skins/menus.cc:170 src/skins-qt/menus.cc:162
+msgid "Show Remaining Time"
+msgstr "Прикажи преостало време"
+
+#: src/skins/menus.cc:173 src/skins-qt/menus.cc:166
+msgid "Always on Top"
+msgstr "Увек у првом плану"
+
+#: src/skins/menus.cc:174 src/skins-qt/menus.cc:167
+msgid "On All Workspaces"
+msgstr "Све на радне просторе"
+
+#: src/skins/menus.cc:176 src/skins-qt/menus.cc:170
+msgid "Roll Up Player"
+msgstr "Замотај плејер"
+
+#: src/skins/menus.cc:177 src/skins-qt/menus.cc:171
+msgid "Roll Up Playlist Editor"
+msgstr "Замотај уређивач списка нумера"
+
+#: src/skins/menus.cc:178 src/skins-qt/menus.cc:172
+msgid "Roll Up Equalizer"
+msgstr "Замотај уједначавач"
+
+#: src/skins/menus.cc:186 src/skins-qt/menus.cc:180
+msgid "Add URL ..."
+msgstr "Додај адресу ..."
+
+#: src/skins/menus.cc:187 src/skins-qt/menus.cc:182
+msgid "Add Files ..."
+msgstr "Додај датотеке ..."
+
+#: src/skins/menus.cc:191 src/skins/menus.cc:219 src/skins/menus.cc:233
+#: src/skins-qt/menus.cc:186 src/skins-qt/menus.cc:212
+#: src/skins-qt/menus.cc:226
+msgid "By Title"
+msgstr "Према наслову"
+
+#: src/skins/menus.cc:192 src/skins/menus.cc:226 src/skins/menus.cc:240
+#: src/skins-qt/menus.cc:187 src/skins-qt/menus.cc:219
+#: src/skins-qt/menus.cc:233
+msgid "By File Name"
+msgstr "Према називу датотеке"
+
+#: src/skins/menus.cc:193 src/skins/menus.cc:227 src/skins/menus.cc:241
+#: src/skins-qt/menus.cc:188 src/skins-qt/menus.cc:220
+#: src/skins-qt/menus.cc:234
+msgid "By File Path"
+msgstr "Према путањи датотеке"
+
+#: src/skins/menus.cc:199 src/skins-qt/menus.cc:194
+msgid "Remove All"
+msgstr "Уклони све"
+
+#: src/skins/menus.cc:200 src/skins-qt/menus.cc:195
+msgid "Clear Queue"
+msgstr "Обриши заказано"
+
+#: src/skins/menus.cc:202 src/skins-qt/menus.cc:197
+msgid "Remove Unavailable Files"
+msgstr "Уклони недоступне датотеке"
+
+#: src/skins/menus.cc:203 src/skins-qt/menus.cc:198
+msgid "Remove Duplicates"
+msgstr "Уклони дупликате"
+
+#: src/skins/menus.cc:205 src/skins-qt/menus.cc:200
+msgid "Remove Unselected"
+msgstr "Уклони неозначене"
+
+#: src/skins/menus.cc:206 src/skins-qt/menus.cc:201
+msgid "Remove Selected"
+msgstr "Уклони означене"
+
+#: src/skins/menus.cc:210
+msgid "Search and Select"
+msgstr "Претражи и означи"
+
+#: src/skins/menus.cc:212 src/skins-qt/menus.cc:205
+msgid "Invert Selection"
+msgstr "Обрни избор"
+
+#: src/skins/menus.cc:213 src/skins-qt/menus.cc:206
+msgid "Select None"
+msgstr "Означи ништа"
+
+#: src/skins/menus.cc:214 src/skins-qt/menus.cc:207
+msgid "Select All"
+msgstr "Означи све"
+
+#: src/skins/menus.cc:218 src/skins/menus.cc:232 src/skins-qt/menus.cc:211
+#: src/skins-qt/menus.cc:225
+msgid "By Track Number"
+msgstr "Према броју нумере"
+
+#: src/skins/menus.cc:220 src/skins/menus.cc:234 src/skins-qt/menus.cc:213
+#: src/skins-qt/menus.cc:227
+msgid "By Artist"
+msgstr "Према извођачу"
+
+#: src/skins/menus.cc:221 src/skins/menus.cc:235 src/skins-qt/menus.cc:214
+#: src/skins-qt/menus.cc:228
+msgid "By Album"
+msgstr "Према албуму"
+
+#: src/skins/menus.cc:222 src/skins/menus.cc:236 src/skins-qt/menus.cc:215
+#: src/skins-qt/menus.cc:229
+msgid "By Album Artist"
+msgstr "Према извођачу албума"
+
+#: src/skins/menus.cc:223 src/skins/menus.cc:238 src/skins-qt/menus.cc:216
+#: src/skins-qt/menus.cc:231
+msgid "By Release Date"
+msgstr "Према датуму издавања"
+
+#: src/skins/menus.cc:224 src/skins/menus.cc:237 src/skins-qt/menus.cc:217
+#: src/skins-qt/menus.cc:230
+msgid "By Genre"
+msgstr "Према жанру"
+
+#: src/skins/menus.cc:225 src/skins/menus.cc:239 src/skins-qt/menus.cc:218
+#: src/skins-qt/menus.cc:232
+msgid "By Length"
+msgstr "Према трајању"
+
+#: src/skins/menus.cc:228 src/skins/menus.cc:242 src/skins-qt/menus.cc:221
+#: src/skins-qt/menus.cc:235
+msgid "By Custom Title"
+msgstr "Према произвољном наслову"
+
+#: src/skins/menus.cc:246 src/skins-qt/menus.cc:239
+msgid "Randomize List"
+msgstr "Насумице испремештај списак"
+
+#: src/skins/menus.cc:247 src/skins-qt/menus.cc:240
+msgid "Reverse List"
+msgstr "Преокрени списак"
+
+#: src/skins/menus.cc:249 src/skins-qt/menus.cc:242
+msgid "Sort Selected"
+msgstr "Поређај означене"
+
+#: src/skins/menus.cc:250 src/skins-qt/menus.cc:243
+msgid "Sort List"
+msgstr "Поређај списак"
+
+#: src/skins/menus.cc:255 src/skins-qt/menus.cc:248
+msgid "Open Containing Folder"
+msgstr ""
+
+#: src/skins/menus.cc:257 src/skins-qt/menus.cc:250
+msgid "Cut"
+msgstr "Исеци"
+
+#: src/skins/menus.cc:258 src/skins-qt/menus.cc:251
+msgid "Copy"
+msgstr "Умножи"
+
+#: src/skins/menus.cc:259 src/skins-qt/menus.cc:252
+msgid "Paste"
+msgstr "Убаци"
+
+#: src/skins/menus.cc:260 src/skins-qt/menus.cc:253
+msgid "Paste at End"
+msgstr ""
+
+#: src/skins/menus.cc:262 src/skins-qt/menus.cc:255
+msgid "Queue/Unqueue"
+msgstr "Стави у ред/Избаци из реда"
+
+#: src/skins/playlist.cc:492 src/skins-qt/playlist.cc:477
+msgid "Audacious Playlist Editor"
+msgstr "Уређивач списка нумера"
+
+#: src/skins/playlist-widget.cc:55 src/skins-qt/playlist-widget.cc:52
+#, c-format
+msgid "%s (%d of %d)"
+msgstr "%s (%d од %d)"
+
+#: src/skins/plugin.cc:52 src/skins-qt/plugin.cc:54
+msgid "Winamp Classic Interface"
+msgstr "Винампово уобичајено сучеље"
+
+#: src/skins-qt/menus.cc:97
+msgid "Open Folder ..."
+msgstr "Отвори фасциклу ..."
+
+#: src/skins-qt/menus.cc:181
+msgid "Add Folder ..."
+msgstr "Додај фасциклу ..."
+
+#: src/skins-qt/skins_cfg.cc:197 src/skins/skins_cfg.cc:181
+msgid "Player:"
+msgstr "Пуштач:"
+
+#: src/skins-qt/skins_cfg.cc:199 src/skins/skins_cfg.cc:183
+msgid "Select main player window font:"
+msgstr "Изаберите словни лик главног прозора програма:"
+
+#: src/skins-qt/skins_cfg.cc:200 src/skins/skins_cfg.cc:184
+msgid "Playlist:"
+msgstr "Списак нумера:"
+
+#: src/skins-qt/skins_cfg.cc:202 src/skins/skins_cfg.cc:186
+msgid "Select playlist font:"
+msgstr "Изабери словни лик списка нумера:"
+
+#: src/skins-qt/skins_cfg.cc:206 src/skins/skins_cfg.cc:190
+msgid "<b>Skin</b>"
+msgstr "<b>Маска</b>"
+
+#: src/skins-qt/skins_cfg.cc:210 src/skins/skins_cfg.cc:192
+msgid "<b>Fonts</b>"
+msgstr "<b>Слова</b>"
+
+#: src/skins-qt/skins_cfg.cc:212 src/skins/skins_cfg.cc:194
+msgid "Use bitmap fonts (supports ASCII only)"
+msgstr "Користи битмап словне ликове (подржава само АСКРИ)"
+
+#: src/skins-qt/skins_cfg.cc:214 src/skins/skins_cfg.cc:196
+msgid "Scroll song title"
+msgstr "Померај наслов песме"
+
+#: src/skins-qt/skins_cfg.cc:216 src/skins/skins_cfg.cc:198
+msgid "Scroll song title in both directions"
+msgstr "Померај наслов песме у оба смера"
+
+#: src/skins-qt/skins_cfg.cc:221 src/skins/skins_cfg.cc:203
+msgid "Analyzer"
+msgstr "Анализатор"
+
+#: src/skins-qt/skins_cfg.cc:222 src/skins/skins_cfg.cc:204
+msgid "Scope"
+msgstr "Досег"
+
+#: src/skins-qt/skins_cfg.cc:223 src/skins/skins_cfg.cc:205
+msgid "Voiceprint / VU meter"
+msgstr "Режим отиска гласа / ВУ мерач"
+
+#: src/skins-qt/skins_cfg.cc:224 src/skins/skins_cfg.cc:206
+msgid "Off"
+msgstr "Искључено"
+
+#: src/skins-qt/skins_cfg.cc:228 src/skins-qt/skins_cfg.cc:253
+#: src/skins-qt/skins_cfg.cc:259 src/skins/skins_cfg.cc:210
+#: src/skins/skins_cfg.cc:235 src/skins/skins_cfg.cc:241
+msgid "Normal"
+msgstr "Нормалан"
+
+#: src/skins-qt/skins_cfg.cc:229 src/skins-qt/skins_cfg.cc:254
+#: src/skins/skins_cfg.cc:211 src/skins/skins_cfg.cc:236
+msgid "Fire"
+msgstr "Ватра"
+
+#: src/skins-qt/skins_cfg.cc:230 src/skins/skins_cfg.cc:212
+msgid "Vertical lines"
+msgstr "Усправне линије"
+
+#: src/skins-qt/skins_cfg.cc:234 src/skins/skins_cfg.cc:216
+msgid "Lines"
+msgstr "Линије"
+
+#: src/skins-qt/skins_cfg.cc:235 src/skins/skins_cfg.cc:217
+msgid "Bars"
+msgstr "Траке"
+
+#: src/skins-qt/skins_cfg.cc:239 src/skins/skins_cfg.cc:221
+msgid "Slowest"
+msgstr "Најспорије"
+
+#: src/skins-qt/skins_cfg.cc:240 src/skins/skins_cfg.cc:222
+msgid "Slow"
+msgstr "Споро"
+
+#: src/skins-qt/skins_cfg.cc:241 src/skins/skins_cfg.cc:223
+#: src/soxr/sox-resampler.cc:153
+msgid "Medium"
+msgstr "Средње"
+
+#: src/skins-qt/skins_cfg.cc:242 src/skins/skins_cfg.cc:224
+msgid "Fast"
+msgstr "Брзо"
+
+#: src/skins-qt/skins_cfg.cc:243 src/skins/skins_cfg.cc:225
+msgid "Fastest"
+msgstr "Најбрже"
+
+#: src/skins-qt/skins_cfg.cc:247 src/skins/skins_cfg.cc:229
+msgid "Dots"
+msgstr "Тачке"
+
+#: src/skins-qt/skins_cfg.cc:248 src/skins/skins_cfg.cc:230
+msgid "Line"
+msgstr "Линија"
+
+#: src/skins-qt/skins_cfg.cc:249 src/skins/skins_cfg.cc:231
+msgid "Solid"
+msgstr "Испуњено"
+
+#: src/skins-qt/skins_cfg.cc:255 src/skins/skins_cfg.cc:237
+msgid "Ice"
+msgstr "Лед"
+
+#: src/skins-qt/skins_cfg.cc:260 src/skins/skins_cfg.cc:242
+msgid "Smooth"
+msgstr "Глатко"
+
+#: src/skins-qt/skins_cfg.cc:264 src/skins/skins_cfg.cc:246
+msgid "Coloring:"
+msgstr "Боја:"
+
+#: src/skins-qt/skins_cfg.cc:267 src/skins/skins_cfg.cc:249
+msgid "Style:"
+msgstr "Изглед:"
+
+#: src/skins-qt/skins_cfg.cc:270 src/skins/skins_cfg.cc:252
+msgid "Falloff:"
+msgstr "Опадање:"
+
+#: src/skins-qt/skins_cfg.cc:273 src/skins/skins_cfg.cc:255
+msgid "Peak falloff:"
+msgstr "Опадање врхова:"
+
+#: src/skins-qt/skins_cfg.cc:279 src/skins/skins_cfg.cc:261
+msgid "Scope Style:"
+msgstr "Режим досега:"
+
+#: src/skins-qt/skins_cfg.cc:282 src/skins/skins_cfg.cc:264
+msgid "Voiceprint Coloring:"
+msgstr "Обојавање отиска гласа:"
+
+#: src/skins-qt/skins_cfg.cc:285 src/skins/skins_cfg.cc:267
+msgid "VU Meter Style:"
+msgstr "Стил ВУ мерача:"
+
+#: src/skins-qt/skins_cfg.cc:291 src/skins/skins_cfg.cc:273
+msgid "<b>Type</b>"
+msgstr "<b>Врста</b>"
+
+#: src/skins-qt/skins_cfg.cc:292 src/skins/skins_cfg.cc:274
+msgid "Visualization type:"
+msgstr "Врста приказивања:"
+
+#: src/skins-qt/skins_cfg.cc:295 src/skins/skins_cfg.cc:277
+msgid "<b>Analyzer</b>"
+msgstr "<b>Анализатор</b>"
+
+#: src/skins-qt/skins_cfg.cc:296 src/skins/skins_cfg.cc:278
+msgid "Show peaks"
+msgstr "Прикажи врхунце"
+
+#: src/skins-qt/skins_cfg.cc:305 src/skins/skins_cfg.cc:287
+msgid "Visualization"
+msgstr "Приказивање"
+
+#: src/skins-qt/skinselector.cc:98 src/skins/skinselector.cc:111
+msgid "Archived Winamp 2.x skin"
+msgstr "Архивирана Винамп 2.x маска"
+
+#: src/skins-qt/skinselector.cc:102 src/skins/skinselector.cc:115
+msgid "Unarchived Winamp 2.x skin"
+msgstr "Неархивирана Винамп 2.x маска"
+
+#: src/skins/search-select.cc:75
+msgid "Search entries in active playlist"
+msgstr "Претражи ставке у активном списку нумера"
+
+#: src/skins/search-select.cc:81
+msgid ""
+"Select entries in playlist by filling one or more fields. Fields use regular "
+"expressions syntax, case-insensitive. If you don't know how regular "
+"expressions work, simply insert a literal portion of what you're searching "
+"for."
+msgstr ""
+"Обележите ставке у списку нумера попуњавајући једно или више поља. Поља "
+"користе синтаксу обичних израза, не разликују величину слова. Ако не знате "
+"како обични изрази функционишу, једноставно дословно унесите део онога што "
+"тражите."
+
+#: src/skins/search-select.cc:89
+msgid "Title:"
+msgstr "Наслов:"
+
+#: src/skins/search-select.cc:95
+msgid "Album:"
+msgstr "Албум:"
+
+#: src/skins/search-select.cc:101
+msgid "Artist:"
+msgstr "Извођач:"
+
+#: src/skins/search-select.cc:107
+msgid "File Name:"
+msgstr "Назив датотеке:"
+
+#: src/skins/search-select.cc:115
+msgid "Clear previous selection before searching"
+msgstr "Обриши претходни избор пре претраге"
+
+#: src/skins/search-select.cc:118
+msgid "Automatically toggle queue for matching entries"
+msgstr "Подударајуће ставке самостално пребаци у ред"
+
+#: src/skins/search-select.cc:121
+msgid "Create a new playlist with matching entries"
+msgstr "Направи нови списак нумера са подударајућим ставкама"
+
+#: src/sndfile/plugin.cc:39
+msgid "Sndfile Plugin"
+msgstr "Прикључак звучне датотеке"
+
+#: src/sndfile/plugin.cc:357
+msgid ""
+"Based on the xmms_sndfile plugin:\n"
+"Copyright (C) 2000, 2002 Erik de Castro Lopo\n"
+"\n"
+"Adapted for Audacious by Tony Vroon <chainsaw@gentoo.org>\n"
+"\n"
+"This program is free software; you can redistribute it and/or modify it "
+"under the terms of the GNU General Public License as published by the Free "
+"Software Foundation; either version 2 of the License, or (at your option) "
+"any later version.\n"
+"\n"
+"This program is distributed in the hope that it will be useful, but WITHOUT "
+"ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or "
+"FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for "
+"more details.\n"
+"\n"
+"You should have received a copy of the GNU General Public License along with "
+"this program; if not, write to the Free Software Foundation, Inc., 51 "
+"Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA."
+msgstr ""
+"Заснован на прикључку иксммс_звучнедатотеке:\n"
+"Ауторска права (C) 2000, 2002 Ерик де Кастро Лопо\n"
+"\n"
+"За Безочника га је прилагодио Тони Врун <chainsaw@gentoo.org>\n"
+"\n"
+"Овај програм је слободан софтвер; можете га прослеђивати\n"
+"и/или мењати под условима Гнуове Опште јавне лиценце коју је\n"
+"објавила Задужбина слободног софтвера; верзије 2 лиценце\n"
+"или (по вашем избору) било које новије верзије.\n"
+"\n"
+"Овај програм се расподељује у нади да ће бити користан,\n"
+"али БЕЗ ИКАКВЕ ГАРАНЦИЈЕ; чак и без примењене гаранције\n"
+"ТРЖИШНЕ ВРЕДНОСТИ или ПРИЛАГОЂЕНОСТИ ОДРЕЂЕНОЈ НАМЕНИ.\n"
+"Погледајте ГНУ Општу јавну лиценцу за више детаља.\n"
+"\n"
+"Требали сте да примите примерак Гнуове Опште јавне лиценце\n"
+"уз овај програм; ако нисте, пишите Задужбини слободног\n"
+"софтва на адресу: Free Software Foundation, Inc.,\n"
+"51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA."
+
+#: src/sndio/sndio.cc:43
+msgid "Sndio Output"
+msgstr "Излаз звкуи"
+
+#: src/sndio/sndio.cc:98
+msgid "Device (blank for default):"
+msgstr "Уређај (празно за основно):"
+
+#: src/sndio/sndio.cc:100
+msgid "Save and restore volume:"
+msgstr "Сачувај и врати јачину звка:"
+
+#: src/sndio/sndio.cc:181
+#, c-format
+msgid "Sndio error: Unsupported audio format (%d)"
+msgstr "Звкуи грешка: Неподржан запис звука (%d)"
+
+#: src/sndio/sndio.cc:192
+msgid "Sndio error: sio_open() failed"
+msgstr "Звкуи грешка: није успело „sio_open()“"
+
+#: src/sndio/sndio.cc:221
+msgid "Sndio error: sio_setpar() failed"
+msgstr "Звкуи грешка: није успело „sio_setpar()“"
+
+#: src/sndio/sndio.cc:233
+msgid "Sndio error: sio_start() failed"
+msgstr "Звкуи грешка: није успело „sio_start()“"
+
+#: src/songchange/song_change.cc:33
+msgid "Song Change"
+msgstr "Промена песме"
+
+#: src/songchange/song_change.cc:268
+msgid "<b>Commands</b>"
+msgstr "<b>Наредбе</b>"
+
+#: src/songchange/song_change.cc:270
+msgid "Command to run when starting a new song:"
+msgstr "Наредба за покретање приликом почетка нове песме:"
+
+#: src/songchange/song_change.cc:273
+msgid "Command to run at the end of a song:"
+msgstr "Наредба за покретање при крају песме:"
+
+#: src/songchange/song_change.cc:276
+msgid "Command to run at the end of the playlist:"
+msgstr "Наредба за покретање при крају списка нумера:"
+
+#: src/songchange/song_change.cc:279
+msgid "Command to run when song title changes (for network streams):"
+msgstr "Наредба за покретање када се промени наслов песме (за мрежне токове):"
+
+#: src/songchange/song_change.cc:282
+msgid ""
+"You can use the following format codes, which will be replaced before "
+"running the command (not all are useful for the end-of-playlist command):"
+msgstr ""
+"Можете да користите следеће шифре записа, које ће бити замењене пре "
+"покретања наредбе (нису све корисне за наредбу крај-списка-нумера):"
+
+#: src/songchange/song_change.cc:285
+msgid ""
+"%a: Artist\n"
+"%b: Album\n"
+"%c: Number of channels\n"
+"%f: File name (full path)\n"
+"%F: Frequency (Hertz)\n"
+"%l: Length (milliseconds)\n"
+"%n or %s: Formatted title (see playlist settings)\n"
+"%p: Currently playing (1 or 0)\n"
+"%r: Rate (bits per second)\n"
+"%t: Playlist position\n"
+"%T: Title (unformatted)"
+msgstr ""
+"%a: Извођач\n"
+"%b: Албум\n"
+"%c: Број канала\n"
+"%f: Назив датотеке (пуна путања)\n"
+"%F: Учестаност (Херца)\n"
+"%l: Трајање (у милисекундама)\n"
+"%n или %s: Обликовани наслов (видите подешавања списка нумера)\n"
+"%p: Тренутно пуштена (1 или 0)\n"
+"%r: Проток (у битима у секунди)\n"
+"%t: Место на списку нумера\n"
+"%T: Наслов (необликовано)"
+
+#: src/songchange/song_change.cc:296
+msgid ""
+"Parameters passed to the shell should be enclosed in quotation marks.  "
+"Unquoted parameters may lead to unexpected results."
+msgstr ""
+"Параметри прослеђени љусци би требало да буду под знацима наводника.  "
+"Параметри без наводника могу довести до неочекиваних резултата."
+
+#: src/song-info-qt/song-info.cc:33
+msgid "Song Info"
+msgstr "Подаци о песми"
+
+#: src/soxr/sox-resampler.cc:44
+msgid "SoX Resampler"
+msgstr "СоКС поновни узорковач"
+
+#: src/soxr/sox-resampler.cc:145
+msgid ""
+"SoX Resampler Plugin for Audacious\n"
+"Copyright 2013 Michał Lipski\n"
+"\n"
+"Based on Sample Rate Converter Plugin:\n"
+"Copyright 2010-2012 John Lindgren"
+msgstr ""
+"Прикључак СоКС поновног узорковања за Безочника\n"
+"Ауторска права 2013 Михаљ Липски\n"
+"\n"
+"Засновано на прикључку претварача протока узорка:\n"
+"Ауторска права 2010-2012 Џон Линдгрин"
+
+#: src/soxr/sox-resampler.cc:151
+msgid "Quick"
+msgstr "Брзо"
+
+#: src/soxr/sox-resampler.cc:152
+msgid "Low"
+msgstr "Ниско"
+
+#: src/soxr/sox-resampler.cc:154
+msgid "High"
+msgstr "Високо"
+
+#: src/soxr/sox-resampler.cc:155
+msgid "Very High"
+msgstr "Врло високо"
+
+#: src/soxr/sox-resampler.cc:159
+msgid "Quality:"
+msgstr "Квалитет:"
+
+#: src/speedpitch/speed-pitch.cc:54
+msgid "Speed and Pitch"
+msgstr "Брзина и врхунац"
+
+#: src/speedpitch/speed-pitch.cc:226
+msgid "<b>Speed and Pitch</b>"
+msgstr "<b>Брзина и врхунац</b>"
+
+#: src/speedpitch/speed-pitch.cc:227
+msgid "Speed:"
+msgstr "Брзина:"
+
+#: src/speedpitch/speed-pitch.cc:230
+msgid "Pitch:"
+msgstr "Врхунац:"
+
+#: src/statusicon-qt/statusicon.cc:43 src/statusicon/statusicon.cc:47
+msgid "Status Icon"
+msgstr "Иконица стања"
+
+#: src/statusicon-qt/statusicon.cc:65
+msgid ""
+"Status Icon Plugin (partial port for Qt interface)\n"
+"\n"
+"Copyright 2005-2007 Giacomo Lozito <james@develia.org>\n"
+"Copyright 2010 Michał Lipski <tallica@o2.pl>\n"
+"Copyright 2015 Eugene Paskevich <eugene@raptor.kiev.ua>\n"
+"\n"
+"This plugin provides a status icon, placed in\n"
+"the system tray area of the window manager."
+msgstr ""
+"Прикључак иконице стања (делимични прикључник за Кут сучеље)\n"
+"\n"
+"Ауторска права 2005-2007 Ђакомо Лоцито <james@develia.org>\n"
+"Ауторска права 2010 Михал Липски <tallica@o2.pl>\n"
+"Ауторска права 2015 Јуџин Пашкевич <eugene@raptor.kiev.ua>\n"
+"\n"
+"Овај додатак обезбеђује иконицу стања, смештену\n"
+"у области фиоке система управника прозора."
+
+#: src/statusicon-qt/statusicon.cc:78 src/statusicon/statusicon.cc:387
+msgid "Close to the system tray"
+msgstr "Затвори у системску касету"
+
+#: src/statusicon-qt/statusicon.cc:85
+msgid "_Hide"
+msgstr "_Сакриј"
+
+#: src/statusicon-qt/statusicon.cc:86
+msgid "_Restore"
+msgstr "_Поврати"
+
+#: src/statusicon-qt/statusicon.cc:95 src/statusicon/statusicon.cc:284
+msgid "Se_ttings ..."
+msgstr "_Подешавања ..."
+
+#: src/statusicon/statusicon.cc:370
+msgid ""
+"Status Icon Plugin\n"
+"\n"
+"Copyright 2005-2007 Giacomo Lozito <james@develia.org>\n"
+"Copyright 2010 Michał Lipski <tallica@o2.pl>\n"
+"\n"
+"This plugin provides a status icon, placed in\n"
+"the system tray area of the window manager."
+msgstr ""
+"Прикључак иконице стања\n"
+"\n"
+"Ауторска права 2005-2007 Ђакомо Лоцито < james@develia.org >\n"
+"Ауторска права 2010 Михал Липски <tallica@o2.pl>\n"
+"\n"
+"Овај додатак обезбеђује иконицу стања, смештену\n"
+"у области фиоке система управника прозора."
+
+#: src/statusicon/statusicon.cc:377
+msgid "<b>Mouse Scroll Action</b>"
+msgstr "<b>Радња клизања мишем</b>"
+
+#: src/statusicon/statusicon.cc:378
+msgid "Change volume"
+msgstr "Промени јачину звука"
+
+#: src/statusicon/statusicon.cc:381
+msgid "Change playing song"
+msgstr "Промени песму"
+
+#: src/statusicon/statusicon.cc:384
+msgid "<b>Other Settings</b>"
+msgstr "<b>Остала подешавања</b>"
+
+#: src/statusicon/statusicon.cc:385
+msgid "Disable the popup window"
+msgstr "Искључи прозор облачића"
+
+#: src/statusicon/statusicon.cc:389
+msgid "Advance in playlist when scrolling upward"
+msgstr "Напредује у списку нумера када клиза унапред"
+
+#: src/stereo_plugin/stereo.cc:19
+msgid "Extra Stereo"
+msgstr "Додатни стерео"
+
+#: src/stereo_plugin/stereo.cc:36
+msgid ""
+"Extra Stereo Plugin\n"
+"\n"
+"By Johan Levin, 1999"
+msgstr ""
+"Прикључак додатног стереа\n"
+"\n"
+"Написао га је Џон Левин, 1999"
+
+#: src/stereo_plugin/stereo.cc:44
+msgid "<b>Extra Stereo</b>"
+msgstr "<b>Додатни стерео</b>"
+
+#: src/tonegen/tonegen.cc:45
+msgid "Tone Generator"
+msgstr "Тонски генератор"
+
+#: src/tonegen/tonegen.cc:92
+#, c-format
+msgid "%s %.1f Hz"
+msgstr "%s %.1f Hz"
+
+#: src/tonegen/tonegen.cc:92
+msgid "Tone Generator: "
+msgstr "Тонски генератор: "
+
+#: src/tonegen/tonegen.cc:160
+msgid ""
+"Sine tone generator by Håvard Kvålen <havardk@xmms.org>\n"
+"Modified by Daniel J. Peng <danielpeng@bigfoot.com>\n"
+"\n"
+"To use it, add a URL: tone://frequency1;frequency2;frequency3;...\n"
+"e.g. tone://2000;2005 to play a 2000 Hz tone and a 2005 Hz tone"
+msgstr ""
+"Синусни тонски генератор је написао Хавард Квален <havardk@xmms.org>\n"
+"Прерадио га је Данијел Ј. Пенг <danielpeng@bigfoot.com>\n"
+"\n"
+"Да га користите, додајте адресу: tone://учесталост1;учесталост2;"
+"учесталост3;...\n"
+"нпр.: tone://2000;2005 да пустите тонове 2000 Hz и 2005 Hz"
+
+#: src/voice_removal/voice_removal.cc:28
+msgid "Voice Removal"
+msgstr "Уклањање гласа"
+
+#: src/vorbis/vorbis.cc:406
+msgid ""
+"Audacious Ogg Vorbis Decoder\n"
+"\n"
+"Based on the Xiph.org Foundation's Ogg Vorbis Plugin:\n"
+"http://www.xiph.org/\n"
+"\n"
+"Original code by:\n"
+"Tony Arcieri <bascule@inferno.tusculum.edu>\n"
+"\n"
+"Contributions from:\n"
+"Chris Montgomery <monty@xiph.org>\n"
+"Peter Alm <peter@xmms.org>\n"
+"Michael Smith <msmith@labyrinth.edu.au>\n"
+"Jack Moffitt <jack@icecast.org>\n"
+"Jorn Baayen <jorn@nl.linux.org>\n"
+"Håvard Kvålen <havardk@xmms.org>\n"
+"Gian-Carlo Pascutto <gcp@sjeng.org>\n"
+"Eugene Zagidullin <e.asphyx@gmail.com>"
+msgstr ""
+"Безочников Огг Ворбис декодер\n"
+"\n"
+"Заснован на Огг Ворбис прикључку Иксиф.орг удружења:\n"
+"http://www.xiph.org/\n"
+"\n"
+"Првобитни код је написао:\n"
+"Тони Арћери <bascule@inferno.tusculum.edu>\n"
+"\n"
+"Доприносиоци:\n"
+"Крис Монтгомери <monty@xiph.org>\n"
+"Питер Алм <peter@xmms.org>\n"
+"Мајкл Смит <msmith@labyrinth.edu.au>\n"
+"Џек Мофит <jack@icecast.org>\n"
+"Јорн Бајен <jorn@nl.linux.org>\n"
+"Хавард Квален <havardk@xmms.org>\n"
+"Ђанкарло Паскуто <gcp@sjeng.org>\n"
+"Јуџон Загидулин <e.asphyx@gmail.com>"
+
+#: src/vorbis/vorbis.h:18
+msgid "Ogg Vorbis Decoder"
+msgstr "Огг Ворбис декодер"
+
+#: src/vtx/info.cc:24
+#, c-format
+msgid "Details about %s"
+msgstr "Појединости о „%s“"
+
+#: src/vtx/info.cc:26
+msgid ""
+"Title: %t\n"
+"Author: %a\n"
+"From: %f\n"
+"Tracker: %T\n"
+"Comment: %C\n"
+"Chip type: %c\n"
+"Stereo: %s\n"
+"Loop: %l\n"
+"Chip freq: %F\n"
+"Player Freq: %P\n"
+"Year: %y"
+msgstr ""
+"Наслов: %t\n"
+"Извођач: %a\n"
+"Од: %f\n"
+"Пратилац: %T\n"
+"Напомена: %C\n"
+"Врста чипа: %c\n"
+"Стерео: %s\n"
+"Понављање: %l\n"
+"Учестаност чипа: %F\n"
+"Учестаност пуштача: %P\n"
+"Година: %y"
+
+#: src/vtx/vtx.cc:38
+msgid "VTX Decoder"
+msgstr "ВТКС декодер"
+
+#: src/vtx/vtx.cc:176
+msgid ""
+"Vortex file format player by Sashnov Alexander <sashnov@ngs.ru>\n"
+"Based on in_vtx.dll by Roman Sherbakov <v_soft@microfor.ru>\n"
+"Audacious plugin by Pavel Vymetalek <pvymetalek@seznam.cz>"
+msgstr ""
+"Програм за пуштање Вортекс датотека је написао Сашнов Александер "
+"<sashnov@ngs.ru>\n"
+"Заснован је на „in_vtx.dll“ који је написао Роман Шербаков <v_soft@microfor."
+"ru>\n"
+"Прикључак за Безочника је написао Павел Виметалек <pvymetalek@seznam.cz>"
+
+#: src/waveout/waveout.cc:43
+msgid "Win32 waveOut"
+msgstr ""
+
+#: src/waveout/waveout.cc:69
+msgid ""
+"Win32 waveOut Plugin for Audacious\n"
+"Copyright 2016 John Lindgren"
+msgstr ""
+
+#: src/wavpack/wavpack.cc:24
+msgid "WavPack Decoder"
+msgstr "Вејвпак декодер"
+
+#: src/wavpack/wavpack.cc:211
+msgid "lossy (hybrid)"
+msgstr "ослабљено (хибридно)"
+
+#: src/wavpack/wavpack.cc:213
+msgid "lossy"
+msgstr "ослабљено"
+
+#: src/wavpack/wavpack.cc:251
+msgid ""
+"Copyright 2006 William Pitcock <nenolod@nenolod.net>\n"
+"\n"
+"Some of the plugin code was by Miles Egan."
+msgstr ""
+"Ауторска права 2006 Вилијам Питкок <nenolod@nenolod.net>\n"
+"\n"
+"Нешто кода прикључка је написао Мајлс Иган."
+
+#: src/xsf/plugin.cc:50
+msgid "2SF Decoder"
+msgstr "2СФ декодер"
+
+#: src/xsf/plugin.cc:231
+msgid "<b>XSF Configuration</b>"
+msgstr "<b>ИксСФ подешавања</b>"
+
+#: src/xsf/plugin.cc:232
+msgid "Ignore length from file"
+msgstr "Занемари трајање из датотеке"
+
+#: src/xspf/xspf.cc:90
+msgid "XML Shareable Playlists (XSPF)"
+msgstr "ИксМЛ дељиви спискови пуштања (XSPF)"

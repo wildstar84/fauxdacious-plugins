@@ -1,0 +1,41 @@
+ffaudio todo
+------------
+
+- Windows version does not always shut down the video window when shutting 
+  down without stopping playback first.  Windows version sometimes produces 
+  black playback window when stopping and restarting play on same item 
+  fixable by advancing playlist.
+
+- Tagging: reading should probably be done through ffmpeg 
+  (unless there is a reason not to), writing through libaudtag.
+
+Candidates with problems:
+
+  * Apple Lossless Audio Codec (alac): typically uses same container as
+    AAC (aka MP4), and hogs all files with that. This is a problem from
+    probing side of things.
+
+  * True Audio (tta): TTA files use ID3 tags, but libav* does not read
+    those for TTA files. Works otherwise.
+
+  * Shorten (shn): file durations are wrong.
+
+  * WAVE (wav): file durations are wrong.  Some "Live_FLV" streams are wrong,
+    showing 419:57:08 for duration.
+
+  * Musepack (mpc): SV7 files seem to work okay, however SV8 files
+    cause severe artifacts when seeked and under some circumstances
+    apparently cause the decoder to corrupt stack -> crash.
+
+Other notes:
+
+  * AAC: FFmpeg currently only supports AAC-LC, though there have been
+    discussions on ffmpeg-devel about adding SBR (Spectral Band Replication,
+    needed for HE-AAC v1) and PS (Parametric Stereo, needed for HE-AAC v2
+    together with SBR).
+
+    For now, FAAD-based decoder provides better compatibility, like
+    "AAC+" which actually is HE-AAC v2.
+
+  * RealAudio formats: FFmpeg supports some Real codecs, but the demuxer
+    seems to get duration etc. wrong lots of the time.
