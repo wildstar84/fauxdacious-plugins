@@ -24,7 +24,7 @@
 #include <libaudcore/index.h>
 #include <libaudcore/mainloop.h>
 
-#include "dialog_windows.h"
+#include "../ui-common/dialogs-qt.h"
 
 #include <QMainWindow>
 

@@ -42,8 +42,7 @@
 #include "ui_statusbar.h"
 #include "playlist_util.h"
 
-#include "../ui-common/menu-ops.cc"
-#include "../ui-common/menu-ops-gtk.cc"
+#include "../ui-common/menu-ops.h"
 
 static const char * const gtkui_defaults[] = {
     "infoarea_show_vis", "TRUE",
@@ -811,15 +810,21 @@ bool GtkUI::init ()
         aud_plugin_add_watch (search_tool, search_tool_toggled, nullptr);
     }
 
-    /* playback buttons */
+    /* open/add buttons */
     toolbar_button_add (toolbar, button_open_pressed, "document-open");
     toolbar_button_add (toolbar, button_add_pressed, "list-add");
+
+    gtk_toolbar_insert ((GtkToolbar *) toolbar, gtk_separator_tool_item_new (), -1);
+
+    /* playback buttons */
     toolbar_button_add (toolbar, aud_drct_pl_prev, "media-skip-backward");
     toolbar_button_add (toolbar, aud_drct_pl_next, "media-skip-forward");
     button_play = toolbar_button_add (toolbar, aud_drct_play_pause, "media-playback-start");
     button_stop = toolbar_button_add (toolbar, aud_drct_stop, "media-playback-stop");
     button_record = toggle_button_new ("media-record", toggle_record);
     gtk_toolbar_insert ((GtkToolbar *) toolbar, button_record, -1);
+
+    gtk_toolbar_insert ((GtkToolbar *) toolbar, gtk_separator_tool_item_new (), -1);
 
     /* time slider and label */
     GtkToolItem * boxitem1 = gtk_tool_item_new ();
@@ -842,6 +847,8 @@ bool GtkUI::init ()
 
     gtk_widget_set_no_show_all (slider, true);
     gtk_widget_set_no_show_all (label_time, true);
+
+    gtk_toolbar_insert ((GtkToolbar *) toolbar, gtk_separator_tool_item_new (), -1);
 
     /* repeat and shuffle buttons */
     button_repeat = toggle_button_new ("media-playlist-repeat", toggle_repeat);

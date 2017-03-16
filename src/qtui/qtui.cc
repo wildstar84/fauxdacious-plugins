@@ -29,9 +29,6 @@
 #include "main_window.h"
 #include "settings.h"
 
-#include "../ui-common/menu-ops.cc"
-#include "../ui-common/menu-ops-qt.cc"
-
 class QtUI : public audqt::QtIfacePlugin
 {
 private:
