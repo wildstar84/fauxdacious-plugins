@@ -28,6 +28,7 @@
 #include <ne_session.h>
 
 #include <libaudcore/audstrings.h>
+#include <libaudcore/runtime.h>
 
 #include "cert_verification.h"
 
@@ -373,6 +374,9 @@ int neon_vfs_verify_environment_ssl_certs (void * userdata, int failures,
 {
     // First check the certificate file, if we have one.
     const char * sslCertFile = g_getenv ("SSL_CERT_FILE");
+
+    /* JWT:ADDED FOR Youtube / Vimeo PLAY ON WINDOWS, SINCE WINDOWS SEEMS TO CHECK & NOT TRUST CERT. ISSUER?! */
+    if (aud_get_bool ("neon", "ignore_ssl_certs"))  return 0;
 
     if (sslCertFile != nullptr)
     {
