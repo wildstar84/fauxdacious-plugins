@@ -150,7 +150,7 @@ YTDLFile::YTDLFile (const char * filename)
 
     String youtubedl_Command = aud_get_str("youtubedl", "command");
     if (! youtubedl_Command[0])
-        youtubedl_Command = String ("youtube-dl --no-continue --no-playlist --no-cache-dir --no-progress --no-call-home --youtube-skip-dash-manifest --prefer-ffmpeg -q -f mp4 --no-part");
+        youtubedl_Command = String ("youtube-dl --output /tmp --socket-timeout 420 --embed-thumbnail --no-playlist --no-cache-dir --no-progress --no-call-home --youtube-skip-dash-manifest --prefer-ffmpeg -4 -q -f mp4 --no-part");
 
     const char * colon = filename ? strrchr (filename, ':') : filename;
     StringBuf pipein = str_printf ("%s %s%s %s", (const char *)youtubedl_Command, "https", colon, " -o - 2>/dev/null");
