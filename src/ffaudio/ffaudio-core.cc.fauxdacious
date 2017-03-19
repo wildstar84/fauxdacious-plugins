@@ -23,10 +23,8 @@
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
-#if SDL == 2
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
- //#include <SDL_video.h>
-#endif
 
 #undef FFAUDIO_DOUBLECHECK  /* Doublecheck probing result for debugging purposes */
 #undef FFAUDIO_NO_BLACKLIST /* Don't blacklist any recognized codecs/formats */
@@ -61,7 +59,6 @@ extern "C" {
 #ifndef _WIN32
 #include <X11/Xlib.h>
 #endif
-#include <SDL.h>
 #endif
 
 #if CHECK_LIBAVFORMAT_VERSION (57, 33, 100, 57, 5, 0)
@@ -146,9 +143,7 @@ const PreferencesWidget FFaudio::widgets[] = {
 const PluginPreferences FFaudio::prefs = {{widgets}};
 
 static bool play_video;  /* JWT: TRUE IF USER IS CURRENTLY PLAYING VIDEO (KILLING VID. WINDOW TURNS OFF)! */
-#if SDL == 2
-static SDL_Window * screen;  /* JWT: MUST DECLARE VIDEO SCREEN-WINDOW HERE */
-#else
+#if SDL != 2
 #ifdef _WIN32
 HWND hwnd;
 #endif
@@ -251,17 +246,6 @@ void QFlush (pktQueue *Q)
 
 }
 
-AVPacket * QFront (pktQueue *Q)
-{
-    if (! Q->size)
-    {
-        //AUDDBG ("Queue is Empty\n");
-        return nullptr;
-    }
-    /* Return the element which is at the front*/
-    return & Q->elements[Q->front];
-}
-
 bool Enqueue (pktQueue *Q, AVPacket element)
 {
     /* If the Queue is full, we cannot push an element into it as there is no space for it.*/
@@ -355,41 +339,6 @@ static void ffaudio_log_cb (void * avcl, int av_level, const char * fmt, va_list
 bool FFaudio::init ()
 {
     AUDINFO ("Starting up FFaudio (and SDL).\n");
-#if SDL == 2
-    /* JWT:FIXME:  THIS *MUST* BE DONE *EARLY* AT STARTUP (SO THAT IT'S DONE IN THE *MAIN* THREAD
-        otherwise SEGFAULTS IF A GTK WINDOW (ie. playlist or about) IS OPENED LATER!
-        (WE NEED TO FIGURE OUT HOW TO CALL SDL2_CreateWindow () IN THE "MAIN" THREAD?!) 
-        SEE ALSO:  libaudcore/plugin-registry.cc!
-        NOTE:  WE ALSO DO SDL_INIT_AUDIO HERE TOO (INSTEAD OF IN sdlout.cc)
-    */
-    screen = nullptr;
-    play_video = false;
-    if (SDL_Init (SDL_INIT_AUDIO | SDL_INIT_VIDEO) < 0)
-    {
-        AUDERR ("Failed to init SDL (no video playing): %s.\n", SDL_GetError ());
-        aud_set_bool ("ffaudio", "play_video", false);
-    }
-    else
-    {
-        Uint32 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
-    	   if (aud_get_bool ("ffaudio", "allow_highdpi"))
-    	       flags |= SDL_WINDOW_ALLOW_HIGHDPI;
-
-        screen = SDL_CreateWindow ("Fauxdacious Video", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
-            1, 1, flags);
-        if (! screen)
-        {
-            AUDERR ("Failed to create SDL window (no video playing): %s.\n", SDL_GetError ());
-            aud_set_bool ("ffaudio", "play_video", false);
-        }
-#ifdef _WIN32
-        SDL_SetHint (SDL_HINT_VIDEO_X11_NET_WM_PING, "0");
-#endif
-    }
-#else
-    if (SDL_Init (SDL_INIT_AUDIO) < 0)
-        AUDERR ("Failed to init SDL (audio): %s.\n", SDL_GetError ());
-#endif
     
     aud_config_set_defaults ("ffaudio", defaults);
     av_register_all ();
@@ -405,13 +354,6 @@ bool FFaudio::init ()
 void FFaudio::cleanup ()
 {
     AUDINFO ("Shutting down FFaudio (and SDL).\n");
-#if SDL == 2
-    if (screen)
-    {
-        SDL_DestroyWindow (screen);
-        screen = nullptr;
-    }
-#endif
 
     SDL_Quit ();
     extension_dict.clear ();
@@ -942,7 +884,7 @@ void FFaudio::write_videoframe (SwsContext * sws_ctx, CodecInfo * vcinfo,
             if (last_resized)  /* BLIT THE FRAME, BUT ONLY IF WE'RE NOT CURRENTLY RESIZING THE WINDOW! */
             {
 #if SDL == 2
-                //SDL_RenderClear (renderer.get ());
+                //SDL_RenderClear (renderer);
                 SDL_UpdateYUVTexture (bmp, nullptr, vframe->data[0], vframe->linesize[0], 
                     vframe->data[1], vframe->linesize[1], vframe->data[2], vframe->linesize[2]);
                 SDL_RenderCopy (renderer, bmp, nullptr, nullptr);  // USE NULL TO GET IMAGE TO FIT WINDOW!
@@ -991,7 +933,7 @@ void FFaudio::write_videoframe (SwsContext * sws_ctx, CodecInfo * vcinfo,
 }
 
 #if SDL == 2
-static SDL_Renderer * createSDL2Renderer (bool myplay_video)
+static SDL_Renderer * createSDL2Renderer (SDL_Window * screen, bool myplay_video)
 {
     SDL_Renderer * renderer = nullptr;
     if (screen && myplay_video)
@@ -1000,7 +942,7 @@ static SDL_Renderer * createSDL2Renderer (bool myplay_video)
     return renderer;
 }
 
-static SDL_Texture * createSDL2Texture (SDL_Renderer * renderer, bool myplay_video, int width, int height)
+static SDL_Texture * createSDL2Texture (SDL_Window * screen, SDL_Renderer * renderer, bool myplay_video, int width, int height)
 {
     SDL_Texture * texture = nullptr;
     if (myplay_video && renderer)
@@ -1023,7 +965,7 @@ static SDL_Texture * createSDL2Texture (SDL_Renderer * renderer, bool myplay_vid
 
 /* WHEN EXITING PLAY, WE SAVE THE WINDOW-POSITION & SIZE SO WINDOW CAN POP UP IN SAME POSITION NEXT TIME! */
 #if SDL == 2
-void save_window_xy (int video_fudge_x, int video_fudge_y)
+void save_window_xy (SDL_Window * screen, int video_fudge_x, int video_fudge_y)
 {
     int x, y, w, h;
 
@@ -1102,10 +1044,6 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     if (! ic)
         return false;
 
-#if SDL == 2
-    SmartPtr<SDL_Renderer, SDL_DestroyRenderer> renderer (createSDL2Renderer (play_video));
-#endif
-
     AUDDBG ("FFaudio::play () -----------------Playing %s.\n", filename);
 
     int errcount = 0;
@@ -1126,7 +1064,6 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     int video_doreset_width = 0;   // WINDOW-SIZE BELOW WHICH WINDOW WILL SNAP BACK TO SIZE REQUESTED BY VIDEO STREAM:
     int video_doreset_height = 0;
     int video_qsize = 0;
-// int afcnt, vfcnt;
     time_t last_resizeevent_time = time (nullptr);  // TIME OF LAST RESIZE EVENT, SO WE CAN DETERMINE WHEN SAFE TO RE-ASPECT.
     float video_aspect_ratio = 0;  // ASPECT RATIO OF VIDEO, SAVED TO PERMIT RE-ASPECTING AFTER USER RESIZES (WARPS) WINDOW.
     /* JWT:SAVE (static)fromstdin's STATE AT START OF PLAY, SINCE PROBES WILL CHANGE IT IN PLAYLIST ADVANCE BEFORE WE CLOSE! */
@@ -1138,20 +1075,21 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     bool eof = false;
     bool last_resized = true;      // TRUE IF VIDEO-WINDOW HAS BEEN RE-ASPECTED SINCE LAST RESIZE EVENT (HAS CORRECT ASPECT RATIO).
     bool is_youtubedl = false;     // TRUE IF WE'RE STREAMING A Youtube-DL STREAM (UNSEEKABLE).
+    bool sdl_initialized = false;  // TRUE IF SDL (VIDEO) IS SUCCESSFULLY INITIALIZED.
     String ytdl_songtitle;         // SONG-TITLE SNIPPET TO ADD FOR Youtube-DL STREAMS THAT WE CAN'T GET METADATA FOR.
     pktQueue *pktQ = nullptr;      // QUEUE FOR VIDEO-PACKET QUEUEING.
     pktQueue *apktQ = nullptr;     // QUEUE FOR AUDIO-PACKET QUEUEING.
     SDL_Event       event;         // SDL EVENTS, IE. RESIZE, KILL WINDOW, ETC.
 #if SDL == 2
-    int video_fudge_x = 0; int video_fudge_y = 0;
+    int video_fudge_x = 0; int video_fudge_y = 0;  // FUDGE-FACTOR TO MAINTAIN VIDEO SCREEN LOCN. BETWEEN RUNS.
     bool needWinSzFudge = true;     // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
+    SDL_Window * screen = nullptr;  /* JWT: MUST DECLARE VIDEO SCREEN-WINDOW HERE */
 #ifdef _WIN32
     SDL_Texture * bmp = nullptr;    // CAN'T USE SMARTPTR HERE IN WINDOWS - renderer.get() FAILS IF VIDEO PLAY NOT TURNED ON?!
 #endif
 #else
-    bool sdl_initialized = false;
-    SDL_Overlay     *bmp = nullptr;
-    SDL_Surface     *screen = nullptr;
+    SDL_Surface * screen = nullptr;
+    SDL_Overlay * bmp = nullptr;
     struct SwsContext *sws_ctx = nullptr;
 #endif
 
@@ -1225,7 +1163,6 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         goto error_exit;
 
     myplay_video = play_video;
-
     /* JWT: IF abUSER ALSO WANTS TO PLAY VIDEO THEN WE SET UP POP-UP VIDEO SCREEN: */
     if (myplay_video)
     {
@@ -1289,9 +1226,9 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 #if SDL == 2
         if (video_xmove == -1)
             needWinSzFudge = false;  // NO FUDGING NEEDED IF WINDOW TO BE PLACED RANDOMLY BY WINDOWMANAGER!
-        else if (video_xmove >= 0 && video_xmove != 1)  // JWT:DEPRECIATED IN SDL2:
+        else if (video_xmove >= 0 && video_xmove != 1)  // (0 or 2)
 #else
-        if (video_xmove >= 0 && video_xmove != 1)
+        if (video_xmove >= 0 && video_xmove != 1)  // (0 or 2)
 #endif
         {
             char video_windowpos[40];
@@ -1357,7 +1294,30 @@ bool FFaudio::play (const char * filename, VFSFile & file)
             ? (float)video_width / (float)video_height : 1.0;   /* Fall thru to square to avoid possibliity of "/0"! */
 
         /* NOW "RESIZE" screen to user's wXh, if user set something: */
-#if SDL != 2
+#if SDL == 2
+        SDL_SetMainReady ();
+        if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0)
+        {
+            AUDERR ("Failed to init SDL (no video playing): %s.\n", SDL_GetError ());
+            myplay_video = false;
+            goto breakout1;
+        }
+        sdl_initialized = true;
+        Uint32 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
+    	   if (aud_get_bool ("ffaudio", "allow_highdpi"))
+    	       flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+
+        screen = SDL_CreateWindow ("Fauxdacious Video", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
+            video_width, video_height, flags);
+        if (! screen)
+        {
+            AUDERR ("Failed to create SDL window (no video playing): %s.\n", SDL_GetError ());
+            myplay_video = false;
+            goto breakout1;
+        }
+        else
+            SDL_SetHint (SDL_HINT_VIDEO_X11_NET_WM_PING, "0");
+#else
         screen = SDL_SetVideoMode (video_width, video_height, 0, SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_RESIZABLE);
         if (! screen) {
             AUDERR ("SDL: could not re-set video mode - will only play audio.\n");
@@ -1367,7 +1327,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 #ifdef _WIN32
         hwnd = GetActiveWindow ();
 #endif
-        if (SDL_InitSubSystem (SDL_INIT_VIDEO))
+        if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0)
         {
             AUDERR ("Could not initialize SDL video - %s\n", SDL_GetError ());
             myplay_video = false;
@@ -1375,7 +1335,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         }
         sdl_initialized = true;
 #ifndef _WIN32
-        if (video_xmove > 0)
+        if (video_xmove > 0)  // (1 or 2)
         {
             SDL_SysWMinfo info;
             SDL_VERSION (&info.version);
@@ -1394,21 +1354,9 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         video_windowtitle = String ();
         str_replace_char (titleBuf, '_', ' ');
 #if SDL == 2
-        if (! screen)
-        {
-            AUDERR ("e:SDL: could not create video window - no video play (%s)\n", SDL_GetError ());
-            myplay_video = false;
-            goto breakout1;
-        }
-        if (! renderer)
-        {
-            AUDERR ("e:SDL: could not create video renderer - no video play (%s)\n", SDL_GetError ());
-            myplay_video = false;
-            goto breakout1;
-        }
         SDL_SetWindowSize (screen, video_width, video_height);
 
-        if (video_xmove > 0)
+        if (video_xmove > 0)  // (1 or 2)
             SDL_SetWindowPosition (screen, video_window_x, video_window_y);
         if (aud_get_str ("ffaudio", "video_render_scale"))
             SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, aud_get_str ("ffaudio", "video_render_scale"));
@@ -1480,25 +1428,30 @@ breakout1:
     AUDDBG ("i:video queue size %d\n", video_qsize);
 
 #if SDL == 2
-    {   // SUBSCOPE FOR DECLARING TEXTURE AS SCOPED SMARTPOINTER:
-    bool myplay_video_started = myplay_video; // WHETHER OR NOT WE STARTED WITH VIDEO PLAYING SET UP.
+    {   // SUBSCOPE FOR DECLARING SDL2 TEXTURE AS SCOPED SMARTPOINTER:
     bool windowIsStable = false;    // JWT:SAVING AND RECREATING WINDOW CAUSES POSN. TO DIFFER BY THE WINDOW DECORATION SIZES, SO WE HAVE TO FUDGE FOR THAT!
     bool windowNowExposed = false;  // JWT:NEEDED TO PREVENT RESIZING WINDOW BEFORE EXPOSING ON MS-WINDOWS?!
+    SmartPtr<SDL_Renderer, SDL_DestroyRenderer> renderer (createSDL2Renderer (screen, myplay_video));
+    if (! renderer)
+    {
+        AUDERR ("e:SDL: could not create video renderer - no video play (%s)\n", SDL_GetError ());
+        myplay_video = false;
+    }
 #ifdef _WIN32
-    if (myplay_video && renderer)
-        bmp = createSDL2Texture (renderer.get (), myplay_video, vcinfo.context->width, vcinfo.context->height);
+#define bmpptr bmp
+    else  // CAN'T SMARTPTR THIS IN WINBLOWS SINCE FATAL ERROR (ON renderer.get IF NO RENDERER) IF VIDEO-PLAY TURNED OFF (COMPILER DIFFERENCE)!
+        bmp = createSDL2Texture (screen, renderer.get (), myplay_video, vcinfo.context->width, vcinfo.context->height);
 #else
-    SmartPtr<SDL_Texture, SDL_DestroyTexture> bmp (createSDL2Texture (renderer.get (), myplay_video, vcinfo.context->width, vcinfo.context->height));
+#define bmpptr bmp.get ()
+    SmartPtr<SDL_Texture, SDL_DestroyTexture> bmp (createSDL2Texture (screen, renderer.get (), myplay_video, vcinfo.context->width, vcinfo.context->height));
 #endif
     if (! bmp)
-        myplay_video_started = myplay_video = false;
-#ifdef _WIN32
-    else
-        SDL_Delay (50);
-#endif
+        myplay_video = false;
+#else
+#define bmpptr bmp
 #endif
 
-    /* OUTTER LOOP TO READ, QUEUE AND PROCESS AUDIO & VIDEO PACKETS FROM THE STREAM: */
+    /* OUTER LOOP TO READ, QUEUE AND PROCESS AUDIO & VIDEO PACKETS FROM THE STREAM: */
     while (1)
     {
         /* CHECK IF WE NEED TO QUIT (EOF OR USER PRESSED STOP BUTTON OR WENT TO ANOTHER SONG): */
@@ -1511,29 +1464,25 @@ breakout1:
                     AVPacket * pktRef;
                     while (1)   // WE PREFER TO OUTPUT ORDERED AS AUDIO, VIDEO, AUDIO, ...
                     {
-                        if ((pktRef = QFront (apktQ)))  // PROCESS NEXT AUDIO FRAME IN QUEUE:
+                        if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS NEXT AUDIO FRAME IN QUEUE:
                         {
                             write_audioframe (& cinfo, pktRef, out_fmt, planar);
                             Dequeue (apktQ);
                         }
-                        if ((pktRef = QFront (pktQ)))  // PROCESS NEXT VIDEO FRAME IN QUEUE:
+                        if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS NEXT VIDEO FRAME IN QUEUE:
                         {
 #if SDL == 2
-#ifdef _WIN32
-                            write_videoframe (renderer.get (), & vcinfo, bmp, pktRef, 
-#else
-                            write_videoframe (renderer.get (), & vcinfo, bmp.get (), pktRef, 
-#endif
-                                video_width, video_height, last_resized, & windowIsStable);
+                            write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
+                                    video_width, video_height, last_resized, & windowIsStable);
 #else
                             write_videoframe (sws_ctx, & vcinfo, bmp, pktRef, 
-                                video_width, video_height, last_resized);
+                                    video_width, video_height, last_resized);
 #endif
                             Dequeue (pktQ);
                         }
                         else
                             break;
-                        if ((pktRef = QFront (apktQ)))  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
+                        if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
                         {
                             write_audioframe (& cinfo, pktRef, out_fmt, planar);
                             Dequeue (apktQ);
@@ -1549,23 +1498,25 @@ breakout1:
             av_init_packet (& pkt);
             pkt.data=nullptr; pkt.size=0;
             write_audioframe (& cinfo, & pkt, out_fmt, planar);
+            if (myplay_video)  /* IF VIDEO-WINDOW STILL INTACT (NOT CLOSED BY USER PRESSING WINDOW'S CORNER [X]): */
 #if SDL == 2
-            if (myplay_video_started)  /* IF VIDEO IS OR WAS (BEFORE USER CLOSED VIDEO SCREEN) PLAYING: */
-            {
-#ifdef _WIN32
-                write_videoframe (renderer.get (), & vcinfo, bmp, & pkt, 
+                write_videoframe (renderer.get (), & vcinfo, bmpptr, & pkt, 
+                        video_width, video_height, last_resized, & windowIsStable);
 #else
-                write_videoframe (renderer.get (), & vcinfo, bmp.get (), & pkt, 
-#endif
-                    video_width, video_height, last_resized, & windowIsStable);
-#else
-            if (myplay_video)  /* IF VIDEO IS PLAYING (MUST BE FOR SDL1, ELSE VIDEO ALREADY CLOSED): */
-            {
                 write_videoframe (sws_ctx, & vcinfo, bmp, & pkt, 
-                    video_width, video_height, last_resized);
+                        video_width, video_height, last_resized);
 #endif
-            }
             av_free_packet (& pkt);
+#if SDL == 2
+#ifdef _WIN32
+            if (bmp)  // GOTTA FREE THIS BEFORE WE LEAVE SCOPE!
+            {
+                SDL_DestroyTexture (bmp);
+                SDL_Delay (50);
+                bmp = nullptr;
+            }
+#endif
+#endif
             goto error_exit;
         }
 
@@ -1603,6 +1554,16 @@ breakout1:
                 AUDERR ("av_read_frame error %d, giving up.\n", ret);
                 av_free_packet (& pkt);
                 returnok = false;
+#if SDL == 2
+#ifdef _WIN32
+                if (bmp)  // GOTTA FREE THIS BEFORE WE LEAVE SCOPE!
+                {
+                    SDL_DestroyTexture (bmp);
+                    SDL_Delay (50);
+                    bmp = nullptr;
+                }
+#endif
+#endif
                 goto error_exit;
             }
             else
@@ -1623,29 +1584,25 @@ breakout1:
             AVPacket * pktRef;
             while (1)  // TRY TO READ AT LEAST 1 AUDIO, THEN 1 VIDEO, BUT KEEP GOING UNTIL ONE QUEUE IS EMPTY:
             {
-                if ((pktRef = QFront (apktQ)))  // PROCESS NEXT AUDIO FRAME IN QUEUE:
+                if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS NEXT AUDIO FRAME IN QUEUE:
                 {
                     write_audioframe (& cinfo, pktRef, out_fmt, planar);
                     Dequeue (apktQ);
                 }
-                if ((pktRef = QFront (pktQ)))  // PROCESS NEXT VIDEO FRAME IN QUEUE:
+                if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS NEXT VIDEO FRAME IN QUEUE:
                 {
 #if SDL == 2
-#ifdef _WIN32
-                    write_videoframe (renderer.get (), & vcinfo, bmp, pktRef, 
-#else
-                    write_videoframe (renderer.get (), & vcinfo, bmp.get (), pktRef, 
-#endif
-                        video_width, video_height, last_resized, & windowIsStable);
+                    write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
+                            video_width, video_height, last_resized, & windowIsStable);
 #else
                     write_videoframe (sws_ctx, & vcinfo, bmp, pktRef, 
-                        video_width, video_height, last_resized);
+                            video_width, video_height, last_resized);
 #endif
                     Dequeue (pktQ);
                 }
                 else
                     break;
-                if ((pktRef = QFront (apktQ)))  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
+                if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
                 {
                     write_audioframe (& cinfo, pktRef, out_fmt, planar);
                     Dequeue (apktQ);
@@ -1683,24 +1640,46 @@ breakout1:
 #if SDL == 2
                 case SDL_QUIT:  /* USER CLICKED THE "X" IN UPPER-RIGHT CORNER, KILL VIDEO WINDOW BUT KEEP PLAYING AUDIO! */
                     AUDDBG ("i:SDL_QUIT (User killed video window for this play)!\n");
-                    if (screen)
+                    if (myplay_video)
                     {
-                        save_window_xy (video_fudge_x, video_fudge_y);
-                        SDL_HideWindow (screen);
+                        myplay_video = false;
+                        QFlush (pktQ);  // FLUSH ANY VIDEO PACKETS IN QUEUE SINCE WE CAN'T WRITE 'EM AFTER CLOSING.
+                        if (bmp)  // SMARTPTR OR NOT, WE GOTTA FREE THIS BEFORE CLOBBERING WINDOW!
+                            SDL_DestroyTexture (bmpptr);
+                        if (renderer)
+                            SDL_DestroyRenderer (renderer.get ());
+                        if (screen)
+                        {
+                            save_window_xy (screen, video_fudge_x, video_fudge_y);
+                            SDL_DestroyWindow (screen);           
+                            screen = nullptr;
+                        }
+                        if (sdl_initialized)
+                            SDL_QuitSubSystem (SDL_INIT_VIDEO);
                     }
-                    myplay_video = false;
                     break;
                 case SDL_WINDOWEVENT:
                     switch (event.window.event)
                     {
                         case SDL_WINDOWEVENT_CLOSE:  /* USER CLICKED THE "X" IN UPPER-RIGHT CORNER, KILL VIDEO WINDOW BUT KEEP PLAYING AUDIO! */
                             AUDDBG ("i:SDL_CLOSE (User killed video window for this play)!\n");
-                            if (screen)
+                            if (myplay_video)
                             {
-                                save_window_xy (video_fudge_x, video_fudge_y);
-                                SDL_HideWindow (screen);
+                                myplay_video = false;
+                                QFlush (pktQ);  // FLUSH ANY VIDEO PACKETS IN QUEUE SINCE WE CAN'T WRITE 'EM AFTER CLOSING.
+                                if (bmp)  // SMARTPTR OR NOT, WE GOTTA FREE THIS BEFORE CLOBBERING WINDOW!
+                                    SDL_DestroyTexture (bmpptr);
+                                if (renderer)
+                                    SDL_DestroyRenderer (renderer.get ());
+                                if (screen)
+                                {
+                                    save_window_xy (screen, video_fudge_x, video_fudge_y);
+                                    SDL_DestroyWindow (screen);           
+                                    screen = nullptr;
+                                }
+                                if (sdl_initialized)
+                                    SDL_QuitSubSystem (SDL_INIT_VIDEO);
                             }
-                            myplay_video = false;
                             break;
                         case SDL_WINDOWEVENT_RESIZED:  /* WINDOW CHANGED SIZE EITHER BY US OR BY USER DRAGGING WINDOW CORNER (WE DON'T KNOW WHICH HERE) */
                             if (! windowNowExposed)
@@ -1837,11 +1816,6 @@ breakout1:
 #if SDL == 2
                 SDL_SetWindowSize (screen, video_width, video_height);
                 SDL_Delay (50);
-#ifdef _WIN32
-                SDL_DestroyTexture (bmp);  /* WINBLOWS SEEMS TO NEED THE TEXTURE RE-CREATED AFTER RESIZING! */
-                bmp = createSDL2Texture (renderer.get (), myplay_video, vcinfo.context->width, vcinfo.context->height);
-                SDL_Delay (50);
-#endif
 #else
                 SDL_Rect rect;
                 //AUDDBG ("i:RESIZING IT to (%d, %d)\n", video_width, video_height);
@@ -1863,7 +1837,7 @@ breakout1:
                 last_resized = true;  // WE'VE RE-ASPECTED, SO ALLOW BLITTING TO RESUME!
             }
         }
-        /* WE HAVE TO WAIT UNTIL HERE FOR SDL_GetWindowPosition() TO RETURN THE CORRECT POSITION
+        /* (SDL2): WE HAVE TO WAIT UNTIL HERE FOR SDL_GetWindowPosition() TO RETURN THE CORRECT POSITION
            SO WE CAN CALCULATE A "FUDGE FACTOR" SINCE:  
            1) SDL_SetWindowPosition(x, y) FOLLOWED BY SDL_GetWindowPosition() DOES *NOT* 
            RETURN (x, y) BUT x+<windowdecorationwidth>, y+windowdecorationheight!
@@ -1881,7 +1855,6 @@ breakout1:
 #if SDL == 2
         if (needWinSzFudge && windowIsStable)
         {
-            SDL_Delay (40);
             int x, y;
             SDL_GetWindowPosition (screen, &x, &y);
             video_fudge_x = video_window_x - x;
@@ -1893,10 +1866,11 @@ breakout1:
     }  // END PACKET-PROCESSING LOOP.
 
 #if SDL == 2
-    }
+    }  // END OF SUBSCOPE FOR DECLARING SDL2 TEXTURE AS SCOPED SMARTPOINTER.
 #endif
 
 error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
+
     AUDDBG ("end of playback.\n");
     aud_set_int ("youtubedl", "lastlen", 0);   // CLEAR TEMP. STREAM LENGTH (NEEDED TO DISPLAY TIME IN Youtube-DL STREAMS:
     aud_set_str ("youtubedl", "lasturl", "");
@@ -1904,21 +1878,15 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
         destroyQueue (pktQ);
     if (apktQ)
         destroyQueue (apktQ);
-    if (myplay_video)  /* WE WERE PLAYING VIDEO && FINISHED WITH VIDEO-WINDOW STILL INTACT (NOT CLOSED BY USER */
+    if (myplay_video)  /* WE WERE PLAYING VIDEO && FINISHED WITH VIDEO-WINDOW STILL INTACT (NOT CLOSED BY USER PRESSING WINDOW'S CORNER [X]) */
     {
         AUDDBG ("i:ffaudio: QUITTING VIDEO!\n");
 #if SDL == 2
-#ifdef _WIN32
-        if (bmp)
+        if (screen)  // bmp ALREADY FREED & NOW OUT OF SCOPE BUT MAKE SURE VIDEO WINDOW IS FREED & GONE!
         {
-            SDL_DestroyTexture (bmp);
-            bmp = nullptr;
-        }
-#endif
-        if (screen)
-        {
-            save_window_xy (video_fudge_x, video_fudge_y);
-            SDL_HideWindow (screen);
+            save_window_xy (screen, video_fudge_x, video_fudge_y);
+            SDL_DestroyWindow (screen);
+            screen = nullptr;
         }
 #else
         save_window_xy ();
@@ -1934,23 +1902,10 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
             SDL_FreeSurface (screen);
             screen = nullptr;
         }
+#endif
         if (sdl_initialized)
             SDL_QuitSubSystem (SDL_INIT_VIDEO);
-#endif
-
     }
-#if SDL == 2
-#ifdef _WIN32
-    else  /* EITHER WE WEREN'T PLAYING VIDEO OR USER CLOSED THE VIDEO WINDOW MID-PLAY: */
-    {
-        if (bmp)
-        {
-            SDL_DestroyTexture (bmp); 
-            bmp = nullptr;
-        }
-    }
-#endif
-#endif
 
     if (vcodec_opened)
     {

@@ -101,22 +101,21 @@ bool SDLOutput::init ()
     vol_left = aud_get_int ("sdlout", "vol_left");
     vol_right = aud_get_int ("sdlout", "vol_right");
 
-    /* JWT: THIS NOW *ALWAYS* DONE IN FFaudio::init () EVEN IF FFaudio NOT ENABLED!
-    if (SDL_Init (SDL_INIT_AUDIO) < 0)
+    if (SDL_InitSubSystem (SDL_INIT_AUDIO) < 0)
     {
         AUDERR ("Failed to init SDL: %s.\n", SDL_GetError ());
         return false;
     }
-    */
 
     return true;
 }
 
 void SDLOutput::cleanup ()
 {
-    /* JWT: THIS NOW *ALWAYS* DONE IN FFaudio::cleanup () EVEN IF FFaudio NOT ENABLED!
+    /* JWT: CHGD. TO NEXT TO ALLOW FFAUDIO TO RUN SDL FOR VIDEO!
     SDL_Quit ();
     */
+    SDL_QuitSubSystem (SDL_INIT_AUDIO);
 }
 
 StereoVolume SDLOutput::get_volume ()
