@@ -1370,9 +1370,6 @@ bool FFaudio::play (const char * filename, VFSFile & file)
             video_sws_scale = aud_get_int ("ffaudio", "video_sws_scale");
         else
             video_sws_scale = SWS_BICUBIC;  /* default=4 (SWS_BICUBIC). */
-#endif
-
-#if SDL != 2
         bmp = SDL_CreateYUVOverlay (
             vcinfo.context->width,
             vcinfo.context->height,
@@ -1623,17 +1620,22 @@ breakout1:
                 continue;
             }
         }
-        else if (myplay_video && pkt.stream_index == vcinfo.stream_idx)  /* WE READ A VIDEO PACKET, QUEUE IT (ALWAYS): */
-            Enqueue (pktQ, pkt);
-        else    /* IGNORE ANY OTHER SUBSTREAMS */
+        else if (myplay_video)
         {
-            av_free_packet (& pkt);   /* AT THIS POINT THE PACKET MUST BE EITHER ENQUEUED OR FREED! */
-            if (! myplay_video)
-                continue;
+            if (pkt.stream_index == vcinfo.stream_idx)  /* WE READ A VIDEO PACKET, QUEUE IT (ALWAYS): */
+                Enqueue (pktQ, pkt);
+            else
+                av_free_packet (& pkt);
         }
+        else   /* IGNORE ANY OTHER SUBSTREAMS */
+        {
+            av_free_packet (& pkt);
+            continue;
+        }
+        /* AT THIS POINT THE PACKET MUST BE EITHER ENQUEUED OR FREED! */
 
         /* JWT: NOW HANDLE ANY VIDEO UI EVENTS SUCH AS RESIZE OR KILL VIDEO SCREEN (IF PLAYING VIDEO): */
-        /*      IF WE'RE HERE, WE *ARE* PLAYING VIDEO! */
+        /*      IF WE'RE HERE, WE *ARE* STILL PLAYING VIDEO (BUT THAT MAY CHANGE WITHIN THIS LOOP)! */
         while (SDL_PollEvent (&event))
         {
             switch (event.type) {
@@ -1691,58 +1693,54 @@ breakout1:
                             last_resized = false;  // false means now we'll need re-aspecting, so stop blitting!
                             last_resizeevent_time = time (nullptr);  // reset the wait counter for when to assume user's done dragging window corner.
                             break;
-                        case SDL_WINDOWEVENT_EXPOSED:      // window went from underneith another to visible (clicked on?)
+                        case SDL_WINDOWEVENT_EXPOSED:  // window went from underneith another to visible (clicked on?)
                             if (last_resized)
                             {
                                 SDL_RenderPresent (renderer.get ());  // only blit a single frame at startup will get refreshed!
                                 windowNowExposed = true;
                             }
                     }
-                    break;
 #else
-            case SDL_QUIT:  /* OLD SDL-1 WAY (SEE COMMENTS ABOVE): */
-                QFlush (pktQ);  // FLUSH ANY VIDEO PACKETS IN QUEUE SINCE WE CAN'T WRITE 'EM AFTER CLOSING.
-                save_window_xy ();
-                if (sws_ctx)
-                    sws_freeContext (sws_ctx);
-                if (bmp)
-                {
-                    SDL_FreeYUVOverlay (bmp);
-                    bmp = nullptr;
-                }
-                if (screen)
-                {
-                    SDL_FreeSurface (screen);
-                    screen = nullptr;
-                }
-                if (sdl_initialized)
-                    SDL_QuitSubSystem (SDL_INIT_VIDEO);
-                myplay_video = false;
-                AUDDBG ("i:SDL_QUIT (User killed video window for this play)!\n");
-                break;
+                case SDL_QUIT:  /* OLD SDL-1 WAY (SEE COMMENTS ABOVE): */
+                    QFlush (pktQ);  // FLUSH ANY VIDEO PACKETS IN QUEUE SINCE WE CAN'T WRITE 'EM AFTER CLOSING.
+                    save_window_xy ();
+                    if (sws_ctx)
+                        sws_freeContext (sws_ctx);
+                    if (bmp)
+                    {
+                        SDL_FreeYUVOverlay (bmp);
+                        bmp = nullptr;
+                    }
+                    if (screen)
+                    {
+                        SDL_FreeSurface (screen);
+                        screen = nullptr;
+                    }
+                    if (sdl_initialized)
+                        SDL_QuitSubSystem (SDL_INIT_VIDEO);
+                    myplay_video = false;
+                    AUDDBG ("i:SDL_QUIT (User killed video window for this play)!\n");
+                    break;
 
-            case SDL_VIDEORESIZE:
-                /* Resize the screen. */
-                resized_window_width = event.resize.w;
-                resized_window_height = event.resize.h;
-                AUDDBG ("i:SDL_RESIZE!!!!!! rvw=%d h=%d\n", resized_window_width, resized_window_height);
-                last_resized = false;
-                last_resizeevent_time = time (nullptr);
-                break;
-            case SDL_VIDEOEXPOSE:
-                if (last_resized)
-                {
-                    SDL_Rect rect;
-                    rect.x = 0;
-                    rect.y = 0;
-                    rect.w = video_width;
-                    rect.h = video_height;
-                    SDL_DisplayYUVOverlay (bmp, &rect);
-                }
-                break;
+                case SDL_VIDEORESIZE:
+                    /* Resize the screen. */
+                    resized_window_width = event.resize.w;
+                    resized_window_height = event.resize.h;
+                    AUDDBG ("i:SDL_RESIZE!!!!!! rvw=%d h=%d\n", resized_window_width, resized_window_height);
+                    last_resized = false;
+                    last_resizeevent_time = time (nullptr);
+                    break;
+                case SDL_VIDEOEXPOSE:
+                    if (last_resized)
+                    {
+                        SDL_Rect rect;
+                        rect.x = 0;
+                        rect.y = 0;
+                        rect.w = video_width;
+                        rect.h = video_height;
+                        SDL_DisplayYUVOverlay (bmp, &rect);
+                    }
 #endif
-            default:
-                break;
             }
         }
         if (! last_resized)  /* IF WINDOW CHANGED SIZE (SINCE LAST RE-ASPECTING: */
