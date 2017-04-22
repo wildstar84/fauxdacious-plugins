@@ -31,6 +31,8 @@ extern "C" {
 #include <fcntl.h>
 #include <sys/poll.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <linux/cdrom.h>
 #include <unistd.h>
 }
 #define SDL_MAIN_HANDLED
@@ -145,7 +147,7 @@ public:
             SDL_Texture * bmp, AVPacket *pkt, int video_width, 
             int video_height, bool * last_resized, bool * videohasnowh, bool * windowIsStable,
             int * resized_window_width, int * resized_window_height);
-
+    void draw_highlight_buttons (SDL_Renderer * renderer);
 private:
     AVFormatContext * open_input_file (struct pollfd * input_fd_p);
     void reader_demuxer ();
@@ -239,10 +241,12 @@ const char DVD::about[] =
 
 const char * const DVD::defaults[] = {
     "disc_speed", "2",
+    "maxopentries", "4",
     "use_cdtext", "TRUE",
     "device", "/dev/dvd",
     "video_qsize", "6",
     "play_video", "TRUE",
+    "highlight_buttons", "TRUE",
     /* setting menudrain: FLUSHES UNWRITTEN PACKETS WHEN MENU BUTTON PRESSED, MAY CRASH LIVDVDNAV 
        (ASSERT 0) AND FAUXDACIOUS!  MY SUSPICION IS THAT THERE'S A DELAY BETWEEN THE DVD ENGINE AND 
        OUR READER-DEMUXER THREAD SUCH THAT WHILE WE'RE STILL IN A MENU, LIBDVDNAV'S ALREADY IN THE 
@@ -265,12 +269,17 @@ const PreferencesWidget DVD::widgets[] = {
     WidgetSpin (N_("Read speed:"),
         WidgetInt ("dvd", "disc_speed"),
         {MIN_DISC_SPEED, MAX_DISC_SPEED, 1}),
+    WidgetSpin (N_("Max Tries to Open Disk:"),
+        WidgetInt ("dvd", "maxopentries"),
+        {1, 10, 1}),
     WidgetEntry (N_("Override device:"),
         WidgetString ("dvd", "device")),
     WidgetSpin (N_("Video packet queue size"),
         WidgetInt ("dvd", "video_qsize"), {0, 24, 1}),
     WidgetCheck (N_("Play video stream in popup window when video stream found"),
         WidgetBool ("dvd", "play_video")),
+    WidgetCheck (N_("Highlight menu buttons (with a rectangle)"),
+        WidgetBool ("dvd", "highlightbuttons")),
     WidgetCheck (N_("Drain stream on menu button press (Some DVDs crash Fauxdacious)"),
         WidgetBool ("dvd", "menudrain")),
     WidgetLabel (N_("<b>Metadata</b>")),
@@ -590,6 +599,20 @@ static bool convert_format (int ff_fmt, int & aud_fmt, bool & planar)
     return true;
 }
 
+/* mutex must be locked */
+static bool check_disk_status ()
+{
+    if (! dvdnav_priv)
+        return false;
+
+    int disk;
+    if ((disk = open (dvdnav_priv->filename, O_RDONLY | O_NONBLOCK)) < 0)
+        return false;
+
+    int diskstatus = ioctl (disk, CDROM_DRIVE_STATUS);
+    return (! diskstatus || diskstatus == CDS_DISC_OK);
+}
+
 void DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo, 
         SDL_Texture * bmp, AVPacket *pkt, int video_width, 
         int video_height, bool * last_resized, bool * videohasnowh, bool * windowIsStable, 
@@ -673,6 +696,15 @@ void DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
 #endif
 }
 
+void DVD::draw_highlight_buttons (SDL_Renderer * renderer)
+{
+    for (int mbtn = 0; mbtn < menubuttons.len (); mbtn ++)
+    {
+        SDL_RenderDrawRect (renderer, & menubuttons[mbtn]);
+    }
+    SDL_RenderPresent (renderer); 
+}
+
 static SDL_Renderer * createSDL2Renderer (SDL_Window * screen, bool myplay_video)
 {
     SDL_Renderer * renderer = nullptr;
@@ -692,7 +724,9 @@ static SDL_Texture * createSDL2Texture (SDL_Window * screen, SDL_Renderer * rend
             AUDERR ("e:Could not create texture (%s)\n", SDL_GetError ());
         else
         {
-            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+            SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
+            SDL_RenderClear (renderer);
+            SDL_RenderFillRect (renderer, nullptr);
             SDL_RenderPresent (renderer);
             SDL_ShowWindow (screen);
         }
@@ -1256,13 +1290,13 @@ startover:
         {
             video_width = (vx == -1) ? (video_window_w ? video_window_w : vcinfo.context->width) : vx;
             video_height = (int)((float)video_width / video_aspect_ratio);
-            video_requested_height = (int)((float)video_requested_width / video_aspect_ratio);
+            //video_requested_height = (int)((float)video_requested_width / video_aspect_ratio);
         }
         else if (!vx && vy)   /* User specified (or saved) height only, calc. width based on aspect: */
         {
             video_height = (vy == -1) ? (video_window_h ? video_window_h : vcinfo.context->height) : vy;
             video_width = (int)((float)video_height * video_aspect_ratio);
-            video_requested_width = (int)((float)video_requested_height * video_aspect_ratio);
+            //video_requested_width = (int)((float)video_requested_height * video_aspect_ratio);
         }
         else if (vx && vy)   /* User specified fixed width and height: */
         {
@@ -1275,13 +1309,13 @@ startover:
             {
                 video_height = vy;
                 video_width = (int)((float)video_height * video_aspect_ratio);
-                video_requested_width = (int)((float)video_requested_height * video_aspect_ratio);
+                //video_requested_width = (int)((float)video_requested_height * video_aspect_ratio);
             }
             else if (vy == -1)  /* Use same (saved) width & calculate new height based on aspect: */
             {
                 video_width = vx;
                 video_height = (int)((float)video_width / video_aspect_ratio);
-                video_requested_height = (int)((float)video_requested_width / video_aspect_ratio);
+                //video_requested_height = (int)((float)video_requested_width / video_aspect_ratio);
             }
             else  /* User specified window size (SCREW THE ASPECT)! */
             {
@@ -1389,6 +1423,7 @@ breakout1:
     bool windowIsStable = false;    // JWT:SAVING AND RECREATING WINDOW CAUSES POSN. TO DIFFER BY THE WINDOW DECORATION SIZES, SO WE HAVE TO FUDGE FOR THAT!
     bool windowNowExposed = false;  // JWT:NEEDED TO PREVENT RESIZING WINDOW BEFORE EXPOSING ON MS-WINDOWS?!
     int seek_value;
+    bool highlightbuttons = playing_a_menu ? aud_get_bool("dvd", "highlightbuttons") : false;
     SmartPtr<SDL_Renderer, SDL_DestroyRenderer> renderer (createSDL2Renderer (screen, myplay_video));
     if (! renderer)
     {
@@ -1415,6 +1450,12 @@ breakout1:
     if (! playing_a_menu && ! codec_opened)  AUDERR("w:UNABLE TO OPEN AUDIO CODEC2!!!!!!!!!!!!!!!!\n");
     if (! myplay_video)  AUDERR("w:NO VIDEO WHEN STARTING LOOP!\n");
 
+    if (myplay_video && screen)
+    {
+        SDL_SetWindowInputFocus (screen);  //TRY TO SET INPUT FOCUS ON VIDEO WINDOW FOR EASIER (1-CLICK) MENU-SELECTION:
+        if (highlightbuttons)
+            SDL_SetRenderDrawBlendMode(renderer.get (), SDL_BLENDMODE_BLEND);
+    }
     AUDDBG ("READER-DEMUXER: STARTING LOOP\n");
     pci_t * pci = dvdnav_get_current_nav_pci (dvdnav_priv->dvdnav);
     while (! reader_please_die)
@@ -1477,6 +1518,8 @@ breakout1:
                             write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
                                     video_width, video_height, & last_resized, & videohasnowh, & windowIsStable,
                                         & resized_window_width, & resized_window_height);
+                            if (highlightbuttons)
+                                draw_highlight_buttons (renderer.get ());
                             Dequeue (pktQ);
                         }
                         else
@@ -1517,7 +1560,7 @@ breakout1:
                         else
                             AUDERR ("e:WE SEEM TO BE STUCK IN A BUTTONLESS MENU!...\n");
                         checkcodecs = true;
-                        codec_opened = false;
+                        //codec_opened = false;
                         playing_a_menu = ! (dvdnav_is_domain_vts (dvdnav_priv->dvdnav));
                         //dvdnav_get_current_nav_dsi (dvdnav_priv->dvdnav);
                         goto error_exit;
@@ -1527,7 +1570,7 @@ breakout1:
                 {
                     AUDINFO ("i:MOVIE ENDED, GOING TO NEXT STREAM...\n");
                     checkcodecs = true;
-                    codec_opened = false;
+                    //codec_opened = false;
                     //dvdnav_get_current_nav_dsi (dvdnav_priv->dvdnav);
                     goto error_exit;
                 }
@@ -1586,6 +1629,8 @@ breakout1:
                     write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
                             video_width, video_height, & last_resized, & videohasnowh, & windowIsStable,
                                 & resized_window_width, & resized_window_height);
+                    if (highlightbuttons)
+                        draw_highlight_buttons (renderer.get ());
                     Dequeue (pktQ);
                 }
                 else
@@ -1644,8 +1689,8 @@ breakout1:
                         for (int mbtn = 0; mbtn < menubuttons.len (); mbtn ++)
                         {
 //AUDERR("---1CHECK MENU BUTTON %d...\n", mbtn);
-                            if (event.motion.x >= menubuttons[mbtn].x && event.motion.x <= menubuttons[mbtn].w
-                                && event.motion.y >= menubuttons[mbtn].y && event.motion.y <= menubuttons[mbtn].h)
+                            if (event.motion.x >= menubuttons[mbtn].x && event.motion.x <= (menubuttons[mbtn].x + menubuttons[mbtn].w)
+                                && event.motion.y >= menubuttons[mbtn].y && event.motion.y <= (menubuttons[mbtn].y + menubuttons[mbtn].h))
                             {
                                 AUDERR ("---------- 1MENU BUTTON %d SELECTED! --------------\n", (mbtn+1));
                                 dvdnav_priv->wakeup = true;
@@ -1669,6 +1714,8 @@ breakout1:
                                     }
                                     fflush (output_fd);
                                 }
+                                SDL_RenderFillRect (renderer.get (), nullptr);
+                                SDL_RenderPresent (renderer.get ());
                                 if (wedohaveaudio && eof && ! aud_get_bool ("dvd", "menudrain"))
                                 {
                                     AUDINFO ("i:HIGHLIGHT MENU BUTTON2 ONLY!\n");
@@ -1680,7 +1727,6 @@ breakout1:
                                     AUDINFO ("i:ACTIVATE MENU BUTTON2 (MAY ASSERT ITSELF)!\n");
                                     dvdnav_button_activate (dvdnav_priv->dvdnav, pci);
                                     checkcodecs = true;
-                                    codec_opened = false;
                                     playing_a_menu = ! (dvdnav_is_domain_vts (dvdnav_priv->dvdnav));
                                     //dvdnav_get_current_nav_dsi (dvdnav_priv->dvdnav);
                                     goto error_exit;
@@ -1913,6 +1959,15 @@ bool DVD::play (const char * name, VFSFile & file)
 {
     pthread_mutex_lock (& mutex);
 
+    if (! check_disk_status ())  // CHECK THAT DISK IS STILL IN THE DRIVE!:
+    {
+        dvd_error ("ATTEMPT TO PLAY REMOVED DISK, CLEARING PLAYLIST OF DVD STUFF!\n");
+        reset_trackinfo ();
+        purge_func.queue (purge_all_playlists, nullptr);
+        pthread_mutex_unlock (& mutex);
+        return false;
+    }
+
     if (! trackinfo.len () && ! refresh_trackinfo (true))
     {
         pthread_mutex_unlock (& mutex);
@@ -2099,8 +2154,8 @@ AUDDBG ("DVDNAV_BLOCK_OKAAAAAAAAAAAAAY: len=%d=\n", len);
 
                         AUDINFO ("Found %i DVD menu buttons...\n", pci->hli.hl_gi.btn_ns);
 
-                        if (pci->hli.hl_gi.btn_ns > menubuttons.len ())
-                            menubuttons.resize (pci->hli.hl_gi.btn_ns);
+//                        if (pci->hli.hl_gi.btn_ns > menubuttons.len ())
+                        menubuttons.resize (pci->hli.hl_gi.btn_ns);
                      	  for (button = 0; button < pci->hli.hl_gi.btn_ns; button++)
                      	  {
                        	    btni_t *btni = &(pci->hli.btnit[button]);
@@ -2109,8 +2164,8 @@ AUDDBG ("DVDNAV_BLOCK_OKAAAAAAAAAAAAAY: len=%d=\n", len);
                           		//    btni->x_end, btni->y_end);
                             menubuttons[button].x = btni->x_start;
                             menubuttons[button].y = btni->y_start;
-                            menubuttons[button].w = btni->x_end;
-                            menubuttons[button].h = btni->y_end;
+                            menubuttons[button].w = btni->x_end - btni->x_start;
+                            menubuttons[button].h = btni->y_end - btni->y_start;
                      	  }
                      	  havebuttons = true;
                         /* SOME DVDS DON'T HANDLE STREAM ARRANGEMENT CORRECTLY UNLESS YOU PLAY THRU THE MENU,
@@ -2307,9 +2362,9 @@ GETMEOUTTAHERE:
     AUDINFO ("WE HAVE EXITED THE PLAY LOOP, WAITING FOR READER THREAD TO STOP!...\n");
     if (pthread_join (rdmux_thread, NULL))
         AUDERR ("Error joining thread\n");
-    playing = false;
     fclose (output_fd);
     AUDINFO ("------------ END PLAY! -------------\n");
+    playing = false;
     return true;
 }
 
@@ -2599,12 +2654,15 @@ static bool scan_dvd ()
 static bool refresh_trackinfo (bool warning)
 {
     int xtry = 0;
+    int maxopentries = aud_get_int ("dvd", "maxopentries");
+    if (maxopentries < 1)
+        maxopentries = 4;
     String langstr = aud_get_str ("dvd", "language");
 //x    if (! open_dvd () || ! check_disc_mode (warning))
 tryagain:   // WE TRY 4 TIMES TO GIVE THE DRIVE A CHANCE TO SPIN UP...
     if (! open_dvd ())
     {
-        if (xtry > 3)
+        if (xtry >= maxopentries)
             goto fail;
         else
         {
