@@ -48,7 +48,7 @@ static constexpr const char * titles[N_ITEMS] = {N_("Play CD"), N_("Add CD")};
 #endif
 #ifndef _WIN32
 #define N_ITEMS 5
-static constexpr const char * titles[N_ITEMS] = {N_("Play CD"), N_("Add CD"), N_("Play DVD"), N_("Add DVD"), N_("Eject CD")};
+static constexpr const char * titles[N_ITEMS] = {N_("Play CD"), N_("Add CD"), N_("Play DVD"), N_("Add DVD"), N_("Eject Disk")};
 #endif
 
 static constexpr AudMenuID menus[N_MENUS] = {
