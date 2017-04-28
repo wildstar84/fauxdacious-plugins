@@ -176,7 +176,7 @@ typedef struct {
   dvdnav_t *       dvdnav;              /* handle to libdvdnav stuff */
   char *           filename;            /* path */
   unsigned int     duration;            /* in milliseconds */
-  int              mousex, mousey;
+  //int              mousex, mousey;
   int              title;
   int              track;
   unsigned int     spu_clut[16];
@@ -191,9 +191,9 @@ typedef struct {
   String           fifo_str;
   bool             wakeup;
   uint16_t         langid;
-  bool             beenheredonedat;
-  bool             nochannelhop;
-  int              lastaudiostream;
+  bool             beenheredonedat;     /* used to avoid circular menus */
+  bool             nochannelhop;        /* don't do channel hop whilst sliding the seek slider */
+  int              lastaudiostream;     /* save last audio stream to see if we need to change codecs */
 } dvdnav_priv_t;
 
 typedef enum {
@@ -213,17 +213,17 @@ typedef enum {
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool playing;
 static bool play_video;  /* JWT: TRUE IF USER IS CURRENTLY PLAYING VIDEO (KILLING VID. WINDOW TURNS OFF)! */
-static bool stop_playback;
-static bool playback_thread_running;
-static bool playback_fifo_hasbeenopened;
-static bool reader_please_die;
-static bool playing_a_menu;
-static bool checkcodecs;
-static bool readblock;
-static bool writeblock;
-static FILE * output_fd;
-static Index<SDL_Rect> menubuttons;
-static bool havebuttons;
+static bool stop_playback;   /* SIGNAL FROM USER TO STOP PLAYBACK */
+static bool playback_thread_running;  /* TRUE IF READER/DEMUXER THREAD IS UP AND RUNNING */
+static bool playback_fifo_hasbeenopened; /* TRUE IF FIFO IS SUCCESSFULLY OPENED */
+static bool reader_please_die;  /* SIGNAL READER/DEMUXER THREAD TO TERMINATE */
+static bool playing_a_menu;     /* TRUE IF WE'RE PLAYING A "MENU" (VS. A "MOVIE") */
+static bool checkcodecs;        /* SIGNAL THAT WE NEED TO RELOAD THE CODECS (TRACK CHANGE, ETC.) */
+static bool readblock;          /* PREVENT READER/DEMUXER THREAD FROM CONTINUING UNTIL DATA READY TO READ */
+static bool writeblock;         /* PREVENT DVD ENGINE FROM WRITING DATA UNTIL READER READY (DONE DRAINING) */
+static FILE * output_fd;        /* OUTPUT FILE-HANDLE TO FIFO */
+static Index<SDL_Rect> menubuttons;  /* ARRAY OF MENUBUTTONS (EACH HAS 2 SETS OF X.Y COORDS. */
+static bool havebuttons;        /* SIGNALS THAT WE HAVE FETCHED MENU-BUTTONS FOR THE CURRENT MENU */
 
 /* lock mutex to read / set these variables */
 static int firsttrackno = -1;
@@ -252,8 +252,9 @@ const char * const DVD::defaults[] = {
     "video_qsize", "6",
     "play_video", "TRUE",
     "highlight_buttons", "TRUE",
-    /* setting nomenudrain: PREVENTS FLUSHING UNWRITTEN PACKETS WHEN MENU BUTTON PRESSED, MAY CRASH LIVDVDNAV 
-       (ASSERT 0) AND FAUXDACIOUS!  MY SUSPICION IS THAT THERE'S A DELAY BETWEEN THE DVD ENGINE AND 
+    /* setting menudrain FLUSHES UNWRITTEN PACKETS WHEN MENU BUTTON PRESSED AND ADVANCING TO ANOTHER
+       MENU.  DEFAULT IS TO NOT DRAIN UNWRITTEN PACKETS, SINCE DOING SO OFTEN RESULTS IN INCOMPLETE 
+       RENDERING OF MENU IMAGES.  MY SUSPICION IS THAT THERE'S A DELAY BETWEEN THE DVD ENGINE AND 
        OUR READER-DEMUXER THREAD SUCH THAT WHILE WE'RE STILL IN A MENU, LIBDVDNAV'S ALREADY IN THE 
        NEXT FEATURE.  THE ONLY DESIRABLE THING ABOUT SETTING THIS IS THAT THE FEW EXTRA PACKETS 
        (THE AUDIO ONES IN PARTICULAR) SEEM TO GET WRITTEN OUT TO THE SPEAKERS VERY FAST (SO THAT
@@ -264,11 +265,12 @@ const char * const DVD::defaults[] = {
        FROM THE MENU -VS- BEING PLAYED DIRECTLY SO THAT THEY WILL TAKE YOU TO IT PROPERLY (SKIPPING 
        PREVIEWS, ADS, ETC. AND GETTING THE LANGUAGE SET CORRECTLY.
     */
-    "nomenudrain", "FALSE",
+    "menudrain", "FALSE",
+    "nomoviedrain", "FALSE",
     "use_cdtext", "TRUE",
-    "title_track_only", "FALSE",
-    "first_track_only", "FALSE",
-    "nomenus", "FALSE",
+    "title_track_only", "FALSE",  // ONLY ADD TITLE TRACK TO PLAYLIST (IF BOTH FALSE, ADD ALL TRACKS TO PLAYLIST)
+    "first_track_only", "FALSE",  // ONLY ADD 1ST (MOVIE) TRACK TO PLAYLIST
+    "nomenus", "FALSE",           // SKIP MENUS ALWAYS AUTO-SELECTING THE FIRST BUTTON
     nullptr
 };
 
@@ -288,8 +290,10 @@ const PreferencesWidget DVD::widgets[] = {
         WidgetBool ("dvd", "play_video")),
     WidgetCheck (N_("Highlight menu buttons (with a rectangle)"),
         WidgetBool ("dvd", "highlightbuttons")),
-    WidgetCheck (N_("Avoid draining stream on menu button press (Some DVDs need)"),
-        WidgetBool ("dvd", "nomenudrain")),
+    WidgetCheck (N_("Drain unwritten packets before menus (may smudge menus)"),
+        WidgetBool ("dvd", "menudrain")),
+    WidgetCheck (N_("Don't drain unwritten packets before movies (extra noise)"),
+        WidgetBool ("dvd", "nomoviedrain")),
     WidgetLabel (N_("<b>Metadata</b>")),
     WidgetCheck (N_("Use CD-Text"),
         WidgetBool ("dvd", "use_cdtext")),
@@ -303,6 +307,7 @@ const PreferencesWidget DVD::widgets[] = {
 
 const PluginPreferences DVD::prefs = {{widgets}};
 
+/* from audacious:  DISPLAY MESSAGE IN A POPUP WINDOW */
 static void dvd_error (const char * message_format, ...)
 {
     va_list args;
@@ -313,6 +318,7 @@ static void dvd_error (const char * message_format, ...)
     aud_ui_show_error (msg);
 }
 
+/* from audacious */
 static int log_result (const char * func, int ret)
 {
     if (ret < 0 && ret != (int) AVERROR_EOF && ret != AVERROR (EAGAIN))
@@ -329,6 +335,7 @@ static int log_result (const char * func, int ret)
 
 #define LOG(function, ...) log_result (#function, function (__VA_ARGS__))
 
+/* from audacious */
 static void ffaudio_log_cb (void * avcl, int av_level, const char * fmt, va_list va)
 {
     audlog::Level level = audlog::Debug;
@@ -361,7 +368,7 @@ static void ffaudio_log_cb (void * avcl, int av_level, const char * fmt, va_list
             "<%p> %s", avcl, message);
 }
 
-/* main thread only */
+/* from audacious - main thread only */
 static void purge_playlist (int playlist)
 {
     int length = aud_playlist_entry_count (playlist);
@@ -379,7 +386,7 @@ static void purge_playlist (int playlist)
     }
 }
 
-/* main thread only */
+/* from audacious - main thread only */
 static void purge_all_playlists (void * = nullptr)
 {
     int playlists = aud_playlist_count ();
@@ -389,19 +396,7 @@ static void purge_all_playlists (void * = nullptr)
         purge_playlist (count);
 }
 
-/* main thread only */
-//x static void monitor (void *)
-//x {
-//x     pthread_mutex_lock (& mutex);
-//x AUDINFO ("--MONITOR!--\n");
-    /* make sure not to close drive handle while playing */
-//x     if (! playing)
-//x         refresh_trackinfo (false);
-
-//x     pthread_mutex_unlock (& mutex);
-//x }
-
-/* main thread only */
+/* from audacious - main thread only */
 bool DVD::init ()
 {
     aud_config_set_defaults ("DVD", defaults);
@@ -412,13 +407,13 @@ bool DVD::init ()
     return true;
 }
 
-/* thread safe (mutex may be locked) */
+/* from audacious - thread safe (mutex may be locked) */
 bool DVD::is_our_file (const char * filename, VFSFile & file)
 {
     return !strncmp (filename, "dvd://", 6);
 }
 
-// FROM mplayer.stream_dvdnav.c:
+// from mplayer.stream_dvdnav.c:
 static int dvdnav_stream_read (dvdnav_priv_t * priv, unsigned char *buf, int *len)
 {
     int event = DVDNAV_NOP;
@@ -435,7 +430,7 @@ static int dvdnav_stream_read (dvdnav_priv_t * priv, unsigned char *buf, int *le
     return event;
 }
 
-// FROM mplayer.stream_dvdnav.c:
+// from mplayer.stream_dvdnav.c:
 static void update_title_len () 
 {
     dvdnav_status_t status;
@@ -460,6 +455,7 @@ static inline int dvdnav_get_duration (int length) {
 }
 
 /* ---------
+// from mplayer.stream_dvdnav.c: display languages of the dvd streams found (NOT avcodec streams!)
 static void show_audio_subs_languages(dvdnav_t *nav)
 {
   uint8_t lg;
@@ -509,6 +505,7 @@ static void show_audio_subs_languages(dvdnav_t *nav)
 }
 ---------- */
 
+// from mplayer.stream_dvdnav.c:
 int mp_dvdtimetomsec(dvd_time_t *dt)
 {
   static int framerates[4] = {0, 2500, 0, 2997};
@@ -521,7 +518,7 @@ int mp_dvdtimetomsec(dvd_time_t *dt)
   return msec;
 }
 
-// FROM mplayer.stream_dvdnav.c:
+// from mplayer.stream_dvdnav.c:
 static void dvdnav_get_highlight (dvdnav_priv_t *priv, int display_mode)
 {
     pci_t *pnavpci = NULL;
@@ -540,7 +537,7 @@ static void dvdnav_get_highlight (dvdnav_priv_t *priv, int display_mode)
 
     if (hlev->buttonN > 0 && pnavpci->hli.hl_gi.btn_ns > 0 && hlev->display)
     {
-//1:from: vlc/modules/access/dvdnav.c:1253l:
+//1:from: vlc/modules/access/dvdnav.c:1253l (may use someday when we figure out how):
 //1        bool b_mode = (display_mode ? true : false);
 //1        dvdnav_highlight_area_t hl;
 //1        bool b_button_ok = DVDNAV_STATUS_OK ==
@@ -583,6 +580,7 @@ static void dvdnav_get_highlight (dvdnav_priv_t *priv, int display_mode)
     }
 }
 
+// from audacious:
 static void close_input_file (AVFormatContext * c)
 {
     AUDINFO ("-close_input_file.\n");
@@ -605,6 +603,7 @@ static void close_input_file (AVFormatContext * c)
     }
 }
 
+// from audacious:
 static bool convert_format (int ff_fmt, int & aud_fmt, bool & planar)
 {
     switch (ff_fmt)
@@ -627,7 +626,7 @@ static bool convert_format (int ff_fmt, int & aud_fmt, bool & planar)
     return true;
 }
 
-/* mutex must be locked */
+/* from audacious:  mutex must be locked */
 static bool check_disk_status ()
 {
     if (! dvdnav_priv)
@@ -641,6 +640,7 @@ static bool check_disk_status ()
     return (! diskstatus || diskstatus == CDS_DISC_OK);
 }
 
+// blits each video frame to the screen:
 void DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo, 
         SDL_Texture * bmp, AVPacket *pkt, int video_width, 
         int video_height, bool * last_resized, bool * videohasnowh, bool * windowIsStable, 
@@ -692,7 +692,7 @@ void DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
                     /* Resize the screen. */
                     *resized_window_width = vframe.ptr->width;  // window's reported new size
                     *resized_window_height = vframe.ptr->height;
-                    AUDINFO ("i:SDL_RESIZE(FRAME)!!!!!! rvw=(%d, %d) orig(%d, %d)\n", *resized_window_width, *resized_window_height, video_width, video_height);
+                    AUDERR ("w:videohasnowh! - SDL_RESIZE(FRAME)!!!!!! rvw=(%d, %d) orig(%d, %d)\n", *resized_window_width, *resized_window_height, video_width, video_height);
                     *last_resized = false;  // false means now we'll need re-aspecting, so stop blitting!
                     //*videohasnowh = false;
                 }
@@ -724,6 +724,7 @@ void DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
 #endif
 }
 
+// DRAW A RECTANGLE AROUND EACH MENU BUTTON (USER-OPTION, SINCE WE DON'T CURRENTLY DO SUBPICTURES):
 void DVD::draw_highlight_buttons (SDL_Renderer * renderer)
 {
     for (int mbtn = 0; mbtn < menubuttons.len (); mbtn ++)
@@ -733,6 +734,7 @@ void DVD::draw_highlight_buttons (SDL_Renderer * renderer)
     SDL_RenderPresent (renderer); 
 }
 
+// CREATE AN SDL "RENDERER":
 static SDL_Renderer * createSDL2Renderer (SDL_Window * screen, bool myplay_video)
 {
     SDL_Renderer * renderer = nullptr;
@@ -742,6 +744,7 @@ static SDL_Renderer * createSDL2Renderer (SDL_Window * screen, bool myplay_video
     return renderer;
 }
 
+// CREATE AN SDL "TEXTURE":
 static SDL_Texture * createSDL2Texture (SDL_Window * screen, SDL_Renderer * renderer, bool myplay_video, int width, int height)
 {
     SDL_Texture * texture = nullptr;
@@ -781,6 +784,7 @@ void save_window_xy (SDL_Window * screen, int video_fudge_x, int video_fudge_y)
     aud_set_int ("dvd", "video_window_h", h);
 }
 
+// SEND EACH AUDIO FRAME TO THE SPEAKERS:
 void DVD::write_audioframe (CodecInfo * cinfo, AVPacket * pkt, int out_fmt, bool planar)
 {
     int size = 0;
@@ -971,12 +975,12 @@ static bool adjust_menubuttons (uint32_t old_width, uint32_t new_width, uint32_t
         float f;
         for (int mbtn = 0; mbtn < menubuttons.len (); mbtn ++)
         {
-            if (mbtn == 0)
-                AUDERR ("---- xBEF(%d): x=%d, w=%d;  Ovw=%d, Nvw=%d\n", mbtn, menubuttons[mbtn].x, menubuttons[mbtn].w, old_width, new_width);
+//            if (mbtn == 0)
+                AUDDBG ("---- xBEF(%d): x=%d, w=%d;  Ovw=%d, Nvw=%d\n", mbtn, menubuttons[mbtn].x, menubuttons[mbtn].w, old_width, new_width);
             f = (float)new_width / (float)old_width;
             menubuttons[mbtn].w = (int)(f * (float)menubuttons[mbtn].w);
             menubuttons[mbtn].x = (int)(f * (float)menubuttons[mbtn].x);
-            if (mbtn == 0)
+//            if (mbtn == 0)
                 AUDDBG ("---- xAFT(%d): x=%d, w=%d;  f=%.2f\n", mbtn, menubuttons[mbtn].x, menubuttons[mbtn].w, f);
         }
         adjusted = true;
@@ -986,11 +990,13 @@ static bool adjust_menubuttons (uint32_t old_width, uint32_t new_width, uint32_t
         float f;
         for (int mbtn = 0; mbtn < menubuttons.len (); mbtn ++)
         {
-            AUDDBG ("---- yBEF(%d): y=%d, h=%d;  Ovh=%d, Nvh=%d\n", mbtn, menubuttons[mbtn].y, menubuttons[mbtn].h, old_height, new_height);
+//            if (mbtn == 0)
+                AUDDBG ("---- yBEF(%d): y=%d, h=%d;  Ovh=%d, Nvh=%d\n", mbtn, menubuttons[mbtn].y, menubuttons[mbtn].h, old_height, new_height);
             f = (float)new_height / (float)old_height;
             menubuttons[mbtn].h = (int)(f * (float)menubuttons[mbtn].h);
             menubuttons[mbtn].y = (int)(f * (float)menubuttons[mbtn].y);
-            AUDDBG ("---- yAFT(%d): y=%d, h=%d;  f=%.2f\n", mbtn, menubuttons[mbtn].y, menubuttons[mbtn].h, f);
+//            if (mbtn == 0)
+                AUDDBG ("---- yAFT(%d): y=%d, h=%d;  f=%.2f\n", mbtn, menubuttons[mbtn].y, menubuttons[mbtn].h, f);
         }
         adjusted = true;
     }
@@ -1081,12 +1087,13 @@ AUDINFO("---FIFO OPENED, POLL RES=%d=\n", pollres);
     }
     playback_fifo_hasbeenopened = true;
     return c;
+    nanosleep ((const struct timespec[]){{0, 60000000L}}, NULL);
 }
 
 /* separate reader/demuxer thread */
 void DVD::reader_demuxer ()
 {
-    AUDINFO ("---- reader_demuxer started! ----\n");
+    AUDDBG ("---- reader_demuxer started! ----\n");
     int out_fmt;
     int errcount = 0;
     int ret;
@@ -1098,6 +1105,7 @@ void DVD::reader_demuxer ()
     int video_window_y;
     int video_window_w;
     int video_window_h;
+    int video_xmove;
     int video_resizedelay;     // MIN. TIME TO WAIT AFTER USER RESIZES VIDEO WINDOW BEFORE RE-ASPECTING (SEC.)
     int resized_window_width;  // VIDEO WINDOW-SIZE AFTER LAST RESIZE.
     int resized_window_height;
@@ -1108,24 +1116,24 @@ void DVD::reader_demuxer ()
     uint32_t video_default_height;
     int video_doreset_width;   // WINDOW-SIZE BELOW WHICH WINDOW WILL SNAP BACK TO SIZE REQUESTED BY VIDEO STREAM:
     int video_doreset_height;
-    int video_qsize;
+    int video_qsize;           // MAX. NO. OF VIDEO PACKETS TO QUEUE AT ONE TIME.
     time_t last_resizeevent_time;  // TIME OF LAST RESIZE EVENT, SO WE CAN DETERMINE WHEN SAFE TO RE-ASPECT.
-    time_t scene_start_time;
+    time_t scene_start_time;   // START TIME OF CURRENTLY-PLAYING STREAM.
     float video_aspect_ratio;  // ASPECT RATIO OF VIDEO, SAVED TO PERMIT RE-ASPECTING AFTER USER RESIZES (WARPS) WINDOW.
     bool myplay_video; // WHETHER OR NOT TO DISPLAY THE VIDEO.
     bool codec_opened;     // TRUE IF SUCCESSFULLY OPENED CODECS:
     bool vcodec_opened;
-    bool planar;                   // USED BY Audacious
+    bool planar;           // USED BY Audacious
     //bool returnok = false;
-    bool eof;
-    bool last_resized;      // TRUE IF VIDEO-WINDOW HAS BEEN RE-ASPECTED SINCE LAST RESIZE EVENT (HAS CORRECT ASPECT RATIO).
+    bool eof;              // BECOMES TRUE WHEN EOF REACHED BY THE READER/DECODER. 
+    bool last_resized;     // TRUE IF VIDEO-WINDOW HAS BEEN RE-ASPECTED SINCE LAST RESIZE EVENT (HAS CORRECT ASPECT RATIO).
     bool sdl_initialized;  // TRUE IF SDL (VIDEO) IS SUCCESSFULLY INITIALIZED.
-    SDL_Event       event;         // SDL EVENTS, IE. RESIZE, KILL WINDOW, ETC.
+    SDL_Event       event; // SDL EVENTS, IE. RESIZE, KILL WINDOW, ETC.
     int video_fudge_x; int video_fudge_y;  // FUDGE-FACTOR TO MAINTAIN VIDEO SCREEN LOCN. BETWEEN RUNS.
-    bool needWinSzFudge;     // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
-    //bool wedohaveaudio;  // BECOMES TRUE IF WE FIND AN AUDIO FRAME.
-    pktQueue *pktQ;      // QUEUE FOR VIDEO-PACKET QUEUEING.
-    pktQueue *apktQ;     // QUEUE FOR AUDIO-PACKET QUEUEING.
+    bool needWinSzFudge;   // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
+    bool windowIsStable;    // JWT:SAVING AND RECREATING WINDOW CAUSES POSN. TO DIFFER BY THE WINDOW DECORATION SIZES, SO WE HAVE TO FUDGE FOR THAT!
+    pktQueue *pktQ;        // QUEUE FOR VIDEO-PACKET QUEUEING.
+    pktQueue *apktQ;       // QUEUE FOR AUDIO-PACKET QUEUEING.
     bool menubuttons_adjusted;
     SDL_Window * screen = nullptr;  /* JWT: MUST DECLARE VIDEO SCREEN-WINDOW HERE */
     struct pollfd input_fd_p;
@@ -1133,25 +1141,122 @@ void DVD::reader_demuxer ()
     SDL_Texture * bmp = nullptr;    // CAN'T USE SMARTPTR HERE IN WINDOWS - renderer.get() FAILS IF VIDEO PLAY NOT TURNED ON?!
 #endif
 
-    int videoStream;
+    int videoStream;          // AVCODEC STREAM IDS.
     int audioStream;
     AVPacket pkt;
-    CodecInfo cinfo, vcinfo;  //AUDIO AND VIDEO CODECS
+    CodecInfo cinfo, vcinfo;  // AUDIO AND VIDEO CODECS.
     AVFormatContext * c;
 
+    /* SET UP THE VIDEO SCREEN */
+    video_resizedelay = 1;     // MIN. TIME TO WAIT AFTER USER RESIZES VIDEO WINDOW BEFORE RE-ASPECTING (SEC.)
+    sdl_initialized = false;  // TRUE IF SDL (VIDEO) IS SUCCESSFULLY INITIALIZED.
+    video_doreset_width = 0;   // WINDOW-SIZE BELOW WHICH WINDOW WILL SNAP BACK TO SIZE REQUESTED BY VIDEO STREAM:
+    video_doreset_height = 0;
+    video_default_width = 720;   // WINDOW-SIZE REQUESTED BY VIDEO STREAM ITSELF (just initialize for sanity).
+    video_default_height = 480;
+    needWinSzFudge = true;     // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
+    video_fudge_x = 0; 
+    video_fudge_y = 0;  // FUDGE-FACTOR TO MAINTAIN VIDEO SCREEN LOCN. BETWEEN RUNS.
+    windowIsStable = false;
+    video_window_x = video_window_y = video_window_w = video_window_h = 0;
+
+    play_video = aud_get_bool ("dvd", "play_video");   /* JWT:RESET PLAY-VIDEO, CASE TURNED OFF ON PREV. PLAY. */
+    if (play_video)
+    {
+        AUDDBG ("--(INIT) PLAYING VIDEO!\n");
+        String video_windowtitle;
+        String song_title;
+        song_title = String (dvdnav_priv->title_str);
+        /* JWT: time in seconds to wait for user to stop dragging before resetting window aspect */
+        video_resizedelay = aud_get_int ("ffaudio", "video_resizedelay");
+        if (video_resizedelay <= 0 or video_resizedelay > 9)
+            video_resizedelay = 1;
+        /* JWT: size below which window is reset to video's original requested size. */
+        video_doreset_width = aud_get_int ("ffaudio", "video_doreset_width");
+        if ( video_doreset_width <= 0)
+            video_doreset_width = 149;
+        video_doreset_height = aud_get_int ("ffaudio", "video_doreset_height");
+        if ( video_doreset_height <= 0)
+            video_doreset_height = 149;
+
+        SDL_SetMainReady ();
+        if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0)
+        {
+            AUDERR ("e:Failed to init SDL (no video playing): %s.\n", SDL_GetError ());
+            play_video = false;
+            goto breakout1;
+        }
+        sdl_initialized = true;
+        Uint32 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
+    	   if (aud_get_bool ("dvd", "allow_highdpi"))
+    	       flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+
+        screen = SDL_CreateWindow ("Fauxdacious DVD", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
+            video_default_width, video_default_height, flags);
+        if (! screen)
+        {
+            AUDERR ("e:Failed to create SDL window (no video playing): %s.\n", SDL_GetError ());
+            play_video = false;
+            goto breakout1;
+        }
+        else
+            SDL_SetHint (SDL_HINT_VIDEO_X11_NET_WM_PING, "0");
+
+        video_windowtitle = aud_get_str ("dvd", "video_windowtitle");
+        StringBuf titleBuf = (video_windowtitle && video_windowtitle[0])
+                ? str_printf ("%s - %s", (const char *) song_title, (const char *) video_windowtitle)
+                : str_copy ((const char *) song_title, -1);
+        song_title = String ();
+        video_windowtitle = String ();
+        str_replace_char (titleBuf, '_', ' ');
+        SDL_SetWindowTitle (screen, (const char *) titleBuf);
+        /* NOW CALCULATE THE WIDTH, HEIGHT, & ASPECT BASED ON VIDEO'S SIZE & AND ANY USER PARAMATERS GIVEN:
+            IDEALLY, ONE SHOULD ONLY SET X OR Y AND LET Fauxdacious CALCULATE THE OTHER DIMENSION,
+            SO THAT THE ASPECT RATIO IS MAINTAINED, THOUGH ONE CAN SPECIFY BOTH AND FORCE
+            THE ASPECT TO BE ADJUSTED TO FIT.  IF A SINGLE ONE IS SPECIFIED AS "-1", THEN
+            THE NEW WINDOW WILL KEEP THE SAME VALUE FOR THAT DIMENSION AS THE PREV. WINDOW,
+            AND ADJUST THE OTHER DIMENTION ACCORDINGLY TO FIT THE NEW VIDEO'S ASPECT RATIO.
+            IF BOTH ARE SPECIFIED AS "-1", USE PREVIOUSLY-SAVED WINDOW SIZE REGUARDLESS OF ASPECT RATIO.
+        */
+        video_xmove = aud_get_int ("dvd", "video_xmove");
+        /*  -1:always let windowmanager place (random); 0(DEPRECIATED/SDL1):place window via
+            SDL_putenv() - may work with Windows?; 1(default):relocate window via SDL; 
+            2:(both 0, then 1).  This is sometimes useful for multiple X
+            desktops where the default of placing the window via SDL_putenv will ALWAYS
+            place the window in the same desktop that Fauxdacious is in.  By setting to 1,
+            the window will be moved to the proper location relative to the current
+            desktop, and Fauxdacious is treated as "sticky" by the window manager.  Setting
+            to 2 MAY be useful IF for some reason, neither 0 nor 1 work properly.
+        */
+        /* GET SAVED PREV. VIDEO WINDOW LOCN. AND SIZE AND TRY TO PLACE NEW WINDOW ACCORDINGLY: */
+        /* JWT: I ADDED THIS TO AVOID NEW VID. WINDOW RANDOMLY POPPING UP IN NEW LOCN., IE. WHEN REPEATING A VIDEO. */
+        video_window_x = aud_get_int ("dvd", "video_window_x");
+        video_window_y = aud_get_int ("dvd", "video_window_y");
+        video_window_w = aud_get_int ("dvd", "video_window_w");
+        video_window_h = aud_get_int ("dvd", "video_window_h");
+        if (video_xmove == -1)
+            needWinSzFudge = false;  // NO FUDGING NEEDED IF WINDOW TO BE PLACED RANDOMLY BY WINDOWMANAGER!
+        else if (video_xmove >= 0 && video_xmove != 1)  // (0 or 2)
+        {
+            char video_windowpos[40];
+            sprintf (video_windowpos, "SDL_VIDEO_WINDOW_POS=%d, %d", video_window_x, video_window_y);
+            putenv (video_windowpos);
+        }
+        if (video_xmove > 0)  // (1 or 2)
+            SDL_SetWindowPosition (screen, video_window_x, video_window_y);
+    }
+
+breakout1:
+    SmartPtr<SDL_Renderer, SDL_DestroyRenderer> renderer (createSDL2Renderer (screen, play_video));
+
 startover:
-    AUDINFO ("---- reader_demuxer starting over! ----\n");
+    AUDERR ("---- reader_demuxer starting over! ----\n");
     out_fmt = 0;
     errcount = 0;
     vx = 0;
     vy = 0;
     video_width = 0;     // INITIAL VIDEO WINDOW-SIZE:
     video_height = 0;
-    video_window_x = 0;  // VIDEO WINDOW POSITION AND SIZE WHEN PROGRAM LAST CLOSED:
-    video_window_y = 0;
-    video_window_w = 0;
-    video_window_h = 0;
-    video_resizedelay = 1;     // MIN. TIME TO WAIT AFTER USER RESIZES VIDEO WINDOW BEFORE RE-ASPECTING (SEC.)
     resized_window_width = 0;  // VIDEO WINDOW-SIZE AFTER LAST RESIZE.
     resized_window_height = 0;
     video_requested_width = 720;   // WINDOW-SIZE REQUESTED BY VIDEO STREAM ITSELF (just initialize for sanity).
@@ -1159,8 +1264,6 @@ startover:
     video_default_width = 720;   // WINDOW-SIZE REQUESTED BY VIDEO STREAM ITSELF (just initialize for sanity).
     video_default_height = 480;
     videohasnowh = false;
-    video_doreset_width = 0;   // WINDOW-SIZE BELOW WHICH WINDOW WILL SNAP BACK TO SIZE REQUESTED BY VIDEO STREAM:
-    video_doreset_height = 0;
     video_qsize = 0;
     last_resizeevent_time = time (nullptr);  // TIME OF LAST RESIZE EVENT, SO WE CAN DETERMINE WHEN SAFE TO RE-ASPECT.
     video_aspect_ratio = 0;  // ASPECT RATIO OF VIDEO, SAVED TO PERMIT RE-ASPECTING AFTER USER RESIZES (WARPS) WINDOW.
@@ -1172,15 +1275,11 @@ startover:
     //bool returnok = false;
     eof = false;
     last_resized = true;      // TRUE IF VIDEO-WINDOW HAS BEEN RE-ASPECTED SINCE LAST RESIZE EVENT (HAS CORRECT ASPECT RATIO).
-    sdl_initialized = false;  // TRUE IF SDL (VIDEO) IS SUCCESSFULLY INITIALIZED.
-    video_fudge_x = 0; 
-    video_fudge_y = 0;  // FUDGE-FACTOR TO MAINTAIN VIDEO SCREEN LOCN. BETWEEN RUNS.
-    needWinSzFudge = true;     // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
     //wedohaveaudio = false;  // BECOMES TRUE IF WE FIND AN AUDIO FRAME.
     pktQ = nullptr;      // QUEUE FOR VIDEO-PACKET QUEUEING.
     apktQ = nullptr;     // QUEUE FOR AUDIO-PACKET QUEUEING.
     menubuttons_adjusted = false;
-    c = open_input_file (& input_fd_p);
+    c = open_input_file (& input_fd_p);  // OPEN UP THE FIFO FOR READING AND THE DEMUXER ("AV-STUFF").
     //SmartPtr<AVFormatContext, close_input_file> c (open_input_file ());
     if (!c)
     {
@@ -1189,7 +1288,9 @@ startover:
         playback_thread_running = false;
         return;
     }
-    if (playing_a_menu && aud_get_bool ("dvd", "nomenus") && aud_get_bool ("dvd", "nomenudrain"))
+
+    /* IF NOT DRAINING MENUS, DON'T EVEN BOTHER "PLAYING" MENU IF WE'RE SKIPPING, JUST ACTIVATE DEFAULT BUTTON! */
+    if (playing_a_menu && aud_get_bool ("dvd", "nomenus") && ! aud_get_bool ("dvd", "menudrain"))
     {
 AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
         pci_t * pci = dvdnav_get_current_nav_pci (dvdnav_priv->dvdnav);
@@ -1200,6 +1301,8 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
         //dvdnav_get_current_nav_dsi (dvdnav_priv->dvdnav);
         //goto error_exit;
     }
+
+    /* FIND THE AUDIO AND VIDEO STREAMS AND OPEN CODECS: */
     videoStream = -1;
     audioStream = -1;
 #ifndef ALLOC_CONTEXT
@@ -1217,7 +1320,7 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
         AVCodec * vcodec = avcodec_find_decoder (c->streams[videoStream]->codecpar->codec_id);
         if (vcodec)
         {
-            AUDDBG ("--HAVE A VIDEO CODEC!\n");
+            AUDINFO ("--HAVE A VIDEO CODEC!\n");
             vcinfo.stream_idx = videoStream;
             vcinfo.stream = c->streams[videoStream];
             // NO!: vcinfo.stream->discard = AVDISCARD_ALL;
@@ -1244,7 +1347,7 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
     else
         play_video = false;  /* turn off video playback, since we could not find a video stream! */
 
-    dvdnav_priv->lastaudiostream = audioStream;
+    dvdnav_priv->lastaudiostream = audioStream;  // SAVE IT!
     if (audioStream >= 0)
     {
         AVCodec * codec = avcodec_find_decoder (c->streams[audioStream]->codecpar->codec_id);
@@ -1265,7 +1368,7 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
             AUDINFO ("got AUDIO codec %s for stream index %d, opening...\n", cinfo.codec->name, cinfo.stream_idx);
         }
     }
-    AUDERR ("----VIDEO STREAM=%d=  aud=%d= count=%d=\n", videoStream, audioStream, c->nb_streams);
+    AUDINFO ("----VIDEO STREAM=%d=  aud=%d= count=%d=\n", videoStream, audioStream, c->nb_streams);
 //    for (unsigned int x=0; x<c->nb_streams; x++)  // JWT:HELPFUL FOR DEBUGGING CODEC ISSUES BUG SEGFAULTS IF RECEIVING NAV PACKETS?!:
 //    {
 //        AUDERR ("------STREAM (%d)\n", x);
@@ -1286,7 +1389,7 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
     }
     if (playing_a_menu && !vcodec_opened && aud_get_bool ("dvd", "play_video"))  //NEEDED FOR ACTS DVD (SINCE 8.4)
     {
-        AUDERR("BAD CODECS, START OVER AND TRY AGAIN...\n");
+        AUDERR("BAD CODEC SEARCH, START OVER AND TRY AGAIN...\n");
         checkcodecs = true;
         goto error_exit;
     }
@@ -1312,55 +1415,7 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
         readblock = false;
     if (myplay_video)
     {
-        AUDDBG ("--PLAYING VIDEO!\n");
-        String video_windowtitle;
-        String song_title;
-        song_title = String (dvdnav_priv->title_str);
-        /* JWT: time in seconds to wait for user to stop dragging before resetting window aspect */
-        video_resizedelay = aud_get_int ("ffaudio", "video_resizedelay");
-        if (video_resizedelay <= 0 or video_resizedelay > 9)
-            video_resizedelay = 1;
-        /* JWT: size below which window is reset to video's original requested size. */
-        video_doreset_width = aud_get_int ("ffaudio", "video_doreset_width");
-        if ( video_doreset_width <= 0)
-            video_doreset_width = 149;
-        video_doreset_height = aud_get_int ("ffaudio", "video_doreset_height");
-        if ( video_doreset_height <= 0)
-            video_doreset_height = 149;
-
-        int video_xmove = aud_get_int ("dvd", "video_xmove");
-        /*  -1:always let windowmanager place (random); 0(DEPRECIATED/SDL1):place window via
-            SDL_putenv() - may work with Windows?; 1(default):relocate window via SDL; 
-            2:(both 0, then 1).  This is sometimes useful for multiple X
-            desktops where the default of placing the window via SDL_putenv will ALWAYS
-            place the window in the same desktop that Fauxdacious is in.  By setting to 1,
-            the window will be moved to the proper location relative to the current
-            desktop, and Fauxdacious is treated as "sticky" by the window manager.  Setting
-            to 2 MAY be useful IF for some reason, neither 0 nor 1 work properly.
-        */
-        video_window_x = video_window_y = video_window_w = video_window_h = 0;
-        /* GET SAVED PREV. VIDEO WINDOW LOCN. AND SIZE AND TRY TO PLACE NEW WINDOW ACCORDINGLY: */
-        /* JWT: I ADDED THIS TO AVOID NEW VID. WINDOW RANDOMLY POPPING UP IN NEW LOCN., IE. WHEN REPEATING A VIDEO. */
-        video_window_x = aud_get_int ("dvd", "video_window_x");
-        video_window_y = aud_get_int ("dvd", "video_window_y");
-        video_window_w = aud_get_int ("dvd", "video_window_w");
-        video_window_h = aud_get_int ("dvd", "video_window_h");
-        if (video_xmove == -1)
-            needWinSzFudge = false;  // NO FUDGING NEEDED IF WINDOW TO BE PLACED RANDOMLY BY WINDOWMANAGER!
-        else if (video_xmove >= 0 && video_xmove != 1)  // (0 or 2)
-        {
-            char video_windowpos[40];
-            sprintf (video_windowpos, "SDL_VIDEO_WINDOW_POS=%d, %d", video_window_x, video_window_y);
-            putenv (video_windowpos);
-        }
-        /* NOW CALCULATE THE WIDTH, HEIGHT, & ASPECT BASED ON VIDEO'S SIZE & AND ANY USER PARAMATERS GIVEN:
-            IDEALLY, ONE SHOULD ONLY SET X OR Y AND LET Fauxdacious CALCULATE THE OTHER DIMENSION,
-            SO THAT THE ASPECT RATIO IS MAINTAINED, THOUGH ONE CAN SPECIFY BOTH AND FORCE
-            THE ASPECT TO BE ADJUSTED TO FIT.  IF A SINGLE ONE IS SPECIFIED AS "-1", THEN
-            THE NEW WINDOW WILL KEEP THE SAME VALUE FOR THAT DIMENSION AS THE PREV. WINDOW,
-            AND ADJUST THE OTHER DIMENTION ACCORDINGLY TO FIT THE NEW VIDEO'S ASPECT RATIO.
-            IF BOTH ARE SPECIFIED AS "-1", USE PREVIOUSLY-SAVED WINDOW SIZE REGUARDLESS OF ASPECT RATIO.
-        */
+        // int x, y;
         dvdnav_get_video_resolution (dvdnav_priv->dvdnav, & video_requested_width, & video_requested_height);
         AUDINFO ("----- VIDEO REQUESTED (%d x %d) or RQ:(%d x %d)-----\n", vcinfo.context->width, 
                 vcinfo.context->height, video_requested_width, video_requested_height);
@@ -1394,13 +1449,13 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
         video_requested_height = vcinfo.context->height;
         if (vx && !vy)   /* User specified (or saved) width only, calc. height based on aspect: */
         {
-            video_width = (vx == -1) ? (video_window_w ? video_window_w : vcinfo.context->width) : vx;
+            video_width = (vx == -1) ? (video_window_w ? video_window_w : video_default_width) : vx;
             video_height = (int)((float)video_width / video_aspect_ratio);
             //video_default_height = (int)((float)video_default_width / video_aspect_ratio);
         }
         else if (!vx && vy)   /* User specified (or saved) height only, calc. width based on aspect: */
         {
-            video_height = (vy == -1) ? (video_window_h ? video_window_h : vcinfo.context->height) : vy;
+            video_height = (vy == -1) ? (video_window_h ? video_window_h : video_default_height) : vy;
             video_width = (int)((float)video_height * video_aspect_ratio);
             //video_default_width = (int)((float)video_default_height * video_aspect_ratio);
         }
@@ -1408,8 +1463,8 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
         {
             if (vx == -1 && vy == -1)  /* Use same (saved) settings or video's settings (SCREW THE ASPECT)! */
             {
-                video_width = video_window_w ? video_window_w : vcinfo.context->width;
-                video_height = video_window_h ? video_window_h : vcinfo.context->height;
+                video_width = video_window_w ? video_window_w : video_default_width;
+                video_height = video_window_h ? video_window_h : video_default_height;
             }
             else if (vx == -1)  /* Use same (saved) height & calculate new width based on aspect: */
             {
@@ -1431,10 +1486,10 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
         }
         else   /* User specified nothing, use the video's desired wXh (& ignore saved settings!): */
         {
-            video_width = vcinfo.context->width;
-            video_height = vcinfo.context->height;
+            video_width = video_default_width;
+            video_height = video_default_height;
         }
-        AUDERR ("---VIDEO W x H SET TO (%d x %d)!\n", video_width, video_height);
+        AUDINFO ("---VIDEO W x H SET TO (%d x %d)!\n", video_width, video_height);
         if (playing_a_menu && menubuttons.len () > 0)
         {
             menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
@@ -1444,48 +1499,34 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
             ? (float)video_width / (float)video_height : 1.0;   /* Fall thru to square to avoid possibliity of "/0"! */
 
         /* NOW "RESIZE" screen to user's wXh, if user set something: */
-        SDL_SetMainReady ();
-        if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0)
-        {
-            AUDERR ("e:Failed to init SDL (no video playing): %s.\n", SDL_GetError ());
-            myplay_video = false;
-            goto breakout1;
-        }
-        sdl_initialized = true;
-        Uint32 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
-    	   if (aud_get_bool ("dvd", "allow_highdpi"))
-    	       flags |= SDL_WINDOW_ALLOW_HIGHDPI;
-
-        screen = SDL_CreateWindow ("Fauxdacious DVD", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
-            video_width, video_height, flags);
-        if (! screen)
-        {
-            AUDERR ("e:Failed to create SDL window (no video playing): %s.\n", SDL_GetError ());
-            myplay_video = false;
-            goto breakout1;
-        }
-        else
-            SDL_SetHint (SDL_HINT_VIDEO_X11_NET_WM_PING, "0");
-
-        video_windowtitle = aud_get_str ("dvd", "video_windowtitle");
-        StringBuf titleBuf = (video_windowtitle && video_windowtitle[0])
-                ? str_printf ("%s - %s", (const char *) song_title, (const char *) video_windowtitle)
-                : str_copy ((const char *) song_title, -1);
-        song_title = String ();
-        video_windowtitle = String ();
-        str_replace_char (titleBuf, '_', ' ');
         SDL_SetWindowSize (screen, video_width, video_height);
 
-        if (video_xmove > 0)  // (1 or 2)
-            SDL_SetWindowPosition (screen, video_window_x, video_window_y);
         if (aud_get_str ("dvd", "video_render_scale"))
             SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, aud_get_str ("dvd", "video_render_scale"));
         else
             SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "1");
-        SDL_SetWindowTitle (screen, (const char *) titleBuf);
-    }
 
-breakout1:
+        /*
+           YET ANOTHER STUPID SDL FUDGE HACK NEEDED SINCE SDL_SetWindowPosition *MOVES* THE WINDOW 
+           BY THE SIZE OF THE WINDOW DECORATIONS (THE "FUDGE" FACTOR) - GRRRRRR WASTED A WHOLE 
+           EVENING TRYING TO FIGURE THIS OUT. :(
+        */
+        /* STILL DOESN'T WORK CONSISTANTLY, SO, FOR NOW, DON'T USE SDL_SetWindowPosition()!
+        SDL_GetWindowPosition (screen, &x, &y);
+
+        if (playing_a_menu)
+        {
+            if (video_width < video_doreset_width && video_height <  video_doreset_height)  //MAKE SURE MENU IS VISIBLE!
+                SDL_SetWindowSize (screen, (int)((float)video_doreset_height * video_aspect_ratio), video_doreset_height);
+            SDL_SetWindowResizable (screen, SDL_FALSE);  // DON'T ALLOW MENU WINDOWS TO BE RESIZED!
+        }
+        else
+            SDL_SetWindowResizable (screen, SDL_TRUE);
+        //if (windowIsStable) AUDERR ("-FUDGEHACK: Y=%d= YFUDGE=%d=\n", y, video_fudge_y); else AUDERR ("---NOT STABLE: Y=%d= YFUDGE=%d=\n", y, video_fudge_y);
+        if (windowIsStable)  // JWT:REVERSE STUPID SDL_SetWindowResizable()'S MOVEMENT OF OUR WINDOW!
+            SDL_SetWindowPosition (screen, x+video_fudge_x, y+video_fudge_y);
+        */
+    }
 
     /* JWT:video_qsize:  MAX # PACKETS TO QUEUE UP FOR INTERLACING TO SMOOTH VIDEO
         PLAYBACK - GOOD RANGE IS 6-28, DEFAULT IS 8:
@@ -1495,23 +1536,21 @@ breakout1:
     video_qsize = aud_get_int ("dvd", "video_qsize");
     if (video_qsize < 1)
         video_qsize = (aud_get_int ("ffaudio", "video_qsize"))
-                ? aud_get_int ("ffaudio", "video_qsize") : 8;
+                ? aud_get_int ("ffaudio", "video_qsize") : 5;
     if (video_qsize < 1)
-        video_qsize = 8;
+        video_qsize = 5;
 
     /* TYPICALLY THERE'S TWICE AS MANY AUDIO PACKETS AS VIDEO, SO THIS IS COUNTER-INTUITIVE, BUT IT WORKS BEST! */
     pktQ = createQueue (2 * video_qsize);
     apktQ = createQueue (video_qsize);
 
     {   // SUBSCOPE FOR DECLARING SDL2 TEXTURE AS SCOPED SMARTPOINTER:
-    bool windowIsStable = false;    // JWT:SAVING AND RECREATING WINDOW CAUSES POSN. TO DIFFER BY THE WINDOW DECORATION SIZES, SO WE HAVE TO FUDGE FOR THAT!
     bool windowNowExposed = false;  // JWT:NEEDED TO PREVENT RESIZING WINDOW BEFORE EXPOSING ON MS-WINDOWS?!
     int seek_value;
     bool highlightbuttons = playing_a_menu ? aud_get_bool("dvd", "highlightbuttons") : false;
     int minmenushowsec = aud_get_int ("dvd", "minmenushowsec");
     if (minmenushowsec < 1)
         minmenushowsec = 16;
-    SmartPtr<SDL_Renderer, SDL_DestroyRenderer> renderer (createSDL2Renderer (screen, myplay_video));
     if (! renderer)
     {
         AUDERR ("e:SDL: could not create video renderer - no video play (%s)\n", SDL_GetError ());
@@ -1544,12 +1583,17 @@ breakout1:
     }
     AUDDBG ("READER-DEMUXER: STARTING LOOP\n");
     pci_t * pci = dvdnav_get_current_nav_pci (dvdnav_priv->dvdnav);
-    scene_start_time = time (nullptr);;
+    scene_start_time = time (nullptr);
+    bool were_playing_a_menu = playing_a_menu;
+
+    /* MAIN LOOP TO DEMUX AUDIO/VIDEO DATA AND PRESENT IT TO USER - EXITS WHEN CHANNEL CHANGES (HOPS): */
     while (! reader_please_die)
     {
-        if (checkcodecs)
+        if (playing_a_menu != were_playing_a_menu)
+            checkcodecs = true;
+        if (checkcodecs)  /* WE NEED TO START OVER - CHANNEL CHANGE, NEED TO RESCAN CODECS / STREAMS! */
         {
-            if (vcodec_opened)
+            if (vcodec_opened)  // SEND EMPTY PACKET TO FLUSH VIDEO SCREAM:
             {
                 AVPacket emptypkt = AVPacket ();
                 av_init_packet (& emptypkt);
@@ -1559,21 +1603,21 @@ breakout1:
                       & resized_window_width, & resized_window_height);
                 av_free_packet (& emptypkt);
             }
-            writeblock = false;
-            QFlush (apktQ);
+            writeblock = false;  // DON'T BLOCK FURTHER DVD ENGINE WRITES:
+            QFlush (apktQ);      // FLUSH PACKET QUEUES:
             QFlush (pktQ);
             goto error_exit;
         }
         writeblock = false;
+
         /* CHECK IF USER MOVED THE SEEK/POSITION SLIDER, IF SO FLUSH QUEUES AND SEEK TO NEW POSITION: */
         seek_value = check_seek ();
         if (seek_value >= 0)
         {
-            dvdnav_priv->nochannelhop = true;
-            int faudlen = aud_drct_get_length ();
+            dvdnav_priv->nochannelhop = true;     // DON'T ALLOW CHANNEL HOPPING WHILST WE'RE MOVING SEEK SLIDER!
+            int faudlen = aud_drct_get_length (); // STREAM LENGTH ACCORDING TO Fauxdacius.
             /* JWT:FIRST, FLUSH ANY PACKETS SITTING IN THE QUEUES TO CLEAR THE QUEUES! */
-            //if (codec_opened && faudlen > 0)   /* SEEKING NO WORK SO WELL IN MENUS?! */
-            if (! playing_a_menu && faudlen > 0)
+            if (! playing_a_menu && faudlen > 0)  // NO SEEKING IN MENUS, PRETTY POINTLESS!
             {
                 QFlush (apktQ);
                 QFlush (pktQ);
@@ -1592,6 +1636,7 @@ breakout1:
             seek_value = -1;
         }
 
+        /* READ AND PROCESS NEXT FRAME: */
         pkt = AVPacket ();
         av_init_packet (& pkt);
 //AUDERR("---WILL READ A FRAME!\n");
@@ -1600,11 +1645,13 @@ breakout1:
         if (ret < 0)  // CHECK FOR EOF OR ERRORS:
         {
             ++errcount;
-            if (ret == (int) AVERROR_EOF)
+            if (ret == (int) AVERROR_EOF)  /* END OF FILE WHILST READING FRAMES: */
             {
                 if (playing_a_menu) AUDINFO ("i:eof reached in menu, continue\n"); else AUDINFO ("i:eof reached in movie ********************\n");
                 av_free_packet (& pkt);
                 eof = true;
+
+                /* FIRST, PROCESS ANYTHING STILL IN THE QUEUES: */
                 while (apktQ->size > 0 || pktQ->size > 0)
                 {
                     AVPacket * pktRef;
@@ -1622,7 +1669,6 @@ breakout1:
                                         & resized_window_width, & resized_window_height);
                             if (highlightbuttons)
                             {
-//if (menubuttons.len () > 0)  AUDERR("222222222 DRAW BUTTONS!\n");
                                 if (! menubuttons_adjusted && menubuttons.len () > 0)
                                     menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
                                             video_requested_height, (uint32_t)video_height);
@@ -1643,7 +1689,7 @@ breakout1:
                 }
                 if (playing_a_menu)
                 {
-                    if (vcodec_opened)
+                    if (vcodec_opened)  /* FLUSH VIDEO CODEC TO ENSURE USER SEES ALL OF THE MENU SCREEN: */
                     {
                         AVPacket emptypkt = AVPacket ();
                         av_init_packet (& emptypkt);
@@ -1653,25 +1699,7 @@ breakout1:
                               & resized_window_width, & resized_window_height);
                         av_free_packet (& emptypkt);
                     }
-                    //int32_t button;
-                    //pci_t * pci = dvdnav_get_current_nav_pci (dvdnav_priv->dvdnav);
                     AUDINFO ("i:MENU EOF: BUTTON COUNT IN THIS MENU:  %d! duration=%d\n", pci->hli.hl_gi.btn_ns, dvdnav_priv->duration);
-//                    if (myplay_video && pci->hli.hl_gi.btn_ns < 1) //WE MIGHT NEED TO WAIT A BIT!:
-//                    {
-//                        AUDINFO ("i:WE MAY NEED TO LEAVE THE MENU SHOWING... DURATION(%d)...!\n", dvdnav_priv->duration);
-//                        if (pci->hli.hl_gi.btn_ns < 1 && dvdnav_priv->duration > 0)
-//                        {
-//                            AUDERR ("BUTTONLESS MENU, WAIT %d SEC AS REQUIRED BY DVD\n", dvdnav_priv->duration / 1000);
-//                            if (difftime (time (nullptr), scene_start_time) < dvdnav_priv->duration / 1000)
-//                                goto polluserevents;
-//                        }
-//                        else if (dvdnav_priv->duration < (unsigned int)minmenushowsec * 1000)
-//                        {
-//                            AUDERR ("AUDIO MENU DURATION LESS THAN %d SEC, WAIT AT LEAST THAT LONG. FOR USER TO PRESS A BUTTON!\n", minmenushowsec);
-//                            if (difftime (time (nullptr), scene_start_time) < minmenushowsec)
-//                                goto polluserevents;
-//                        }
-//                    }
                     if (pci->hli.hl_gi.btn_ns < 1)
                     {
                         if (dvdnav_priv->duration <= 0 || difftime (time (nullptr), scene_start_time) > dvdnav_priv->duration / 1000)
@@ -1682,18 +1710,20 @@ breakout1:
                             else
                                 AUDERR ("e:WE SEEM TO BE STUCK IN A BUTTONLESS MENU!...\n");
                             eof = false;
+                            were_playing_a_menu = playing_a_menu;
                         }
-                        else
-                            AUDERR("WAITING %d SECONDS FOR BUTTONLESS MENU...\n", dvdnav_priv->duration / 1000);
+//                        else
+//                            AUDERR("WAITING %d SECONDS FOR BUTTONLESS MENU...\n", dvdnav_priv->duration / 1000);
                     }
                 }
-                else if (dvdnav_next_pg_search (dvdnav_priv->dvdnav) == DVDNAV_STATUS_OK)
+                else if (dvdnav_next_pg_search (dvdnav_priv->dvdnav) == DVDNAV_STATUS_OK)  // PLAYING A MOVIE:
                 {
                     dvdnav_priv->nochannelhop = false;
                     AUDINFO ("i:MOVIE ENDED, ADVANCING TO NEXT SCENE(%d)...\n", dvdnav_priv->duration / 1000);
                     eof = false;
+                    were_playing_a_menu = playing_a_menu;
                 }
-                else
+                else  // PLAYING THE LAST MOVIE (NO NEXT SCENE TO GO TO, SO STOP PLAYBACK:
                 {
                     dvdnav_priv->nochannelhop = false;
                     AUDINFO ("i:MOVIE ENDED, NO NEXT STREAM, STOPPING PLAY...\n");
@@ -1703,7 +1733,7 @@ breakout1:
                     eof = false;
                 }
             }
-            else if (errcount > 4)
+            else if (errcount > 4)  // TOO MANY FRAME ERRORS, PUNT:
             {
                 dvdnav_priv->nochannelhop = false;
                 AUDERR ("w:av_read_frame error %d, giving up.\n", ret);
@@ -1712,7 +1742,7 @@ breakout1:
             }
             else
             {
-                AUDERR ("w:ERROR READING PACKET, TRY AGAIN?\n");
+                AUDERR ("w:Error reading packet, try again?\n");
                 av_free_packet (& pkt);
                 continue;
             }
@@ -1722,6 +1752,7 @@ breakout1:
             errcount = 0;
             eof = false;
         }
+
         /* AFTER READING BUT BEFORE PROCESSING EACH PACKET, CHECK IF EITHER QUEUE IS FULL, IF SO, WRITE NEXT 
            WAITING PACKETS UNTIL AT LEAST ONE QUEUE IS EMPTIED, ORDERING OUTPUT AS AUDIO, VIDEO, AUDIO, ... 
            SINCE WE TYPICALLY HAVE TWICE AS MANY AUDIO PACKETS AS VIDEO.  THIS IS THE SECRET TO KEEPING 
@@ -1743,7 +1774,6 @@ breakout1:
                                 & resized_window_width, & resized_window_height);
                     if (highlightbuttons)
                     {
-//if (menubuttons.len () > 0)  AUDERR("111111111 DRAW BUTTONS!\n");
                         if (! menubuttons_adjusted && menubuttons.len () > 0)
                             menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
                                     video_requested_height, (uint32_t)video_height);
@@ -1768,8 +1798,6 @@ breakout1:
             if (codec_opened && pkt.stream_index == cinfo.stream_idx)  /* WE READ AN AUDIO PACKET: */
             {
 //if (playing_a_menu) AUDERR("audio pkt: pkt=%d= audio=%d=\n", pkt.stream_index, cinfo.stream_idx);
-//                if (playing_a_menu)
-//                    wedohaveaudio = true;
                 Enqueue (apktQ, pkt);
             }
             else
@@ -1804,6 +1832,7 @@ breakout1:
 //                    if(event.button == SDL_BUTTON_LEFT)
                     if (playing_a_menu)
                     {
+                        /* USER PRESSED A MENU BUTTON, SEE WHICH ONE AND ACTIVATE IT: */
 //AUDERR("--1MOUSE BUTTON PRESSED...\n");
                         for (int mbtn = 0; mbtn < menubuttons.len (); mbtn ++)
                         {
@@ -1820,12 +1849,14 @@ breakout1:
                                 SDL_RenderFillRect (renderer.get (), nullptr);
                                 SDL_RenderPresent (renderer.get ());
                                 AUDINFO ("i:ACTIVATE MENU BUTTON2 (MAY ASSERT ITSELF)!\n");
-                                writeblock = true;
+                                writeblock = true;  // DON'T LET DVD ENGINE WRITE ANY MORE UNTIL WE'RE DONE DRAINING!
                                 dvdnav_button_activate (dvdnav_priv->dvdnav, pci);
 //if (dvdnav_is_domain_vts (dvdnav_priv->dvdnav)) AUDERR("WE'RE A MOVIE, I THINK\n"); else AUDERR("WE'RE A MENU, I THINK\n");
-                                //WE ONLY DRAIN IF GOING TO A MOVIE (SEEMS TO BORK MENUS)!
+                                //DRAIN ANY REMAINING AUDIO/VIDEO PACKETS (UNLESS USER TOLD US NOT TO - SOME DVDS HAVE ISSUES):
                                 //if (! aud_get_bool ("dvd", "nomenudrain") && dvdnav_is_domain_vts (dvdnav_priv->dvdnav))
-                                if (! aud_get_bool ("dvd", "nomenudrain"))
+                                playing_a_menu = ! (dvdnav_is_domain_vts (dvdnav_priv->dvdnav));
+                                if ((aud_get_bool ("dvd", "menudrain") && playing_a_menu)
+                                        || (! playing_a_menu && ! aud_get_bool ("dvd", "nomoviedrain")))
                                 {
                                     AUDINFO ("---START DRAINING!\n");
                                     while (! eof)
@@ -1839,11 +1870,8 @@ breakout1:
                                 }
                                 writeblock = false;
                                 pci = dvdnav_get_current_nav_pci(dvdnav_priv->dvdnav);
-                                //checkcodecs = true;
-                                playing_a_menu = ! (dvdnav_is_domain_vts (dvdnav_priv->dvdnav));
+                                were_playing_a_menu = playing_a_menu = ! (dvdnav_is_domain_vts (dvdnav_priv->dvdnav));
                                 break;
-                                //dvdnav_get_current_nav_dsi (dvdnav_priv->dvdnav);
-                                //goto error_exit;
                             }
                         }
                     }
@@ -1896,6 +1924,7 @@ breakout1:
                 if (videohasnowh)
                 {
                     video_aspect_ratio = new_aspect_ratio;
+AUDERR("---RESIZE(videohasnowh): NEW RATIO=%f=\n", video_aspect_ratio);
                     videohasnowh = false;
                 }
                 /* NOW MANUALLY ADJUST EITHER THE WIDTH OR HEIGHT BASED ON USER'S CONFIG. TO RESTORE 
@@ -1903,13 +1932,13 @@ breakout1:
                 */
                 if (vy == -1)  // USER SAYS ADJUST HEIGHT TO MATCH WIDTH:
                 {
-                    new_video_width = resized_window_width;
-                    new_video_height = (int)((float)new_video_width / video_aspect_ratio);
+                    new_video_height = resized_window_height;
+                    new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
                 }
                 else if (vx == -1)  // USER SAYS ADJUST WIDTH TO MATCH HEIGHT:
                 {
-                    new_video_height = resized_window_height;
-                    new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
+                    new_video_width = resized_window_width;
+                    new_video_height = (int)((float)new_video_width / video_aspect_ratio);
                 }
                 else  // USER DOESN'T CARE, SO WE DECIDE WHICH TO ADJUST:
                 {
@@ -1946,18 +1975,20 @@ breakout1:
                     new_video_width = video_default_width;
                     new_video_height = video_default_height;
                 }
-                if (playing_a_menu && menubuttons.len () > 0)
-                {
-                    menubuttons_adjusted = adjust_menubuttons ((uint32_t)video_width, (uint32_t)new_video_width, 
-                            (uint32_t)video_height, (uint32_t)new_video_height);
-                }
+// JWT:FIXME - DON'T DO THIS SINCE WE CAN'T REBLIT THE MENU SCREEN AS THE IMAGE IS NO LONGER AT OUR DISPOSAL!:
+//                if (playing_a_menu && menubuttons.len () > 0)
+//                {
+//                    menubuttons_adjusted = adjust_menubuttons ((uint32_t)video_width, (uint32_t)new_video_width, 
+//                            (uint32_t)video_height, (uint32_t)new_video_height);
+//                }
                 video_width = new_video_width;
                 video_height = new_video_height;
-AUDERR(" ----RESIZED TO(%d, %d)\n", video_width, video_height);
+                AUDINFO (" ----RESIZED TO(%d, %d)\n", video_width, video_height);
                 /* NOW MANUALLY RESIZE (RE-ASPECT) WINDOW BASED ON VIDEO'S ORIGINALLY-CALCULATED ASPECT RATIO: */
                 SDL_SetWindowSize (screen, video_width, video_height);
                 SDL_Delay (50);
                 last_resized = true;  // WE'VE RE-ASPECTED, SO ALLOW BLITTING TO RESUME!
+                SDL_RenderPresent (renderer.get ());  // only blit a single frame at startup will get refreshed!
             }
         }
         /* (SDL2): WE HAVE TO WAIT UNTIL HERE FOR SDL_GetWindowPosition() TO RETURN THE CORRECT POSITION
@@ -1984,7 +2015,7 @@ AUDERR(" ----RESIZED TO(%d, %d)\n", video_width, video_height);
             AUDDBG ("FUDGE SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x,y,video_window_x,video_window_y,video_fudge_x,video_fudge_y);
             needWinSzFudge = false;
         }
-        if (codec_opened && check_stop ())   //check_stop NO WORKEE W/O AUDIO PLAYIN'!
+        if (codec_opened && check_stop ())   //check_stop NO WORKEE IF WE'RE A VIDEO-ONLY STREAM!
         {
             stop_playback = true;
             checkcodecs = false;
@@ -2003,20 +2034,8 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
         destroyQueue (pktQ);
     if (apktQ)
         destroyQueue (apktQ);
-    if (myplay_video)  /* WE WERE PLAYING VIDEO && FINISHED WITH VIDEO-WINDOW STILL INTACT (NOT CLOSED BY USER PRESSING WINDOW'S CORNER [X]) */
-    {
-        AUDDBG ("i:ffaudio: QUITTING VIDEO!\n");
-        if (screen)  // bmp ALREADY FREED & NOW OUT OF SCOPE BUT MAKE SURE VIDEO WINDOW IS FREED & GONE!
-        {
-            if (! needWinSzFudge)
-                save_window_xy (screen, video_fudge_x, video_fudge_y);
-            SDL_DestroyWindow (screen);
-            screen = nullptr;
-        }
-        if (sdl_initialized)
-            SDL_QuitSubSystem (SDL_INIT_VIDEO);
-    }
 
+    /* CLOSE UP THE CODECS, ETC.: */
     if (vcodec_opened)
     {
 #ifdef ALLOC_CONTEXT
@@ -2047,12 +2066,23 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
         playback_thread_running = false;
         goto startover;
     }
+
+        if (screen)  // bmp ALREADY FREED & NOW OUT OF SCOPE BUT MAKE SURE VIDEO WINDOW IS FREED & GONE!
+        {
+            if (! needWinSzFudge)
+                save_window_xy (screen, video_fudge_x, video_fudge_y);
+            SDL_DestroyWindow (screen);
+            screen = nullptr;
+        }
+    if (sdl_initialized)
+        SDL_QuitSubSystem (SDL_INIT_VIDEO);
+
     playback_thread_running = false;
     AUDINFO ("READER THREAD RETURNING!\n");
     return;
 }
 
-/* play thread only */
+/* THIS "PLAYS" THE DVD - FETCHING INSTRUCTION AND DATA PACKETS FROM THE DVD ENGINE - audacious play thread only */
 bool DVD::play (const char * name, VFSFile & file)
 {
     pthread_mutex_lock (& mutex);
@@ -2083,23 +2113,17 @@ AUDINFO("OPENING FIFO (w+, should not block!)\n");
 
 // SEE:  http://www.linux-mag.com/id/357/; http://man7.org/linux/man-pages/man2/poll.2.html
 
-    int trackno = find_trackno_from_filename (name);
-    AUDINFO ("PLAY:  ============ STARTING TO PLAY DVD (Track# %d NAME=%s) =============\n", trackno, name); 
-    dvdnav_priv->track = trackno;
-
-    playing = true;
+    dvdnav_priv->track = find_trackno_from_filename (name);  // WHICH TRACK WE'RE GOING TO PLAY.
+    AUDINFO ("PLAY:  ============ STARTING TO PLAY DVD (Track# %d NAME=%s) =============\n", dvdnav_priv->track, name); 
 
     //int buffer_size = aud_get_int (nullptr, "output_buffer_size");
     int speed = aud_get_int ("dvd", "disc_speed");
     speed = aud::clamp (speed, MIN_DISC_SPEED, MAX_DISC_SPEED);
-    //int sectors = aud::clamp (buffer_size / 2, 50, 250) * speed * 75 / 1000;
-    //int retry_count = 0, skip_count = 0;
 
     int len, event;
     uint8_t buf[2048];
     struct stat statbuf;
-
-    //AVFormatContext * c = nullptr;
+    playing = true;
     stop_playback = false;
 
     /* CREATE THE FIFO, IF IT DOESN'T ALREADY EXIST. */
@@ -2119,8 +2143,7 @@ AUDINFO("OPENING FIFO (w+, should not block!)\n");
     }
     else
 #endif
-    /* OPEN THE FIFO FOR OUTPUT. */
-        output_fd = fopen ((const char *)dvdnav_priv->fifo_str, "w");
+        output_fd = fopen ((const char *)dvdnav_priv->fifo_str, "w");  /* OPEN THE FIFO FOR OUTPUT. */
 
     /* PLAY THE SELECTED OR FIRST TRACK/TITLE */
     if (dvdnav_priv->track > 0)
@@ -2134,7 +2157,7 @@ AUDINFO("OPENING FIFO (w+, should not block!)\n");
         //show_audio_subs_languages(dvdnav_priv->dvdnav);
         AUDINFO ("i:ID_DVD_CURRENT_TITLE=%d\n", dvdnav_priv->track);
     }
-    else
+    else  // PLAYING DEFAULT TRACK (0) - USUALLY THE MAIN MENU:
     {
         AUDINFO ("i:PLAY: CALLING TOP MENU!\n");
         if (dvdnav_menu_call (dvdnav_priv->dvdnav, DVD_MENU_Root) != DVDNAV_STATUS_OK)
@@ -2148,7 +2171,7 @@ AUDINFO("OPENING FIFO (w+, should not block!)\n");
 
     /* LOOP TO FETCH AND PROCESS DATA FROM THE DVD ENGINE. */
     writeblock = false;
-    while (!stop_playback)
+    while (!stop_playback)  // LOOP UNTIL SOMETHING STOPS US OR WE RUN OUT OF DVD DATA:
     {
         //if (playback_fifo_hasbeenopened) AUDERR ("PLAY:(fifo opened) LOOPING!\n"); else AUDERR ("PLAY:LOOPING!\n");
         /* unlock mutex here to avoid blocking
@@ -2156,7 +2179,7 @@ AUDINFO("OPENING FIFO (w+, should not block!)\n");
         pthread_mutex_unlock (& mutex);
 
         //int ret = dvdnav_get_next_block (dvdnav, buf, &event, &len);
-        event = dvdnav_stream_read (dvdnav_priv, buf, &len);
+        event = dvdnav_stream_read (dvdnav_priv, buf, &len);  // READ NEXT PACKET FROM DVD ENGINE.
         AUDDBG ("PLAY:READ STREAM: EVENT=%d=!\n", event);
         if (event == -1 || len == -1)
         {
@@ -2170,7 +2193,8 @@ AUDINFO("OPENING FIFO (w+, should not block!)\n");
         if (event != DVDNAV_BLOCK_OK)
             dvdnav_get_highlight (dvdnav_priv, 1);
 
-        switch (event)
+        // FROM/SEE:  https://github.com/microe/libdvdnav/blob/master/doc/tutorial.cpp:
+        switch (event)  // HANDLE EACH TYPE OF DVD PACKET (INSTRUCTIONS AND DATA):
         {
             case DVDNAV_STILL_FRAME:
             {
@@ -2219,18 +2243,21 @@ AUDDBG("-WAIT FOR DRAINING TO STOP!\n");
                 dvdnav_get_highlight (dvdnav_priv, 1);
                 break;
             }
-            case DVDNAV_SPU_CLUT_CHANGE: {
+            case DVDNAV_SPU_CLUT_CHANGE:
+            {
                 memcpy(dvdnav_priv->spu_clut, buf, 16*sizeof(unsigned int));
                 dvdnav_priv->state |= NAV_FLAG_SPU_SET;
                 break;
             }
-            case DVDNAV_STOP:
+            case DVDNAV_STOP:  // DVD ENGINE SAYS STOP:
+            {
                 AUDINFO ("DVDNAV_STOP\n");
 //                int written = fwrite (buf, 1, len, output_fd);
                 dvdnav_priv->state |= NAV_FLAG_EOF;
                 stop_playback = true;
                 goto GETMEOUTTAHERE;
-            case DVDNAV_BLOCK_OK:
+            }
+            case DVDNAV_BLOCK_OK:  // AUDIO/VIDEO DATA FRAME:
             {
                 while (writeblock)
                 {
@@ -2245,19 +2272,19 @@ AUDDBG("-WB!\n");
 //                AUDINFO ("DVDNAV_NAV_PACKET: len=%d= written=%d\n", len, written);
                 if (havebuttons) AUDINFO ("DVDNAV_NAV_PACKET(with buttons): len=%d\n", len); else AUDINFO ("DVDNAV_NAV_PACKET: len=%d\n", len);
                 fwrite (buf, 1, len, output_fd);
-      /* A NAV packet provides PTS discontinuity information, angle linking information and
-       * button definitions for DVD menus. Angles are handled completely inside libdvdnav.
-       * For the menus to work, the NAV packet information has to be passed to the overlay
-       * engine of the player so that it knows the dimensions of the button areas. */
+     /* A NAV packet provides PTS discontinuity information, angle linking information and
+      * button definitions for DVD menus. Angles are handled completely inside libdvdnav.
+      * For the menus to work, the NAV packet information has to be passed to the overlay
+      * engine of the player so that it knows the dimensions of the button areas. */
                 if (! havebuttons)
                 {
                    	pci_t *pci = dvdnav_get_current_nav_pci(dvdnav_priv->dvdnav);
 
-	/* Applications with fifos should not use these functions to retrieve NAV packets,
-	 * they should implement their own NAV handling, because the packet you get from these
-	 * functions will already be ahead in the stream which can cause state inconsistencies.
-	 * Applications with fifos should therefore pass the NAV packet through the fifo
-	 * and decoding pipeline just like any other data. */
+     /* Applications with fifos should not use these functions to retrieve NAV packets,
+      * they should implement their own NAV handling, because the packet you get from these
+      * functions will already be ahead in the stream which can cause state inconsistencies.
+      * Applications with fifos should therefore pass the NAV packet through the fifo
+      * and decoding pipeline just like any other data. */
                    	//dvdnav_get_current_nav_dsi(dvdnav_priv->dvdnav);
 
                    	if (pci->hli.hl_gi.btn_ns > 0) 
@@ -2266,7 +2293,6 @@ AUDDBG("-WB!\n");
 
                         AUDINFO ("Found %i DVD menu buttons...\n", pci->hli.hl_gi.btn_ns);
 
-//                        if (pci->hli.hl_gi.btn_ns > menubuttons.len ())
                         menubuttons.resize (pci->hli.hl_gi.btn_ns);
                      	  for (button = 0; button < pci->hli.hl_gi.btn_ns; button++)
                      	  {
@@ -2285,9 +2311,10 @@ AUDDBG("-WB!\n");
                            GETS THE USER THE BUMPER MUSIC THAT SOME VIDEO MENUS HAVE, AS A SIDE-EFFECT,
                            WHICH SOME MIGHT LIKE, IE. IF PLAYING AUDIO-ONLY. 
                         */
+
                         button = 0;
-//button = 1;
-                        if (aud_get_bool ("dvd", "nomenus") && ! aud_get_bool ("dvd", "nomenudrain"))  //NO VIDEO SCREEN, SO WE MUST PRESS A MENU BUTTON TO PLAY FOR THE USER!:
+                        /* IF WE'RE SKIPPING MENUS AND IT'S OK TO DRAIN THEM, JUST ACTIVATE DEFAULT BUTTON NOW!: */
+                        if (aud_get_bool ("dvd", "nomenus") && aud_get_bool ("dvd", "menudrain"))  //NO VIDEO SCREEN, SO WE MUST PRESS A MENU BUTTON TO PLAY FOR THE USER!:
                         {
                             if (dvdnav_get_current_highlight (dvdnav_priv->dvdnav, & button) != DVDNAV_STATUS_OK
                                     || button <= 0)
@@ -2303,7 +2330,7 @@ AUDDBG("-WB!\n");
                 if (dvdnav_priv->nochannelhop)
                     break;
                 AUDINFO ("--------------- CHANNEL HOPPING! ------------------------\n");
-                checkcodecs = true;
+                checkcodecs = true;  // RESET READER/DEMUXER LOOP & RESCAN CODECS!
                 AUDDBG ("FLUSHING OUTPUT FIFO!\n");
                 fflush (output_fd);
                 nanosleep ((const struct timespec[]){{0, 40000000L}}, NULL);
@@ -2311,14 +2338,10 @@ AUDDBG("-WB!\n");
             case DVDNAV_WAIT:
             {
                 if ((dvdnav_priv->state & NAV_FLAG_WAIT_SKIP) &&
-                    !(dvdnav_priv->state & NAV_FLAG_WAIT))
-                {
-//AUDERR("WAIT STATE 1 len=%d=\n", len);
+                        !(dvdnav_priv->state & NAV_FLAG_WAIT))
                     dvdnav_wait_skip (dvdnav_priv->dvdnav);
-                }
                 else
                 {
-//AUDERR("WAIT STATE 2 len=%d=\n", len);
                     dvdnav_priv->state |= NAV_FLAG_WAIT;
                     readblock = false;
                     //nanosleep ((const struct timespec[]){{0, 500000000L}}, NULL);
@@ -2335,11 +2358,11 @@ AUDDBG("-WB!\n");
                 AUDINFO ("DVDNAV_VTS_CHANGE\n");
                 dvdnav_vts_change_event_t *vts_event = (dvdnav_vts_change_event_t *)buf;
                 AUDINFO ("VTS_CHANGE: switched to title: from %d to %d\r\n", vts_event->old_vtsN, vts_event->new_vtsN);
-                if (vts_event->old_vtsN > 0)
-                {
+//                if (vts_event->old_vtsN > 0)
+//                {
                     //AUDINFO ("--------CHECK THEM CODECS!!!!!\n");
                     //checkcodecs = true;
-                }
+//                }
                 dvdnav_priv->state |= NAV_FLAG_CELL_CHANGE;
                 dvdnav_priv->state |= NAV_FLAG_AUDIO_CHANGE;
                 dvdnav_priv->state |= NAV_FLAG_SPU_CHANGE;
@@ -2386,7 +2409,7 @@ AUDDBG("-WB!\n");
                 if (ev->pgc_length)
                     dvdnav_priv->duration = ev->pgc_length/90;
 
-                if (dvdnav_is_domain_vts(dvdnav_priv->dvdnav))
+                if (dvdnav_is_domain_vts(dvdnav_priv->dvdnav))  // CHANGED TO A MOVIE:
                 {
                     AUDINFO ("DVDNAV_CELL_CHANGE: new title is MOVIE (%d) -----------\n", dvdnav_priv->duration);
                     dvdnav_priv->state &= ~NAV_FLAG_VTS_DOMAIN;
@@ -2394,7 +2417,7 @@ AUDDBG("-WB!\n");
                     dvdnav_priv->beenheredonedat = false;
                     playing_a_menu = false;
                 }
-                else
+                else                                            // CHANGED TO A MENU:
                 {
                     AUDINFO ("DVDNAV_CELL_CHANGE: new title is MENU (%d) -----------\n", dvdnav_priv->duration);
                     dvdnav_priv->state |= NAV_FLAG_VTS_DOMAIN;
@@ -2422,7 +2445,7 @@ AUDDBG("-WB!\n");
                 if (dvdnav_priv->state & NAV_FLAG_WAIT_READ_AUTO)
                     dvdnav_priv->state |= NAV_FLAG_WAIT_READ;
                 //if(dvdnav_priv->title > 0 && dvd_last_chapter > 0)
-                if (dvdnav_priv->title > 0)
+                if (dvdnav_priv->title > 0)  // WE'RE NOT PLAYING THE TOP MENU (TRACK 0):
                 {
                     int tit=0, part=0;
                     //if(dvdnav_current_title_info(dvdnav_priv->dvdnav, &tit, &part) == DVDNAV_STATUS_OK && part > dvd_last_chapter)
@@ -2451,7 +2474,7 @@ AUDERR("w:AUDIO CHANGE FORCED CODEC CHANGE!\n");
 }
                 break;
             }
-            case DVDNAV_SPU_STREAM_CHANGE:
+            case DVDNAV_SPU_STREAM_CHANGE:   // WE'RE NOT HANDLING SUBTITLES RIGHT NOW, MAYBE SOMEDAY!:
                 AUDINFO ("DVDNAV_SPU_STREAM_CHANGE\n");
                 dvdnav_priv->state |= NAV_FLAG_SPU_CHANGE;
                 dvdnav_priv->state |= NAV_FLAG_STREAM_CHANGE;
@@ -2479,7 +2502,7 @@ GETMEOUTTAHERE:
     return true;
 }
 
-/* main thread only */
+// from audacious:  main thread only
 void DVD::cleanup ()
 {
     pthread_mutex_lock (& mutex);
@@ -2490,7 +2513,7 @@ void DVD::cleanup ()
     pthread_mutex_unlock (& mutex);
 }
 
-// FROM mplayer.stream_dvdnav.c:
+// from mplayer.stream_dvdnav.c:
 static dvdnav_priv_t * new_dvdnav_stream(const char * filename)
 {
     dvdnav_priv_t *priv;
@@ -2507,7 +2530,8 @@ static dvdnav_priv_t * new_dvdnav_stream(const char * filename)
         return NULL;
     }
 
-/*    int speed = aud_get_int ("dvd", "disc_speed");
+/* (THIS DOESN'T SEEM TO WORK/COMPILE BUT DOESN'T SEEM TO BE IMPORTANT):
+    int speed = aud_get_int ("dvd", "disc_speed");
     if (! speed)
         speed = aud_get_int ("CDDA", "disc_speed");
     speed = aud::clamp (speed, MIN_DISC_SPEED, MAX_DISC_SPEED);
@@ -2555,6 +2579,7 @@ static dvdnav_priv_t * new_dvdnav_stream(const char * filename)
     return priv;
 }
 
+/* OPEN THE DVD */
 static bool open_dvd ()
 {
     if (dvdnav_priv && dvdnav_priv->dvdnav)
@@ -2588,10 +2613,11 @@ static bool open_dvd ()
     }
     if (! dvdnav_priv->dvdnav)
     {
-        dvd_error (_("Failed to open DVD device %s."), (const char *) device);
+        AUDERR (_("Failed to open DVD device %s."), (const char *) device);
         return false;
     }
 
+    /* FIGURE OUT WHERE TO PUT THE FIFO: */
     dvdnav_priv->fifo_str = aud_get_str("dvd", "fifo");
     if (! dvdnav_priv->fifo_str || ! dvdnav_priv->fifo_str[0])
         dvdnav_priv->fifo_str = String ("fifo.mpg");
@@ -2609,7 +2635,7 @@ static bool open_dvd ()
     return (bool) dvdnav_priv->dvdnav;
 }
 
-/* thread safe */
+/* from audacious:  thread safe */
 bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<char> * image)
 {
     bool whole_disk = ! strcmp (filename, "dvd://");
@@ -2630,7 +2656,7 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
     if (! trackinfo.len () && ! refresh_trackinfo (true))
         goto DONE;
 
-    if (whole_disk)
+    if (whole_disk)  // WE'RE OPENING dvd://:
     {
         bool first_track_only = aud_get_bool ("dvd", "first_track_only");
         Index<short> subtunes;
@@ -2655,7 +2681,7 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
 
         valid = true;
     }
-    else
+    else  // WE'RE LOOKING AT A SINGLE TRACK (dvd://?<#>)
     {
         int trackno = find_trackno_from_filename (filename);
 
@@ -2664,12 +2690,6 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
             AUDERR ("w:Track %d not found (%s).\n", trackno, filename);
             goto DONE;
         }
-
-        //x if (!cdda_track_audiop (pdvd_drive, trackno))
-        //x {
-        //x     AUDERR ("Track %d is a data track.\n", trackno);
-        //x     goto DONE;
-        //x }
 
         //tuple.set_format (_("DVD"), 2, 44100, 1411);
         tuple.set_int (Tuple::Track, trackno);
@@ -2696,7 +2716,7 @@ DONE:
     return valid;
 }
 
-/* mutex must be locked */
+/* from audacious cdaudio-ng:  mutex must be locked */
 static bool scan_dvd ()
 {
     AUDINFO ("Scanning DVD drive...\n");
@@ -2724,9 +2744,6 @@ static bool scan_dvd ()
     AUDINFO ("i:first track is %d and last track is %d\n", firsttrackno, lasttrackno);
 
     trackinfo.insert (0, lasttrackno + 1);
-
-    //x trackinfo[0].startlsn = cdda_track_firstsector (pdvd_drive, 0);
-    //x trackinfo[0].endlsn = cdda_track_lastsector (pdvd_drive, lasttrackno);
 
     trackinfo[0].startlsn = startpos;
     for (int trackno = firsttrackno; trackno <= lasttrackno; trackno++)
@@ -2776,7 +2793,7 @@ static bool scan_dvd ()
     return true;
 }
 
-/* mutex must be locked */
+/* from audacious cdaudio-ng:  mutex must be locked */
 static bool refresh_trackinfo (bool warning)
 {
     int xtry = 0;
@@ -2797,7 +2814,6 @@ tryagain:   // WE TRY 4 TIMES TO GIVE THE DRIVE A CHANCE TO SPIN UP...
         }
     }
 
-//x    if (! trackinfo.len () || cdio_get_media_changed (pdvd_drive->p_cdio))
     if (! trackinfo.len ())
     {
         if (! scan_dvd ())
@@ -2818,7 +2834,7 @@ fail:
     return false;
 }
 
-/* mutex must be locked */
+/* from audacious cdaudio-ng:  mutex must be locked */
 static void reset_trackinfo ()
 {
     //timer_remove (TimerRate::Hz1, monitor);
@@ -2827,7 +2843,7 @@ static void reset_trackinfo ()
     {
         if (dvdnav_priv->dvdnav)
         {
-            AUDERR ("i:DVD WAS OPENED, CLOSING IT NOW!\n");
+            AUDINFO ("i:DVD WAS OPENED, CLOSING IT NOW!\n");
             dvdnav_close (dvdnav_priv->dvdnav);
             dvdnav_priv->fifo_str = String ();
             dvdnav_priv->dvdnav = nullptr;
@@ -2839,14 +2855,14 @@ static void reset_trackinfo ()
     trackinfo.clear ();
 }
 
-/* thread safe (mutex may be locked) */
+/* from audacious cdaudio-ng:  thread safe (mutex may be locked) */
 static int calculate_track_length (uint32_t startlsn, uint32_t endlsn)
 {
     //x return ((endlsn - startlsn + 1) * 1000) / 75;
     return (int) (endlsn - startlsn + 1) / 90;
 }
 
-/* thread safe (mutex may be locked) */
+/* from audacious cdaudio-ng:  thread safe (mutex may be locked) */
 static int find_trackno_from_filename (const char * filename)
 {
     int track;
