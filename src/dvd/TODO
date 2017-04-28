@@ -1,0 +1,11 @@
+1)  Make audio languages actually work.  I've already put a lot of time into this to no avail.  For now, it plays the first audio stream returned by the DVD engine (usually English).  Checking Dont drain unwritten packets before movies option sometimes helps.  The "language selecton" buttons on DVDs don't seem to do anything either.  There seems to be a complete disconnect between the "logical streams" returned by DVD engine, which we can query the language of, and the actual "streams" used by libav/ffmpeg functions that actually do the work.  User can specify [dvd].language=en (or eng) and we set that language string as the dvd's "default" the same way VLC does and that libdvdnav notes for those functions (dvdnav_*_language_select()) say to do, but it still seems to have zero effect.  If we ever get this to work, then [dvd].language will be used to set the default language (for audio, subtitles, and menus).  Maybe there's some data in the NAV packets we need to "decode" and use for this?
+
+2)  Add subtitles.  I took a brief stab at this, but due to the way we do video / audio queueing (from ffaudio), this is going to be a serious and time-consuming challenge.
+
+3)  Button highlighting and palettes.  Another area I can find little to no docs or examples on how to implement.  For now, we "highlight" the area of each button with a grey rectangle (if [dvd].highlightbuttons config option is set).
+
+4)  Button navigation by keyboard bindings.  This will simply require some time and research.
+
+5)  Better timing and seek interface.  I've looked into this and found that I am very limited by Audacious's static setting of the song length prior to playback outside the reach of the plugins (Updating Tuple::Length in the plugin does not affect the slider and the dynamic elapsed time display).
+
+6)  Instant jumping from menus that play audio to the selected button.  This is due to my inability to "drain" remaining unwritten audio/video packets from the currently-playing menu when jumping to another menu without often corrupting the image displayed for the next menu.  User can still force this "draining" by setting [dvd].menudrain to TRUE, but I strongly recommend AGAINST doing this!  I've spent a lot of time trying to get this draining to work correctly (as it should, in theory), but to no avail in practice.
