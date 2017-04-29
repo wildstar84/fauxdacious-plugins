@@ -1094,72 +1094,25 @@ AUDINFO("---FIFO OPENED, POLL RES=%d=\n", pollres);
 void DVD::reader_demuxer ()
 {
     AUDDBG ("---- reader_demuxer started! ----\n");
-    int out_fmt;
-    int errcount = 0;
     int ret;
-    int vx = 0;
-    int vy = 0;
-    int video_width;     // INITIAL VIDEO WINDOW-SIZE:
-    int video_height;
-    int video_window_x;  // VIDEO WINDOW POSITION AND SIZE WHEN PROGRAM LAST CLOSED:
-    int video_window_y;
-    int video_window_w;
-    int video_window_h;
+    int video_window_x = 0;  // VIDEO WINDOW POSITION AND SIZE WHEN PROGRAM LAST CLOSED:
+    int video_window_y = 0;
+    int video_window_w = 0;
+    int video_window_h = 0;
     int video_xmove;
-    int video_resizedelay;     // MIN. TIME TO WAIT AFTER USER RESIZES VIDEO WINDOW BEFORE RE-ASPECTING (SEC.)
-    int resized_window_width;  // VIDEO WINDOW-SIZE AFTER LAST RESIZE.
-    int resized_window_height;
-    bool videohasnowh;         // TRUE IF VIDEO CONTEXT DID NOT PROVIDE A WIDTH OR HEIGHT.
-    uint32_t video_requested_width;   // WINDOW-SIZE REQUESTED BY VIDEO STREAM ITSELF (just initialize for sanity).
-    uint32_t video_requested_height;
-    uint32_t video_default_width;   // WINDOW-SIZE REQUESTED BY VIDEO STREAM ITSELF (just initialize for sanity).
-    uint32_t video_default_height;
-    int video_doreset_width;   // WINDOW-SIZE BELOW WHICH WINDOW WILL SNAP BACK TO SIZE REQUESTED BY VIDEO STREAM:
-    int video_doreset_height;
-    int video_qsize;           // MAX. NO. OF VIDEO PACKETS TO QUEUE AT ONE TIME.
-    time_t last_resizeevent_time;  // TIME OF LAST RESIZE EVENT, SO WE CAN DETERMINE WHEN SAFE TO RE-ASPECT.
-    time_t scene_start_time;   // START TIME OF CURRENTLY-PLAYING STREAM.
-    float video_aspect_ratio;  // ASPECT RATIO OF VIDEO, SAVED TO PERMIT RE-ASPECTING AFTER USER RESIZES (WARPS) WINDOW.
-    bool myplay_video; // WHETHER OR NOT TO DISPLAY THE VIDEO.
-    bool codec_opened;     // TRUE IF SUCCESSFULLY OPENED CODECS:
-    bool vcodec_opened;
-    bool planar;           // USED BY Audacious
-    //bool returnok = false;
-    bool eof;              // BECOMES TRUE WHEN EOF REACHED BY THE READER/DECODER. 
-    bool last_resized;     // TRUE IF VIDEO-WINDOW HAS BEEN RE-ASPECTED SINCE LAST RESIZE EVENT (HAS CORRECT ASPECT RATIO).
-    bool sdl_initialized;  // TRUE IF SDL (VIDEO) IS SUCCESSFULLY INITIALIZED.
-    SDL_Event       event; // SDL EVENTS, IE. RESIZE, KILL WINDOW, ETC.
-    int video_fudge_x; int video_fudge_y;  // FUDGE-FACTOR TO MAINTAIN VIDEO SCREEN LOCN. BETWEEN RUNS.
-    bool needWinSzFudge;   // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
-    bool windowIsStable;    // JWT:SAVING AND RECREATING WINDOW CAUSES POSN. TO DIFFER BY THE WINDOW DECORATION SIZES, SO WE HAVE TO FUDGE FOR THAT!
-    pktQueue *pktQ;        // QUEUE FOR VIDEO-PACKET QUEUEING.
-    pktQueue *apktQ;       // QUEUE FOR AUDIO-PACKET QUEUEING.
-    bool menubuttons_adjusted;
+    int video_resizedelay = 1;     // MIN. TIME TO WAIT AFTER USER RESIZES VIDEO WINDOW BEFORE RE-ASPECTING (SEC.)
+    uint32_t video_default_width = 720;   // WINDOW-SIZE REQUESTED BY VIDEO STREAM ITSELF (just initialize for sanity).
+    uint32_t video_default_height = 480;
+    int video_doreset_width = 0;   // WINDOW-SIZE BELOW WHICH WINDOW WILL SNAP BACK TO SIZE REQUESTED BY VIDEO STREAM:
+    int video_doreset_height = 0;
+    bool sdl_initialized = false;  // TRUE IF SDL (VIDEO) IS SUCCESSFULLY INITIALIZED.
+    int video_fudge_x = 0; int video_fudge_y = 0;  // FUDGE-FACTOR TO MAINTAIN VIDEO SCREEN LOCN. BETWEEN RUNS.
+    bool needWinSzFudge = true;   // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
     SDL_Window * screen = nullptr;  /* JWT: MUST DECLARE VIDEO SCREEN-WINDOW HERE */
     struct pollfd input_fd_p;
-#ifdef _WIN32
-    SDL_Texture * bmp = nullptr;    // CAN'T USE SMARTPTR HERE IN WINDOWS - renderer.get() FAILS IF VIDEO PLAY NOT TURNED ON?!
-#endif
-
-    int videoStream;          // AVCODEC STREAM IDS.
-    int audioStream;
-    AVPacket pkt;
-    CodecInfo cinfo, vcinfo;  // AUDIO AND VIDEO CODECS.
     AVFormatContext * c;
 
     /* SET UP THE VIDEO SCREEN */
-    video_resizedelay = 1;     // MIN. TIME TO WAIT AFTER USER RESIZES VIDEO WINDOW BEFORE RE-ASPECTING (SEC.)
-    sdl_initialized = false;  // TRUE IF SDL (VIDEO) IS SUCCESSFULLY INITIALIZED.
-    video_doreset_width = 0;   // WINDOW-SIZE BELOW WHICH WINDOW WILL SNAP BACK TO SIZE REQUESTED BY VIDEO STREAM:
-    video_doreset_height = 0;
-    video_default_width = 720;   // WINDOW-SIZE REQUESTED BY VIDEO STREAM ITSELF (just initialize for sanity).
-    video_default_height = 480;
-    needWinSzFudge = true;     // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
-    video_fudge_x = 0; 
-    video_fudge_y = 0;  // FUDGE-FACTOR TO MAINTAIN VIDEO SCREEN LOCN. BETWEEN RUNS.
-    windowIsStable = false;
-    video_window_x = video_window_y = video_window_w = video_window_h = 0;
-
     play_video = aud_get_bool ("dvd", "play_video");   /* JWT:RESET PLAY-VIDEO, CASE TURNED OFF ON PREV. PLAY. */
     if (play_video)
     {
@@ -1247,7 +1200,40 @@ void DVD::reader_demuxer ()
     }
 
 breakout1:
+    {   // SUBSCOPE FOR DECLARING SDL2 RENDERER AS SCOPED SMARTPOINTER:
     SmartPtr<SDL_Renderer, SDL_DestroyRenderer> renderer (createSDL2Renderer (screen, play_video));
+    bool myplay_video; // WHETHER OR NOT TO DISPLAY THE VIDEO.
+    bool videohasnowh;         // TRUE IF VIDEO CONTEXT DID NOT PROVIDE A WIDTH OR HEIGHT.
+    bool windowIsStable = false;    // JWT:SAVING AND RECREATING WINDOW CAUSES POSN. TO DIFFER BY THE WINDOW DECORATION SIZES, SO WE HAVE TO FUDGE FOR THAT!
+    bool codec_opened;     // TRUE IF SUCCESSFULLY OPENED CODECS:
+    bool vcodec_opened;
+    bool planar;           // USED BY Audacious
+    bool eof;              // BECOMES TRUE WHEN EOF REACHED BY THE READER/DECODER. 
+    bool last_resized;     // TRUE IF VIDEO-WINDOW HAS BEEN RE-ASPECTED SINCE LAST RESIZE EVENT (HAS CORRECT ASPECT RATIO).
+    bool menubuttons_adjusted;
+    int out_fmt;
+    int errcount;
+    int vx;
+    int vy;
+    int video_width;     // INITIAL VIDEO WINDOW-SIZE:
+    int video_height;
+    int resized_window_width;  // VIDEO WINDOW-SIZE AFTER LAST RESIZE.
+    int resized_window_height;
+    int video_qsize;           // MAX. NO. OF VIDEO PACKETS TO QUEUE AT ONE TIME.
+    int videoStream;          // AVCODEC STREAM IDS.
+    int audioStream;
+    uint32_t video_requested_width;   // WINDOW-SIZE REQUESTED BY VIDEO STREAM ITSELF (just initialize for sanity).
+    uint32_t video_requested_height;
+    float video_aspect_ratio;  // ASPECT RATIO OF VIDEO, SAVED TO PERMIT RE-ASPECTING AFTER USER RESIZES (WARPS) WINDOW.
+    //bool returnok = false;
+    time_t last_resizeevent_time;  // TIME OF LAST RESIZE EVENT, SO WE CAN DETERMINE WHEN SAFE TO RE-ASPECT.
+    time_t scene_start_time;   // START TIME OF CURRENTLY-PLAYING STREAM.
+    SDL_Event       event; // SDL EVENTS, IE. RESIZE, KILL WINDOW, ETC.
+
+    CodecInfo cinfo, vcinfo;  // AUDIO AND VIDEO CODECS.
+    AVPacket pkt;
+    pktQueue *pktQ = nullptr;        // QUEUE FOR VIDEO-PACKET QUEUEING.
+    pktQueue *apktQ = nullptr;       // QUEUE FOR AUDIO-PACKET QUEUEING.
 
 startover:
     AUDERR ("---- reader_demuxer starting over! ----\n");
@@ -1276,8 +1262,6 @@ startover:
     eof = false;
     last_resized = true;      // TRUE IF VIDEO-WINDOW HAS BEEN RE-ASPECTED SINCE LAST RESIZE EVENT (HAS CORRECT ASPECT RATIO).
     //wedohaveaudio = false;  // BECOMES TRUE IF WE FIND AN AUDIO FRAME.
-    pktQ = nullptr;      // QUEUE FOR VIDEO-PACKET QUEUEING.
-    apktQ = nullptr;     // QUEUE FOR AUDIO-PACKET QUEUEING.
     menubuttons_adjusted = false;
     c = open_input_file (& input_fd_p);  // OPEN UP THE FIFO FOR READING AND THE DEMUXER ("AV-STUFF").
     //SmartPtr<AVFormatContext, close_input_file> c (open_input_file ());
@@ -1548,6 +1532,9 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
     bool windowNowExposed = false;  // JWT:NEEDED TO PREVENT RESIZING WINDOW BEFORE EXPOSING ON MS-WINDOWS?!
     int seek_value;
     bool highlightbuttons = playing_a_menu ? aud_get_bool("dvd", "highlightbuttons") : false;
+#ifdef _WIN32
+    SDL_Texture * bmp = nullptr;    // CAN'T USE SMARTPTR HERE IN WINDOWS - renderer.get() FAILS IF VIDEO PLAY NOT TURNED ON?!
+#endif
     int minmenushowsec = aud_get_int ("dvd", "minmenushowsec");
     if (minmenushowsec < 1)
         minmenushowsec = 16;
@@ -2025,15 +2012,17 @@ AUDERR("---RESIZE(videohasnowh): NEW RATIO=%f=\n", video_aspect_ratio);
         }
     }  // END PACKET-PROCESSING LOOP.
 
-    }  // END OF SUBSCOPE FOR DECLARING SDL2 TEXTURE AS SCOPED SMARTPOINTER.
+    }  // END OF SUBSCOPE FOR DECLARING SDL2 TEXTURE AS SCOPED SMARTPOINTER (FREES TEXTURE).
 
 error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
 
     AUDINFO ("end of playback.\n");
-    if (pktQ)
-        destroyQueue (pktQ);
     if (apktQ)
         destroyQueue (apktQ);
+    apktQ = nullptr;     // QUEUE FOR AUDIO-PACKET QUEUEING.
+    if (pktQ)
+        destroyQueue (pktQ);
+    pktQ = nullptr;      // QUEUE FOR VIDEO-PACKET QUEUEING.
 
     /* CLOSE UP THE CODECS, ETC.: */
     if (vcodec_opened)
@@ -2067,13 +2056,15 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
         goto startover;
     }
 
-        if (screen)  // bmp ALREADY FREED & NOW OUT OF SCOPE BUT MAKE SURE VIDEO WINDOW IS FREED & GONE!
-        {
-            if (! needWinSzFudge)
-                save_window_xy (screen, video_fudge_x, video_fudge_y);
-            SDL_DestroyWindow (screen);
-            screen = nullptr;
-        }
+    }  // END OF SUBSCOPE FOR DECLARING SDL2 RENDERER AS SCOPED SMARTPOINTER (FREES RENDERER).
+
+    if (screen)  // bmp ALREADY FREED & NOW OUT OF SCOPE BUT MAKE SURE VIDEO WINDOW IS FREED & GONE!
+    {
+        if (! needWinSzFudge)
+            save_window_xy (screen, video_fudge_x, video_fudge_y);
+        SDL_DestroyWindow (screen);
+        screen = nullptr;
+    }
     if (sdl_initialized)
         SDL_QuitSubSystem (SDL_INIT_VIDEO);
 
