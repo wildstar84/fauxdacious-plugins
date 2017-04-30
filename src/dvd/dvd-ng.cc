@@ -1236,7 +1236,7 @@ breakout1:
     pktQueue *apktQ = nullptr;       // QUEUE FOR AUDIO-PACKET QUEUEING.
 
 startover:
-    AUDERR ("---- reader_demuxer starting over! ----\n");
+    AUDINFO ("---- reader_demuxer starting over! ----\n");
     out_fmt = 0;
     errcount = 0;
     vx = 0;
@@ -1687,7 +1687,17 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
                         av_free_packet (& emptypkt);
                     }
                     AUDINFO ("i:MENU EOF: BUTTON COUNT IN THIS MENU:  %d! duration=%d\n", pci->hli.hl_gi.btn_ns, dvdnav_priv->duration);
-                    if (pci->hli.hl_gi.btn_ns < 1)
+                    if (! myplay_video)  // AUDIO ONLY, GO TO NEXT SCENE...
+                    {
+                        dvdnav_priv->nochannelhop = false;
+                        if (dvdnav_menu_call (dvdnav_priv->dvdnav, DVD_MENU_Escape) == DVDNAV_STATUS_OK)
+                                AUDINFO ("i:WE ARE MAKING OUR ESCAPE!...\n");
+                            else
+                                AUDERR ("e:WE SEEM TO BE STUCK IN A BUTTONLESS MENU!...\n");
+                            eof = false;
+                            were_playing_a_menu = playing_a_menu;
+                    }
+                    else if (pci->hli.hl_gi.btn_ns < 1)
                     {
                         if (dvdnav_priv->duration <= 0 || difftime (time (nullptr), scene_start_time) > dvdnav_priv->duration / 1000)
                         {
@@ -2157,8 +2167,6 @@ AUDINFO("OPENING FIFO (w+, should not block!)\n");
     }
     if (! stop_playback)
         update_title_len ();
-
-    if (stop_playback)  AUDINFO ("i:PLAY STOPPED:starting loop\n"); else AUDINFO ("i:PLAY:starting loop\n");
 
     /* LOOP TO FETCH AND PROCESS DATA FROM THE DVD ENGINE. */
     writeblock = false;
