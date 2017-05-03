@@ -247,7 +247,6 @@ const char DVD::about[] =
 const char * const DVD::defaults[] = {
     "disc_speed", "2",
     "maxopentries", "4",
-    "use_cdtext", "TRUE",
     "device", "/dev/dvd",
     "video_qsize", "6",
     "play_video", "TRUE",
@@ -267,7 +266,6 @@ const char * const DVD::defaults[] = {
     */
     "menudrain", "FALSE",
     "nomoviedrain", "FALSE",
-    "use_cdtext", "TRUE",
     "title_track_only", "FALSE",  // ONLY ADD TITLE TRACK TO PLAYLIST (IF BOTH FALSE, ADD ALL TRACKS TO PLAYLIST)
     "first_track_only", "FALSE",  // ONLY ADD 1ST (MOVIE) TRACK TO PLAYLIST
     "nomenus", "FALSE",           // SKIP MENUS ALWAYS AUTO-SELECTING THE FIRST BUTTON
@@ -295,8 +293,6 @@ const PreferencesWidget DVD::widgets[] = {
     WidgetCheck (N_("Don't drain unwritten packets before movies (extra noise)"),
         WidgetBool ("dvd", "nomoviedrain")),
     WidgetLabel (N_("<b>Metadata</b>")),
-    WidgetCheck (N_("Use CD-Text"),
-        WidgetBool ("dvd", "use_cdtext")),
     WidgetCheck (N_("Only Title Track in Playlist (menus)"),
         WidgetBool ("dvd", "title_track_only")),
     WidgetCheck (N_("Only 1st Track Playlist (movie)"),
@@ -1157,13 +1153,23 @@ void DVD::reader_demuxer ()
             SDL_SetHint (SDL_HINT_VIDEO_X11_NET_WM_PING, "0");
 #endif
         video_windowtitle = aud_get_str ("dvd", "video_windowtitle");
-        StringBuf titleBuf = (video_windowtitle && video_windowtitle[0])
-                ? str_printf ("%s - %s", (const char *) song_title, (const char *) video_windowtitle)
-                : str_copy ((const char *) song_title, -1);
+	if (song_title && song_title[0])
+        {
+       	    StringBuf titleBuf = (video_windowtitle && video_windowtitle[0])
+                    ? str_printf ("%s - %s", (const char *) song_title, (const char *) video_windowtitle)
+                    : str_copy ((const char *) song_title, -1);
+            str_replace_char (titleBuf, '_', ' ');
+            SDL_SetWindowTitle (screen, (const char *) titleBuf);
+        }
+        else
+        {
+       	    StringBuf titleBuf = (video_windowtitle && video_windowtitle[0])
+                    ? str_printf ("%s", (const char *) video_windowtitle)
+                    : str_printf ("%s", "Untitled DVD");
+            SDL_SetWindowTitle (screen, (const char *) titleBuf);
+        }
         song_title = String ();
         video_windowtitle = String ();
-        str_replace_char (titleBuf, '_', ' ');
-        SDL_SetWindowTitle (screen, (const char *) titleBuf);
         /* NOW CALCULATE THE WIDTH, HEIGHT, & ASPECT BASED ON VIDEO'S SIZE & AND ANY USER PARAMATERS GIVEN:
             IDEALLY, ONE SHOULD ONLY SET X OR Y AND LET Fauxdacious CALCULATE THE OTHER DIMENSION,
             SO THAT THE ASPECT RATIO IS MAINTAINED, THOUGH ONE CAN SPECIFY BOTH AND FORCE
@@ -2698,8 +2704,10 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
         tuple.set_int (Tuple::Length, calculate_track_length
                 (trackinfo[trackno].startlsn, trackinfo[trackno].endlsn));
 
-        if (trackinfo[trackno].name)
+        if (trackinfo[trackno].name && trackinfo[trackno].name[0])
             tuple.set_str (Tuple::Title, trackinfo[trackno].name);
+        else
+            tuple.set_str (Tuple::Title, String (_("Unknown Title")));
         if (trackinfo[trackno].performer)
             tuple.set_str (Tuple::Artist, trackinfo[trackno].performer);
         if (trackinfo[0].name)
@@ -2766,16 +2774,13 @@ static bool scan_dvd ()
     /* get trackinfo[0] cdtext information (the disc) */
     //x cdtext_t *pcdtext = nullptr;
     const char * pcdtext = nullptr;
-    if (aud_get_bool ("dvd", "use_cdtext"))
+    AUDDBG ("getting dvd-title information for disc\n");
+    if (dvdnav_get_title_string (dvdnav_priv->dvdnav, &pcdtext) != DVDNAV_STATUS_OK)
+        AUDINFO ("w:no dvd-title available for disc\n");
+    else
     {
-        AUDDBG ("getting dvd-title information for disc\n");
-        if (dvdnav_get_title_string (dvdnav_priv->dvdnav, &pcdtext) != DVDNAV_STATUS_OK)
-            AUDINFO ("w:no dvd-title available for disc\n");
-        else
-        {
-            trackinfo[0].name = String (pcdtext);
-            AUDINFO ("i:GOT DVD TITLE=%s=\n", pcdtext);
-        }
+        trackinfo[0].name = String (pcdtext);
+        AUDINFO ("i:GOT DVD TITLE=%s=\n", pcdtext);
     }
 
     /* get track information from cdtext */
