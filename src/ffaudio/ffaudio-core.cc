@@ -740,10 +740,10 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
 #endif
 #ifdef ALLOC_CONTEXT
         avcodec_free_context (& cinfo.context);
+        av_free (cinfo.context);
 #else
         avcodec_close (cinfo.context);
 #endif
-        av_free (cinfo.context);
     }
 
     return true;
@@ -1315,8 +1315,10 @@ bool FFaudio::play (const char * filename, VFSFile & file)
             myplay_video = false;
             goto breakout1;
         }
+#if SDL_COMPILEDVERSION >= 2004
         else
             SDL_SetHint (SDL_HINT_VIDEO_X11_NET_WM_PING, "0");
+#endif
 #else
         screen = SDL_SetVideoMode (video_width, video_height, 0, SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_RESIZABLE);
         if (! screen) {
@@ -1765,13 +1767,13 @@ breakout1:
                 */
                 if (vy == -1)  // USER SAYS ADJUST HEIGHT TO MATCH WIDTH:
                 {
-                    new_video_width = resized_window_width;
-                    new_video_height = (int)((float)new_video_width / video_aspect_ratio);
+                    new_video_height = resized_window_height;
+                    new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
                 }
                 else if (vx == -1)  // USER SAYS ADJUST WIDTH TO MATCH HEIGHT:
                 {
-                    new_video_height = resized_window_height;
-                    new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
+                    new_video_width = resized_window_width;
+                    new_video_height = (int)((float)new_video_width / video_aspect_ratio);
                 }
                 else  // USER DOESN'T CARE, SO WE DECIDE WHICH TO ADJUST:
                 {
@@ -1909,19 +1911,19 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
     {
 #ifdef ALLOC_CONTEXT
         avcodec_free_context (& vcinfo.context);
+        av_free (vcinfo.context);
 #else
         avcodec_close (vcinfo.context);
 #endif
-        av_free (vcinfo.context);
     }
     if (codec_opened)
     {
 #ifdef ALLOC_CONTEXT
         avcodec_free_context (& cinfo.context);
+        av_free (cinfo.context);
 #else
         avcodec_close (cinfo.context);
 #endif
-        av_free (cinfo.context);
     }
 
     return returnok;

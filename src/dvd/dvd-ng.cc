@@ -45,7 +45,7 @@ extern "C" {
 #undef FFAUDIO_NO_BLACKLIST /* Don't blacklist any recognized codecs/formats */
 // #define RAW_PACKET_BUFFER_SIZE 32768
 
-#include "ffaudio-stdinc.h"
+#include "../ffaudio/ffaudio-stdinc.h"
 
 /* prevent libcdio from redefining PACKAGE, VERSION, etc. */
 #define EXTERNAL_LIBDVDNAV_CONFIG_H
@@ -1152,9 +1152,10 @@ void DVD::reader_demuxer ()
             play_video = false;
             goto breakout1;
         }
+#if SDL_COMPILEDVERSION >= 2004
         else
             SDL_SetHint (SDL_HINT_VIDEO_X11_NET_WM_PING, "0");
-
+#endif
         video_windowtitle = aud_get_str ("dvd", "video_windowtitle");
         StringBuf titleBuf = (video_windowtitle && video_windowtitle[0])
                 ? str_printf ("%s - %s", (const char *) song_title, (const char *) video_windowtitle)
@@ -1564,7 +1565,9 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
 
     if (myplay_video && screen)
     {
+#if SDL_COMPILEDVERSION >= 2005
         SDL_SetWindowInputFocus (screen);  //TRY TO SET INPUT FOCUS ON VIDEO WINDOW FOR EASIER (1-CLICK) MENU-SELECTION:
+#endif
         if (highlightbuttons)
             SDL_SetRenderDrawBlendMode(renderer.get (), SDL_BLENDMODE_BLEND);
     }
@@ -2039,19 +2042,19 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
     {
 #ifdef ALLOC_CONTEXT
         avcodec_free_context (& vcinfo.context);
+        av_free (vcinfo.context);
 #else
         avcodec_close (vcinfo.context);
 #endif
-        av_free (vcinfo.context);
     }
     if (codec_opened)
     {
 #ifdef ALLOC_CONTEXT
         avcodec_free_context (& cinfo.context);
+        av_free (cinfo.context);
 #else
         avcodec_close (cinfo.context);
 #endif
-        av_free (cinfo.context);
     }
     close_input_file (c);
     c = nullptr;
