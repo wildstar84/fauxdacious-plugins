@@ -194,6 +194,7 @@ typedef struct {
   bool             beenheredonedat;     /* used to avoid circular menus */
   bool             nochannelhop;        /* don't do channel hop whilst sliding the seek slider */
   int              lastaudiostream;     /* save last audio stream to see if we need to change codecs */
+  bool             freshhopped;         /* true if we've hopped since last VTS change. */
 } dvdnav_priv_t;
 
 typedef enum {
@@ -1028,10 +1029,10 @@ AVFormatContext * DVD::open_input_file (struct pollfd * input_fd_p)
     {
         input_fd_p->events = POLLIN;
         pollres = poll (input_fd_p, 1, 400);
-AUDINFO("---FIFO OPENED, POLL RES=%d=\n", pollres);
+        AUDINFO ("---FIFO OPENED, POLL RES=%d=\n", pollres);
     }
     else
-        AUDERR("----FIFO HAS NOT OPEN ERRNO=%d= DESC=%s= POLL=%d\n", errno, strerror(errno), pollres);
+        AUDERR ("s:FIFO HAS NOT OPEN ERRNO=%d= DESC=%s= POLL=%d\n", errno, strerror(errno), pollres);
 
     void * buf = av_malloc (2048);
     if (!buf)
@@ -1058,8 +1059,8 @@ AUDINFO("---FIFO OPENED, POLL RES=%d=\n", pollres);
     else
         AUDERR ("s:AVFormatContext IS NOT DEFINED!\n");
 
-    if (!input_fd_p->fd)  AUDERR("s:input_fd NOT DEFINED!\n");
-    if (!pollres)  AUDERR("s:pollres NOT DEFINED!\n");
+    if (!input_fd_p->fd)  AUDERR ("s:input_fd NOT DEFINED!\n");
+    if (!pollres)  AUDERR ("s:pollres NOT DEFINED!\n");
     if (!input_fd_p->fd || avformat_open_input( & c, "", f, nullptr) < 0)
     {
         AUDERR ("s:COULD NOT OPEN AVINPUT!\n");
@@ -1283,7 +1284,7 @@ startover:
     /* IF NOT DRAINING MENUS, DON'T EVEN BOTHER "PLAYING" MENU IF WE'RE SKIPPING, JUST ACTIVATE DEFAULT BUTTON! */
     if (playing_a_menu && aud_get_bool ("dvd", "nomenus") && ! aud_get_bool ("dvd", "menudrain"))
     {
-AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
+        AUDINFO ("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
         pci_t * pci = dvdnav_get_current_nav_pci (dvdnav_priv->dvdnav);
         writeblock = true;
         dvdnav_button_activate (dvdnav_priv->dvdnav, pci);
@@ -1380,7 +1381,7 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
     }
     if (playing_a_menu && !vcodec_opened && aud_get_bool ("dvd", "play_video"))  //NEEDED FOR ACTS DVD (SINCE 8.4)
     {
-        AUDERR("BAD CODEC SEARCH, START OVER AND TRY AGAIN...\n");
+        AUDERR ("e:BAD CODEC SEARCH, START OVER AND TRY AGAIN...\n");
         checkcodecs = true;
         goto error_exit;
     }
@@ -1560,14 +1561,14 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
 #endif
     if (! bmp)
     {
-        AUDERR("e:NO VIDEO DUE TO INABILITY TO GET TEXTURE!\n");
+        AUDERR ("e:NO VIDEO DUE TO INABILITY TO GET TEXTURE!\n");
         myplay_video = false;
     }
 
     /* OUTER LOOP TO READ, QUEUE AND PROCESS AUDIO & VIDEO PACKETS FROM THE STREAM: */
     update_title_len ();
-    if (! vcodec_opened)  AUDERR("w:UNABLE TO OPEN VIDEO CODEC2!\n");
-    if (! myplay_video)  AUDERR("w:NO VIDEO WHEN STARTING LOOP!\n");
+    if (! vcodec_opened)  AUDERR ("w:UNABLE TO OPEN VIDEO CODEC2!\n");
+    if (! myplay_video)  AUDERR ("w:NO VIDEO WHEN STARTING LOOP!\n");
 
     if (myplay_video && screen)
     {
@@ -1706,8 +1707,10 @@ AUDERR("--------SKIPPING MENUS WITHOUT DRAINING!------------\n");
                             eof = false;
                             were_playing_a_menu = playing_a_menu;
                     }
-                    else if (pci->hli.hl_gi.btn_ns < 1)
+                    else if (pci->hli.hl_gi.btn_ns <= 1)  // 0|1 BUTTON MENUS DON'T NEED INTERACTION SO JUST "ESCAPE":
                     {
+                        if (pci->hli.hl_gi.btn_ns)
+                            dvdnav_button_select (dvdnav_priv->dvdnav, pci, 1);
                         if (dvdnav_priv->duration <= 0 || difftime (time (nullptr), scene_start_time) > dvdnav_priv->duration / 1000)
                         {
                             dvdnav_priv->nochannelhop = false;
@@ -1992,6 +1995,8 @@ AUDERR("---RESIZE(videohasnowh): NEW RATIO=%f=\n", video_aspect_ratio);
                 AUDINFO (" ----RESIZED TO(%d, %d)\n", video_width, video_height);
                 /* NOW MANUALLY RESIZE (RE-ASPECT) WINDOW BASED ON VIDEO'S ORIGINALLY-CALCULATED ASPECT RATIO: */
                 SDL_SetWindowSize (screen, video_width, video_height);
+                video_window_w = video_width;
+                video_window_h = video_height;
                 SDL_Delay (50);
                 last_resized = true;  // WE'VE RE-ASPECTED, SO ALLOW BLITTING TO RESUME!
                 SDL_RenderPresent (renderer.get ());  // only blit a single frame at startup will get refreshed!
@@ -2179,6 +2184,7 @@ AUDINFO("OPENING FIFO (w+, should not block!)\n");
 
     /* LOOP TO FETCH AND PROCESS DATA FROM THE DVD ENGINE. */
     writeblock = false;
+    dvdnav_priv->freshhopped = true;
     while (!stop_playback)  // LOOP UNTIL SOMETHING STOPS US OR WE RUN OUT OF DVD DATA:
     {
         //if (playback_fifo_hasbeenopened) AUDERR ("PLAY:(fifo opened) LOOPING!\n"); else AUDERR ("PLAY:LOOPING!\n");
@@ -2342,6 +2348,7 @@ AUDDBG("-WB!\n");
                 AUDDBG ("FLUSHING OUTPUT FIFO!\n");
                 fflush (output_fd);
                 nanosleep ((const struct timespec[]){{0, 40000000L}}, NULL);
+                dvdnav_priv->freshhopped = true;
                 break;
             case DVDNAV_WAIT:
             {
@@ -2367,10 +2374,7 @@ AUDDBG("-WB!\n");
                 dvdnav_vts_change_event_t *vts_event = (dvdnav_vts_change_event_t *)buf;
                 AUDINFO ("VTS_CHANGE: switched to title: from %d to %d\r\n", vts_event->old_vtsN, vts_event->new_vtsN);
 //                if (vts_event->old_vtsN > 0)
-//                {
-                    //AUDINFO ("--------CHECK THEM CODECS!!!!!\n");
-                    //checkcodecs = true;
-//                }
+
                 dvdnav_priv->state |= NAV_FLAG_CELL_CHANGE;
                 dvdnav_priv->state |= NAV_FLAG_AUDIO_CHANGE;
                 dvdnav_priv->state |= NAV_FLAG_SPU_CHANGE;
@@ -2403,6 +2407,14 @@ AUDDBG("-WB!\n");
                         dvdnav_priv->state |= NAV_FLAG_EOF;
                     }
                 }
+                if (! dvdnav_priv->freshhopped)  // THIS NEEDED SINCE WE SOMETIMES GO HOPLESS: MOVIE->MOVIE W/CHG. IN AUDIO CODEC!
+                {
+AUDERR("--------SUBSEQUENT VTS CHG. W/O CHANNEL HOP, CHECK DEM CODECS!!!!!\n");
+                    checkcodecs = true;
+                }
+                else
+                    dvdnav_priv->freshhopped = false;
+
                 break;
             }
             case DVDNAV_CELL_CHANGE:
@@ -2477,7 +2489,7 @@ AUDDBG("-WB!\n");
                 AUDINFO ("DVDNAV_AUDIO_STREAM_CHANGE: physical=%d= prev=%d\n", ev->physical, dvdnav_priv->lastaudiostream);
                 if (ev->physical >= 0 && dvdnav_priv->lastaudiostream < 0 && dvdnav_is_domain_vts (dvdnav_priv->dvdnav))
 {
-AUDERR("w:AUDIO CHANGE FORCED CODEC CHANGE!\n");
+AUDERR("w:AUDIO CHANGE FORCED CODEC CHANGE! ===================\n");
                     checkcodecs = true;
 }
                 break;
