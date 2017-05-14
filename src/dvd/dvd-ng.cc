@@ -2055,6 +2055,7 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
 /* THIS "PLAYS" THE DVD - FETCHING INSTRUCTION AND DATA PACKETS FROM THE DVD ENGINE - audacious play thread only */
 bool DVD::play (const char * name, VFSFile & file)
 {
+    bool save_eqpreset_nameonly = aud_get_bool (nullptr, "eqpreset_nameonly");
     pthread_mutex_lock (& mutex);
 
     if (! check_disk_status ())  // CHECK THAT DISK IS STILL IN THE DRIVE!:
@@ -2136,6 +2137,8 @@ AUDINFO("OPENING FIFO (w+, should not block!)\n");
     }
     if (! stop_playback)
         update_title_len ();
+
+    aud_set_bool (nullptr, "eqpreset_nameonly", false);
 
     /* LOOP TO FETCH AND PROCESS DATA FROM THE DVD ENGINE. */
     dvdnav_priv->freshhopped = true;
@@ -2482,6 +2485,7 @@ AUDINFO("OPENING FIFO (w+, should not block!)\n");
 GETMEOUTTAHERE:
     reader_please_die = true;
     pthread_mutex_unlock (& mutex);
+    aud_set_bool (nullptr, "eqpreset_nameonly", save_eqpreset_nameonly);
     AUDINFO ("WE HAVE EXITED THE PLAY LOOP, WAITING FOR READER THREAD TO STOP!...\n");
     if (pthread_join (rdmux_thread, NULL))
         AUDERR ("Error joining thread\n");
