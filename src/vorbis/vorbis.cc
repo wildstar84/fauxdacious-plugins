@@ -80,13 +80,6 @@ ov_callbacks vorbis_callbacks_stream = {
     nullptr
 };
 
-ov_callbacks vorbis_callbacks_stdin = {   /* JWT:ADDED TO HANDLE INPUT FROM stdin */
-    ovcb_read,
-    nullptr,
-    nullptr,
-    nullptr
-};
-
 bool VorbisPlugin::is_our_file (const char * filename, VFSFile & file)
 {
     ogg_sync_state oy = {0};
@@ -94,8 +87,6 @@ bool VorbisPlugin::is_our_file (const char * filename, VFSFile & file)
     ogg_page og = {0};
     ogg_packet op = {0};
 
-    if (strstr(filename, "://-"))  return true; /*  JWT */
-		
     bool result = false;
 
     ogg_sync_init (& oy);
@@ -235,22 +226,11 @@ bool VorbisPlugin::play (const char * filename, VFSFile & file)
     bool stream = (file.fsize () < 0);
     bool error = false;
 
-    if (strstr(filename, "://-"))   /* JWT:ADDED TO HANDLE INPUT FROM stdin */
+    if (ov_open_callbacks (& file, & vf, nullptr, 0, stream ?
+     vorbis_callbacks_stream : vorbis_callbacks) < 0)
     {
-        if (ov_open_callbacks (& file, & vf, nullptr, 0, vorbis_callbacks_stdin) < 0)
-        {
-            error = true;
-            goto play_cleanup;
-        }
-    }
-    else
-    {
-        if (ov_open_callbacks (& file, & vf, nullptr, 0, stream ?
-            vorbis_callbacks_stream : vorbis_callbacks) < 0)
-        {
-            error = true;
-            goto play_cleanup;
-        }
+        error = true;
+        goto play_cleanup;
     }
 
     vi = ov_info(&vf, -1);
@@ -348,17 +328,9 @@ bool VorbisPlugin::read_tag (const char * filename, VFSFile & file,
      * machine initialization.  If it returns zero, the stream
      * *is* Vorbis and we're fully ready to decode.
      */
-    if (strstr(filename, "://-"))   /* JWT:ADDED TO HANDLE INPUT FROM stdin */
-    {
-        if (ov_open_callbacks (& file, & vfile, nullptr, 0, vorbis_callbacks_stdin) < 0)
-            return false;
-    }
-    else
-    {
-        if (ov_open_callbacks (& file, & vfile, nullptr, 0, stream ?
-                vorbis_callbacks_stream : vorbis_callbacks) < 0)
-            return false;
-    }
+    if (ov_open_callbacks (& file, & vfile, nullptr, 0, stream ?
+     vorbis_callbacks_stream : vorbis_callbacks) < 0)
+        return false;
 
     vorbis_info * info = ov_info (& vfile, -1);
     vorbis_comment * comment = ov_comment (& vfile, -1);
@@ -386,9 +358,9 @@ static Index<char> read_image_from_comment (const char * filename, vorbis_commen
     if ((s = vorbis_comment_query (comment, "METADATA_BLOCK_PICTURE", 0)))
     {
         unsigned mime_length, desc_length, length;
+
         size_t length2;
         CharPtr data2 ((char *) g_base64_decode (s, & length2));
-
         if (! data2 || length2 < 8)
             goto PARSE_ERR;
 
@@ -405,7 +377,6 @@ static Index<char> read_image_from_comment (const char * filename, vorbis_commen
             goto PARSE_ERR;
 
         data.insert (data2 + 8 + mime_length + 4 + desc_length + 20, 0, length);
-
         return data;
 
     PARSE_ERR:

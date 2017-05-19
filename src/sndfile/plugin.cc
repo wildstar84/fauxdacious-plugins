@@ -21,7 +21,6 @@
 
 #include <math.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include <sndfile.h>
 
@@ -29,7 +28,6 @@
 #include <libaudcore/plugin.h>
 #include <libaudcore/i18n.h>
 #include <libaudcore/audstrings.h>
-#include <libaudcore/runtime.h>
 
 class SndfilePlugin : public InputPlugin
 {
@@ -132,366 +130,184 @@ bool SndfilePlugin::read_tag (const char * filename, VFSFile & file, Tuple & tup
  Index<char> * image)
 {
     SF_INFO sfinfo {}; // must be zeroed before sf_open()
+    const char *format, *subformat;
 
-    if (strstr(filename, "://-."))   /* JWT:ADDED TO HANDLE INPUT FROM stdin */
-        tuple.set_filename (filename);
-    else
+    bool stream = (file.fsize () < 0);
+    SNDFILE * sndfile = sf_open_virtual (stream ? & sf_virtual_io_stream :
+     & sf_virtual_io, SFM_READ, & sfinfo, & file);
+
+    if (! sndfile)
+        return false;
+
+    copy_string (sndfile, SF_STR_TITLE, tuple, Tuple::Title);
+    copy_string (sndfile, SF_STR_ARTIST, tuple, Tuple::Artist);
+    copy_string (sndfile, SF_STR_ALBUM, tuple, Tuple::Album);
+    copy_string (sndfile, SF_STR_COMMENT, tuple, Tuple::Comment);
+    copy_string (sndfile, SF_STR_GENRE, tuple, Tuple::Genre);
+    copy_int (sndfile, SF_STR_DATE, tuple, Tuple::Year);
+    copy_int (sndfile, SF_STR_TRACKNUMBER, tuple, Tuple::Track);
+
+    sf_close (sndfile);
+
+    if (sfinfo.samplerate > 0)
+        tuple.set_int (Tuple::Length, ceil (1000.0 * sfinfo.frames / sfinfo.samplerate));
+
+    switch (sfinfo.format & SF_FORMAT_TYPEMASK)
     {
-        const char *format, *subformat;
-
-        bool stream = (file.fsize () < 0);
-        SNDFILE * sndfile = sf_open_virtual (stream ? & sf_virtual_io_stream :
-         & sf_virtual_io, SFM_READ, & sfinfo, & file);
-
-        if (! sndfile)
-            return false;
-
-        /* JWT:DEPRECIATED?:  tuple.set_filename (filename); */
-
-        copy_string (sndfile, SF_STR_TITLE, tuple, Tuple::Title);
-        copy_string (sndfile, SF_STR_ARTIST, tuple, Tuple::Artist);
-        copy_string (sndfile, SF_STR_ALBUM, tuple, Tuple::Album);
-        copy_string (sndfile, SF_STR_COMMENT, tuple, Tuple::Comment);
-        copy_string (sndfile, SF_STR_GENRE, tuple, Tuple::Genre);
-        copy_int (sndfile, SF_STR_DATE, tuple, Tuple::Year);
-        copy_int (sndfile, SF_STR_TRACKNUMBER, tuple, Tuple::Track);
-
-        sf_close (sndfile);
-
-        if (sfinfo.samplerate > 0)
-            tuple.set_int (Tuple::Length, ceil (1000.0 * sfinfo.frames / sfinfo.samplerate));
-
-        switch (sfinfo.format & SF_FORMAT_TYPEMASK)
-        {
-            case SF_FORMAT_WAV:
-            case SF_FORMAT_WAVEX:
-                format = "Microsoft WAV";
-                break;
-            case SF_FORMAT_AIFF:
-                format = "Apple/SGI AIFF";
-                break;
-            case SF_FORMAT_AU:
-                format = "Sun/NeXT AU";
-                break;
-            case SF_FORMAT_RAW:
-                format = "Raw PCM data";
-                break;
-            case SF_FORMAT_PAF:
-                format = "Ensoniq PARIS";
-                break;
-            case SF_FORMAT_SVX:
-                format = "Amiga IFF / SVX8 / SV16";
-                break;
-            case SF_FORMAT_NIST:
-                format = "Sphere NIST";
-                break;
-            case SF_FORMAT_VOC:
-                format = "Creative VOC";
-                break;
-            case SF_FORMAT_IRCAM:
-                format = "Berkeley/IRCAM/CARL";
-                break;
-            case SF_FORMAT_W64:
-                format = "Sonic Foundry's 64 bit RIFF/WAV";
-                break;
-            case SF_FORMAT_MAT4:
-                format = "Matlab (tm) V4.2 / GNU Octave 2.0";
-                break;
-            case SF_FORMAT_MAT5:
-                format = "Matlab (tm) V5.0 / GNU Octave 2.1";
-                break;
-            case SF_FORMAT_PVF:
-                format = "Portable Voice Format";
-                break;
-            case SF_FORMAT_XI:
-                format = "Fasttracker 2 Extended Instrument";
-                break;
-            case SF_FORMAT_HTK:
-                format = "HMM Tool Kit";
-                break;
-            case SF_FORMAT_SDS:
-                format = "Midi Sample Dump Standard";
-                 break;
-            case SF_FORMAT_AVR:
-                format = "Audio Visual Research";
-                break;
-            case SF_FORMAT_SD2:
-                format = "Sound Designer 2";
-                break;
-            case SF_FORMAT_FLAC:
-                format = "Free Lossless Audio Codec";
-                break;
-            case SF_FORMAT_CAF:
-                format = "Core Audio File";
-                break;
-            default:
-                format = "Unknown sndfile";
-        }
-
-        switch (sfinfo.format & SF_FORMAT_SUBMASK)
-        {
-            case SF_FORMAT_PCM_S8:
-                subformat = "signed 8 bit";
-                break;
-            case SF_FORMAT_PCM_16:
-                subformat = "signed 16 bit";
-                break;
-            case SF_FORMAT_PCM_24:
-                subformat = "signed 24 bit";
-                break;
-            case SF_FORMAT_PCM_32:
-                subformat = "signed 32 bit";
-                break;
-            case SF_FORMAT_PCM_U8:
-                subformat = "unsigned 8 bit";
-                break;
-            case SF_FORMAT_FLOAT:
-                subformat = "32 bit float";
-                break;
-            case SF_FORMAT_DOUBLE:
-                subformat = "64 bit float";
-                break;
-            case SF_FORMAT_ULAW:
-                subformat = "U-Law";
-                break;
-            case SF_FORMAT_ALAW:
-                subformat = "A-Law";
-                break;
-            case SF_FORMAT_IMA_ADPCM:
-                subformat = "IMA ADPCM";
-                break;
-            case SF_FORMAT_MS_ADPCM:
-                subformat = "MS ADPCM";
-                break;
-            case SF_FORMAT_GSM610:
-                subformat = "GSM 6.10";
-                break;
-            case SF_FORMAT_VOX_ADPCM:
-                subformat = "Oki Dialogic ADPCM";
-                break;
-            case SF_FORMAT_G721_32:
-                subformat = "32kbs G721 ADPCM";
-                break;
-            case SF_FORMAT_G723_24:
-                subformat = "24kbs G723 ADPCM";
-                break;
-            case SF_FORMAT_G723_40:
-                subformat = "40kbs G723 ADPCM";
-                break;
-            case SF_FORMAT_DWVW_12:
-                subformat = "12 bit Delta Width Variable Word";
-                break;
-            case SF_FORMAT_DWVW_16:
-                subformat = "16 bit Delta Width Variable Word";
-                break;
-            case SF_FORMAT_DWVW_24:
-                subformat = "24 bit Delta Width Variable Word";
-                break;
-            case SF_FORMAT_DWVW_N:
-                subformat = "N bit Delta Width Variable Word";
-                break;
-            case SF_FORMAT_DPCM_8:
-                subformat = "8 bit differential PCM";
-                break;
-            case SF_FORMAT_DPCM_16:
-                subformat = "16 bit differential PCM";
-                break;
-            default:
-                subformat = nullptr;
-        }
-
-        if (subformat != nullptr)
-            tuple.set_format (str_printf ("%s (%s)", format, subformat),
-                sfinfo.channels, sfinfo.samplerate, 0);
-        else
-            tuple.set_format (format, sfinfo.channels, sfinfo.samplerate, 0);
+        case SF_FORMAT_WAV:
+        case SF_FORMAT_WAVEX:
+            format = "Microsoft WAV";
+            break;
+        case SF_FORMAT_AIFF:
+            format = "Apple/SGI AIFF";
+            break;
+        case SF_FORMAT_AU:
+            format = "Sun/NeXT AU";
+            break;
+        case SF_FORMAT_RAW:
+            format = "Raw PCM data";
+            break;
+        case SF_FORMAT_PAF:
+            format = "Ensoniq PARIS";
+            break;
+        case SF_FORMAT_SVX:
+            format = "Amiga IFF / SVX8 / SV16";
+            break;
+        case SF_FORMAT_NIST:
+            format = "Sphere NIST";
+            break;
+        case SF_FORMAT_VOC:
+            format = "Creative VOC";
+            break;
+        case SF_FORMAT_IRCAM:
+            format = "Berkeley/IRCAM/CARL";
+            break;
+        case SF_FORMAT_W64:
+            format = "Sonic Foundry's 64 bit RIFF/WAV";
+            break;
+        case SF_FORMAT_MAT4:
+            format = "Matlab (tm) V4.2 / GNU Octave 2.0";
+            break;
+        case SF_FORMAT_MAT5:
+            format = "Matlab (tm) V5.0 / GNU Octave 2.1";
+            break;
+        case SF_FORMAT_PVF:
+            format = "Portable Voice Format";
+            break;
+        case SF_FORMAT_XI:
+            format = "Fasttracker 2 Extended Instrument";
+            break;
+        case SF_FORMAT_HTK:
+            format = "HMM Tool Kit";
+            break;
+        case SF_FORMAT_SDS:
+            format = "Midi Sample Dump Standard";
+            break;
+        case SF_FORMAT_AVR:
+            format = "Audio Visual Research";
+            break;
+        case SF_FORMAT_SD2:
+            format = "Sound Designer 2";
+            break;
+        case SF_FORMAT_FLAC:
+            format = "Free Lossless Audio Codec";
+            break;
+        case SF_FORMAT_CAF:
+            format = "Core Audio File";
+            break;
+        default:
+            format = "Unknown sndfile";
     }
+
+    switch (sfinfo.format & SF_FORMAT_SUBMASK)
+    {
+        case SF_FORMAT_PCM_S8:
+            subformat = "signed 8 bit";
+            break;
+        case SF_FORMAT_PCM_16:
+            subformat = "signed 16 bit";
+            break;
+        case SF_FORMAT_PCM_24:
+            subformat = "signed 24 bit";
+            break;
+        case SF_FORMAT_PCM_32:
+            subformat = "signed 32 bit";
+            break;
+        case SF_FORMAT_PCM_U8:
+            subformat = "unsigned 8 bit";
+            break;
+        case SF_FORMAT_FLOAT:
+            subformat = "32 bit float";
+            break;
+        case SF_FORMAT_DOUBLE:
+            subformat = "64 bit float";
+            break;
+        case SF_FORMAT_ULAW:
+            subformat = "U-Law";
+            break;
+        case SF_FORMAT_ALAW:
+            subformat = "A-Law";
+            break;
+        case SF_FORMAT_IMA_ADPCM:
+            subformat = "IMA ADPCM";
+            break;
+        case SF_FORMAT_MS_ADPCM:
+            subformat = "MS ADPCM";
+            break;
+        case SF_FORMAT_GSM610:
+            subformat = "GSM 6.10";
+            break;
+        case SF_FORMAT_VOX_ADPCM:
+            subformat = "Oki Dialogic ADPCM";
+            break;
+        case SF_FORMAT_G721_32:
+            subformat = "32kbs G721 ADPCM";
+            break;
+        case SF_FORMAT_G723_24:
+            subformat = "24kbs G723 ADPCM";
+            break;
+        case SF_FORMAT_G723_40:
+            subformat = "40kbs G723 ADPCM";
+            break;
+        case SF_FORMAT_DWVW_12:
+            subformat = "12 bit Delta Width Variable Word";
+            break;
+        case SF_FORMAT_DWVW_16:
+            subformat = "16 bit Delta Width Variable Word";
+            break;
+        case SF_FORMAT_DWVW_24:
+            subformat = "24 bit Delta Width Variable Word";
+            break;
+        case SF_FORMAT_DWVW_N:
+            subformat = "N bit Delta Width Variable Word";
+            break;
+        case SF_FORMAT_DPCM_8:
+            subformat = "8 bit differential PCM";
+            break;
+        case SF_FORMAT_DPCM_16:
+            subformat = "16 bit differential PCM";
+            break;
+        default:
+            subformat = nullptr;
+    }
+
+    if (subformat != nullptr)
+        tuple.set_format (str_printf ("%s (%s)", format, subformat),
+         sfinfo.channels, sfinfo.samplerate, 0);
+    else
+        tuple.set_format (format, sfinfo.channels, sfinfo.samplerate, 0);
 
     return true;
 }
 
 bool SndfilePlugin::play (const char * filename, VFSFile & file)
 {
-    SNDFILE *sndfile = NULL;
     SF_INFO sfinfo {}; // must be zeroed before sf_open()
 
-    if (strstr(filename, "://-."))    /* JWT:ADDED TO HANDLE INPUT FROM stdin */
-    {
-        Tuple ti;
-        const char *format, *subformat;
+    bool stream = (file.fsize () < 0);
+    SNDFILE * sndfile = sf_open_virtual (stream ? & sf_virtual_io_stream :
+     & sf_virtual_io, SFM_READ, & sfinfo, & file);
 
-        memset(&sfinfo, 0, sizeof(sfinfo));
-        sndfile = sf_open_fd(0, SFM_READ, &sfinfo, 0);
-        if (sndfile == nullptr)
-            return false;
-
-        AUDDBG ("---- playing from STDIN: get TUPLE stuff now that we can open stdin.\n");
-
-        ti.set_filename (filename);
-
-        copy_string (sndfile, SF_STR_TITLE, ti, Tuple::Title);
-        copy_string (sndfile, SF_STR_ARTIST, ti, Tuple::Artist);
-        copy_string (sndfile, SF_STR_ALBUM, ti, Tuple::Album);
-        copy_string (sndfile, SF_STR_COMMENT, ti, Tuple::Comment);
-        copy_string (sndfile, SF_STR_GENRE, ti, Tuple::Genre);
-        copy_int (sndfile, SF_STR_DATE, ti, Tuple::Year);
-        copy_int (sndfile, SF_STR_TRACKNUMBER, ti, Tuple::Track);
-
-        if (sfinfo.samplerate > 0)
-            ti.set_int (Tuple::Length, ceil (1000.0 * sfinfo.frames / sfinfo.samplerate));
-
-        switch (sfinfo.format & SF_FORMAT_TYPEMASK)
-        {
-            case SF_FORMAT_WAV:
-            case SF_FORMAT_WAVEX:
-                format = "Microsoft WAV";
-                break;
-            case SF_FORMAT_AIFF:
-                format = "Apple/SGI AIFF";
-                break;
-            case SF_FORMAT_AU:
-                format = "Sun/NeXT AU";
-                break;
-            case SF_FORMAT_RAW:
-                format = "Raw PCM data";
-                break;
-            case SF_FORMAT_PAF:
-                format = "Ensoniq PARIS";
-                break;
-            case SF_FORMAT_SVX:
-                format = "Amiga IFF / SVX8 / SV16";
-                break;
-            case SF_FORMAT_NIST:
-                format = "Sphere NIST";
-                break;
-            case SF_FORMAT_VOC:
-                format = "Creative VOC";
-                break;
-            case SF_FORMAT_IRCAM:
-                format = "Berkeley/IRCAM/CARL";
-                break;
-            case SF_FORMAT_W64:
-                format = "Sonic Foundry's 64 bit RIFF/WAV";
-                break;
-            case SF_FORMAT_MAT4:
-                format = "Matlab (tm) V4.2 / GNU Octave 2.0";
-                break;
-            case SF_FORMAT_MAT5:
-                format = "Matlab (tm) V5.0 / GNU Octave 2.1";
-                break;
-            case SF_FORMAT_PVF:
-                format = "Portable Voice Format";
-                break;
-            case SF_FORMAT_XI:
-                format = "Fasttracker 2 Extended Instrument";
-                break;
-            case SF_FORMAT_HTK:
-                format = "HMM Tool Kit";
-                break;
-            case SF_FORMAT_SDS:
-                format = "Midi Sample Dump Standard";
-                 break;
-            case SF_FORMAT_AVR:
-                format = "Audio Visual Research";
-                break;
-            case SF_FORMAT_SD2:
-                format = "Sound Designer 2";
-                break;
-            case SF_FORMAT_FLAC:
-                format = "Free Lossless Audio Codec";
-                break;
-            case SF_FORMAT_CAF:
-                format = "Core Audio File";
-                break;
-            default:
-                format = "Unknown sndfile";
-        }
-
-        switch (sfinfo.format & SF_FORMAT_SUBMASK)
-        {
-            case SF_FORMAT_PCM_S8:
-                subformat = "signed 8 bit";
-                break;
-            case SF_FORMAT_PCM_16:
-                subformat = "signed 16 bit";
-                break;
-            case SF_FORMAT_PCM_24:
-                subformat = "signed 24 bit";
-                break;
-            case SF_FORMAT_PCM_32:
-                subformat = "signed 32 bit";
-                break;
-            case SF_FORMAT_PCM_U8:
-                subformat = "unsigned 8 bit";
-                break;
-            case SF_FORMAT_FLOAT:
-                subformat = "32 bit float";
-                break;
-            case SF_FORMAT_DOUBLE:
-                subformat = "64 bit float";
-                break;
-            case SF_FORMAT_ULAW:
-                subformat = "U-Law";
-                break;
-            case SF_FORMAT_ALAW:
-                subformat = "A-Law";
-                break;
-            case SF_FORMAT_IMA_ADPCM:
-                subformat = "IMA ADPCM";
-                break;
-            case SF_FORMAT_MS_ADPCM:
-                subformat = "MS ADPCM";
-                break;
-            case SF_FORMAT_GSM610:
-                subformat = "GSM 6.10";
-                break;
-            case SF_FORMAT_VOX_ADPCM:
-                subformat = "Oki Dialogic ADPCM";
-                break;
-            case SF_FORMAT_G721_32:
-                subformat = "32kbs G721 ADPCM";
-                break;
-            case SF_FORMAT_G723_24:
-                subformat = "24kbs G723 ADPCM";
-                break;
-            case SF_FORMAT_G723_40:
-                subformat = "40kbs G723 ADPCM";
-                break;
-            case SF_FORMAT_DWVW_12:
-                subformat = "12 bit Delta Width Variable Word";
-                break;
-            case SF_FORMAT_DWVW_16:
-                subformat = "16 bit Delta Width Variable Word";
-                break;
-            case SF_FORMAT_DWVW_24:
-                subformat = "24 bit Delta Width Variable Word";
-                break;
-            case SF_FORMAT_DWVW_N:
-                subformat = "N bit Delta Width Variable Word";
-                break;
-            case SF_FORMAT_DPCM_8:
-                subformat = "8 bit differential PCM";
-                break;
-            case SF_FORMAT_DPCM_16:
-                subformat = "16 bit differential PCM";
-                break;
-            default:
-                subformat = nullptr;
-        }
-
-        if (subformat != nullptr)
-            ti.set_format (str_printf ("%s (%s)", format, subformat),
-                sfinfo.channels, sfinfo.samplerate, 0);
-        else
-            ti.set_format (format, sfinfo.channels, sfinfo.samplerate, 0);
-        set_playback_tuple (ti.ref ());
-    }
-    else
-    {
-        bool stream = (file.fsize () < 0);
-        sndfile = sf_open_virtual (stream ? & sf_virtual_io_stream :
-            & sf_virtual_io, SFM_READ, & sfinfo, & file);
-    }
     if (sndfile == nullptr)
         return false;
 
@@ -513,17 +329,13 @@ bool SndfilePlugin::play (const char * filename, VFSFile & file)
         write_audio (buffer.begin (), sizeof (float) * samples);
     }
 
-    if (!strstr(filename, "://-."))   /* JWT:DON'T EVER CLOSE stdin! */
-        sf_close (sndfile);
+    sf_close (sndfile);
 
     return true;
 }
 
 bool SndfilePlugin::is_our_file (const char * filename, VFSFile & file)
 {
-    if (strstr(filename, "://-."))   /* JWT:ADDED TO HANDLE INPUT FROM stdin */
-        return true;
-		
     SF_INFO tmp_sfinfo {}; // must be zeroed before sf_open()
 
     /* Have to open the file to see if libsndfile can handle it. */
