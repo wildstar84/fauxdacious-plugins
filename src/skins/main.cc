@@ -986,6 +986,8 @@ static void showhide_about_window_cb (Button * button, GdkEventButton * event)
 
 static void mainwin_create_widgets ()
 {
+    gboolean afterstep = aud_get_bool ("skins", "afterstep");  /* JWT:HANDLE OUR RICKITY OL' WINDOWMANAGER (ie. TO NOT UNSTICK WINDOW ON FOCUS, ETC. */
+
     mainwin_menubtn = new Button (9, 9, 0, 0, 0, 9, SKIN_TITLEBAR, SKIN_TITLEBAR);
     mainwin->put_widget (false, mainwin_menubtn, 6, 3);
     mainwin_menubtn->on_release ((ButtonCB) mainwin_menubtn_cb);
@@ -1122,9 +1124,18 @@ static void mainwin_create_widgets ()
     mainwin->put_widget (true, mainwin_shaded_menubtn, 6, 3);
     mainwin_shaded_menubtn->on_release ((ButtonCB) mainwin_menubtn_cb);
 
-    mainwin_shaded_minimize = new Button (9, 9, 9, 0, 9, 9, SKIN_TITLEBAR, SKIN_TITLEBAR);
-    mainwin->put_widget (true, mainwin_shaded_minimize, 244, 3);
-    mainwin_shaded_minimize->on_release ((ButtonCB) mainwin_minimize_cb);
+    if (afterstep)  /* JWT:THIS RICKITY OL' WINDOWMANAGER DON'T SEEM TO HANDLE gtk_window_iconify(): */
+    {   /* SO LET'S DO THE NEXT MUST USEFUL THING:  TOGGLE THE PLAYLIST! (I USE AS & *WANT* THIS!): */
+        mainwin_shaded_minimize = new Button (9, 9, 9, 0, 9, 0, 9, 0, 9, 0, SKIN_TITLEBAR, SKIN_TITLEBAR);
+        mainwin->put_widget (true, mainwin_shaded_minimize, 244, 3);
+        mainwin_shaded_minimize->on_release ((ButtonCB) mainwin_pl_cb);
+    }
+    else
+    {
+        mainwin_shaded_minimize = new Button (9, 9, 9, 0, 9, 9, SKIN_TITLEBAR, SKIN_TITLEBAR);
+        mainwin->put_widget (true, mainwin_shaded_minimize, 244, 3);
+        mainwin_shaded_minimize->on_release ((ButtonCB) mainwin_minimize_cb);
+    }
 
     mainwin_shaded_shade = new Button (9, 9, 0, 27, 9, 27, SKIN_TITLEBAR, SKIN_TITLEBAR);
     mainwin->put_widget (true, mainwin_shaded_shade, 254, 3);
@@ -1133,6 +1144,8 @@ static void mainwin_create_widgets ()
     mainwin_shaded_close = new Button (9, 9, 18, 0, 18, 9, SKIN_TITLEBAR, SKIN_TITLEBAR);
     mainwin->put_widget (true, mainwin_shaded_close, 264, 3);
     mainwin_shaded_close->on_release ((ButtonCB) skins_close);
+
+    /* end shaded */
 
     mainwin_srew = new Button (8, 7);
     mainwin->put_widget (true, mainwin_srew, 169, 4);
