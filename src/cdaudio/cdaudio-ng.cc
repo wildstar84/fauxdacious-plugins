@@ -22,6 +22,9 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+extern "C" {
+#include <sys/stat.h>
+}
 
 /* prevent libcdio from redefining PACKAGE, VERSION, etc. */
 #define EXTERNAL_LIBCDIO_CONFIG_H
@@ -48,6 +51,7 @@
 #include <libaudcore/mainloop.h>
 #include <libaudcore/playlist.h>
 #include <libaudcore/plugin.h>
+#include <libaudcore/probe.h>
 #include <libaudcore/preferences.h>
 #include <libaudcore/runtime.h>
 
@@ -94,6 +98,7 @@ typedef struct
     String genre;
     int startlsn;
     int endlsn;
+    bool tag_read;  /* JWT:TRUE IF WE'VE ALREADY READ THE TAG DATA FOR THIS TRACK. */
 }
 trackinfo_t;
 
@@ -113,6 +118,8 @@ static bool refresh_trackinfo (bool warning);
 static void reset_trackinfo ();
 static int calculate_track_length (int startlsn, int endlsn);
 static int find_trackno_from_filename (const char * filename);
+static String coverart_file;       /* JWT:PATH OF LAST GOOD COVER ART FILE (IF ANY) FOR CURRENTLY-PLAYING CD. */
+static bool coverart_file_sought;  /* JWT:TRUE IF WE'VE ALREADY LOOKED FOR A COVER ART FILE FOR CURRENTLY-PLAYING CD. */
 
 const char CDAudio::about[] =
  N_("Copyright (C) 2007-2012 Calin Crisan <ccrisan@gmail.com> and others.\n\n"
@@ -377,6 +384,7 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                 subtunes.append (trackno);
 
         tuple.set_subtunes (subtunes.len (), subtunes.begin ());
+        cdio_get_media_changed (pcdrom_drive->p_cdio);  /* JWT:PREVENT EXTRA SCAN. */
 
         valid = true;
     }
@@ -390,28 +398,54 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
             goto DONE;
         }
 
-        if (!cdda_track_audiop (pcdrom_drive, trackno))
+        if (! trackinfo[trackno].tag_read)  /* JWT:ONLY NEED TO FETCH TRACK INFO ONCE! */
         {
-            AUDERR ("Track %d is a data track.\n", trackno);
-            goto DONE;
+            if (!cdda_track_audiop (pcdrom_drive, trackno))
+            {
+                AUDERR ("Track %d is a data track.\n", trackno);
+                goto DONE;
+            }
+
+            trackinfo[trackno].tag_read = true;
+            tuple.set_format (_("Audio CD"), 2, 44100, 1411);
+            tuple.set_int (Tuple::Track, trackno);
+            tuple.set_int (Tuple::Length, calculate_track_length
+             (trackinfo[trackno].startlsn, trackinfo[trackno].endlsn));
+
+            if (trackinfo[trackno].name)
+                tuple.set_str (Tuple::Title, trackinfo[trackno].name);
+            if (trackinfo[trackno].performer)
+                tuple.set_str (Tuple::Artist, trackinfo[trackno].performer);
+            if (trackinfo[0].name)
+                tuple.set_str (Tuple::Album, trackinfo[0].name);
+            if (trackinfo[0].performer)
+                tuple.set_str (Tuple::AlbumArtist, trackinfo[0].performer);
+            if (trackinfo[trackno].genre)
+                tuple.set_str (Tuple::Genre, trackinfo[trackno].genre);
+            if (aud_get_bool (nullptr, "user_tag_data"))  /* JWT:SEE IF WE HAVE A COVER ART FILE FOR THIS CD: */
+            {
+                if (! coverart_file_sought)
+                {
+                    String ext = aud_get_str ("CDDA", "cover_art_ext");
+                    if (! ext || ! ext[0])
+                        ext = String (_("png"));
+                    String coverart_path = aud_get_str ("CDDA", "cover_art_path");
+                    if (! coverart_path || ! coverart_path[0])
+                        coverart_path = String (aud_get_path (AudPath::UserDir));
+                    StringBuf fid_buf = filename_build ({(const char *)coverart_path, 
+                            (const char *)trackinfo[0].name});
+                    coverart_file = String (str_concat ({"file://", fid_buf, ".", (const char *)ext}));
+                    const char * filenamechar = coverart_file + 7;
+                    struct stat statbuf;
+                    if (stat (filenamechar, &statbuf))  // ART IMAGE FILE DOESN'T EXIST:
+                        coverart_file = String (_(""));
+                    AUDINFO ("i:CD title=%s= Cover Art File=%s=\n", filenamechar, filename);
+                    coverart_file_sought = true;
+                }
+                tuple.set_str (Tuple::Comment, coverart_file);
+                aud_write_tag_to_tagfile (filename, tuple);
+            }
         }
-
-        tuple.set_format (_("Audio CD"), 2, 44100, 1411);
-        tuple.set_int (Tuple::Track, trackno);
-        tuple.set_int (Tuple::Length, calculate_track_length
-         (trackinfo[trackno].startlsn, trackinfo[trackno].endlsn));
-
-        if (trackinfo[trackno].name)
-            tuple.set_str (Tuple::Title, trackinfo[trackno].name);
-        if (trackinfo[trackno].performer)
-            tuple.set_str (Tuple::Artist, trackinfo[trackno].performer);
-        if (trackinfo[0].name)
-            tuple.set_str (Tuple::Album, trackinfo[0].name);
-        if (trackinfo[0].performer)
-            tuple.set_str (Tuple::AlbumArtist, trackinfo[0].performer);
-        if (trackinfo[trackno].genre)
-            tuple.set_str (Tuple::Genre, trackinfo[trackno].genre);
-
         valid = true;
     }
 
@@ -483,6 +517,7 @@ static bool scan_cd ()
 {
     AUDDBG ("Scanning CD drive.\n");
     trackinfo.clear ();
+    coverart_file_sought = false;
 
     /* general track initialization */
 
@@ -516,6 +551,7 @@ static bool scan_cd ()
 
     trackinfo[0].startlsn = cdda_track_firstsector (pcdrom_drive, 0);
     trackinfo[0].endlsn = cdda_track_lastsector (pcdrom_drive, lasttrackno);
+    trackinfo[0].tag_read = false;
 
     n_audio_tracks = 0;
 
@@ -523,6 +559,7 @@ static bool scan_cd ()
     {
         trackinfo[trackno].startlsn = cdda_track_firstsector (pcdrom_drive, trackno);
         trackinfo[trackno].endlsn = cdda_track_lastsector (pcdrom_drive, trackno);
+        trackinfo[trackno].tag_read = false;
 
         if (trackinfo[trackno].startlsn == CDIO_INVALID_LSN
             || trackinfo[trackno].endlsn == CDIO_INVALID_LSN)
@@ -775,6 +812,12 @@ static void reset_trackinfo ()
     }
 
     trackinfo.clear ();
+    if (aud_get_bool (nullptr, "user_tag_data"))  /* JWT:CLEAN UP USER TAG DATA FILE: */
+    {
+        for (int i=0; i<=n_audio_tracks; i++)
+            aud_delete_tag_from_tagfile (str_printf ("%s%d", "cdda://?", i));
+    }
+    coverart_file = String ();
 }
 
 /* thread safe (mutex may be locked) */
