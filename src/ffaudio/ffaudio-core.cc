@@ -48,8 +48,8 @@
 extern "C" {
 #if SDL != 2
 #include <SDL_syswm.h>
-#endif
 #include <libswscale/swscale.h>
+#endif
 }
 
 // #define SDL_AUDIO_BUFFER_SIZE 4096
@@ -218,8 +218,7 @@ bool Dequeue (pktQueue *Q)
     else
     {
         Q->size--;
-        if (Q->elements[Q->front].data)
-            av_free_packet (&Q->elements[Q->front]);
+        av_free_packet (&Q->elements[Q->front]);
 
         Q->front++;
         /* As we fill elements in circular fashion */
@@ -235,8 +234,7 @@ void QFlush (pktQueue *Q)
     while (Q->size > 0)
     {
         Q->size--;
-        if (Q->elements[Q->front].data)
-            av_free_packet (&Q->elements[Q->front]);
+        av_free_packet (&Q->elements[Q->front]);
 
         Q->front++;
         /* As we fill elements in circular fashion */
@@ -338,7 +336,7 @@ static void ffaudio_log_cb (void * avcl, int av_level, const char * fmt, va_list
 
 bool FFaudio::init ()
 {
-    AUDINFO ("Starting up FFaudio (and SDL).\n");
+    AUDINFO ("Starting up FFaudio.\n");
     
     aud_config_set_defaults ("ffaudio", defaults);
     av_register_all ();
@@ -353,11 +351,9 @@ bool FFaudio::init ()
 
 void FFaudio::cleanup ()
 {
-    AUDINFO ("Shutting down FFaudio (and SDL).\n");
+    AUDINFO ("Shutting down FFaudio.\n");
 
-    SDL_Quit ();
     extension_dict.clear ();
-
     av_lockmgr_register (nullptr);
 }
 
@@ -549,16 +545,17 @@ static void close_input_file (AVFormatContext * c)
 
     if (c)
     {
-        bool notfromstdin = strcmp (c->filename, "pipe:");
-        AVIOContext * io = c->pb;
+        if (c->pb)
+        {
+            if (strcmp (c->filename, "pipe:"))
+                io_context_free (c->pb);
+        }
 #if CHECK_LIBAVFORMAT_VERSION (53, 25, 0, 53, 17, 0)
         avformat_close_input (&c);
 #else
         av_close_input_file (c);
 #endif
         avformat_free_context (c);
-        if (notfromstdin && io)
-            io_context_free (io);
     }
 }
 
@@ -969,8 +966,11 @@ void save_window_xy (SDL_Window * screen, int video_fudge_x, int video_fudge_y)
 {
     int x, y, w, h;
 
-    SDL_GetWindowPosition (screen, &x, &y);
     SDL_GetWindowSize (screen, &w, &h);
+    if (w < 1 || h < 1)  /* SDL RETURNED BAD WINDOW INFO, DON'T SAVE! */
+        return;
+
+    SDL_GetWindowPosition (screen, &x, &y);
     x += video_fudge_x;  /* APPLY CALCULATED FUDGE-FACTOR */
     if (x < 0)
         x = 1;
@@ -1295,12 +1295,15 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 
         /* NOW "RESIZE" screen to user's wXh, if user set something: */
 #if SDL == 2
-        SDL_SetMainReady ();
-        if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0)
+        if (! SDL_WasInit (SDL_INIT_VIDEO) && ! sdl_initialized)
         {
-            AUDERR ("Failed to init SDL (no video playing): %s.\n", SDL_GetError ());
-            myplay_video = false;
-            goto breakout1;
+            SDL_SetMainReady ();
+            if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0)
+            {
+                AUDERR ("Failed to init SDL (no video playing): %s.\n", SDL_GetError ());
+                myplay_video = false;
+                goto breakout1;
+            }
         }
         sdl_initialized = true;
         Uint32 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
@@ -1433,7 +1436,8 @@ breakout1:
     SmartPtr<SDL_Renderer, SDL_DestroyRenderer> renderer (createSDL2Renderer (screen, myplay_video));
     if (! renderer)
     {
-        AUDERR ("e:SDL: could not create video renderer - no video play (%s)\n", SDL_GetError ());
+        if (myplay_video)
+            AUDERR ("e:SDL: could not create video renderer - no video play (%s)\n", SDL_GetError ());
         myplay_video = false;
     }
 #ifdef _WIN32
@@ -1658,8 +1662,8 @@ breakout1:
                             SDL_DestroyWindow (screen);           
                             screen = nullptr;
                         }
-                        if (sdl_initialized)
-                            SDL_QuitSubSystem (SDL_INIT_VIDEO);
+                        //if (sdl_initialized)
+                        //    SDL_QuitSubSystem (SDL_INIT_VIDEO);
                     }
                     break;
                 case SDL_WINDOWEVENT:
@@ -1681,8 +1685,8 @@ breakout1:
                                     SDL_DestroyWindow (screen);           
                                     screen = nullptr;
                                 }
-                                if (sdl_initialized)
-                                    SDL_QuitSubSystem (SDL_INIT_VIDEO);
+                                //if (sdl_initialized)
+                                //    SDL_QuitSubSystem (SDL_INIT_VIDEO);
                             }
                             break;
                         case SDL_WINDOWEVENT_RESIZED:  /* WINDOW CHANGED SIZE EITHER BY US OR BY USER DRAGGING WINDOW CORNER (WE DON'T KNOW WHICH HERE) */
@@ -1888,6 +1892,10 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
             SDL_DestroyWindow (screen);
             screen = nullptr;
         }
+#ifdef _WIN32
+        if (sdl_initialized)
+            SDL_QuitSubSystem (SDL_INIT_VIDEO);
+#endif
 #else
         save_window_xy ();
         if (sws_ctx)
@@ -1902,9 +1910,9 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
             SDL_FreeSurface (screen);
             screen = nullptr;
         }
-#endif
         if (sdl_initialized)
             SDL_QuitSubSystem (SDL_INIT_VIDEO);
+#endif
     }
 
     if (vcodec_opened)
