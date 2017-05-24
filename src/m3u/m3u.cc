@@ -24,7 +24,7 @@
 #include <libaudcore/i18n.h>
 #include <libaudcore/plugin.h>
 
-static const char * const m3u_exts[] = {"m3u", "m3u8"};
+static const char * const m3u_exts[] = {"m3u", "m3u8", "txt", "ls"};  // JWT:ACCEPT .txt & "ls * |"
 
 class M3ULoader : public PlaylistPlugin
 {
