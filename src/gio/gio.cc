@@ -34,7 +34,7 @@ static const char gio_about[] =
  N_("GIO Plugin for Audacious\n"
     "Copyright 2009-2012 John Lindgren");
 
-static const char * const gio_schemes[] = {"ftp", "sftp", "smb", "mtp", "stdin"};
+static const char * const gio_schemes[] = {"ftp", "sftp", "smb", "mtp"};
 
 class GIOTransport : public TransportPlugin
 {
@@ -107,13 +107,7 @@ GIOFile::GIOFile (const char * filename, const char * mode) :
     GError * error = nullptr;
     String errorstr;
 
-    /* JWT:CHANGED TO NEXT TO HANDLE STDIN:  m_file = g_file_new_for_uri (filename); */
-#ifdef _WIN32
-    m_file = (strstr(filename, "://-.")) ? g_file_new_for_path ("CON") : g_file_new_for_uri (filename);   /* JWT:ADDED TO HANDLE INPUT FROM stdin */
-#endif
-#ifndef _WIN32
-    m_file = (strstr(filename, "://-.")) ? g_file_new_for_path ("/dev/stdin") : g_file_new_for_uri (filename);   /* JWT:ADDED TO HANDLE INPUT FROM stdin */
-#endif
+    m_file = g_file_new_for_uri (filename);
 
     switch (mode[0])
     {
@@ -284,8 +278,6 @@ FAILED:
 
 int GIOFile::fseek (int64_t offset, VFSSeekType whence)
 {
-    if (strstr(m_filename, "://-."))  return 0;   /* JWT: CAN'T SEEK ON STDIN!! */
-
     GError * error = nullptr;
     GSeekType gwhence;
 
