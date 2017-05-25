@@ -19,6 +19,7 @@
  */
 
 #include <string.h>
+#include <glib.h>  /* for g_get_current_dir, g_path_is_absolute */
 
 #include <libaudcore/audstrings.h>
 #include <libaudcore/i18n.h>
@@ -64,6 +65,7 @@ bool M3ULoader::load (const char * path, VFSFile & file, String & title,
 
     text.append (0);  /* null-terminate */
 
+    char * cur = g_get_current_dir ();
     char * parse = text.begin ();
     if (! strncmp (parse, "\xef\xbb\xbf", 3)) /* byte order mark */
         parse += 3;
@@ -77,13 +79,24 @@ bool M3ULoader::load (const char * path, VFSFile & file, String & title,
 
         if (* parse && * parse != '#')
         {
-            StringBuf s = uri_construct (parse, path);
-            if (s)
-                items.append (String (s));
+            if (strncmp (path, "stdin://", 8))
+            {
+                StringBuf s = uri_construct (parse, path);
+                if (s)
+                    items.append (String (s));
+            }
+            else
+            {
+                String cur_path = String (filename_to_uri (filename_build ({cur, path+8})));
+                StringBuf s = uri_construct (parse, cur_path);
+                if (s)
+                    items.append (String (s));
+            }
         }
 
         parse = next;
     }
+    g_free (cur);
 
     return true;
 }
