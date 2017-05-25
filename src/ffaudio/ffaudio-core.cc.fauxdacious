@@ -241,17 +241,13 @@ void QFlush (pktQueue *Q)
         if (Q->front == Q->capacity)
             Q->front = 0;
     }
-
 }
 
 bool Enqueue (pktQueue *Q, AVPacket element)
 {
     /* If the Queue is full, we cannot push an element into it as there is no space for it.*/
     if (Q->size == Q->capacity)
-    {
-        //AUDDBG ("Queue is Full\n");
         return false;
-    }
     else
     {
         Q->size++;
@@ -460,15 +456,15 @@ static AVFormatContext * open_input_file (const char * name, VFSFile & file)
 {
     AVFormatContext * c = nullptr;
 
-    play_video = aud_get_bool ("ffaudio", "play_video");   /* JWT:RESET PLAY-VIDEO, CASE TURNED OFF ON PREV. PLAY. */
-    if (! strcmp (name, "-") || strstr (name, "://-."))      /* WE'RE OPENING UP stdin */
+    play_video = aud_get_bool ("ffaudio", "play_video");  /* JWT:RESET PLAY-VIDEO, CASE TURNED OFF ON PREV. PLAY. */
+    if (! strcmp (name, "-") || strstr (name, "://-."))   /* (DEPRECIATED?) WE'RE OPENING UP stdin */
     {
-        AUDDBG ("-open_input_file(stdin)\n");
+        AUDDBG ("-open_input_file (stdin)\n");
         const char * xname = "pipe:";
         if (LOG (avformat_open_input, & c, xname, nullptr, nullptr) < 0)
             return nullptr;
     }
-    else if (strstr (name, "ytdl://"))  /* WE'RE OPENING A PIPED-IN STREAM (LIKE stdin but w/an open filehandle), NO SEEKING! */
+    else if (strstr (name, "ytdl://"))  /* (DEPRECIATED?) WE'RE OPENING A PIPED-IN STREAM (LIKE stdin but w/an open filehandle), NO SEEKING! */
     {
         const char * xname = "pipe:";
         AUDDBG ("-open_input_file for youtube-dl (%s)\n", xname);
@@ -501,7 +497,7 @@ static AVFormatContext * open_input_file (const char * name, VFSFile & file)
     }
     else  /* WE'RE OPENING A NORMAL SEEKABLE FILE OR STREAM. */
     {
-        AUDDBG ("-open_input_file(%s)\n", name);
+        AUDDBG ("-open_input_file (%s)\n", name);
         AVInputFormat * f = nullptr;
         if (! file)
         {
@@ -608,6 +604,8 @@ static bool find_codec (AVFormatContext * c, CodecInfo * cinfo, CodecInfo * vcin
                 //JWT:AS/OF v3.8, LOW-QUALITY VIDEOS SEEM BETTER W/O THIS, BUT WE LEAVE IT AS A CONFIG. OPTION - YMMV:
                 if (aud_get_bool ("ffaudio", "video_codec_flag_truncated") && vcodec->capabilities&CODEC_CAP_TRUNCATED)
                     vcinfo->context->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+                if (aud_get_bool ("ffaudio", "video_codec_flag_gray"))
+                    vcinfo->context->flags |= CODEC_FLAG_GRAY; /* output in monochrome (REQUIRES FFMPEG COMPILED W/--enable-gray!) */
             }
             else
                 play_video = false;  /* TURN OFF VIDEO PLAYBACK, SINCE NO VIDEO CODEC! */
@@ -667,7 +665,7 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
 {
     bool fromstdin = (!strcmp (filename, "-") || strstr (filename, "://-.")) ? true : false;
     AUDDBG ("i:read_tag: fid=%s=\n", filename);
-    if (fromstdin || strstr (filename, "ytdl://"))  /* NON-SEEKABLE STREAMS */
+    if (fromstdin || strstr (filename, "ytdl://"))  /* (DEPRECIATED?) NON-SEEKABLE STREAMS */
     {
         tuple.set_filename (filename);  /* All we can do here is just get the file name. */
         if (! fromstdin)  // WE'RE A YOUTUBE-DL STREAM, GET TAGS FROM SPECIAL TAG FILE CREATED BY THE HELPER SCRIPT (IF AVAILABLE):
@@ -1110,7 +1108,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 
     /* JWT:WE CAN NOT RE-OPEN stdin or youtube-dl PIPED STREAMS (THEY CAN ONLY BE OPENED ONE TIME, SO WE 
        DON'T OPEN THOSE UNTIL HERE - WE'RE READY TO PLAY)! */
-    if (fromstdin || strstr (filename, "ytdl://"))  /* JWT: FOR STDIN: TRY TO GET "read_tag()" STUFF NOW, SINCE FILE COULD NOT BE OPENED EARLIER IN read_tag()! */
+    if (fromstdin || strstr (filename, "ytdl://"))  /* (DEPRECIATED?) JWT: FOR STDIN: TRY TO GET "read_tag()" STUFF NOW, SINCE FILE COULD NOT BE OPENED EARLIER IN read_tag()! */
     {
         Tuple tuple;
 
@@ -1297,6 +1295,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 #if SDL == 2
         if (! SDL_WasInit (SDL_INIT_VIDEO) && ! sdl_initialized)
         {
+            AUDERR ("w:SDL2 NOT INITIALIZED IN (Audacious) main(), MAY SEGFAULT ON EXIT!\n");
             SDL_SetMainReady ();
             if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0)
             {
@@ -1662,8 +1661,6 @@ breakout1:
                             SDL_DestroyWindow (screen);           
                             screen = nullptr;
                         }
-                        //if (sdl_initialized)
-                        //    SDL_QuitSubSystem (SDL_INIT_VIDEO);
                     }
                     break;
                 case SDL_WINDOWEVENT:
