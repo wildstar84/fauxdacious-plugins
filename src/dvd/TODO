@@ -6,8 +6,8 @@
 
 4)  Button highlighting and palettes.  Another area I can find little to no docs or examples on how to implement.  For now, we "highlight" the area of each button with a grey rectangle (if [dvd].highlightbuttons config option is set).
 
-5)  Implement in M$-Windows - Problems here are lack of POSIX fifo/pipe handling (which I did not realize before implementing); and getting a Windows shared (dll) version of libdvdnav built due to lack of build instructions.  I used a fifo to take care of the data-sharing between the DVD engine interface (writer) and the demuxer (reader).
+5)  Add subtitles.  I took a brief stab at this, but due to the way we do video / audio queueing (from ffaudio), this is going to be a serious and time-consuming challenge.
 
-6)  Add subtitles.  I took a brief stab at this, but due to the way we do video / audio queueing (from ffaudio), this is going to be a serious and time-consuming challenge.
+6)  Better timing and seek interface.  I've looked into this and found that I am very limited by Audacious's static setting of the song length prior to playback outside the reach of the plugins (Updating Tuple::Length in the plugin does not affect the slider and the dynamic elapsed time display).
 
-7)  Better timing and seek interface.  I've looked into this and found that I am very limited by Audacious's static setting of the song length prior to playback outside the reach of the plugins (Updating Tuple::Length in the plugin does not affect the slider and the dynamic elapsed time display).
+7)  Figure out how to add to the configure script (and SDL2 to the fauxdacious configure script).
