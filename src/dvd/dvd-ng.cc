@@ -1275,7 +1275,8 @@ breakout1:
         if (! input_fd_p || GetLastError () != ERROR_PIPE_BUSY 
                 || ! WaitNamedPipe ((const char *)dvdnav_priv->fifo_str, 2000))
         {
-            AUDERR ("s:PIPE WAS NOT OPENED: ERRNO=%lo=\n", GetLastError ());
+            dvd_error ("s:PIPE WAS NOT OPENED: ERRNO=%lo=\n", GetLastError ());
+            return;
         }
     }
     AUDINFO ("i:PIPE OPENED FOR INPUT\n");
@@ -1633,6 +1634,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
     dvdnav_priv->demuxing = playing_a_menu;
     if (codec_opened)
         wehaveaudio = true;
+    if (playing_a_menu)  // DON'T BLOCK ON MENUS *EXCEPT* ONES WITH AUDIO STREAM (CAUSES PLAYBACK ISSUES)!
+        readblock = false;
 
     /* MAIN LOOP TO DEMUX AUDIO/VIDEO DATA AND PRESENT IT TO USER - EXITS WHEN CHANNEL CHANGES (HOPS): */
     while (! reader_please_die)
@@ -1693,6 +1696,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
             if (ret == (int) AVERROR_EOF)  /* END OF FILE WHILST READING FRAMES: */
             {
                 av_free_packet (& pkt);
+                readblock = false;
                 if (! eof)
                 {
                     if (playing_a_menu) AUDDBG ("i:EOF reached in menu, continue\n"); else AUDDBG ("i:EOF reached in movie ********************\n");
@@ -1796,7 +1800,6 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                         AUDINFO ("i:MOVIE ENDED, NO NEXT STREAM, STOPPING PLAY...\n");
                         stop_playback = true;
                         checkcodecs = false;
-                        readblock = false;
                     }
                 }
                 eof = true;
@@ -1821,6 +1824,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
         {
             errcount = 0;
             eof = false;
+            if ((! playing_a_menu || wehaveaudio) && ! (dvdnav_priv->state & NAV_FLAG_WAIT))
+                readblock = true;  //BLOCK ON MOVIES OR MENUS W/AUDIO (NEEDED!) IFF *NOT* IN WAIT STATE!!
         }
 
         /* AFTER READING BUT BEFORE PROCESSING EACH PACKET, CHECK IF EITHER QUEUE IS FULL, IF SO, WRITE NEXT 
@@ -2194,7 +2199,7 @@ bool DVD::play (const char * name, VFSFile & file)
     );
     if (!output_fd || output_fd == INVALID_HANDLE_VALUE)
     {
-        AUDERR ("f:Error creating playback pipe at: (%s) err# %ld\n", (const char *)dvdnav_priv->fifo_str,
+        dvd_error ("f:Error creating playback pipe at: (%s) err# %ld\n", (const char *)dvdnav_priv->fifo_str,
                 GetLastError ());
         stop_playback = true;
     }
@@ -2204,7 +2209,7 @@ bool DVD::play (const char * name, VFSFile & file)
     struct stat statbuf;
     if (stat (dvdnav_priv->fifo_str, &statbuf) && mkfifo ((const char *)dvdnav_priv->fifo_str, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH))
     {
-        AUDERR ("f:Error creating playback fifo at: (%s)\n", (const char *)dvdnav_priv->fifo_str);
+        dvd_error ("f:Error creating playback fifo at: (%s)\n", (const char *)dvdnav_priv->fifo_str);
         stop_playback = true;
     }
 #endif
