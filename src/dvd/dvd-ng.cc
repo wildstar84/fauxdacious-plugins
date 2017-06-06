@@ -965,7 +965,7 @@ readagain:
             return -1;
         AUDDBG ("-XXX- PEEK FAILED, BLOCKING, CONTINUE LOOPING.....\n");
     }
-    if (! dwRead && ! readblock)
+    if (reader_please_die || (! dwRead && ! readblock))
         return -1;
 
     dwRead = 0;
@@ -1441,7 +1441,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
             vcodec_opened = false;
         }
     }
-    if (playing_a_menu && !vcodec_opened && aud_get_bool ("dvd", "play_video"))  //NEEDED FOR ACTS DVD (SINCE 8.4)
+    if (playing_a_menu && !vcodec_opened && aud_get_bool ("dvd", "play_video"))
     {
         AUDERR ("e:BAD CODEC SEARCH, START OVER AND TRY AGAIN...\n");
         checkcodecs = true;
@@ -1634,7 +1634,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
     dvdnav_priv->demuxing = playing_a_menu;
     if (codec_opened)
         wehaveaudio = true;
-    if (playing_a_menu)  // DON'T BLOCK ON MENUS *EXCEPT* ONES WITH AUDIO STREAM (CAUSES PLAYBACK ISSUES)!
+    if (playing_a_menu || (dvdnav_priv->state & NAV_FLAG_WAIT))  // DON'T BLOCK ON MENUS OR IN A WAIT STATE!
         readblock = false;
 
     /* MAIN LOOP TO DEMUX AUDIO/VIDEO DATA AND PRESENT IT TO USER - EXITS WHEN CHANNEL CHANGES (HOPS): */
@@ -1783,7 +1783,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                             else
                             {
                                 AUDINFO ("WAITING %d SECONDS FOR BUTTONLESS MENU...\n", dvdnav_priv->duration / 1000);
-                                eof = false;
+                                eof = false;  //SHOULD BE SAFE HERE SINCE SHOULD FORCE EOF & LOOP TO HERE FOR DURATION.
                                 continue;
                             }
                         }
@@ -1825,7 +1825,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
             errcount = 0;
             eof = false;
             if ((! playing_a_menu || wehaveaudio) && ! (dvdnav_priv->state & NAV_FLAG_WAIT))
-                readblock = true;  //BLOCK ON MOVIES OR MENUS W/AUDIO (NEEDED!) IFF *NOT* IN WAIT STATE!!
+                readblock = true;  //BLOCK ON MOVIES OR MENUS W/AUDIO (SOME NEED!) IFF *NOT* IN WAIT STATE!!
         }
 
         /* AFTER READING BUT BEFORE PROCESSING EACH PACKET, CHECK IF EITHER QUEUE IS FULL, IF SO, WRITE NEXT 
