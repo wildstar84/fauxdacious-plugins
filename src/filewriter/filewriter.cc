@@ -154,6 +154,7 @@ const char * const FileWriter::defaults[] = {
  "filenamefromtags", "TRUE",
  "prependnumber", "FALSE",
  "save_original", "FALSE",
+ "stdout_close", "TRUE",
  "use_suffix", "FALSE",
  "use_stdout", "FALSE",  /* JWT: ADDED TO WRITE TO STDOUT, IF TRUE. */
  nullptr};
@@ -230,20 +231,19 @@ void FileWriter::set_info (const char * filename, const Tuple & tuple)
     in_tuple = tuple.ref ();
 }
 
-static StringBuf format_filename (const char * suffix)
+static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
 {
     const char * slash = in_filename ? strrchr (in_filename, '/') : nullptr;
     const char * base = slash ? slash + 1 : nullptr;
 
     StringBuf filename;
 
-    if (aud_get_bool ("filewriter", "use_stdout"))
+    if (! fallback2unnamed && aud_get_bool ("filewriter", "use_stdout"))
     {
 #ifdef _WINDOWS
-    	   filename.insert (0, "file://CON");
-#endif
-#ifndef _WINDOWS
-    	   filename.insert (0, "file:///dev/stdout");
+        filename.insert (0, "file://CON");
+#else
+        filename.insert (0, "file:///dev/stdout");
 #endif
     }
     else
@@ -267,7 +267,7 @@ static StringBuf format_filename (const char * suffix)
                 filename.combine (str_printf ("%d%%20", number));
         }
 
-        if (aud_get_bool ("filewriter", "filenamefromtags"))
+        if (! fallback2unnamed && aud_get_bool ("filewriter", "filenamefromtags"))
         {
             String title = in_tuple.get_str (Tuple::FormattedTitle);
 
@@ -297,18 +297,29 @@ static StringBuf format_filename (const char * suffix)
             g_return_val_if_fail (base, StringBuf ());
 
             const char * end = nullptr;
-            if (! aud_get_bool ("filewriter", "use_suffix"))
-                end = strrchr (base, '.');
 
-            if (! base || base[0] == '\0')
-                filename.insert (-1, "unnamed", 7);
-            else if (strncmp (base, "-.", 2))  /* JWT:AVOID CREATING FILES NAMED "-.ext", RENAME TO "stdin.ext"! */
-                filename.insert (-1, base, end ? end - base : -1);
-            else
+            if (fallback2unnamed)
             {
-                filename.insert (-1, "stdin", 5);
-                if (!end)
-                    filename.insert (-1, (base + 1), -1);
+                if (aud_get_bool ("filewriter", "use_stdout"))
+                    filename.insert (-1, "stdout", 6);
+                else
+                    filename.insert (-1, "unnamed", 7);
+            }
+            else if (! base || base[0] == '\0')
+            {
+                if (strcmp (in_filename, "-"))
+                    filename.insert (-1, "stdin", 5);
+                else
+                    filename.insert (-1, "unnamed", 7);
+            }
+            else 
+            {
+                if (! aud_get_bool ("filewriter", "use_suffix"))
+                    end = strrchr (base, '.');
+                if (strncmp (base, "-.", 2))  /* JWT:AVOID CREATING FILES NAMED "-.ext", RENAME TO "stdin.ext"! */
+                    filename.insert (-1, base, end ? end - base : -1);
+                else   /* JWT:WE HAVE:  m"^\-\..*"! */
+                    filename.insert (-1, "stdin", 5);
             }
         }
 
@@ -322,13 +333,15 @@ bool FileWriter::open_audio (int fmt, int rate, int nch, String & error)
     if (output_file && aud_get_bool ("filewriter", "use_stdout"))
     {   /* JWT: IF WRITING TO STDOUT, ONLY OPEN EVERYTHING UP THE *FIRST* TIME!
            JUST SET THE CONVERSION TYPE (IT MAY'VE CHANGED) AND RETURN */
-    	   convert_init (fmt, plugin->format_required (fmt));
+        convert_init (fmt, plugin->format_required (fmt));
         return true;
     }
     int ext = aud_get_int ("filewriter", "fileext");
     g_return_val_if_fail (ext >= 0 && ext < FILEEXT_MAX, false);
 
-    StringBuf filename = format_filename (fileext_str[ext]);
+    StringBuf filename = format_filename (fileext_str[ext], false);
+    if (! filename)
+        filename.steal (format_filename (fileext_str[ext], true));
     if (! filename)
         return false;
 
@@ -338,6 +351,11 @@ bool FileWriter::open_audio (int fmt, int rate, int nch, String & error)
     convert_init (fmt, out_fmt);
 
     output_file = safe_create (filename);
+    if (! output_file)  /* JWT:FILENAME (FROM URL?) TOO LONG, ETC, TRY FALLING BACK TO "unnamed": */
+    {
+        filename.steal (format_filename (fileext_str[ext], true));
+        output_file = safe_create (filename);
+    }
     if (output_file && plugin->open (output_file, {out_fmt, rate, nch}, in_tuple))
         return true;
 
@@ -358,9 +376,10 @@ int FileWriter::write_audio (const void * ptr, int length)
 
 void FileWriter::close_audio ()
 {
-    if (output_file && aud_get_bool ("filewriter", "use_stdout"))
+    if (output_file && aud_get_bool ("filewriter", "use_stdout") 
+            && ! aud_get_bool ("filewriter", "stdout_close"))
     {
-    	   /* JWT: IF WRITING TO STDOUT, DON'T CLOSE OUTPUT, BUT NEXT OPEN WILL CHANGE CONVERSION TYPE! */
+        /* JWT: IF WRITING TO STDOUT, DON'T CLOSE OUTPUT, BUT NEXT OPEN WILL CHANGE CONVERSION TYPE! */
         convert_free ();
     }
     else
@@ -445,6 +464,9 @@ static const PreferencesWidget main_widgets[] = {
     WidgetRadio (N_("stdout"),
         WidgetInt (filename_mode, filename_mode_cb),
         {FILENAME_STDOUT}),
+    WidgetCheck (N_("close after song chg."),
+        WidgetBool ("filewriter", "stdout_close"),
+    WIDGET_CHILD),
     WidgetSeparator ({true}),
     WidgetCheck (N_("Prepend track number to file name"),
         WidgetBool ("filewriter", "prependnumber"))
