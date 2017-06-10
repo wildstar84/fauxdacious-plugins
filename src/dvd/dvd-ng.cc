@@ -266,14 +266,21 @@ const char DVD::about[] =
 const char * const DVD::defaults[] = {
     "disc_speed", "2",            // DVD DISK READING SPEED
     "maxopentries", "4",          // MAXIMUM TIMES TO TRY TO OPEN DISK WAITING FOR IT TO SPIN UP
+#ifdef _WIN32
+    "device", "D:",               // DVD DEVICE DRIVE LETTER
+#else
     "device", "/dev/dvd",         // DVD DEVICE NODE
-    "video_qsize", "6",           // SIZE OF QUEUES FOR BUFFERING / SMOOTHING AUDIO/VIDEO PLAY
+#endif
+    "video_qsize", "5",           // SIZE OF QUEUES FOR BUFFERING / SMOOTHING AUDIO/VIDEO PLAY
     "play_video", "TRUE",         // TRUE: SHOW VIDEO, FALSE: PLAY AUDIO ONLY
     "highlight_buttons", "TRUE",  // DRAW RECTANGLE AROUND BUTTONS SO USER CAN SEE THEM
     "menucontinue", "FALSE",      // CONTINUE TO DEFAULT NEXT FEATURE WHEN MENU FINISHES W/O USER INTERACTION
-    "title_track_only", "FALSE",  // ONLY ADD TITLE TRACK TO PLAYLIST (IF BOTH FALSE, ADD ALL TRACKS TO PLAYLIST)
+    "title_track_only", "TRUE",   // ONLY ADD TITLE TRACK TO PLAYLIST (IF BOTH FALSE, ADD ALL TRACKS TO PLAYLIST)
     "first_track_only", "FALSE",  // ONLY ADD 1ST (MOVIE) TRACK TO PLAYLIST
     "nomenus", "FALSE",           // SKIP MENUS ALWAYS AUTO-SELECTING THE FIRST BUTTON
+    "video_windowtitle", "Fauxdacious DVD",
+    "video_xmove", "1",           // RESTORE WINDOW TO PREV. SAVED POSITION.
+    "video_ysize", "-1",          // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
     nullptr
 };
 
@@ -398,7 +405,7 @@ static void purge_all_playlists (void * = nullptr)
 /* from audacious - main thread only */
 bool DVD::init ()
 {
-    aud_config_set_defaults ("DVD", defaults);
+    aud_config_set_defaults ("dvd", defaults);
 
     av_register_all ();
     av_log_set_callback (ffaudio_log_cb);

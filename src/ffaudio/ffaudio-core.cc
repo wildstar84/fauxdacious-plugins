@@ -127,8 +127,11 @@ public:
 EXPORT FFaudio aud_plugin_instance;
 
 const char * const FFaudio::defaults[] = {
-    "play_video", "FALSE",
+    "play_video", "TRUE",
     "video_qsize", "6",
+    "video_windowtitle", "Fauxdacious Video",  // APPEND TO VIDEO WINDOW-TITLE
+    "video_xmove", "1",     // RESTORE WINDOW TO PREV. SAVED POSITION.
+    "video_ysize", "-1",    // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
     nullptr
 };
 
@@ -137,7 +140,7 @@ const PreferencesWidget FFaudio::widgets[] = {
     WidgetCheck (N_("Play video stream in popup window when video stream found"),
         WidgetBool ("ffaudio", "play_video")),
     WidgetSpin (N_("Video packet queue size"),
-        WidgetInt ("ffaudio", "video_qsize"), {0, 56, 1})
+        WidgetInt ("ffaudio", "video_qsize"), {0, 24, 1})
 };
 
 const PluginPreferences FFaudio::prefs = {{widgets}};
@@ -1418,9 +1421,9 @@ breakout1:
         video_qsize = aud_get_int ("youtubedl", "video_qsize");
     if (video_qsize < 1)
         video_qsize = (aud_get_int ("ffaudio", "video_qsize"))
-                ? aud_get_int ("ffaudio", "video_qsize") : 8;
+                ? aud_get_int ("ffaudio", "video_qsize") : 6;
     if (video_qsize < 1)
-        video_qsize = 8;
+        video_qsize = 6;
 
     /* TYPICALLY THERE'S TWICE AS MANY AUDIO PACKETS AS VIDEO, SO THIS IS COUNTER-INTUITIVE, BUT IT WORKS BEST! */
     pktQ = createQueue (2 * video_qsize);
