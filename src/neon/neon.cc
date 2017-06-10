@@ -575,9 +575,7 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
         }
 
         if (socks_proxy)
-        {
             socks_type = aud_get_int (nullptr, "socks_type") == 0 ? NE_SOCK_SOCKSV4A : NE_SOCK_SOCKSV5;
-        }
     }
 
     m_redircount = 0;
@@ -614,19 +612,15 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
         {
             AUDDBG ("<%p> Using proxy: %s:%d\n", this, (const char *) proxy_host, proxy_port);
             if (socks_proxy)
-            {
                 ne_session_socks_proxy (m_session, socks_type, proxy_host, proxy_port, proxy_user, proxy_pass);
-            }
             else
-            {
                 ne_session_proxy (m_session, proxy_host, proxy_port);
-            }
 
             if (use_proxy_auth)
             {
                 AUDDBG ("<%p> Using proxy authentication\n", this);
                 ne_add_proxy_auth (m_session, NE_AUTH_BASIC,
-                 neon_proxy_auth_cb, (void *) this);
+                        neon_proxy_auth_cb, (void *) this);
             }
         }
 
