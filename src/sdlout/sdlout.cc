@@ -17,6 +17,9 @@
  * the use of this software.
  */
 
+/* Force SDL to v2, as required by Fauxdacious, as switch no longer set by config! */
+#define SDL 2
+
 #include <math.h>
 #include <pthread.h>
 #include <string.h>
