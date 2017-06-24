@@ -2,11 +2,9 @@
 
  LOOK AT:  http://svn.tribler.org/vlc/trunk/modules/access/dvdnav.c
 
- * Audacious CD Digital Audio plugin
+ * Audacious DVD-Player plugin
  *
- * Copyright (c) 2007 Calin Crisan <ccrisan@gmail.com>
- * Copyright (c) 2009-2012 John Lindgren <john.lindgren@aol.com>
- * Copyright (c) 2009 Tomasz Moń <desowin@gmail.com>
+ * Copyright (c) 2017 Jim Turner <turnerjw784@yahoo.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,7 +42,7 @@ extern "C" {
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 
-// #define NODEMUXING
+// (for debugging only):  #define NODEMUXING
 
 #undef FFAUDIO_DOUBLECHECK  /* Doublecheck probing result for debugging purposes */
 #undef FFAUDIO_NO_BLACKLIST /* Don't blacklist any recognized codecs/formats */
@@ -165,7 +163,7 @@ private:
     static void * reader_thread (void * data)
     { 
         ((DVD *) data)->reader_demuxer ();
-        AUDINFO ("READER_DEMUXER DONE!!!\n");
+        AUDINFO ("i:reader_demuxer done!!!\n");
         return nullptr;
     }
 };
@@ -184,47 +182,47 @@ typedef struct
 trackinfo_t;
 
 typedef struct {
-  dvdnav_t *       dvdnav;              /* handle to libdvdnav stuff */
-  char *           filename;            /* path */
-  unsigned int     duration;            /* in milliseconds */
-  int              title;               /* title NUMBER that's currently playing */
-  int              track;               /* track NUMBER that's currently playing */
-  unsigned int     spu_clut[16];        /* subtitle data - reserved for future use */
-  //1 uint8_t  palette[4][4];           /* reserved for future use */
-  dvdnav_highlight_event_t hlev;
-  int              still_length;        /* still frame duration */
-  unsigned int     state;
-  int64_t          end_pos;
-  int64_t          pos;
-  bool             seek;
-  const char *     title_str;           /* descriptive title of the DVD */
-  String           fifo_str;            /* path and file name of the fifo for bi-threaded dvd data handling */
-  bool             wakeup;              /* flag to force continuance in still frames */
-  uint16_t         langid;              /* language ID (human) */
-  bool             beenheredonedat;     /* used to avoid circular menus */
-  bool             cellbeenheredonedat; /* used to avoid circular menus */
-  bool             nochannelhop;        /* don't do channel hop whilst sliding the seek slider */
-  int              lastaudiostream;     /* save last audio stream to see if we need to change codecs */
-  bool             freshhopped;         /* true if we've hopped since last VTS change. */
-  bool             demuxing;            /* true if we're ready to actually send stuff to speakers */
+    dvdnav_t *       dvdnav;              /* handle to libdvdnav stuff */
+    char *           filename;            /* path */
+    unsigned int     duration;            /* in milliseconds */
+    int              title;               /* title NUMBER that's currently playing */
+    int              track;               /* track NUMBER that's currently playing */
+    unsigned int     spu_clut[16];        /* subtitle data - reserved for future use */
+    //1 uint8_t  palette[4][4];           /* reserved for future use */
+    dvdnav_highlight_event_t hlev;
+    int              still_length;        /* still frame duration */
+    unsigned int     state;               /* DVD engine state flags */
+    int64_t          end_pos;
+    int64_t          pos;
+    bool             seek;
+    const char *     title_str;           /* descriptive title of the DVD */
+    String           fifo_str;            /* path and file name of the fifo for bi-threaded dvd data handling */
+    bool             wakeup;              /* flag to force continuance in still frames */
+    uint16_t         langid;              /* language ID (human) */
+    bool             beenheredonedat;     /* used to avoid circular menus */
+    bool             cellbeenheredonedat; /* used to avoid circular menus */
+    bool             nochannelhop;        /* don't do channel hop whilst sliding the seek slider */
+    int              lastaudiostream;     /* save last audio stream to see if we need to change codecs */
+    bool             freshhopped;         /* true if we've hopped since last VTS change. */
+    bool             demuxing;            /* true if we're ready to actually send stuff to speakers */
 } dvdnav_priv_t;
 
 typedef enum {
-  NAV_FLAG_EOF                  = 1 << 0,  /* end of stream has been reached */
-  NAV_FLAG_WAIT                 = 1 << 1,  /* wait event */
-  NAV_FLAG_WAIT_SKIP            = 1 << 2,  /* wait skip disable */
-  NAV_FLAG_CELL_CHANGE          = 1 << 3,  /* cell change event */
-  NAV_FLAG_WAIT_READ_AUTO       = 1 << 4,  /* wait read auto mode */
-  NAV_FLAG_WAIT_READ            = 1 << 5,  /* suspend read from stream */
-  NAV_FLAG_VTS_DOMAIN           = 1 << 6,  /* vts domain */
-  NAV_FLAG_SPU_SET              = 1 << 7,  /* spu_clut is valid */
-  NAV_FLAG_STREAM_CHANGE        = 1 << 8,  /* title, chapter, audio or SPU */
-  NAV_FLAG_AUDIO_CHANGE         = 1 << 9,  /* audio stream change event */
-  NAV_FLAG_SPU_CHANGE           = 1 << 10, /* spu stream change event */
+    NAV_FLAG_EOF                  = 1 << 0,  /* end of stream has been reached */
+    NAV_FLAG_WAIT                 = 1 << 1,  /* wait event */
+    NAV_FLAG_WAIT_SKIP            = 1 << 2,  /* wait skip disable */
+    NAV_FLAG_CELL_CHANGE          = 1 << 3,  /* cell change event */
+    NAV_FLAG_WAIT_READ_AUTO       = 1 << 4,  /* wait read auto mode */
+    NAV_FLAG_WAIT_READ            = 1 << 5,  /* suspend read from stream */
+    NAV_FLAG_VTS_DOMAIN           = 1 << 6,  /* vts domain */
+    NAV_FLAG_SPU_SET              = 1 << 7,  /* spu_clut is valid */
+    NAV_FLAG_STREAM_CHANGE        = 1 << 8,  /* title, chapter, audio or SPU */
+    NAV_FLAG_AUDIO_CHANGE         = 1 << 9,  /* audio stream change event */
+    NAV_FLAG_SPU_CHANGE           = 1 << 10, /* spu stream change event */
 } dvdnav_state_t;
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-static bool playing;
+static bool playing;            /* From Audacious - TRUE WHILE DVD IS ACTIVELY PLAYING. */
 static bool play_video;  /* JWT: TRUE IF USER IS CURRENTLY PLAYING VIDEO (KILLING VID. WINDOW TURNS OFF)! */
 static bool stop_playback;      /* SIGNAL FROM USER TO STOP PLAYBACK */
 static bool playback_thread_running;  /* TRUE IF READER/DEMUXER THREAD IS UP AND RUNNING */
@@ -234,15 +232,15 @@ static bool playing_a_menu;     /* TRUE IF WE'RE PLAYING A "MENU" (VS. A "MOVIE"
 static bool checkcodecs;        /* SIGNAL THAT WE NEED TO RELOAD THE CODECS (TRACK CHANGE, ETC.) */
 static bool readblock;          /* PREVENT READER/DEMUXER THREAD FROM CONTINUING UNTIL DATA READY TO READ */
 #ifdef _WIN32
-static HANDLE output_fd;
+static HANDLE output_fd;        /* OUTPUT FILE-HANDLE TO PIPE */
 static bool pipebusy = false;
 #else
 static FILE * output_fd;        /* OUTPUT FILE-HANDLE TO FIFO */
 #endif
-static Index<SDL_Rect> menubuttons;  /* ARRAY OF MENUBUTTONS (EACH HAS 2 SETS OF X.Y COORDS. */
-static bool havebuttons;        /* SIGNALS THAT WE HAVE FETCHED MENU-BUTTONS FOR THE CURRENT MENU */
-static String coverart_file;       /* JWT:PATH OF LAST GOOD COVER ART FILE (IF ANY) FOR CURRENTLY-PLAYING CD. */
-static bool coverart_file_sought;  /* JWT:TRUE IF WE'VE ALREADY LOOKED FOR A COVER ART FILE FOR CURRENTLY-PLAYING CD. */
+static Index<SDL_Rect> menubuttons; /* ARRAY OF MENUBUTTONS (EACH HAS 2 SETS OF X.Y COORDS. */
+static bool havebuttons;            /* SIGNALS THAT WE HAVE FETCHED MENU-BUTTONS FOR THE CURRENT MENU */
+static String coverart_file;        /* JWT:PATH OF LAST GOOD COVER ART FILE (IF ANY) FOR CURRENTLY-PLAYING DVD. */
+static bool coverart_file_sought;   /* JWT:TRUE IF WE'VE ALREADY LOOKED FOR A COVER ART FILE FOR CURRENTLY-PLAYING DVD. */
 
 /* lock mutex to read / set these variables */
 static int firsttrackno = -1;
@@ -259,7 +257,7 @@ static int calculate_track_length (uint32_t startlsn, uint32_t endlsn);
 static int find_trackno_from_filename (const char * filename);
 
 const char DVD::about[] =
- N_("DVD-player Plugin\n\n"
+ N_("DVD-player Plugin for Fauxdacious\n\n"
     "Copyright (C) 2017 Jim Turner <turnerjw784@yahoo.com>.\n\n"
     "Many thanks to libdvdnav developers <http://www.gnu.org/software/libdvdnav/>.");
 
@@ -271,20 +269,20 @@ const char * const DVD::defaults[] = {
 #else
     "device", "/dev/dvd",         // DVD DEVICE NODE
 #endif
-    "video_qsize", "5",           // SIZE OF QUEUES FOR BUFFERING / SMOOTHING AUDIO/VIDEO PLAY
-    "play_video", "TRUE",         // TRUE: SHOW VIDEO, FALSE: PLAY AUDIO ONLY
-    "highlight_buttons", "TRUE",  // DRAW RECTANGLE AROUND BUTTONS SO USER CAN SEE THEM
-    "menucontinue", "FALSE",      // CONTINUE TO DEFAULT NEXT FEATURE WHEN MENU FINISHES W/O USER INTERACTION
-    "title_track_only", "TRUE",   // ONLY ADD TITLE TRACK TO PLAYLIST (IF BOTH FALSE, ADD ALL TRACKS TO PLAYLIST)
-    "first_track_only", "FALSE",  // ONLY ADD 1ST (MOVIE) TRACK TO PLAYLIST
-    "nomenus", "FALSE",           // SKIP MENUS ALWAYS AUTO-SELECTING THE FIRST BUTTON
-    "video_windowtitle", "Fauxdacious DVD",
+    "video_qsize", "5",           // SIZE OF QUEUES FOR BUFFERING / SMOOTHING AUDIO/VIDEO PLAY.
+    "play_video", "TRUE",         // TRUE: SHOW VIDEO, FALSE: PLAY AUDIO ONLY.
+    "highlight_buttons", "TRUE",  // DRAW RECTANGLE AROUND BUTTONS SO USER CAN SEE THEM.
+    "menucontinue", "FALSE",      // CONTINUE TO DEFAULT NEXT FEATURE WHEN MENU FINISHES W/O USER INTERACTION.
+    "title_track_only", "TRUE",   // ONLY ADD TITLE TRACK TO PLAYLIST (IF BOTH FALSE, ADD ALL TRACKS TO PLAYLIST).
+    "first_track_only", "FALSE",  // ONLY ADD 1ST (MOVIE) TRACK TO PLAYLIST.
+    "nomenus", "FALSE",           // SKIP MENUS ALWAYS AUTO-SELECTING THE FIRST BUTTON.
+    "video_windowtitle", "Fauxdacious DVD",  // APPEND TO DVD TITLE DESCRIPTION IN WINDOW TITLEBAR.
     "video_xmove", "1",           // RESTORE WINDOW TO PREV. SAVED POSITION.
     "video_ysize", "-1",          // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
     nullptr
 };
 
-const PreferencesWidget DVD::widgets[] = {
+const PreferencesWidget DVD::widgets[] = {  // GUI-BASED USER-SPECIFIABLE OPTIONS:
     WidgetLabel (N_("<b>Device</b>")),
     WidgetSpin (N_("Read speed:"),
         WidgetInt ("dvd", "disc_speed"),
@@ -294,6 +292,7 @@ const PreferencesWidget DVD::widgets[] = {
         {1, 10, 1}),
     WidgetEntry (N_("Override device:"),
         WidgetString ("dvd", "device")),
+    WidgetLabel (N_("<b>Playback options:</b>")),
     WidgetSpin (N_("Video packet queue size"),
         WidgetInt ("dvd", "video_qsize"), {0, 24, 1}),
     WidgetCheck (N_("Play video stream in popup window when video stream found"),
@@ -302,7 +301,6 @@ const PreferencesWidget DVD::widgets[] = {
         WidgetBool ("dvd", "highlightbuttons")),
     WidgetCheck (N_("Continue at end of menus"),
         WidgetBool ("dvd", "menucontinue")),
-    WidgetLabel (N_("<b>Metadata</b>")),
     WidgetCheck (N_("Only Title Track in Playlist (menus)"),
         WidgetBool ("dvd", "title_track_only")),
     WidgetCheck (N_("Only 1st Track Playlist (movie)"),
@@ -375,7 +373,7 @@ static void ffaudio_log_cb (void * avcl, int av_level, const char * fmt, va_list
 }
 
 /* from audacious - main thread only */
-static void purge_playlist (int playlist)
+static void purge_playlist (int playlist)  // REMOVE ALL DVD ITEMS FROM SPECIFIED PLAYLIST:
 {
     int length = aud_playlist_entry_count (playlist);
 
@@ -393,7 +391,7 @@ static void purge_playlist (int playlist)
 }
 
 /* from audacious - main thread only */
-static void purge_all_playlists (void * = nullptr)
+static void purge_all_playlists (void * = nullptr)  // REMOVE ALL DVD ITEMS FROM ALL PLAYLISTS:
 {
     int playlists = aud_playlist_count ();
     int count;
@@ -416,7 +414,7 @@ bool DVD::init ()
 /* from audacious - thread safe (mutex may be locked) */
 bool DVD::is_our_file (const char * filename, VFSFile & file)
 {
-    return !strncmp (filename, "dvd://", 6);
+    return ! strncmp (filename, "dvd://", 6);
 }
 
 // from mplayer.stream_dvdnav.c:
@@ -424,11 +422,11 @@ static int dvdnav_stream_read (dvdnav_priv_t * priv, unsigned char *buf, int *le
 {
     int event = DVDNAV_NOP;
 
-    *len=-1;
-    if (dvdnav_get_next_block (priv->dvdnav,buf,&event,len)!=DVDNAV_STATUS_OK)
+    *len = -1;
+    if (dvdnav_get_next_block (priv->dvdnav,buf,&event,len) != DVDNAV_STATUS_OK)
     {
         AUDERR ("Error getting next block from DVD %d (%s)\n",event, dvdnav_err_to_string (priv->dvdnav));
-        *len=-1;
+        *len = -1;
     }
 
     return event;
@@ -533,7 +531,7 @@ static void dvdnav_get_highlight (dvdnav_priv_t *priv, int display_mode)
         return;
 
     pnavpci = dvdnav_get_current_nav_pci (priv->dvdnav);
-    if (!pnavpci)
+    if (! pnavpci)
         return;
 
     dvdnav_get_current_highlight (priv->dvdnav, (int32_t*)&(hlev->buttonN));
@@ -667,9 +665,10 @@ void DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
         int res = avcodec_receive_frame (vcinfo->context, vframe.ptr);
         if (res < 0)
         {
-            /* THIS BLOCK NEEDED BY SOME MENUS W/AUDIO TRACKS THAT DON'T DISPLAY FULLY
-               UNTIL EOF (*AFTER* MUSIC FINISHES PLAYING)! (FORCE DRAWING OF EACH FRAME
-               IMMEDIATELY AS IT'S PROCESSED). */
+            /* THIS CODE BLOCK NEEDED BY SOME MENUS W/AUDIO TRACKS THAT DON'T DISPLAY 
+               FULLY UNTIL EOF (*AFTER* MUSIC FINISHES PLAYING)! (SO WE FORCE DRAWING
+               OF EACH FRAME IMMEDIATELY AS IT'S PROCESSED).
+            */
             if (res == AVERROR (EAGAIN) && playing_a_menu && wehaveaudio)
             {
                 AUDDBG ("w:RECEIVE FRAME FAIL, FLUSHING BUFFERS: %d\n", res);
@@ -678,7 +677,7 @@ void DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
                 avcodec_flush_buffers (vcinfo->context);
             }
             if (res < 0)
-                return; /* read next packet (continue past errors) */
+                return;  /* read next packet (continue past errors) */
         }
         else if (! pkt->size)
             avcodec_flush_buffers (vcinfo->context);
@@ -813,7 +812,7 @@ void DVD::write_audioframe (CodecInfo * cinfo, AVPacket * pkt, int out_fmt, bool
         ScopedFrame frame;
 #ifdef SEND_PACKET
         if ((LOG (avcodec_receive_frame, cinfo->context, frame.ptr)) < 0)
-            break; /* read next packet (continue past errors) */
+            break;  /* read next packet (continue past errors) */
 #else
         decoded = 0;
         len = LOG (avcodec_decode_audio4, cinfo->context, frame.ptr, & decoded, pkt);
@@ -1002,6 +1001,7 @@ readagain:
     return (reader_please_die ? -1 : red);
 }
 
+/* ADJUST MENU BUTTON COORDINATES WHEN MENU WINDOW CHANGES SIZE: */
 static bool adjust_menubuttons (uint32_t old_width, uint32_t new_width, uint32_t old_height, uint32_t new_height)
 {
     bool adjusted = false;
@@ -1267,7 +1267,7 @@ breakout1:
     SmartPtr<SDL_Renderer, SDL_DestroyRenderer> renderer (createSDL2Renderer (screen, play_video));
 #ifdef _WIN32
     /* OPEN THE INPUT PIPE HERE (ONCE WHEN THREAD STARTS UP, IN *NIX, THE FIFO'S OPENED UP EACH 
-       TIME THE CODECS CHANGE LATER IN open_input_file()! (IT HAD TO BE THIS WAY) */
+       TIME THE CODECS CHANGE LATER IN open_input_file()! (IT ONLY WORKS THIS WAY) */
     HANDLE input_fd_p = CreateFile (
             TEXT ((const char *)dvdnav_priv->fifo_str), 
             GENERIC_READ, 
@@ -1329,7 +1329,7 @@ startover:
     pktQueue *apktQ = nullptr;   // QUEUE FOR AUDIO-PACKET QUEUEING.
 
     AUDINFO ("---- reader_demuxer starting over! ----\n");
-    video_default_width = 720;   // WINDOW-SIZE REQUESTED BY VIDEO STREAM ITSELF (just initialize for sanity).
+    video_default_width = 720;   // WINDOW-SIZE DEFAULTS FOR DVDS (just initialize for sanity).
     video_default_height = 480;
     /* JWT:SAVE (static)fromstdin's STATE AT START OF PLAY, SINCE PROBES WILL CHANGE IT IN PLAYLIST ADVANCE BEFORE WE CLOSE! */
     myplay_video = play_video;   // WHETHER OR NOT TO DISPLAY THE VIDEO.
