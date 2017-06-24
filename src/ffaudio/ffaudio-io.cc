@@ -17,20 +17,28 @@
  */
 
 #define WANT_VFS_STDIO_COMPAT
+#include <stdlib.h>
+#include <stdio.h>
 #include "ffaudio-stdinc.h"
+#include <libaudcore/runtime.h>
 
 #define IOBUF 4096
 
+static FILE * m_savefile = NULL;    /* File to echo video stream out to (optional). */
+
 static int read_cb (void * file, unsigned char * buf, int size)
 {
-    return ((VFSFile *) file)->fread (buf, 1, size);
+    int res = ((VFSFile *) file)->fread (buf, 1, size);
+    if (m_savefile && res > 0)
+        ::fwrite (buf, res, 1, m_savefile);
+    return res;
 }
 
 static int64_t seek_cb (void * file, int64_t offset, int whence)
 {
     if (whence == AVSEEK_SIZE)
         return ((VFSFile *) file)->fsize ();
-    if (((VFSFile *) file)->fseek (offset, to_vfs_seek_type (whence & ~(int) AVSEEK_FORCE)))
+    if (m_savefile || ((VFSFile *) file)->fseek (offset, to_vfs_seek_type (whence & ~(int) AVSEEK_FORCE)))
         return -1;
     return ((VFSFile *) file)->ftell ();
 }
@@ -38,17 +46,44 @@ static int64_t seek_cb (void * file, int64_t offset, int whence)
 AVIOContext * io_context_new (VFSFile & file)
 {
     void * buf = av_malloc (IOBUF);
+    if (aud_get_bool ("ffaudio", "save_video"))
+    {
+        String save_video_file = aud_get_str ("ffaudio", "save_video_file");
+        if (! save_video_file[0])
+#ifdef _WIN32
+            save_video_file = String ("C:\\Temp\\lastvideo");
+#else
+            save_video_file = String ("/tmp/lastvideo");
+#endif
+        m_savefile = ::fopen ((const char *)save_video_file, "w");
+    }
     return avio_alloc_context ((unsigned char *) buf, IOBUF, 0, & file, read_cb, nullptr, seek_cb);
 }
 
 AVIOContext * io_context_new2 (VFSFile & file)
 {
     void * buf = av_malloc (IOBUF);
+    if (aud_get_bool ("ffaudio", "save_video"))
+    {
+        String save_video_file = aud_get_str ("ffaudio", "save_video_file");
+        if (! save_video_file[0])
+#ifdef _WIN32
+            save_video_file = String ("C:\\Temp\\lastvideo");
+#else
+            save_video_file = String ("/tmp/lastvideo");
+#endif
+        m_savefile = ::fopen ((const char *)save_video_file, "w");
+    }
     return avio_alloc_context ((unsigned char *) buf, IOBUF, 0, & file, read_cb, nullptr, nullptr);
 }
 
 void io_context_free (AVIOContext * io)
 {
+    if (m_savefile)
+    {
+        ::fclose (m_savefile);
+        m_savefile = nullptr;
+    }
     av_free (io->buffer);
     av_free (io);
 }

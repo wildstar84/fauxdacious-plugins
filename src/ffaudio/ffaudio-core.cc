@@ -19,6 +19,9 @@
  * implied. In no event shall the authors be liable for any damages arising from
  */
 
+/* Force SDL to v2, as required by Fauxdacious, as switch no longer set by config! */
+#define SDL 2
+
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
@@ -132,6 +135,12 @@ const char * const FFaudio::defaults[] = {
     "video_windowtitle", "Fauxdacious Video",  // APPEND TO VIDEO WINDOW-TITLE
     "video_xmove", "1",     // RESTORE WINDOW TO PREV. SAVED POSITION.
     "video_ysize", "-1",    // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
+    "save_video", "FALSE",  // DUB VIDEO AS BEING PLAYED.
+#ifdef _WIN32
+    "save_video_file", "C:\\Temp\\lastvideo",
+#else
+    "save_video_file", "/tmp/lastvideo",
+#endif
     nullptr
 };
 
@@ -140,7 +149,13 @@ const PreferencesWidget FFaudio::widgets[] = {
     WidgetCheck (N_("Play video stream in popup window when video stream found"),
         WidgetBool ("ffaudio", "play_video")),
     WidgetSpin (N_("Video packet queue size"),
-        WidgetInt ("ffaudio", "video_qsize"), {0, 24, 1})
+        WidgetInt ("ffaudio", "video_qsize"), {0, 24, 1}),
+    WidgetCheck (N_("Record video to file"),
+        WidgetBool ("ffaudio", "save_video")),
+    WidgetEntry (N_("Record path/filename:"),
+        WidgetString ("ffaudio", "save_video_file"),
+        {false},
+        WIDGET_CHILD)
 };
 
 const PluginPreferences FFaudio::prefs = {{widgets}};
@@ -352,6 +367,7 @@ void FFaudio::cleanup ()
 {
     AUDINFO ("Shutting down FFaudio.\n");
 
+    aud_set_bool ("ffaudio", "save_video", false);  // JWT:MAKE SURE WE DON'T LEAVE VIDEO RECORDING ON!
     extension_dict.clear ();
     av_lockmgr_register (nullptr);
 }
