@@ -5,7 +5,7 @@ dnl ***
 dnl Initialize
 dnl ==========
 AC_PREREQ([2.59])
-AC_INIT([audacious-plugins], [3.81-beta1])
+AC_INIT([audacious-plugins], [3.83-final])
 AC_COPYRIGHT([Copyright (C) 2001-2016 Audacious developers and others])
 
 AC_DEFINE_UNQUOTED([PACKAGE], "$PACKAGE_NAME", [Name of package])
@@ -184,6 +184,13 @@ ENABLE_PLUGIN_WITH_DEP(cdaudio,
 if test $have_cdaudio = yes ; then
     GENERAL_PLUGINS="$GENERAL_PLUGINS cd-menu-items"
 fi
+
+ENABLE_PLUGIN_WITH_DEP(dvd,
+    DVD support,
+    auto,
+    INPUT,
+    DVD,
+    dvdread >= 4.0.0 dvdnav >= 4.0.0 sdl2 >= 2.0)
 
 ENABLE_PLUGIN_WITH_DEP(flac,
     FLAC support,
@@ -523,40 +530,47 @@ AC_ARG_WITH([ffmpeg],
  [ffmpeg_variant=$withval], [ffmpeg_variant=ffmpeg])
 
 if test $ffmpeg_variant = ffmpeg ; then
-    PKG_CHECK_MODULES([FFMPEG], [libavcodec >= 53.40.0 libavformat >= 53.25.0 libavutil >= 51.27.0],
+    PKG_CHECK_MODULES([FFMPEG], [libavcodec >= 53.40.0 libavformat >= 53.25.0 libavutil >= 51.27.0 sdl2 >= 2.0],
      [INPUT_PLUGINS="$INPUT_PLUGINS ffaudio"
       AC_DEFINE([HAVE_FFMPEG], [1], [Define if using FFmpeg])],
      [AC_MSG_ERROR([FFmpeg is not installed or too old (required: libavcodec 53.40.0, libavformat 53.25.0, libavutil 51.27.0).  Use --with-ffmpeg=none to disable the ffaudio plugin or --with-ffmpeg=libav to use libav instead.])])
 elif test $ffmpeg_variant = libav ; then
-    PKG_CHECK_MODULES([FFMPEG], [libavcodec >= 53.25.0 libavformat >= 53.17.0 libavutil >= 51.18.0],
+    PKG_CHECK_MODULES([FFMPEG], [libavcodec >= 53.25.0 libavformat >= 53.17.0 libavutil >= 51.18.0 sdl2 >= 2.0],
      [INPUT_PLUGINS="$INPUT_PLUGINS ffaudio"
       AC_DEFINE([HAVE_LIBAV], [1], [Define if using libav])],
      [AC_MSG_ERROR([libav is not installed or too old (required: libavcodec 53.25.0, libavformat 53.17.0, libavutil 51.18.0).])])
 fi
 
-dnl SDL Output
+dnl SDL Output - Fauxdacious now REQUIRES SDL2 (since required to be in main!)
 dnl ==========
 
-AC_ARG_WITH(libsdl,
- AS_HELP_STRING([--with-libsdl=1,2], [select which SDL version to use (default=auto)]),
- [with_libsdl=$withval], [with_libsdl=auto])
+dnl AC_ARG_WITH(libsdl,
+dnl  AS_HELP_STRING([--with-libsdl=1,2], [select which SDL version to use (default=auto)]),
+dnl  [with_libsdl=$withval], [with_libsdl=auto])
 
-test_sdlout () {
-    if test "x$with_libsdl" = "x1"; then
-        PKG_CHECK_MODULES(SDL, sdl >= 1.2.11, have_sdlout=yes, have_sdlout=no)
-    elif test "x$with_libsdl" = "x2"; then
-        PKG_CHECK_MODULES(SDL, sdl2 >= 2.0, have_sdlout=yes, have_sdlout=no)
-    else
-        PKG_CHECK_MODULES(SDL, sdl2 >= 2.0, have_sdlout=yes, [
-            PKG_CHECK_MODULES(SDL, sdl >= 1.2.11, have_sdlout=yes, have_sdlout=no)
-        ])
-    fi
-}
+dnl test_sdlout () {
+dnl     if test "x$with_libsdl" = "x1"; then
+dnl         PKG_CHECK_MODULES(SDL, sdl >= 1.2.11, have_sdlout=yes, have_sdlout=no)
+dnl     elif test "x$with_libsdl" = "x2"; then
+dnl         PKG_CHECK_MODULES(SDL, sdl2 >= 2.0, have_sdlout=yes, have_sdlout=no)
+dnl     else
+dnl         PKG_CHECK_MODULES(SDL, sdl2 >= 2.0, have_sdlout=yes, [
+dnl             PKG_CHECK_MODULES(SDL, sdl >= 1.2.11, have_sdlout=yes, have_sdlout=no)
+dnl         ])
+dnl     fi
+dnl }
 
-ENABLE_PLUGIN_WITH_TEST(sdlout,
+dnl ENABLE_PLUGIN_WITH_TEST(sdlout,
+dnl     SDL Output,
+dnl     auto,
+dnl     OUTPUT)
+
+ENABLE_PLUGIN_WITH_DEP(sdlout,
     SDL Output,
     auto,
-    OUTPUT)
+    OUTPUT,
+    SDL,
+    sdl2 >= 2.0)
 
 dnl Check for at least one output plugin (not including filewriter)
 dnl ===============================================================
@@ -699,6 +713,7 @@ echo
 echo "  External Decoders"
 echo "  -----------------"
 echo "  FFmpeg/Libav:                           $ffmpeg_variant"
+echo "  DVD-player:                             $have_dvd"
 echo "  libsndfile:                             $have_sndfile"
 echo
 echo "  Chiptunes"
@@ -737,7 +752,7 @@ echo "  Advanced Linux Sound Architecture:      $have_alsa"
 echo "  Jack Audio Connection Kit:              $have_jack"
 echo "  Open Sound System:                      $have_oss4"
 echo "  PulseAudio:                             $have_pulse"
-echo "  Simple DirectMedia Layer:               $have_sdlout"
+echo "  Simple DirectMedia Layer (SDL2):        $have_sdlout"
 echo "  Sndio:                                  $have_sndio"
 echo "  Win32 waveOut:                          $HAVE_MSWINDOWS"
 echo "  FileWriter:                             $enable_filewriter"
