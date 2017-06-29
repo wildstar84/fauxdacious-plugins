@@ -10,4 +10,4 @@
 
 6)  Better timing and seek interface.  I've looked into this and found that I am very limited by Audacious's static setting of the song length prior to playback outside the reach of the plugins (Updating Tuple::Length in the plugin does not affect the slider and the dynamic elapsed time display).
 
-7)  Figure out how to add to the configure script (and SDL2 to the fauxdacious configure script).
+7)  Figure out how to SDL2 to the fauxdacious configure script.
