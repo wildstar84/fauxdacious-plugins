@@ -984,15 +984,15 @@ void save_window_xy (SDL_Window * screen, int video_fudge_x, int video_fudge_y)
     int x, y, w, h;
 
     SDL_GetWindowSize (screen, &w, &h);
-    if (w < 1 || h < 1)  /* SDL RETURNED BAD WINDOW INFO, DON'T SAVE! */
+    if (w < 1 || h < 1 || w > 9999 || h > 9999)  /* SDL RETURNED BAD WINDOW INFO, DON'T SAVE! */
         return;
 
     SDL_GetWindowPosition (screen, &x, &y);
     x += video_fudge_x;  /* APPLY CALCULATED FUDGE-FACTOR */
-    if (x < 0)
+    if (x < 0 || x > 9999)
         x = 1;
     y += video_fudge_y;
-    if (y < 0)
+    if (y < 0 || x > 9999)
         y = 1;
     aud_set_int ("ffaudio", "video_window_x", x);
     aud_set_int ("ffaudio", "video_window_y", y);
