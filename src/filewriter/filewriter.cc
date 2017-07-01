@@ -233,7 +233,7 @@ void FileWriter::set_info (const char * filename, const Tuple & tuple)
 
 static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
 {
-    const char * slash = in_filename ? strrchr (in_filename, '/') : nullptr;
+    const char * slash = in_filename ? strrchr ((const char *)in_filename, '/') : nullptr;
     const char * base = slash ? slash + 1 : nullptr;
 
     StringBuf filename;
@@ -251,7 +251,7 @@ static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
         if (save_original)
         {
             g_return_val_if_fail (base, StringBuf ());
-            filename.insert (0, in_filename, base - in_filename);
+            filename.insert (0, in_filename, base - (const char *)in_filename);
         }
         else
         {
@@ -298,16 +298,11 @@ static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
 
             const char * end = nullptr;
 
-            if (fallback2unnamed)
+            if (fallback2unnamed || ! base || base[0] == '\0')
             {
                 if (aud_get_bool ("filewriter", "use_stdout"))
                     filename.insert (-1, "stdout", 6);
-                else
-                    filename.insert (-1, "unnamed", 7);
-            }
-            else if (! base || base[0] == '\0')
-            {
-                if (strcmp (in_filename, "-"))
+                else if (! strncmp ((const char *)in_filename, "stdin:/", 7))
                     filename.insert (-1, "stdin", 5);
                 else
                     filename.insert (-1, "unnamed", 7);
