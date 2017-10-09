@@ -56,7 +56,7 @@ static char * split_line (char * line)
     return feed + 1;
 }
 
-bool M3ULoader::load (const char * path, VFSFile & file, String & title,
+bool M3ULoader::load (const char * filename, VFSFile & file, String & title,
  Index<PlaylistAddItem> & items)
 {
     Index<char> text = file.read_all ();
@@ -79,15 +79,15 @@ bool M3ULoader::load (const char * path, VFSFile & file, String & title,
 
         if (* parse && * parse != '#')
         {
-            if (strncmp (path, "stdin://", 8))
+            if (strncmp (filename, "stdin://", 8))
             {
-                StringBuf s = uri_construct (parse, path);
+                StringBuf s = uri_construct (parse, filename);
                 if (s)
                     items.append (String (s));
             }
             else
             {
-                String cur_path = String (filename_to_uri (filename_build ({cur, path+8})));
+                String cur_path = String (filename_to_uri (filename_build ({cur, filename+8})));
                 StringBuf s = uri_construct (parse, cur_path);
                 if (s)
                     items.append (String (s));
@@ -101,12 +101,13 @@ bool M3ULoader::load (const char * path, VFSFile & file, String & title,
     return true;
 }
 
-bool M3ULoader::save (const char * path, VFSFile & file, const char * title,
+bool M3ULoader::save (const char * filename, VFSFile & file, const char * title,
  const Index<PlaylistAddItem> & items)
 {
     for (auto & item : items)
     {
-        StringBuf line = str_concat ({item.filename, "\n"});
+        StringBuf path = uri_deconstruct (item.filename, filename);
+        StringBuf line = str_concat ({path, "\n"});
         if (file.fwrite (line, 1, line.len ()) != line.len ())
             return false;
     }
