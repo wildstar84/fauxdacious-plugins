@@ -378,7 +378,7 @@ bool AACDecoder::play (const char * filename, VFSFile & file)
     {
         buflen -= used;
         memmove (buf, buf + used, buflen);
-        buflen += file.fread (buf + buflen, 1, sizeof buf - buflen);
+        buflen += file.fread (buf + buflen, 1, ((int) sizeof (buf)) - buflen);
     }
 
     /* == START DECODING == */
@@ -387,7 +387,13 @@ bool AACDecoder::play (const char * filename, VFSFile & file)
     {
         buflen -= used;
         memmove (buf, buf + used, buflen);
-        buflen += file.fread (buf + buflen, 1, sizeof buf - buflen);
+AUDERR("-aac:buflen=%d= used=%d= len=%d\n", buflen, used, sizeof buf - buflen);
+        if (buflen >= (int) sizeof (buf))
+        {
+            AUDERR ("s:Attempted to read negative number of bites!\n");
+            goto ERR_CLOSE_DECODER;
+        }
+        buflen += file.fread (buf + buflen, 1, ((int) sizeof (buf)) - buflen);
     }
 
     /* == CHECK FOR METADATA == */
