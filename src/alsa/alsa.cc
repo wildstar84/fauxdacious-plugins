@@ -89,6 +89,7 @@ static pthread_t pump_thread;
 
 static snd_mixer_t * alsa_mixer;
 static snd_mixer_elem_t * alsa_mixer_element;
+static snd_mixer_elem_t * extra_alsa_mixer_element;
 
 static bool poll_setup ()
 {
@@ -549,6 +550,7 @@ void ALSAPlugin::open_mixer ()
 
     String mixer = aud_get_str ("alsa", "mixer");
     String mixer_element = aud_get_str ("alsa", "mixer-element");
+    String extra_mixer_element = aud_get_str ("alsa", "mixer-element-extra");
 
     if (! mixer_element[0])
         goto FAILED;
@@ -571,6 +573,19 @@ void ALSAPlugin::open_mixer ()
     }
 
     CHECK (snd_mixer_selem_set_playback_volume_range, alsa_mixer_element, 0, 100);
+
+    if (! extra_mixer_element[0])
+        return;
+
+    snd_mixer_selem_id_t * extra_selem_id;
+    snd_mixer_selem_id_alloca (& extra_selem_id);
+    snd_mixer_selem_id_set_name (extra_selem_id, extra_mixer_element);
+    extra_alsa_mixer_element = snd_mixer_find_selem (alsa_mixer, extra_selem_id);
+    if (! extra_alsa_mixer_element)
+        AUDERR ("w:snd_mixer_find_selem failed for extra mixer (%s).\n", (const char *)extra_mixer_element);
+    else
+        CHECK (snd_mixer_selem_set_playback_volume_range, extra_alsa_mixer_element, 0, 100);
+
     return;
 
 FAILED:
@@ -679,6 +694,39 @@ void ALSAPlugin::set_volume (StereoVolume v)
         }
     }
 
+    if (extra_alsa_mixer_element)
+    {
+        if (snd_mixer_selem_is_playback_mono (extra_alsa_mixer_element))
+        {
+            CHECK (snd_mixer_selem_set_playback_volume, extra_alsa_mixer_element,
+             SND_MIXER_SCHN_MONO, aud::max (v.left, v.right));
+
+            if (snd_mixer_selem_has_playback_switch (extra_alsa_mixer_element))
+                CHECK (snd_mixer_selem_set_playback_switch, extra_alsa_mixer_element,
+                 SND_MIXER_SCHN_MONO, aud::max (v.left, v.right) != 0);
+        }
+        else
+        {
+            CHECK (snd_mixer_selem_set_playback_volume, extra_alsa_mixer_element,
+             SND_MIXER_SCHN_FRONT_LEFT, v.left);
+            CHECK (snd_mixer_selem_set_playback_volume, extra_alsa_mixer_element,
+             SND_MIXER_SCHN_FRONT_RIGHT, v.right);
+
+            if (snd_mixer_selem_has_playback_switch (extra_alsa_mixer_element))
+            {
+                if (snd_mixer_selem_has_playback_switch_joined (extra_alsa_mixer_element))
+                    CHECK (snd_mixer_selem_set_playback_switch, extra_alsa_mixer_element,
+                     SND_MIXER_SCHN_FRONT_LEFT, aud::max (v.left, v.right) != 0);
+                else
+                {
+                    CHECK (snd_mixer_selem_set_playback_switch, extra_alsa_mixer_element,
+                     SND_MIXER_SCHN_FRONT_LEFT, v.left != 0);
+                    CHECK (snd_mixer_selem_set_playback_switch, extra_alsa_mixer_element,
+                     SND_MIXER_SCHN_FRONT_RIGHT, v.right != 0);
+                }
+            }
+        }
+    }
     CHECK (snd_mixer_handle_events, alsa_mixer);
 
 FAILED:

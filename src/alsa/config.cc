@@ -41,6 +41,7 @@ static Index<String> element_list;
 static Index<ComboItem> pcm_combo_items;
 static Index<ComboItem> mixer_combo_items;
 static Index<ComboItem> element_combo_items;
+static Index<ComboItem> element_combo_items0;
 
 static void get_defined_devices (const char * type,
  void (* found) (const char * name, const char * description))
@@ -214,10 +215,12 @@ static void element_found (const char * name)
 {
     String & str = element_list.append (String (name));
     element_combo_items.append (str, str);
+    element_combo_items0.append (str, str);
 }
 
 static void element_list_fill ()
 {
+    element_combo_items0.append ("-none-", "");
     get_elements (element_found);
 }
 
@@ -257,6 +260,7 @@ void ALSAPlugin::init_config ()
 
         element_list.clear ();
         element_combo_items.clear ();
+        element_combo_items0.clear ();
     }
 }
 
@@ -269,6 +273,7 @@ void ALSAPlugin::mixer_changed ()
 {
     element_list.clear ();
     element_combo_items.clear ();
+    element_combo_items0.clear ();
 
     element_list_fill ();
     guess_element ();
@@ -291,6 +296,8 @@ static ArrayRef<ComboItem> mixer_combo_fill ()
     { return {mixer_combo_items.begin (), mixer_combo_items.len ()}; }
 static ArrayRef<ComboItem> element_combo_fill ()
     { return {element_combo_items.begin (), element_combo_items.len ()}; }
+static ArrayRef<ComboItem> extra_element_combo_fill ()
+    { return {element_combo_items0.begin (), element_combo_items0.len ()}; }
 
 const PreferencesWidget ALSAPlugin::widgets[] = {
     WidgetCombo (N_("PCM device:"),
@@ -301,7 +308,10 @@ const PreferencesWidget ALSAPlugin::widgets[] = {
         {nullptr, mixer_combo_fill}),
     WidgetCombo (N_("Mixer element:"),
         WidgetString ("alsa", "mixer-element", element_changed, "alsa mixer changed"),
-        {nullptr, element_combo_fill})
+        {nullptr, element_combo_fill}),
+    WidgetCombo (N_("Extra Mixer element?:"),
+        WidgetString ("alsa", "mixer-element-extra", element_changed, "alsa mixer changed"),
+        {nullptr, extra_element_combo_fill})
 };
 
 static void alsa_prefs_init ()
@@ -320,6 +330,7 @@ static void alsa_prefs_cleanup ()
     pcm_combo_items.clear ();
     mixer_combo_items.clear ();
     element_combo_items.clear ();
+    element_combo_items0.clear ();
 }
 
 const PluginPreferences ALSAPlugin::prefs = {
