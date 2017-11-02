@@ -377,6 +377,12 @@ bool AACDecoder::play (const char * filename, VFSFile & file)
     if (used)
     {
         buflen -= used;
+        AUDINFO ("--------aac1:buflen=%d= used=%d= len1=%d len2=%d\n", buflen, used, sizeof buf - buflen, ((int) sizeof (buf)) - buflen);
+        if (buflen >= (int) sizeof (buf))
+        {
+            AUDERR ("s:Attempted to read negative number of bites!\n");
+            goto ERR_CLOSE_DECODER;
+        }
         memmove (buf, buf + used, buflen);
         buflen += file.fread (buf + buflen, 1, ((int) sizeof (buf)) - buflen);
     }
@@ -386,13 +392,13 @@ bool AACDecoder::play (const char * filename, VFSFile & file)
     if ((used = NeAACDecInit (decoder, buf, buflen, & samplerate, & channels)))
     {
         buflen -= used;
-        memmove (buf, buf + used, buflen);
-AUDERR("-aac:buflen=%d= used=%d= len=%d\n", buflen, used, sizeof buf - buflen);
+        AUDINFO ("--------aac2:buflen=%d= used=%d= len=%d len2=%d\n", buflen, used, sizeof buf - buflen, ((int) sizeof (buf)) - buflen);
         if (buflen >= (int) sizeof (buf))
         {
             AUDERR ("s:Attempted to read negative number of bites!\n");
             goto ERR_CLOSE_DECODER;
         }
+        memmove (buf, buf + used, buflen);
         buflen += file.fread (buf + buflen, 1, ((int) sizeof (buf)) - buflen);
     }
 
