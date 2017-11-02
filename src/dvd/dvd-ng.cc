@@ -2969,7 +2969,7 @@ static bool scan_dvd ()
         for (int trackno = firsttrackno; trackno <= lasttrackno; trackno++)  //ADD ALL TRACKS TO PLAYLIST:
         {
             //titlebuf.steal (str_printf ("%s%d", "dvd://?", trackno));
-            titlebuf.steal (str_printf ("%s%d", "DVD Track ", trackno));
+            titlebuf = str_printf ("%s%d", "DVD Track ", trackno);
             trackinfo[trackno].name = String (titlebuf);
             AUDINFO ("---ADDED TRACK# %d: name=%s=\n", trackno, (const char *)trackinfo[trackno].name);
         }

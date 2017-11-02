@@ -59,39 +59,39 @@ EXPORT ToneGen aud_plugin_instance;
 
 bool ToneGen::is_our_file(const char *filename, VFSFile &file)
 {
-    if (!strncmp(filename, "tone://", 7))
+    if (!strncmp (filename, "tone://", 7))
         return true;
     return false;
 }
 
-static Index<double> tone_filename_parse(const char *filename)
+static Index<double> tone_filename_parse (const char *filename)
 {
     Index<double> frequencies;
 
-    if (strncmp(filename, "tone://", 7))
+    if (strncmp (filename, "tone://", 7))
         return frequencies;
 
-    auto strings = str_list_to_index(filename + 7, ";");
+    auto strings = str_list_to_index (filename + 7, ";");
 
     for (const char *str : strings)
     {
-        double freq = strtod(str, nullptr);
+        double freq = strtod (str, nullptr);
         if (freq >= MIN_FREQ && freq <= MAX_FREQ)
-            frequencies.append(freq);
+            frequencies.append (freq);
     }
 
     return frequencies;
 }
 
-static StringBuf tone_title(const char *filename)
+static StringBuf tone_title (const char *filename)
 {
-    auto freqs = tone_filename_parse(filename);
-    if (!freqs.len())
+    auto freqs = tone_filename_parse (filename);
+    if (!freqs.len ())
         return StringBuf();
 
-    auto title = str_printf(_("%s %.1f Hz"), _("Tone Generator: "), freqs[0]);
-    for (int i = 1; i < freqs.len(); i++)
-        title.combine(str_printf(";%.1f Hz", freqs[i]));
+    auto title = str_printf (_("%s %.1f Hz"), _("Tone Generator: "), freqs[0]);
+    for (int i = 1; i < freqs.len (); i++)
+        str_append_printf (title, ";%.1f Hz", freqs[i]);
 
     return title;
 }
@@ -106,16 +106,16 @@ bool ToneGen::play(const char *filename, VFSFile &file)
 {
     float data[BUF_SAMPLES];
 
-    auto frequencies = tone_filename_parse(filename);
-    if (!frequencies.len())
+    auto frequencies = tone_filename_parse (filename);
+    if (!frequencies.len ())
         return false;
 
     set_stream_bitrate(16 * OUTPUT_FREQ);
     open_audio(FMT_FLOAT, OUTPUT_FREQ, 1);
 
     Index<tone_t> tone;
-    tone.resize(frequencies.len());
-    for (int i = 0; i < frequencies.len(); i++)
+    tone.resize(frequencies.len ());
+    for (int i = 0; i < frequencies.len (); i++)
     {
         double f = frequencies[i];
         tone[i].wd = 2 * PI * f / OUTPUT_FREQ;
@@ -129,9 +129,9 @@ bool ToneGen::play(const char *filename, VFSFile &file)
         {
             double sum_sines = 0;
 
-            for (int j = 0; j < frequencies.len(); j++)
+            for (int j = 0; j < frequencies.len (); j++)
             {
-                sum_sines += sin(tone[j].wd * tone[j].t);
+                sum_sines += sin (tone[j].wd * tone[j].t);
                 if (tone[j].t > tone[j].period)
                     tone[j].t -= tone[j].period;
                 tone[j].t++;
@@ -148,11 +148,11 @@ bool ToneGen::play(const char *filename, VFSFile &file)
 
 bool ToneGen::read_tag(const char *filename, VFSFile &file, Tuple &tuple, Index<char> *image)
 {
-    StringBuf title = tone_title(filename);
+    StringBuf title = tone_title (filename);
     if (!title)
         return false;
 
-    tuple.set_str(Tuple::Title, title);
+    tuple.set_str (Tuple::Title, title);
     return true;
 }
 

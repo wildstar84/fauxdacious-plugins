@@ -90,10 +90,10 @@ StringBuf skin_pixmap_locate (const char * folder, const char * basename, const 
     for (const char * ext : exts)
     {
         StringBuf name = str_concat({basename, ext});
-        name.steal (find_file_case_path (folder, name));
+        name = find_file_case_path (folder, name);
 
         if (name)
-            return name;
+            return name.settle ();
     }
 
     return altname ? skin_pixmap_locate (folder, altname) : StringBuf ();

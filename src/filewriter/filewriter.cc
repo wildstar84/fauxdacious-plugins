@@ -241,9 +241,9 @@ static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
     if (! fallback2unnamed && aud_get_bool ("filewriter", "use_stdout"))
     {
 #ifdef _WINDOWS
-        filename.insert (0, "file://CON");
+        filename = str_copy ("file://CON");
 #else
-        filename.insert (0, "file:///dev/stdout");
+        filename = str_copy ("file:///dev/stdout");
 #endif
     }
     else
@@ -255,7 +255,7 @@ static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
         }
         else
         {
-            filename.steal (get_file_path ());
+            filename = get_file_path ();
             if (filename[filename.len () - 1] != '/')
                 filename.insert (-1, "/");
         }
@@ -264,7 +264,7 @@ static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
         {
             int number = in_tuple.get_int (Tuple::Track);
             if (number >= 0)
-                filename.combine (str_printf ("%d%%20", number));
+                str_append_printf (filename, "%d%%20", number);
         }
 
         if (! fallback2unnamed && aud_get_bool ("filewriter", "filenamefromtags"))
@@ -289,8 +289,7 @@ static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
             }
 
             /* URI-encode */
-            buf.steal (str_encode_percent (buf));
-            filename.combine (std::move (buf));
+            filename.insert (-1, str_encode_percent (buf));
         }
         else
         {
@@ -320,7 +319,7 @@ static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
 
         filename.insert (-1, suffix);
     }
-    return filename;
+    return filename.settle ();
 }
 
 bool FileWriter::open_audio (int fmt, int rate, int nch, String & error)
@@ -336,7 +335,7 @@ bool FileWriter::open_audio (int fmt, int rate, int nch, String & error)
 
     StringBuf filename = format_filename (fileext_str[ext], false);
     if (! filename)
-        filename.steal (format_filename (fileext_str[ext], true));
+        filename = format_filename (fileext_str[ext], true);
     if (! filename)
         return false;
 
@@ -348,7 +347,7 @@ bool FileWriter::open_audio (int fmt, int rate, int nch, String & error)
     output_file = safe_create (filename);
     if (! output_file)  /* JWT:FILENAME (FROM URL?) TOO LONG, ETC, TRY FALLING BACK TO "unnamed": */
     {
-        filename.steal (format_filename (fileext_str[ext], true));
+        filename = format_filename (fileext_str[ext], true);
         output_file = safe_create (filename);
     }
     if (output_file && plugin->open (output_file, {out_fmt, rate, nch}, in_tuple))

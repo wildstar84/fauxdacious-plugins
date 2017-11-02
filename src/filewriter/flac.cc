@@ -77,13 +77,13 @@ static void insert_vorbis_comment (FLAC__StreamMetadata * meta,
     case Tuple::Int:
     {
         int ival = tuple.get_int (field);
-        temp.steal (str_printf ("%s=%d", name, ival));
+        temp = str_printf ("%s=%d", name, ival);
         break;
     }
     case Tuple::String:
     {
         String sval = tuple.get_str (field);
-        temp.steal (str_printf ("%s=%s", name, (const char *) sval));
+        temp = str_printf ("%s=%s", name, (const char *) sval);
         break;
     }
     default:

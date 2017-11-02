@@ -182,45 +182,45 @@ StringBuf ayemu_vtx_t::sprintname (const char *fmt)
         buf.insert(-1, hdr.author);
         break;
       case 't':
-        buf.insert(-1, hdr.title);
+        buf.insert (-1, hdr.title);
         break;
       case 'y':
-        buf.combine(int_to_str(hdr.year));
+        str_insert_int (buf, -1, hdr.year);
         break;
       case 'f':
-        buf.insert(-1, hdr.from);
+        buf.insert (-1, hdr.from);
         break;
       case 'T':
-        buf.insert(-1, hdr.tracker);
+        buf.insert (-1, hdr.tracker);
         break;
       case 'C':
-        buf.insert(-1, hdr.comment);
+        buf.insert (-1, hdr.comment);
         break;
       case 's':
-        buf.insert(-1, stereo_types[hdr.stereo]);
+        buf.insert (-1, stereo_types[hdr.stereo]);
         break;
       case 'l':
-        buf.insert(-1, (hdr.loop)? "looped" : "non-looped" );
+        buf.insert (-1, (hdr.loop)? "looped" : "non-looped" );
         break;
       case 'c':
-        buf.insert(-1, (hdr.chiptype == AYEMU_AY)? "AY" : "YM" );
+        buf.insert (-1, (hdr.chiptype == AYEMU_AY)? "AY" : "YM" );
         break;
       case 'F':
-        buf.combine(int_to_str(hdr.chipFreq));
+        str_insert_int (buf, -1, hdr.chipFreq);
         break;
       case 'P':
-        buf.combine(int_to_str(hdr.playerFreq));
+        str_insert_int (buf, -1, hdr.playerFreq);
         break;
       default:
-        buf.insert(-1, fmt, 1);
+        buf.insert (-1, fmt, 1);
       }
       fmt++;
     } else {
-      const char *p = strchr(fmt, '%');
+      const char *p = strchr (fmt, '%');
       if (!p)
         p = fmt + strlen(fmt);
 
-      buf.insert(-1, fmt, p - fmt);
+      buf.insert (-1, fmt, p - fmt);
       fmt = p;
     }
   }

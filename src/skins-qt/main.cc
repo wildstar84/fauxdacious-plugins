@@ -220,17 +220,17 @@ static void mainwin_set_song_title (const char * title)
     StringBuf buf;
 
     if (title)
-        buf.steal (str_printf (_("%s - Fauxdacious"), title));
+        buf = str_printf (_("%s - Fauxdacious"), title);
     else
-        buf.steal (str_copy (_("Fauxdacious")));
+        buf = str_copy (_("Fauxdacious"));
 
 /* JWT:DON'T DO THIS:    int instance = aud_get_instance ();
     if (instance != 1)
-        buf.combine (str_printf (" (%d)", instance));
+        str_append_printf (buf, " (%d)", instance);
 */
     char * instancename = aud_get_instancename ();
     if (strcmp (instancename, "audacious"))
-        buf.combine (str_printf (" (%s)", instancename));
+        str_append_printf (buf, " (%s)", instancename);
     mainwin->setWindowTitle ((const char *) buf);
     mainwin_set_info_text (title ? title : "");
 }
