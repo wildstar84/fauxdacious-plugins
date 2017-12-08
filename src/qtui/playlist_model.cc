@@ -114,7 +114,7 @@ QVariant PlaylistModel::alignment (int col) const
 QVariant PlaylistModel::data (const QModelIndex &index, int role) const
 {
     int col = index.column () - 1;
-    if (col < 0 || col > n_cols)
+    if (col < 0 || col >= n_cols)
         return QVariant ();
 
     Tuple tuple;
@@ -182,7 +182,7 @@ QVariant PlaylistModel::headerData (int section, Qt::Orientation orientation, in
         return QVariant ();
 
     int col = section - 1;
-    if (col < 0 || col > n_cols)
+    if (col < 0 || col >= n_cols)
         return QVariant ();
 
     switch (role)
