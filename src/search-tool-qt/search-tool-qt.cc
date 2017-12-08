@@ -753,7 +753,7 @@ void * SearchToolQt::get_qt_widget ()
     entry->setClearButtonEnabled (true);
     entry->setPlaceholderText (_("Search library"));
 
-    help_label = new QLabel (_("To import your music library into Audacious, "
+    help_label = new QLabel (_("To import your music library into Fauxdacious, "
      "choose a folder and then click the \"refresh\" icon."));
     help_label->setAlignment (Qt::AlignCenter);
     help_label->setContentsMargins (audqt::margins.EightPt);

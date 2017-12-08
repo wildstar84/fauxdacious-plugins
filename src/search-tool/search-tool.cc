@@ -758,7 +758,7 @@ void * SearchTool::get_gtk_widget ()
     gtk_box_pack_start ((GtkBox *) vbox, entry, false, false, 0);
 
     help_label = gtk_label_new (_("To import your music library into "
-     "Audacious, choose a folder and then click the \"refresh\" icon."));
+     "Fauxdacious, choose a folder and then click the \"refresh\" icon."));
     int label_width = aud::rescale (audgui_get_dpi (), 4, 7);
     gtk_widget_set_size_request (help_label, label_width, -1);
     gtk_label_set_line_wrap ((GtkLabel *) help_label, true);
