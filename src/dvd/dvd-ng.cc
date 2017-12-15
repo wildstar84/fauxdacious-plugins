@@ -2276,7 +2276,7 @@ AUDDBG("PLAY:opened OUTPUT PIPE (%s) !!!!!!!!...\n", (const char *)dvdnav_priv->
         if (event == -1 || len == -1)
         {
             AUDERR ("s:DVDNAV stream read error!\n");
-            dvd_error ("DVD read ERROR - encripted(libdvdcss missing)?\n\nWARNING:  Check legality in your jurisdiction before installing libdvdcss!\n");
+            dvd_error ("DVD read ERROR - encrypted and libdvdcss missing?\n\nWARNING:  Check legality in your jurisdiction before installing libdvdcss!\n");
             stop_playback = true;
             pthread_mutex_lock (& mutex);
             goto GETMEOUTTAHERE;
