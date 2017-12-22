@@ -2874,22 +2874,52 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
                 {
                     if (! coverart_file_sought)
                     {
-                        String ext = aud_get_str ("dvd", "cover_art_ext");
-                        if (! ext || ! ext[0])
-                            ext = String (_("png"));
-                        String coverart_path = aud_get_str ("dvd", "cover_art_path");
-                        if (! coverart_path || ! coverart_path[0])
-                            coverart_path = String (aud_get_path (AudPath::UserDir));
-                        StringBuf fid_buf = filename_build ({(const char *)coverart_path, 
-                                (const char *)trackinfo[0].name});
-                        coverart_file = String (str_concat ({"file://", fid_buf, ".", (const char *)ext}));
-                        const char * filenamechar = coverart_file + 7;
-                        struct stat statbuf;
-                        if (stat (filenamechar, &statbuf))  // ART IMAGE FILE DOESN'T EXIST:
-                            coverart_file = String (_(""));
+                        if (trackinfo[0].name)  //SEE IF WE HAVE A COVER-ART IMAGE FILE NAMED AFTER THE TITLE:
+                        {
+                            Index<String> extlist = str_list_to_index ("jpg,png,jpeg", ",");
+                            String coverart_path = aud_get_str ("dvd", "cover_art_path");
+                            if (! coverart_path || ! coverart_path[0])
+                                coverart_path = String (aud_get_path (AudPath::UserDir));
+                            AUDINFO ("--CVAPATH=%s= tk0name=%s=\n", (const char *)coverart_path, (const char *)trackinfo[0].name);
+                            StringBuf fid_buf = filename_build ({(const char *)coverart_path, 
+                                    (const char *)trackinfo[0].name});
+                            for (auto & ext : extlist)
+                            {
+                                coverart_file = String (str_concat ({"file://", fid_buf, ".", (const char *)ext}));
+                                const char * filenamechar = coverart_file + 7;
+                                struct stat statbuf;
+                                if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
+                                    coverart_file = String (_(""));
+                                else
+                                    break;
+                            }
+                            if (! coverart_file || ! coverart_file[0])  //IF NOT, SEE IF WE CAN FETCH ONE FROM THE WEB:
+                            {
+                                AUDINFO ("--NO COVER ART FOUND, LOOK FOR HELPER:\n");
+                                String cover_helper = aud_get_str ("audacious", "cover_helper");
+                                if (cover_helper[0])  //JWT:WE HAVE A PERL HELPER, LESSEE IF IT CAN FIND/DOWNLOAD A COVER IMAGE FOR US:
+                                {
+                                    AUDINFO ("----HELPER FOUND: WILL DO (%s)\n", (const char *)str_concat ({cover_helper, " DVD ", 
+                                          (const char *)trackinfo[0].name, " ", aud_get_path (AudPath::UserDir)}));
+                                    system ((const char *) str_concat ({cover_helper, " DVD ", 
+                                          (const char *)trackinfo[0].name, " ", aud_get_path (AudPath::UserDir)}));
+                                    for (auto & ext : extlist)
+                                    {
+                                        coverart_file = String (str_concat ({"file://", fid_buf, ".", (const char *)ext}));
+                                        const char * filenamechar = coverart_file + 7;
+                                        struct stat statbuf;
+                                        if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
+                                            coverart_file = String (_(""));
+                                        else
+                                            break;
+                                    }
+                                }
+                            }
+                        }
                         coverart_file_sought = true;
                     }
-                    tuple.set_str (Tuple::Comment, coverart_file);
+                    if (coverart_file)
+                        tuple.set_str (Tuple::Comment, coverart_file);
                     aud_write_tag_to_tagfile (filename, tuple);
                 }
             }
