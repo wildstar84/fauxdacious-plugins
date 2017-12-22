@@ -121,7 +121,8 @@ static int calculate_track_length (int startlsn, int endlsn);
 static int find_trackno_from_filename (const char * filename);
 static String coverart_file;       /* JWT:PATH OF LAST GOOD COVER ART FILE (IF ANY) FOR CURRENTLY-PLAYING CD. */
 static bool coverart_file_sought;  /* JWT:TRUE IF WE'VE ALREADY LOOKED FOR A COVER ART FILE FOR CURRENTLY-PLAYING CD. */
-static bool custom_tagfile_sought;  /* JWT:TRUE IF WE'VE ALREADY LOOKED FOR A CUSTOM TAG FILE FOR CURRENTLY-PLAYING CD. */
+static bool custom_tagfile_sought; /* JWT:TRUE IF WE'VE ALREADY LOOKED FOR A CUSTOM TAG FILE FOR CURRENTLY-PLAYING CD. */
+static bool custom_helper_sought;  /* JWT:TRUE IF WE'VE ALREADY INVOKED HELPER SCRIPT FOR CURRENTLY-PLAYING CD. */
 
 const char CDAudio::about[] =
  N_("Copyright (C) 2007-2012 Calin Crisan <ccrisan@gmail.com> and others.\n\n"
@@ -137,6 +138,7 @@ const char * const CDAudio::defaults[] = {
  "cddbhttp", "FALSE",
  "cddbserver", "freedb.org",
  "cddbport", "8880",
+ "use_customtagfiles", "FALSE",
  nullptr};
 
 const PreferencesWidget CDAudio::widgets[] = {
@@ -165,7 +167,9 @@ const PreferencesWidget CDAudio::widgets[] = {
     WidgetSpin (N_("Port:"),
         WidgetInt ("CDDA", "cddbport"),
         {0, 65535, 1},
-        WIDGET_CHILD)
+        WIDGET_CHILD),
+    WidgetCheck (N_("Allow Custom Tag-files"),
+        WidgetBool ("CDDA", "use_customtagfiles"))
 };
 
 const PluginPreferences CDAudio::prefs = {{widgets}};
@@ -423,76 +427,116 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                 tuple.set_str (Tuple::AlbumArtist, trackinfo[0].performer);
             if (trackinfo[trackno].genre)
                 tuple.set_str (Tuple::Genre, trackinfo[trackno].genre);
-            if (aud_get_bool (nullptr, "user_tag_data"))  /* JWT:SEE IF WE HAVE A CUSTOM TAGFILE FOR THIS CD: */
+            if (! custom_tagfile_sought && aud_get_bool ("CDDA", "use_customtagfiles") && trackinfo[0].discidstr)
             {
-                if (! custom_tagfile_sought && trackinfo[0].discidstr)
+                AUDINFO ("--DISKID=%s= TRYING CUSTOM\n", (const char *)trackinfo[0].discidstr);
+                String tag_file = String (str_concat ({(const char *)trackinfo[0].discidstr, ".tag"}));
+                Tuple user_tuple = Tuple ();
+                int precedence = aud_read_tag_from_tagfile ((const char *)str_printf ("%s%d", "cdda://?", trackno), 
+                        (const char *)tag_file, user_tuple);
+                AUDDBG ("--TAG FID=%s= TRACK=%d= PREC=%d=\n", (const char *)tag_file, trackno, precedence);
+                if (precedence)
                 {
-                    AUDINFO ("--DISKID=%s= TRYING CUSTOM\n", (const char *)trackinfo[0].discidstr);
-                    String tag_file = String (str_concat ({(const char *)trackinfo[0].discidstr, ".tag"}));
-                    Tuple user_tuple = Tuple ();
-                    int precedence = aud_read_tag_from_tagfile ((const char *)str_printf ("%s%d", "cdda://?", trackno), 
-                            (const char *)tag_file, user_tuple);
-                    AUDDBG ("--TAG FID=%s= TRACK=%d= PREC=%d=\n", (const char *)tag_file, trackno, precedence);
-                    if (precedence)
+                    AUDINFO ("--CUSTOM TAG(%d) FILE(%s) PRECEDENCE=%d\n", trackno, (const char *)tag_file, precedence);
+                    const char * tfld = (const char *) user_tuple.get_str (Tuple::Title);
+                    if (tfld && (precedence < 2 || ! trackinfo[trackno].name))
                     {
-                        AUDINFO ("--CUSTOM TAG(%d) FILE(%s) PRECEDENCE=%d\n", trackno, (const char *)tag_file, precedence);
-                        const char * tfld = (const char *) user_tuple.get_str (Tuple::Title);
-                        if (tfld && (precedence < 2 || ! trackinfo[trackno].name))
-                        {
-                            tuple.set_str (Tuple::Title, tfld);
-                            trackinfo[trackno].name = String (tfld);
-                        }
-                        tfld = (const char *) user_tuple.get_str (Tuple::Artist);
-                        if (tfld && (precedence < 2 || ! trackinfo[trackno].performer))
-                        {
-                            tuple.set_str (Tuple::Artist, tfld);
-                            trackinfo[trackno].performer = String (tfld);
-                        }
-                        tfld = (const char *) user_tuple.get_str (Tuple::Album);
-                        if (tfld && (precedence < 2 || ! trackinfo[0].name))
-                        {
-                            tuple.set_str (Tuple::Album, tfld);
-                            trackinfo[0].name = String (tfld);
-                        }
-                        tfld = (const char *) user_tuple.get_str (Tuple::Genre);
-                        if (tfld && (precedence < 2 || ! trackinfo[trackno].genre))
-                        {
-                            tuple.set_str (Tuple::Genre, tfld);
-                            trackinfo[trackno].performer = String (tfld);
-                        }
-                        int ifld = user_tuple.get_int (Tuple::Year);
-                        if (ifld && ifld > 1000)
-                            tuple.set_int (Tuple::Year, ifld);
+                        tuple.set_str (Tuple::Title, tfld);
+                        trackinfo[trackno].name = String (tfld);
                     }
-                    else
-                        custom_tagfile_sought = true;
+                    tfld = (const char *) user_tuple.get_str (Tuple::Artist);
+                    if (tfld && (precedence < 2 || ! trackinfo[trackno].performer))
+                    {
+                        tuple.set_str (Tuple::Artist, tfld);
+                        trackinfo[trackno].performer = String (tfld);
+                    }
+                    tfld = (const char *) user_tuple.get_str (Tuple::Album);
+                    if (tfld && (precedence < 2 || ! trackinfo[0].name))
+                    {
+                        tuple.set_str (Tuple::Album, tfld);
+                        trackinfo[0].name = String (tfld);
+                    }
+                    tfld = (const char *) user_tuple.get_str (Tuple::Genre);
+                    if (tfld && (precedence < 2 || ! trackinfo[trackno].genre))
+                    {
+                        tuple.set_str (Tuple::Genre, tfld);
+                        trackinfo[trackno].performer = String (tfld);
+                    }
+                    tfld = (const char *) user_tuple.get_str (Tuple::Comment);
+                    if (tfld && (precedence < 2 || ! coverart_file))
+                        tuple.set_str (Tuple::Comment, tfld);
+                    int ifld = user_tuple.get_int (Tuple::Year);
+                    if (ifld && ifld > 1000)
+                        tuple.set_int (Tuple::Year, ifld);
                 }
+                else
+                    custom_tagfile_sought = true;  //ONLY SEEK ONCE IF NOT FOUND, OTHERWISE FOR EACH TRACK!
+            }
 
-                if (! coverart_file_sought)
+            if (! coverart_file_sought)
+            {
+                Index<String> extlist = str_list_to_index ("jpg,png,jpeg", ",");
+                String coverart_path = aud_get_str ("CDDA", "cover_art_path");
+                if (! coverart_path || ! coverart_path[0])
+                    coverart_path = String (aud_get_path (AudPath::UserDir));
+                if (trackinfo[0].name)  //SEE IF WE HAVE A COVER-ART IMAGE FILE NAMED AFTER THE TITLE:
+                {
+                    AUDINFO ("--CVAPATH=%s= tk0name=%s=\n", (const char *)coverart_path, (const char *)trackinfo[0].name);
+                    StringBuf fid_buf = filename_build ({(const char *)coverart_path, 
+                            (const char *)trackinfo[0].name});
+                    for (auto & ext : extlist)
+                    {
+                        coverart_file = String (str_concat ({"file://", fid_buf, ".", (const char *)ext}));
+                        const char * filenamechar = coverart_file + 7;
+                        struct stat statbuf;
+                        if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
+                            coverart_file = String (_(""));
+                        else
+                            break;
+                    }
+                }
+                if ((! coverart_file || ! coverart_file[0]) && trackinfo[0].discidstr)
                 {
                     Index<String> extlist = str_list_to_index ("jpg,png,jpeg", ",");
-                    String coverart_path = aud_get_str ("CDDA", "cover_art_path");
-                    if (! coverart_path || ! coverart_path[0])
-                        coverart_path = String (aud_get_path (AudPath::UserDir));
-                    if (trackinfo[0].name)  //SEE IF WE HAVE A COVER-ART IMAGE FILE NAMED AFTER THE TITLE:
+                    AUDINFO ("--NO COVER ART FILE FOR TITLE, TRY DISK-ID:\n");
+                    StringBuf fid_buf = filename_build ({(const char *)coverart_path, 
+                            (const char *)trackinfo[0].discidstr});
+                    for (auto & ext : extlist)
                     {
-                        AUDINFO ("--CVAPATH=%s= tk0name=%s=\n", (const char *)coverart_path, (const char *)trackinfo[0].name);
-                        StringBuf fid_buf = filename_build ({(const char *)coverart_path, 
-                                (const char *)trackinfo[0].name});
-                        for (auto & ext : extlist)
-                        {
-                            coverart_file = String (str_concat ({"file://", fid_buf, ".", (const char *)ext}));
-                            const char * filenamechar = coverart_file + 7;
-                            struct stat statbuf;
-                            if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
-                                coverart_file = String (_(""));
-                            else
-                                break;
-                        }
+                        coverart_file = String (str_concat ({"file://", fid_buf, ".", (const char *)ext}));
+                        const char * filenamechar = coverart_file + 7;
+                        struct stat statbuf;
+                        if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
+                            coverart_file = String (_(""));
+                        else
+                            break;
                     }
-                    //IF NO COVER-ART FILE NAMED AFTER THE TITLE, SEE IF ONE NAMED AFTER THE DISK-ID:
-                    if ((! coverart_file || ! coverart_file[0]) && trackinfo[0].discidstr)
+                }
+            }
+            if (aud_get_bool (nullptr, "user_tag_data"))  /* JWT:SEE IF WE HAVE A CUSTOM TAGFILE FOR THIS CD: */
+            {
+                //IF NO COVER-ART FILE NAMED AFTER THE TITLE, SEE IF ONE NAMED AFTER THE DISK-ID:
+                if (! custom_helper_sought && trackinfo[0].discidstr 
+                        && (! coverart_file || ! coverart_file[0] || ! trackinfo[0].name || ! trackinfo[trackno].name))
+                {
+                    /* NOTE: NOT ALL CDS HAVE TRACK TITLE INFO OR WORK W/CDDB, SO IF NOT, WE FETCH THAT TOO!: */
+                    /* NOTE2:  IF USER SAVED COVER-ART FILE BY TITLE, THIS WEB SEARCH IS NOT MADE! */
+                    AUDINFO ("--NO COVER ART BY DISK-ID OR NO CD TITLE, LOOK FOR HELPER:\n");
+                    String cover_helper = aud_get_str ("audacious", "cover_helper");
+                    const char * cdt = ((! trackinfo[0].name || ! trackinfo[trackno].name) 
+                            && aud_get_bool ("CDDA", "use_customtagfiles")) ? " CDT " : " CD ";
+if (trackinfo[0].name) AUDERR("--T0name=%s=\n", (const char *)trackinfo[0].name);
+if (trackinfo[trackno].name) AUDERR("--T(%d)name=%s=\n", trackno, (const char *)trackinfo[trackno].name);
+                    if (cover_helper[0])  //JWT:WE HAVE A PERL HELPER, LESSEE IF IT CAN FIND/DOWNLOAD A COVER IMAGE FOR US:
                     {
+                        AUDINFO ("----HELPER FOUND: WILL DO (%s)\n", (const char *)str_concat ({cover_helper, cdt, 
+                                (const char *)trackinfo[0].discidstr, " ", aud_get_path (AudPath::UserDir)}));
+                        system ((const char *) str_concat ({cover_helper, cdt, 
+                                (const char *)trackinfo[0].discidstr, " ", aud_get_path (AudPath::UserDir)}));
+                        Index<String> extlist = str_list_to_index ("jpg,png,jpeg", ",");
+                        String coverart_path = aud_get_str ("CDDA", "cover_art_path");
+                        if (! coverart_path || ! coverart_path[0])
+                            coverart_path = String (aud_get_path (AudPath::UserDir));
                         AUDINFO ("--NO COVER ART FILE FOR TITLE, TRY DISK-ID:\n");
                         StringBuf fid_buf = filename_build ({(const char *)coverart_path, 
                                 (const char *)trackinfo[0].discidstr});
@@ -506,35 +550,9 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                             else
                                 break;
                         }
-                        /* NOTE: NOT ALL CDS HAVE TRACK TITLE INFO OR WORK W/CDDB, SO IF NOT, WE FETCH THAT TOO!: */
-                        /* NOTE2:  IF USER SAVED COVER-ART FILE BY TITLE, THIS WEB SEARCH IS NOT MADE! */
-                        if (! coverart_file[0] || ! trackinfo[0].name)  //IF NOT, SEE IF WE CAN FETCH FROM THE WEB:
-                        {
-                            AUDINFO ("--NO COVER ART BY DISK-ID, LOOK FOR HELPER:\n");
-                            String cover_helper = aud_get_str ("audacious", "cover_helper");
-                            if (cover_helper[0])  //JWT:WE HAVE A PERL HELPER, LESSEE IF IT CAN FIND/DOWNLOAD A COVER IMAGE FOR US:
-                            {
-                                AUDINFO ("----WILL DO (%s)\n", (const char *)str_concat ({cover_helper, " CDT ", 
-                                        (const char *)trackinfo[0].discidstr, " ", aud_get_path (AudPath::UserDir)}));
-                                system ((const char *) str_concat ({cover_helper, " CDT ", 
-                                        (const char *)trackinfo[0].discidstr, " ", aud_get_path (AudPath::UserDir)}));
-                                for (auto & ext : extlist)
-                                {
-                                    coverart_file = String (str_concat ({"file://", fid_buf, ".", (const char *)ext}));
-                                    const char * filenamechar = coverart_file + 7;
-                                    struct stat statbuf;
-                                    if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
-                                        coverart_file = String (_(""));
-                                    else
-                                        break;
-                                }
-                            }
-                        }
                     }
-                    coverart_file_sought = true;
                 }
-                if (coverart_file)
-                    tuple.set_str (Tuple::Comment, coverart_file);
+                custom_helper_sought = true;
 
                 /* WE MUST MANUALLY CHECK EACH TRACK TITLE IS UPDATED IF TITLES FETCHED BY COVER-ART HELPER! */
                 if (trackno && ! trackinfo[trackno].name)
@@ -547,6 +565,7 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                         const char * tfld = (const char *) user_tuple.get_str (Tuple::Title);
                         if (tfld)
                         {
+AUDERR("--SET TRK(%d):=%s=\n", trackno, tfld);
                             tuple.set_str (Tuple::Title, tfld);
                             trackinfo[trackno].name = String (tfld);
                         }
@@ -564,8 +583,15 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                         }
                     }
                 }
-                aud_write_tag_to_tagfile (filename, tuple);
             }
+            coverart_file_sought = true;
+            if (coverart_file)
+            {
+                const char * tfld = (const char *) tuple.get_str (Tuple::Comment);
+                if (! tfld)
+                    tuple.set_str (Tuple::Comment, coverart_file);
+            }
+            aud_write_tag_to_tagfile (filename, tuple);
         }
         valid = true;
     }
@@ -587,7 +613,7 @@ static bool open_cd ()
     if (device[0])
     {
         if (! (pcdrom_drive = cdda_identify (device, 1, nullptr)))
-            cdaudio_error (_("Failed to open CD device %s."), (const char *) device);
+            cdaudio_error (_("Failed to open CD Device %s."), (const char *) device);
     }
     else
     {
@@ -640,6 +666,7 @@ static bool scan_cd ()
     trackinfo.clear ();
     coverart_file_sought = false;
     custom_tagfile_sought = false;
+    custom_helper_sought = false;
 
     /* general track initialization */
 
@@ -899,7 +926,7 @@ static bool scan_cd ()
     }
 
     // JWT: FETCH DISK-ID ANYWAY FOR COVERART QUERY:
-    if (! trackinfo[0].discidstr && aud_get_bool (nullptr, "user_tag_data") && aud_get_bool ("CDDA", "use_cddb"))
+    if (! trackinfo[0].discidstr)
     {
         cddb_disc_t *pcddb_disc = nullptr;
         cddb_track_t *pcddb_track = nullptr;
