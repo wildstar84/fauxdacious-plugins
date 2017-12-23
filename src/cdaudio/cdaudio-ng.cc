@@ -492,7 +492,10 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                         if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
                             coverart_file = String (_(""));
                         else
+                        {
+                            coverart_file = String (filename_to_uri (filenamechar));
                             break;
+                        }
                     }
                 }
                 if ((! coverart_file || ! coverart_file[0]) && trackinfo[0].discidstr)
@@ -509,7 +512,10 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                         if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
                             coverart_file = String (_(""));
                         else
+                        {
+                            coverart_file = String (filename_to_uri (filenamechar));
                             break;
+                        }
                     }
                 }
             }
@@ -525,8 +531,8 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                     String cover_helper = aud_get_str ("audacious", "cover_helper");
                     const char * cdt = ((! trackinfo[0].name || ! trackinfo[trackno].name) 
                             && aud_get_bool ("CDDA", "use_customtagfiles")) ? " CDT " : " CD ";
-if (trackinfo[0].name) AUDERR("--T0name=%s=\n", (const char *)trackinfo[0].name);
-if (trackinfo[trackno].name) AUDERR("--T(%d)name=%s=\n", trackno, (const char *)trackinfo[trackno].name);
+                    if (trackinfo[0].name) AUDINFO ("--T0name=%s=\n", (const char *)trackinfo[0].name);
+                    if (trackinfo[trackno].name) AUDINFO ("--T(%d)name=%s=\n", trackno, (const char *)trackinfo[trackno].name);
                     if (cover_helper[0])  //JWT:WE HAVE A PERL HELPER, LESSEE IF IT CAN FIND/DOWNLOAD A COVER IMAGE FOR US:
                     {
                         AUDINFO ("----HELPER FOUND: WILL DO (%s)\n", (const char *)str_concat ({cover_helper, cdt, 
@@ -548,7 +554,10 @@ if (trackinfo[trackno].name) AUDERR("--T(%d)name=%s=\n", trackno, (const char *)
                             if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
                                 coverart_file = String (_(""));
                             else
+                            {
+                                coverart_file = String (filename_to_uri (filenamechar));
                                 break;
+                            }
                         }
                     }
                 }

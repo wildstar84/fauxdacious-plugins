@@ -2891,7 +2891,10 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
                                 if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
                                     coverart_file = String (_(""));
                                 else
+                                {
+                                    coverart_file = String (filename_to_uri (filenamechar));
                                     break;
+                                }
                             }
                             if (! coverart_file || ! coverart_file[0])  //IF NOT, SEE IF WE CAN FETCH ONE FROM THE WEB:
                             {
@@ -2911,7 +2914,10 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
                                         if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
                                             coverart_file = String (_(""));
                                         else
+                                        {
+                                            coverart_file = String (filename_to_uri (filenamechar));
                                             break;
+                                        }
                                     }
                                 }
                             }
