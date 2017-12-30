@@ -1480,6 +1480,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
     set_stream_bitrate (c->bit_rate);
     if (codec_opened)
     {
+        aud_set_str (nullptr, "playingdiskid", trackinfo[0].name);
         AUDINFO ("---OPEN_AUDIO(%d, %d, %d)\n", out_fmt, cinfo.context->sample_rate, cinfo.context->channels);
         open_audio (out_fmt, cinfo.context->sample_rate, cinfo.context->channels);
     }

@@ -275,6 +275,7 @@ bool CDAudio::play (const char * name, VFSFile & file)
         return false;
     }
 
+    aud_set_str (nullptr, "playingdiskid", trackinfo[0].discidstr);
     set_stream_bitrate (1411200);
     open_audio (FMT_S16_LE, 44100, 2);
 
