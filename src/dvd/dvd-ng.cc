@@ -650,6 +650,7 @@ void DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
         int video_height, bool * last_resized, bool * videohasnowh, bool * windowIsStable, 
         int * resized_window_width, int * resized_window_height, bool wehaveaudio)
 {
+    bool presentok = true;
 #ifdef SEND_PACKET
     if ((LOG (avcodec_send_packet, vcinfo->context, pkt)) < 0)
         return;
@@ -675,6 +676,8 @@ void DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
                 avcodec_send_packet (vcinfo->context, nullptr);
                 res = avcodec_receive_frame (vcinfo->context, vframe.ptr);
                 avcodec_flush_buffers (vcinfo->context);
+                if (aud_get_bool ("dvd", "highlightbuttons"))
+                    presentok = false;  /* WAIT UNTIL WE DRAW THE HIGHLIGHT RECTANGLES TO PRESENT! */
             }
             if (res < 0)
                 return;  /* read next packet (continue past errors) */
@@ -708,7 +711,8 @@ void DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
                     SDL_UpdateYUVTexture (bmp, nullptr, vframe->data[0], vframe->linesize[0], 
                         vframe->data[1], vframe->linesize[1], vframe->data[2], vframe->linesize[2]);
                     SDL_RenderCopy (renderer, bmp, nullptr, nullptr);  // USE NULL TO GET IMAGE TO FIT WINDOW!
-                    SDL_RenderPresent (renderer);
+                    if (presentok)
+                        SDL_RenderPresent (renderer);
                     (*windowIsStable) = true;
                 }
             }
@@ -738,7 +742,7 @@ void DVD::draw_highlight_buttons (SDL_Renderer * renderer)
     {
         SDL_RenderDrawRect (renderer, & menubuttons[mbtn]);
     }
-    SDL_RenderPresent (renderer); 
+    SDL_RenderPresent (renderer);
 }
 
 // CREATE AN SDL "RENDERER":
