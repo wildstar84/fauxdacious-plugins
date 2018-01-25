@@ -151,7 +151,7 @@ public:
     void write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo, 
             SDL_Texture * bmp, AVPacket *pkt, int video_width, 
             int video_height, bool * last_resized, bool * videohasnowh, bool * windowIsStable,
-            int * resized_window_width, int * resized_window_height, bool wehaveaudio);
+            int * resized_window_width, int * resized_window_height);
     void draw_highlight_buttons (SDL_Renderer * renderer);
 private:
 #ifdef _WIN32
@@ -648,9 +648,8 @@ static bool check_disk_status ()
 void DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo, 
         SDL_Texture * bmp, AVPacket *pkt, int video_width, 
         int video_height, bool * last_resized, bool * videohasnowh, bool * windowIsStable, 
-        int * resized_window_width, int * resized_window_height, bool wehaveaudio)
+        int * resized_window_width, int * resized_window_height)
 {
-    bool presentok = true;
 #ifdef SEND_PACKET
     if ((LOG (avcodec_send_packet, vcinfo->context, pkt)) < 0)
         return;
@@ -666,18 +665,16 @@ void DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
         int res = avcodec_receive_frame (vcinfo->context, vframe.ptr);
         if (res < 0)
         {
-            /* THIS CODE BLOCK NEEDED BY SOME MENUS W/AUDIO TRACKS THAT DON'T DISPLAY 
+            /* THIS CODE BLOCK NEEDED BY SOME MENUS THAT DON'T DISPLAY 
                FULLY UNTIL EOF (*AFTER* MUSIC FINISHES PLAYING)! (SO WE FORCE DRAWING
                OF EACH FRAME IMMEDIATELY AS IT'S PROCESSED).
             */
-            if (res == AVERROR (EAGAIN) && playing_a_menu && wehaveaudio)
+            if (res == AVERROR (EAGAIN) && playing_a_menu)
             {
-                AUDDBG ("w:RECEIVE FRAME FAIL, FLUSHING BUFFERS: %d\n", res);
+                AUDINFO ("w:RECEIVE FRAME FAIL, FLUSHING BUFFERS: %d\n", res);
                 avcodec_send_packet (vcinfo->context, nullptr);
                 res = avcodec_receive_frame (vcinfo->context, vframe.ptr);
                 avcodec_flush_buffers (vcinfo->context);
-                if (aud_get_bool ("dvd", "highlightbuttons"))
-                    presentok = false;  /* WAIT UNTIL WE DRAW THE HIGHLIGHT RECTANGLES TO PRESENT! */
             }
             if (res < 0)
                 return;  /* read next packet (continue past errors) */
@@ -711,8 +708,6 @@ void DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
                     SDL_UpdateYUVTexture (bmp, nullptr, vframe->data[0], vframe->linesize[0], 
                         vframe->data[1], vframe->linesize[1], vframe->data[2], vframe->linesize[2]);
                     SDL_RenderCopy (renderer, bmp, nullptr, nullptr);  // USE NULL TO GET IMAGE TO FIT WINDOW!
-                    if (presentok)
-                        SDL_RenderPresent (renderer);
                     (*windowIsStable) = true;
                 }
             }
@@ -742,7 +737,6 @@ void DVD::draw_highlight_buttons (SDL_Renderer * renderer)
     {
         SDL_RenderDrawRect (renderer, & menubuttons[mbtn]);
     }
-    SDL_RenderPresent (renderer);
 }
 
 // CREATE AN SDL "RENDERER":
@@ -1015,12 +1009,12 @@ static bool adjust_menubuttons (uint32_t old_width, uint32_t new_width, uint32_t
         for (int mbtn = 0; mbtn < menubuttons.len (); mbtn ++)
         {
 //            if (mbtn == 0)
-                AUDDBG ("---- xBEF(%d): x=%d, w=%d;  Ovw=%d, Nvw=%d\n", mbtn, menubuttons[mbtn].x, menubuttons[mbtn].w, old_width, new_width);
+//                AUDDBG ("---- xBEF(%d): x=%d, w=%d;  Ovw=%d, Nvw=%d\n", mbtn, menubuttons[mbtn].x, menubuttons[mbtn].w, old_width, new_width);
             f = (float)new_width / (float)old_width;
             menubuttons[mbtn].w = (int)(f * (float)menubuttons[mbtn].w);
             menubuttons[mbtn].x = (int)(f * (float)menubuttons[mbtn].x);
 //            if (mbtn == 0)
-                AUDDBG ("---- xAFT(%d): x=%d, w=%d;  f=%.2f\n", mbtn, menubuttons[mbtn].x, menubuttons[mbtn].w, f);
+//                AUDDBG ("---- xAFT(%d): x=%d, w=%d;  f=%.2f\n", mbtn, menubuttons[mbtn].x, menubuttons[mbtn].w, f);
         }
         adjusted = true;
     }
@@ -1138,7 +1132,7 @@ AUDDBG("PLAY:opening input0!!!!!!!!...\n");
         // buf freed by close_input_file!
         return nullptr;
     }
-AUDINFO("DONE PROBING!\n");
+    AUDDBG ("DONE PROBING!\n");
     playback_fifo_hasbeenopened = true;
     return c;
 }
@@ -1324,6 +1318,7 @@ startover:
     uint32_t video_requested_height;
     float video_aspect_ratio = 0;    // ASPECT RATIO OF VIDEO, SAVED TO PERMIT RE-ASPECTING AFTER USER RESIZES (WARPS) WINDOW.
     time_t last_resizeevent_time = time (nullptr);  // TIME OF LAST RESIZE EVENT, SO WE CAN DETERMINE WHEN SAFE TO RE-ASPECT.
+    time_t last_exposeevent_time = time (nullptr);  // TIME OF LAST EXPOSE EVENT, SO WE CAN DETERMINE WHEN SAFE TO RE-ASPECT.
     time_t scene_start_time;     // START TIME OF CURRENTLY-PLAYING STREAM.
     SDL_Event       event;       // SDL EVENTS, IE. RESIZE, KILL WINDOW, ETC.
 
@@ -1664,7 +1659,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 emptypkt.data=nullptr; emptypkt.size=0;
                 write_videoframe (renderer.get (), & vcinfo, bmpptr, & emptypkt, 
                       video_width, video_height, & last_resized, & videohasnowh, & windowIsStable,
-                      & resized_window_width, & resized_window_height, wehaveaudio);
+                      & resized_window_width, & resized_window_height);
                 av_free_packet (& emptypkt);
             }
             QFlush (apktQ);      // FLUSH PACKET QUEUES:
@@ -1729,14 +1724,9 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                                 {
                                     write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
                                              video_width, video_height, & last_resized, & videohasnowh, & windowIsStable,
-                                             & resized_window_width, & resized_window_height, wehaveaudio);
-                                    if (highlightbuttons)
-                                    {
-                                        if (! menubuttons_adjusted && menubuttons.len () > 0)
-                                            menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
-                                                    video_requested_height, (uint32_t)video_height);
-                                        draw_highlight_buttons (renderer.get ());
-                                    }
+                                             & resized_window_width, & resized_window_height);
+                                    if (! playing_a_menu)
+                                        SDL_RenderPresent (renderer.get ());
                                 }
                                 Dequeue (pktQ);
                             }
@@ -1761,14 +1751,13 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                             emptypkt.data=nullptr; emptypkt.size=0;
                             write_videoframe (renderer.get (), & vcinfo, bmpptr, & emptypkt, 
                                   video_width, video_height, & last_resized, & videohasnowh, & windowIsStable,
-                                  & resized_window_width, & resized_window_height, wehaveaudio);
+                                  & resized_window_width, & resized_window_height);
+                            if (! menubuttons_adjusted && menubuttons.len () > 0)
+                                menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
+                                        video_requested_height, (uint32_t)video_height);
                             if (highlightbuttons)
-                            {
-                                if (! menubuttons_adjusted && menubuttons.len () > 0)
-                                    menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
-                                            video_requested_height, (uint32_t)video_height);
                                 draw_highlight_buttons (renderer.get ());
-                            }
+                            SDL_RenderPresent (renderer.get ());
                             av_free_packet (& emptypkt);
                         }
                         AUDINFO ("i:MENU EOF: BUTTON COUNT IN THIS MENU:  %d! duration=%d\n", pci->hli.hl_gi.btn_ns, dvdnav_priv->duration);
@@ -1860,14 +1849,10 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                     {
                         write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
                                 video_width, video_height, & last_resized, & videohasnowh, & windowIsStable,
-                                    & resized_window_width, & resized_window_height, wehaveaudio);
+                                    & resized_window_width, & resized_window_height);
                         if (highlightbuttons)
-                        {
-                            if (! menubuttons_adjusted && menubuttons.len () > 0)
-                                menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
-                                        video_requested_height, (uint32_t)video_height);
                             draw_highlight_buttons (renderer.get ());
-                        }
+                        SDL_RenderPresent (renderer.get ());
                     }
                     Dequeue (pktQ);
                 }
@@ -1930,7 +1915,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                                 //pci_t * pci = dvdnav_get_current_nav_pci (dvdnav_priv->dvdnav);
                                 //dvdnav_get_current_nav_dsi (dvdnav_priv->dvdnav);
                                 dvdnav_button_select (dvdnav_priv->dvdnav, pci, (mbtn+1));
-                                SDL_RenderFillRect (renderer.get (), nullptr);
+                                //SDL_RenderFillRect (renderer.get (), nullptr);
+                                SDL_RenderClear (renderer.get ());
                                 SDL_RenderPresent (renderer.get ());
                                 AUDINFO ("i:ACTIVATE MENU BUTTON2 (MAY ASSERT ITSELF)!\n");
                                 dvdnav_button_activate (dvdnav_priv->dvdnav, pci);
@@ -1943,6 +1929,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                         }
                     }
                 case SDL_WINDOWEVENT:
+                    bool moved = false;
                     switch (event.window.event)
                     {
                         case SDL_WINDOWEVENT_CLOSE:  /* USER CLICKED THE "X" IN UPPER-RIGHT CORNER, KILL VIDEO WINDOW BUT KEEP PLAYING AUDIO! */
@@ -1953,21 +1940,36 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                             readblock = false;
                             break;
                         case SDL_WINDOWEVENT_RESIZED:  /* WINDOW CHANGED SIZE EITHER BY US OR BY USER DRAGGING WINDOW CORNER (WE DON'T KNOW WHICH HERE) */
+                            AUDINFO ("i:SDL_RESIZE!!!!!! rvw=%d h=%d\n", resized_window_width, resized_window_height);
                             if (! windowNowExposed)
                                 break;
                             /* Resize the screen. */
                             resized_window_width = event.window.data1;  // window's reported new size
                             resized_window_height = event.window.data2;
-                            AUDINFO ("i:SDL_RESIZE!!!!!! rvw=%d h=%d\n", resized_window_width, resized_window_height);
                             last_resized = false;  // false means now we'll need re-aspecting, so stop blitting!
                             last_resizeevent_time = time (nullptr);  // reset the wait counter for when to assume user's done dragging window corner.
+                            menubuttons_adjusted = false;
                             break;
+                        case SDL_WINDOWEVENT_MOVED:
+                            AUDINFO ("i:WINDOW MOVED, EXPOSING!\n");
+                            moved = true;
                         case SDL_WINDOWEVENT_EXPOSED:  // window went from underneith another to visible (clicked on?)
-                            if (last_resized)
+                            if (last_resized && (moved || difftime (time (nullptr), last_exposeevent_time) > video_resizedelay))
                             {
+                                if (windowNowExposed) AUDINFO ("i:WINDOW (was) EXPOSED!\n"); else AUDINFO ("i:WINDOW (was NOT) EXPOSED!\n");
+                                if (playing_a_menu)
+                                {
+                                    SDL_RenderCopy (renderer.get (), bmpptr, nullptr, nullptr);
+                                    if (highlightbuttons)
+                                    {
+                                        draw_highlight_buttons (renderer.get ());
+                                    }
+                                }
                                 SDL_RenderPresent (renderer.get ());  // only blit a single frame at startup will get refreshed!
+//                                SDL_RenderPresent (renderer.get ());  // only blit a single frame at startup will get refreshed!
                                 windowNowExposed = true;
                             }
+                            last_exposeevent_time = time (nullptr);  // reset the wait counter for when to assume user's done dragging window corner.
                     }
             }
         }
@@ -2042,16 +2044,26 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                     new_video_width = video_default_width;
                     new_video_height = video_default_height;
                 }
-                video_width = new_video_width;
-                video_height = new_video_height;
                 AUDINFO (" ----RESIZED TO(%d, %d)\n", video_width, video_height);
                 /* NOW MANUALLY RESIZE (RE-ASPECT) WINDOW BASED ON VIDEO'S ORIGINALLY-CALCULATED ASPECT RATIO: */
-                SDL_SetWindowSize (screen, video_width, video_height);
+                SDL_SetWindowSize (screen, new_video_width, new_video_height);
+                SDL_Delay (50);
+                if (playing_a_menu)
+                {
+                    SDL_RenderCopy (renderer.get (), bmpptr, nullptr, nullptr);
+                    if (menubuttons.len () > 0)
+                        menubuttons_adjusted = adjust_menubuttons ((uint32_t)video_width, (uint32_t)new_video_width, 
+                                (uint32_t)video_height, (uint32_t)new_video_height);
+                    if (highlightbuttons)
+                        draw_highlight_buttons (renderer.get ());
+                }
+                video_width = new_video_width;
+                video_height = new_video_height;
                 video_window_w = video_width;
                 video_window_h = video_height;
-                SDL_Delay (50);
-                last_resized = true;  // WE'VE RE-ASPECTED, SO ALLOW BLITTING TO RESUME!
                 SDL_RenderPresent (renderer.get ());  // only blit a single frame at startup will get refreshed!
+                last_exposeevent_time = time (nullptr);
+                last_resized = true;  // WE'VE RE-ASPECTED, SO ALLOW BLITTING TO RESUME!
             }
         }
         /* (SDL2): WE HAVE TO WAIT UNTIL HERE FOR SDL_GetWindowPosition() TO RETURN THE CORRECT POSITION
