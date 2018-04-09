@@ -855,7 +855,7 @@ pktQueue * createQueue (int maxElements)
     pktQueue *Q;
     Q = (pktQueue *) malloc (sizeof (pktQueue));
     /* Initialise its properties */
-    Q->elements = (maxElements > 0) ? (AVPacket *) malloc (sizeof (AVPacket) * maxElements) : nullptr;
+    Q->elements = (AVPacket *) malloc (sizeof (AVPacket) * maxElements);
     Q->size = 0;
     Q->capacity = maxElements;
     Q->front = 0;
@@ -907,7 +907,7 @@ bool Enqueue (pktQueue *Q, AVPacket element)
     else
     {
         Q->size++;
-        Q->rear += 1;
+        Q->rear++;
         /* As we fill the queue in circular fashion */
         if (Q->rear == Q->capacity)
             Q->rear = 0;
@@ -960,11 +960,12 @@ readagain:
             return -1;
     }
 #else
-    while (poll ((struct pollfd *)input_fd_p, 1, 200) <= 0)
+    while (poll ((struct pollfd *) input_fd_p, 1, 200) <= 0)
     {
         // if (readblock) AUDDBG ("----(BLOCK) READ WAITING ON POLL...\n"); else AUDDBG ("----(nonblocking) READ WAITING ON POLL...\n");
-        if (!readblock || reader_please_die)
+        if (! readblock || reader_please_die)
             return -1;
+        AUDDBG ("-XXX- PEEK FAILED, BLOCKING, CONTINUE LOOPING.....\n");
     }
     red = read (((struct pollfd *)input_fd_p)->fd, buf, size);
     if (! red && readblock && ! reader_please_die)
@@ -1630,16 +1631,6 @@ AUDDBG("---INPUT PIPE OPENED!\n");
         if (checkcodecs)  /* WE NEED TO START OVER - CHANNEL CHANGE, NEED TO RESCAN CODECS / STREAMS! */
         {
             AUDDBG ("--CODEC CHECK REQUESTED, FLUSH VIDEO QUEUES!\n");
-            if (! eof && myplay_video && vcodec_opened)  // SEND EMPTY PACKET TO FLUSH VIDEO SCREEN:
-            {
-                AVPacket emptypkt = AVPacket ();
-                av_init_packet (& emptypkt);
-                emptypkt.data=nullptr; emptypkt.size=0;
-                write_videoframe (renderer.get (), & vcinfo, bmpptr, & emptypkt, 
-                        video_width, video_height, & last_resized, & windowIsStable,
-                        & resized_window_width, & resized_window_height);
-                av_free_packet (& emptypkt);
-            }
             QFlush (apktQ);      // FLUSH PACKET QUEUES:
             QFlush (pktQ);
             goto error_exit;
@@ -1701,8 +1692,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                                 if (myplay_video && vcodec_opened
                                         && write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
                                              video_width, video_height, & last_resized, & windowIsStable,
-                                             & resized_window_width, & resized_window_height)
-                                        && ! playing_a_menu)
+                                             & resized_window_width, & resized_window_height))
                                     SDL_RenderPresent (renderer.get ());
 
                                 Dequeue (pktQ);
@@ -1721,9 +1711,20 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                     }
                     if (playing_a_menu)
                     {
-                        if (myplay_video && vcodec_opened)  /* FLUSH VIDEO CODEC TO ENSURE USER SEES ALL OF THE MENU SCREEN: */
+                        if (myplay_video && vcodec_opened && ! menu_flushed)  /* FLUSH VIDEO CODEC TO ENSURE USER SEES ALL OF THE MENU SCREEN: */
                         {
+                            AVPacket * pktRef;
                             AUDINFO ("WE'RE PLAYING A MENU, FLUSH VIDEO PACKETS (writes a video frame)!\n");
+                            if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS REMAINING VIDEO FRAME IN QUEUE:
+                            {
+                                if (write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
+                                             video_width, video_height, & last_resized, & windowIsStable,
+                                             & resized_window_width, & resized_window_height)
+                                        && ! playing_a_menu)
+                                    SDL_RenderPresent (renderer.get ());
+
+                                Dequeue (pktQ);
+                            }
                             AVPacket emptypkt = AVPacket ();
                             av_init_packet (& emptypkt);
                             emptypkt.data=nullptr; emptypkt.size=0;
