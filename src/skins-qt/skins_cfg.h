@@ -32,6 +32,7 @@ typedef struct {
     bool autoscroll;
     bool analyzer_peaks;
     bool twoway_scroll;
+    bool use_random_skins;
     int vis_type;
     int analyzer_mode, analyzer_type;
     int scope_mode;

@@ -48,6 +48,7 @@ static const char * const skins_defaults[] = {
     /* JWT: "record", "FALSE", */
     "show_remaining_time", "FALSE",
     "twoway_scroll", "FALSE",
+    "use_random_skins", "FALSE",
     "afterstep", "FALSE",  /* JWT - FOR USE W/THE Afterstep Windowmanager */
 
     /* visualizer */
@@ -93,6 +94,7 @@ static const struct skins_cfg_boolent_t {
     {"autoscroll_songname", & config.autoscroll},
     {"mainwin_use_bitmapfont", & config.mainwin_use_bitmapfont},
     {"twoway_scroll", & config.twoway_scroll},
+    {"use_random_skins", & config.use_random_skins},
 
     /* visualizer */
     {"analyzer_peaks", & config.analyzer_peaks}
@@ -187,6 +189,11 @@ static void autoscroll_set_cb ()
         playlistwin_sinfo->set_scroll (config.autoscroll);
 }
 
+void random_skins_set_cb ()
+{
+    aud_set_bool ("skins", "use_random_skins", config.use_random_skins);
+}
+
 static void vis_reset_cb ()
 {
     mainwin_vis->clear ();
@@ -215,7 +222,9 @@ static const PreferencesWidget skins_widgets_general[] = {
     WidgetCheck (N_("Scroll song title"),
         WidgetBool (config.autoscroll, autoscroll_set_cb)),
     WidgetCheck (N_("Scroll song title in both directions"),
-        WidgetBool (config.twoway_scroll, autoscroll_set_cb))
+        WidgetBool (config.twoway_scroll, autoscroll_set_cb)),
+    WidgetCheck (N_("Random skin on play"),
+        WidgetBool (config.use_random_skins, random_skins_set_cb))
 };
 
 static ComboItem vis_mode_elements[] = {

@@ -42,11 +42,7 @@ enum SkinViewCols {
     SKIN_VIEW_N_COLS
 };
 
-struct SkinNode {
-    String name, desc, path;
-};
-
-static Index<SkinNode> skinlist;
+Index<SkinNode> skinlist;
 
 static void skin_view_on_cursor_changed (GtkTreeView * treeview);
 
@@ -115,7 +111,7 @@ static void scan_skindir_func (const char * path, const char * basename)
          String (_("Unarchived Winamp 2.x skin")), String (path));
 }
 
-static void skinlist_update ()
+void skinlist_update ()
 {
     skinlist.clear ();
 

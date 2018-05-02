@@ -25,7 +25,14 @@
 
 #include <gtk/gtk.h>
 
+struct SkinNode {
+    String name, desc, path;
+};
+
+extern Index<SkinNode> skinlist;
+
 void skin_view_realize(GtkTreeView * treeview);
+void skinlist_update ();
 void skin_view_update (GtkTreeView * treeview);
 
 #endif /* SKINS_UI_SKINSELECTOR_H */

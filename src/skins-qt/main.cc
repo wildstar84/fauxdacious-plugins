@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <time.h>
 
 #include <libaudcore/audstrings.h>
 #include <libaudcore/drct.h>
@@ -61,6 +62,7 @@
 #include "vis.h"
 #include "skins_util.h"
 #include "view.h"
+#include "skinselector.h"
 
 #define SEEK_THRESHOLD 200 /* milliseconds */
 #define SEEK_SPEED 50 /* milliseconds per pixel */
@@ -91,6 +93,8 @@ MenuRow * mainwin_menurow;
 SkinnedVis * mainwin_vis;
 SmallVis * mainwin_svis;
 
+static int last_skin = -1;
+static bool skip_toggle = true;  //JWT:NEEDED SINCE mainwin_playback_begin SEEMS TO GET CALLED *TWICE* EACH TIME?!
 static bool seeking = false;
 static int seek_start, seek_time;
 
@@ -372,6 +376,23 @@ static void playback_unpause ()
 void mainwin_playback_begin ()
 {
     mainwin_update_song_info ();
+
+    if (aud_get_bool ("skins", "use_random_skins"))
+    {
+        if (skinlist.len () <= 0)
+            skinlist_update ();
+        if (! skip_toggle && skinlist.len () > 1)
+        {
+            int randskin = rand () % skinlist.len ();
+            while (randskin == last_skin)
+                randskin = rand () % skinlist.len ();
+
+            if (skin_load (skinlist[randskin].path))
+                view_apply_skin ();
+            last_skin = randskin;
+        }
+        skip_toggle = ! skip_toggle;
+    }
 
     mainwin_stime_min->show ();
     mainwin_stime_sec->show ();
