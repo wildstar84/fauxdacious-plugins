@@ -21,6 +21,7 @@
 #include <glib.h>
 #include <string.h>
 
+#include <QApplication>
 #include <QContextMenuEvent>
 #include <QDesktopServices>
 #include <QMenu>
@@ -149,7 +150,25 @@ give_up:
                 if (! strcmp_nocase (ret, "<!-- PUT LYRICS HERE (and delete this entire line) -->"))
                     ret.capture (g_strdup (_("No lyrics available")));
 
+                g_match_info_free (match_info);
                 g_regex_unref (reg);
+
+                if (! ret)
+                {
+                    reg = g_regex_new
+                     ("#REDIRECT \\[\\[([^:]*):(.*)]]",
+                     (GRegexCompileFlags) (G_REGEX_MULTILINE | G_REGEX_DOTALL),
+                     (GRegexMatchFlags) 0, nullptr);
+                    if (g_regex_match (reg, (char *) lyric, G_REGEX_MATCH_NEWLINE_ANY, & match_info))
+                    {
+                        state.artist = String (g_match_info_fetch (match_info, 1));
+                        state.title = String (g_match_info_fetch (match_info, 2));
+                        state.uri = String ();
+                    }
+
+                    g_match_info_free (match_info);
+                    g_regex_unref (reg);
+                }
             }
 
             xmlFree (lyric);
@@ -241,9 +260,11 @@ static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t
                 {
                     // Convert normal lyrics link to edit page link
                     char * slash = strrchr (lyric, '/');
-                    if (slash)
+                    if (slash && ! strstr (slash, "lyrics.wikia.com"))
                         uri = String (str_printf ("http://lyrics.wikia.com/index.php?"
                          "action=edit&title=%s", slash + 1));
+                    else
+                        uri = String ("N/A");
                 }
 
                 xmlFree ((xmlChar *) lyric);
@@ -258,6 +279,8 @@ static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t
 
 static void update_lyrics_window (const char * title, const char * artist, const char * lyrics);
 
+static void get_lyrics_step_1 ();
+
 static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *)
 {
     if (! state.uri || strcmp (state.uri, uri))
@@ -271,6 +294,12 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
     }
 
     CharPtr lyrics = scrape_lyrics_from_lyricwiki_edit_page (buf.begin (), buf.len ());
+
+    if (! state.uri)
+    {
+        get_lyrics_step_1 ();
+        return;
+    }
 
     if (! lyrics)
     {
@@ -300,6 +329,12 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
     {
         update_lyrics_window (_("Error"), nullptr,
          str_printf (_("Unable to parse %s"), uri1));
+        return;
+    }
+    else if (uri == String ("N/A"))
+    {
+        update_lyrics_window (state.title, state.artist,
+         _("No lyrics available"));
         return;
     }
 
@@ -332,12 +367,12 @@ static QTextEdit * textedit;
 
 static void update_lyrics_window (const char * title, const char * artist, const char * lyrics)
 {
-    QTextDocument doc;
-    QTextCursor cursor (& doc);
-
     if (! textedit)
         return;
 
+    textedit->document ()->clear ();
+
+    QTextCursor cursor (textedit->document ());
     cursor.insertHtml (QString ("<big><b>") + QString (title) + QString ("</b></big>"));
 
     if (artist)
@@ -347,8 +382,6 @@ static void update_lyrics_window (const char * title, const char * artist, const
 
     cursor.insertHtml ("<br><br>");
     cursor.insertText (lyrics);
-
-    textedit->setDocument (doc.clone ());
 }
 
 static void lyricwiki_playback_began ()
@@ -383,6 +416,10 @@ void * LyricWikiQt::get_qt_widget ()
 {
     textedit = new TextEdit;
     textedit->setReadOnly (true);
+
+#ifdef Q_OS_MAC  // Mac-specific font tweaks
+    textedit->document ()->setDefaultFont (QApplication::font ("QTipLabel"));
+#endif
 
     hook_associate ("tuple change", (HookFunction) lyricwiki_playback_began, nullptr);
     hook_associate ("playback ready", (HookFunction) lyricwiki_playback_began, nullptr);
