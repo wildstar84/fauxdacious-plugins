@@ -138,9 +138,9 @@ YTDLFile::YTDLFile (const char * filename)
     if (metadata_helper[0])
     {
         Tuple file_tuple;
-        if (! aud_read_tag_from_tagfile (filename, "youtubedl_tag_data", file_tuple))
+        if (! aud_read_tag_from_tagfile (filename, "tmp_tag_data", file_tuple))
 	       {
-	           StringBuf tagdata_filename = filename_build ({aud_get_path (AudPath::UserDir), "youtubedl_tag_data"});
+	           StringBuf tagdata_filename = filename_build ({aud_get_path (AudPath::UserDir), "tmp_tag_data"});
             AUDDBG ("i:invoking metadata helper=%s=\n", (const char *) str_concat ({metadata_helper, " ", filename, " ", tagdata_filename}));
             system ((const char *) str_concat ({metadata_helper, " ", filename, " ", tagdata_filename}));
         }

@@ -690,7 +690,7 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
         if (! fromstdin)  // WE'RE A YOUTUBE-DL STREAM, GET TAGS FROM SPECIAL TAG FILE CREATED BY THE HELPER SCRIPT (IF AVAILABLE):
         {
             Tuple file_tuple = Tuple ();
-            if (aud_read_tag_from_tagfile (filename, "youtubedl_tag_data", file_tuple))
+            if (aud_read_tag_from_tagfile (filename, "tmp_tag_data", file_tuple))
             {
                 //tuple = std::move (file_tuple);
                 const char * tfld = (const char *) file_tuple.get_str (Tuple::Title);
@@ -1153,7 +1153,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
             /* TEMPORARILY SAVE STREAM TIME WHILST PLAYING IN CASE USER HOVERS MOUSE OVER PLAYLIST TITLE WHILST PLAYING */
             aud_set_str ("youtubedl", "lasturl", filename);  /* JWT:WE GOTTA SAVE THE LENGTH OF CURRENTLY PLAYING */
             aud_set_int ("youtubedl", "lastlen", ic->duration / 1000);  /* VIDEO SINCE IT'S LOST IF read_tag() CALLED DURING PLAY. */
-            if (aud_read_tag_from_tagfile (filename, "youtubedl_tag_data", file_tuple))
+            if (aud_read_tag_from_tagfile (filename, "tmp_tag_data", file_tuple))
             {
                 //tuple = std::move (file_tuple);
                 const char * tfld = (const char *) file_tuple.get_str (Tuple::Title);
@@ -1990,7 +1990,7 @@ const char * const FFaudio::exts[] = {
     "vqf",
 
     /* MPEG-4 */
-    "m4a", "mp4",
+    "m4a", "m4v", "mp4",
 
     /* WAV (there are some WAV formats sndfile can't handle) */
     "wav",
