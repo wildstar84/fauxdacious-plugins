@@ -83,8 +83,8 @@ AC_REQUIRE([AC_SYS_LARGEFILE])
 if test "x$GCC" = "xyes"; then
     CFLAGS="$CFLAGS -std=gnu99 -ffast-math -Wall -pipe"
     if test "x$HAVE_DARWIN" = "xyes"; then
-        CXXFLAGS="$CXXFLAGS -stdlib=libc++ -std=gnu++11 -ffast-math -Wall -pipe"
-        LDFLAGS="$LDFLAGS -lc++ -stdlib=libc++"
+        CXXFLAGS="$CXXFLAGS -std=gnu++11 -ffast-math -Wall -pipe"
+        LDFLAGS="$LDFLAGS"
     else
         CXXFLAGS="$CXXFLAGS -std=gnu++11 -ffast-math -Wall -pipe"
     fi
@@ -101,7 +101,7 @@ if test "x$HAVE_DARWIN" = "xyes"; then
     AC_PROG_OBJCXX
     AC_PROG_OBJCXXCPP
 
-    OBJCXXFLAGS="$OBJCXXFLAGS -stdlib=libc++ -std=c++11"
+    OBJCXXFLAGS="$OBJCXXFLAGS -std=c++11"
 fi
 
 dnl Enable "-Wl,-z,defs" only on Linux
@@ -110,9 +110,10 @@ if test $HAVE_LINUX = yes ; then
     LDFLAGS="$LDFLAGS -Wl,-z,defs"
 fi
 
-dnl MinGW needs -march=i686 for atomics
-dnl ===================================
+dnl MinGW-specific flags
+dnl ====================
 if test $HAVE_MSWINDOWS = yes ; then
+    AC_DEFINE([__USE_MINGW_ANSI_STDIO], [1], "Use GNU-style printf")
     CFLAGS="$CFLAGS -march=i686"
 fi
 
