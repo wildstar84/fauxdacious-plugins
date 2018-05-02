@@ -1,6 +1,6 @@
 PLUGIN = coreaudio${PLUGIN_SUFFIX}
 
-SRCS = coreaudio.cc audiodevice.mm
+SRCS = coreaudio.cc
 
 include ../../buildsys.mk
 include ../../extra.mk
