@@ -22,11 +22,13 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <string.h>
+#include <errno.h>
 
 #include <glib.h>
 
 #include <libaudcore/audstrings.h>
 #include <libaudcore/i18n.h>
+#include <libaudcore/interface.h>
 #include <libaudcore/plugin.h>
 #include <libaudcore/ringbuf.h>
 #include <libaudcore/runtime.h>
@@ -806,7 +808,11 @@ int64_t NeonFile::try_fread (void * ptr, int64_t size, int64_t nmemb, bool & dat
             {
                 m_reader_status.reading = true;
                 AUDDBG ("<%p> Starting reader thread\n", this);
-                pthread_create (& m_reader, nullptr, reader_thread, this);
+                if (pthread_create (& m_reader, nullptr, reader_thread, this) != 0)
+                {
+                    aud_ui_show_error ((const char *)str_printf("Can not create thread: %s!\n", strerror(errno)));
+                    return 0;
+                }
                 m_reader_status.status = NEON_READER_RUN;
             }
             else if (ret == FILL_BUFFER_EOF)

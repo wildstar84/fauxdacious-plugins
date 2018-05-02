@@ -2248,7 +2248,7 @@ bool DVD::play (const char * name, VFSFile & file)
     );
     if (!output_fd || output_fd == INVALID_HANDLE_VALUE)
     {
-        dvd_error ("f:Error creating playback pipe at: (%s) err# %ld\n", (const char *)dvdnav_priv->fifo_str,
+        dvd_error ("s:Error creating playback pipe at: (%s) err# %ld\n", (const char *)dvdnav_priv->fifo_str,
                 GetLastError ());
         stop_playback = true;
     }
@@ -2258,7 +2258,7 @@ bool DVD::play (const char * name, VFSFile & file)
     struct stat statbuf;
     if (stat (dvdnav_priv->fifo_str, &statbuf) && mkfifo ((const char *)dvdnav_priv->fifo_str, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH))
     {
-        dvd_error ("f:Error creating playback fifo at: (%s)\n", (const char *)dvdnav_priv->fifo_str);
+        dvd_error ("s:Error creating playback fifo at: (%s)\n", (const char *)dvdnav_priv->fifo_str);
         stop_playback = true;
     }
 #endif
@@ -2267,7 +2267,7 @@ bool DVD::play (const char * name, VFSFile & file)
     AUDDBG("PLAY:opened OUTPUT PIPE (%s) !!!!!!!!...\n", (const char *)dvdnav_priv->fifo_str);
     if (pthread_create (&rdmux_thread, nullptr, reader_thread, this))
     {
-        AUDERR ("f:Error creating playback reader thread\n");
+        dvd_error ("s:Error creating playback reader thread: %s\n", strerror(errno));
         stop_playback = true;
     }
 #endif
@@ -2968,7 +2968,7 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
                     }
                     if (coverart_file)
                         tuple.set_str (Tuple::Comment, coverart_file);
-                    aud_write_tag_to_tagfile (filename, tuple);
+                    aud_write_tag_to_tagfile (filename, tuple, "tmp_tag_data");
                 }
             }
         }
@@ -3122,8 +3122,8 @@ static void reset_trackinfo ()
     trackinfo.clear ();
     if (aud_get_bool (nullptr, "user_tag_data"))  /* JWT:CLEAN UP USER TAG DATA FILE: */
     {
-        aud_delete_tag_from_tagfile ("dvd://?0");
-        aud_delete_tag_from_tagfile ("dvd://?1");
+        aud_delete_tag_from_tagfile ("dvd://?0", "tmp_tag_data");
+        aud_delete_tag_from_tagfile ("dvd://?1", "tmp_tag_data");
     }
     coverart_file = String ();
 }

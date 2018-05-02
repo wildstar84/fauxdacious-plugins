@@ -570,12 +570,12 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                     AUDINFO ("--NO TITLE SET FOR TRACK(%d), WILL TRY TO FETCH!\n", trackno);
                     Tuple user_tuple = Tuple ();
                     if (aud_read_tag_from_tagfile ((const char *)str_printf ("%s%d", "cdda://?", trackno), 
-                            "user_tag_data", user_tuple))
+                            "tmp_tag_data", user_tuple))
                     {
                         const char * tfld = (const char *) user_tuple.get_str (Tuple::Title);
                         if (tfld)
                         {
-AUDERR("--SET TRK(%d):=%s=\n", trackno, tfld);
+                            AUDINFO ("--SET TRK(%d):=%s=\n", trackno, tfld);
                             tuple.set_str (Tuple::Title, tfld);
                             trackinfo[trackno].name = String (tfld);
                         }
@@ -601,7 +601,7 @@ AUDERR("--SET TRK(%d):=%s=\n", trackno, tfld);
                 if (! tfld)
                     tuple.set_str (Tuple::Comment, coverart_file);
             }
-            aud_write_tag_to_tagfile (filename, tuple);
+            aud_write_tag_to_tagfile (filename, tuple, "tmp_tag_data");
         }
         valid = true;
     }
@@ -1005,7 +1005,7 @@ static void reset_trackinfo ()
     if (aud_get_bool (nullptr, "user_tag_data"))  /* JWT:CLEAN UP USER TAG DATA FILE: */
     {
         for (int i=0; i<=n_audio_tracks; i++)
-            aud_delete_tag_from_tagfile (str_printf ("%s%d", "cdda://?", i));
+            aud_delete_tag_from_tagfile (str_printf ("%s%d", "cdda://?", i), "tmp_tag_data");
     }
     coverart_file = String ();
 }
