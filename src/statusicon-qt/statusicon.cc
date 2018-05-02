@@ -150,9 +150,11 @@ void StatusIcon::activate(QSystemTrayIcon::ActivationReason reason)
 {
     switch (reason)
     {
+#ifndef Q_OS_MAC
         case QSystemTrayIcon::Trigger:
             toggle_aud_ui ();
             break;
+#endif
 
         case QSystemTrayIcon::MiddleClick:
             aud_drct_pause ();
