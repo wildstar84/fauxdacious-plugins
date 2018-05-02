@@ -1,13 +1,16 @@
 /*
-   AdPlug/XMMS - AdPlug XMMS Plugin
+   AdPlug/XMMS - AdPlug XMMS Plugin (Local Fauxdacious Classic version)
    Copyright (C) 2002, 2003 Simon Peter <dn.tlp@gmx.net>
 
-   AdPlug is a free, cross-platform, hardware independent AdLib sound player
-   library, mainly written in C++ and released under the LGPL. AdPlug plays
-   sound data, originally created for the AdLib (OPL2) and Sound Blaster
-   (Dual OPL2/OPL3) audio boards, directly from its original format on top
-   of an emulator or by using the real hardware. No OPL chip is required
-   for playback.
+   JWT:NOTE:  THIS PLUGIN IS *DEPRECIATED*!  MOST USERS SHOULD USE THE 
+   MODERN VERSION WHICH USES THE SEPARATE libadplug PACKAGE NOW INSTALLED 
+   ON MOST SYSTEMS.  The only reason I'm keeping this around is that on 
+   64bit linux systems, libadplug requires a patch to prevent a bug that 
+   crashes Fauxdacious when probing some streams, and some distros still 
+   have the unpatched version!  See Audacious feature #759!
+   This is the classic audacious internal version of the adplug plugin 
+   that has been removed from mainline Audacious.  When Debian updates 
+   libadplug to v2.3 (which is patched and works), I'll remove this plugin!
 
    AdPlug/XMMS is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -30,10 +33,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <adplug/adplug.h>
-#include <adplug/emuopl.h>
-#include <adplug/silentopl.h>
-#include <adplug/players.h>
+#include "adplug.h"
+#include "emuopl.h"
+#include "silentopl.h"
+#include "players.h"
 
 #include <libaudcore/audstrings.h>
 #include <libaudcore/i18n.h>
@@ -41,14 +44,12 @@
 #include <libaudcore/runtime.h>
 #include <libaudcore/preferences.h>
 
-#include "adplug-xmms.h"
-
 #define MIN_RATE 8000
 #define MAX_RATE 192000
 #define RATE_STEP 50
 #define CFG_VERSION "AdPlug"
 
-class AdPlugXMMS : public InputPlugin
+class AudAdPlugXMMS : public InputPlugin
 {
 public:
     static const char about[];
@@ -58,13 +59,13 @@ public:
     static const char * const defaults[];
 
     static constexpr PluginInfo info = {
-        N_("AdPlug (AdLib Player)"),
+        N_("AdPlug Classic (AdLib Player)"),
         PACKAGE,
         about,
         & prefs
     };
 
-    constexpr AdPlugXMMS () : InputPlugin (info, InputInfo ()
+    constexpr AudAdPlugXMMS () : InputPlugin (info, InputInfo ()
         .with_exts (exts)) {}
 
     bool init ();
@@ -75,33 +76,26 @@ public:
     bool play (const char * filename, VFSFile & file);
 };
 
-EXPORT AdPlugXMMS aud_plugin_instance;
+EXPORT AudAdPlugXMMS aud_plugin_instance;
 
-const char AdPlugXMMS::about[] =
+const char AudAdPlugXMMS::about[] =
  N_("AdPlug/XMMS - AdPlug XMMS Plugin\n"
-    "AdPlug is a free, cross-platform, hardware independent\n"
-    "AdLib sound player library.  AdPlug plays sound data,\n"
-    "originally created for the AdLib (OPL2) and Sound Blaster\n"
-    "(Dual OPL2/OPL3) audio boards.\n"
+    "(Local Fauxdacious Classic version)\n"
     "\n"
     "Fauxdacious plugin by:\n"
     "Copyright (C) 2002, 2003 Simon Peter <dn.tlp@gmx.net>\n"
     "\n"
-    "This is the modern version of AdPlug that uses the\n"
-    "separate libadplug library.\n"
-    "See: http://adplug.sourceforge.net/\n"
+    "This is the classic Audacious internal version of AdPlug.\n"
     "\n"
-    "If Fauxdacious crashes with a memory dump on your system,\n"
-    "then your libadplug lacks a patch and you will need\n"
-    "to either upgrade libadplug to v2.3 or later OR switch\n"
-    "to the Adplug Classic plugin, which has the same features.\n"
-    "See Audacious feature #759:\n"
+    "NOTE:  THIS PLUGIN IS *DEPRECIATED*!\n"
+    "MOST USERS SHOULD USE THE MODERN VERSION which\n"
+    "uses the separate libadplug package now installed\n"
+    "on most systems.  See Audacious feature #759:\n"
     "https://redmine.audacious-media-player.org/issues/759\n"
     "\n"
-    "Do NOT enable both this and the AdPlug Classic plugin\n"
-    "at same time!");
+    "Do NOT enable both this and the AdPlug plugin at same time!");
 
-const char * const AdPlugXMMS::exts[] = {
+const char * const AudAdPlugXMMS::exts[] = {
     "a2m", "adl", "amd", "bam", "cff", "cmf", "d00", "dfm", "dmo", "dro",
     "dtm", "hsc", "hsp", "ins", "jbm", "ksm", "laa", "lds", "m", "mad",
     "mkj", "msc", "rad", "raw", "rix", "rol", "s3m", "sa2", "sat", "sci",
@@ -161,13 +155,13 @@ dbg_printf (const char *fmt, ...)
 
 /***** Main player (!! threaded !!) *****/
 
-bool AdPlugXMMS::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
+bool AudAdPlugXMMS::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
  Index<char> * image)
 {
   CSilentopl tmpopl;
 
-  CFileVFSProvider fp (file);
-  CPlayer *p = CAdPlug::factory (filename, &tmpopl, CAdPlug::players, fp);
+  CFileProvider fp (file);
+  CPlayer *p = CAdPlug::factory (filename, &tmpopl, fp);
 
   if (! p)
     return false;
@@ -189,7 +183,7 @@ bool AdPlugXMMS::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
 }
 
 /* Main playback thread. Takes the filename to play as argument. */
-bool AdPlugXMMS::play (const char * filename, VFSFile & fd)
+bool AudAdPlugXMMS::play (const char * filename, VFSFile & fd)
 {
   dbg_printf ("adplug_play(\"%s\"): ", filename);
 
@@ -214,8 +208,8 @@ bool AdPlugXMMS::play (const char * filename, VFSFile & fd)
 
   // Try to load module
   dbg_printf ("factory, ");
-  CFileVFSProvider fp (fd);
-  if (!(plr.p = CAdPlug::factory (filename, &opl, CAdPlug::players, fp)))
+  CFileProvider fp (fd);
+  if (!(plr.p = CAdPlug::factory (filename, &opl, fp)))
   {
     dbg_printf ("error!\n");
     // MessageBox("AdPlug :: Error", "File could not be opened!", "Ok");
@@ -300,12 +294,12 @@ bool AdPlugXMMS::play (const char * filename, VFSFile & fd)
 
 /***** Informational *****/
 
-bool AdPlugXMMS::is_our_file (const char * filename, VFSFile & fd)
+bool AudAdPlugXMMS::is_our_file (const char * filename, VFSFile & fd)
 {
   CSilentopl tmpopl;
 
-  CFileVFSProvider fp (fd);
-  CPlayer *p = CAdPlug::factory (filename, &tmpopl, CAdPlug::players, fp);
+  CFileProvider fp (fd);
+  CPlayer *p = CAdPlug::factory (filename, &tmpopl, fp);
 
   dbg_printf ("adplug_is_our_file(\"%s\"): returned ", filename);
 
@@ -322,6 +316,8 @@ bool AdPlugXMMS::is_our_file (const char * filename, VFSFile & fd)
 
 /***** Configuration file handling *****/
 
+#define CFG_VERSION "AdPlug"
+
 static const char * const adplug_defaults[] = {
  "16bit", "TRUE",
  "Stereo", "FALSE",
@@ -329,7 +325,7 @@ static const char * const adplug_defaults[] = {
  "Endless", "FALSE",
  nullptr};
 
-const PreferencesWidget AdPlugXMMS::widgets[] = {
+const PreferencesWidget AudAdPlugXMMS::widgets[] = {
     WidgetLabel (N_("<b>Advanced</b>")),
     WidgetCheck (N_("16 Bit Format (vs. 8 Bit)?"),
         WidgetBool (CFG_VERSION, "16bit")),
@@ -342,9 +338,9 @@ const PreferencesWidget AdPlugXMMS::widgets[] = {
     WidgetLabel (N_("<b>(Changes take effect after restarting play)</b>"))
 };
 
-const PluginPreferences AdPlugXMMS::prefs = {{widgets}};
+const PluginPreferences AudAdPlugXMMS::prefs = {{widgets}};
 
-bool AdPlugXMMS::init ()
+bool AudAdPlugXMMS::init ()
 {
   aud_config_set_defaults (CFG_VERSION, adplug_defaults);
 
@@ -377,7 +373,7 @@ bool AdPlugXMMS::init ()
   return true;
 }
 
-void AdPlugXMMS::cleanup ()
+void AudAdPlugXMMS::cleanup ()
 {
   // Close database
   dbg_printf ("db, ");
