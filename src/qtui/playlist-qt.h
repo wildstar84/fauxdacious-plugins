@@ -33,34 +33,39 @@ class QMenu;
 class PlaylistWidget : public QTreeView
 {
 public:
-    PlaylistWidget (QWidget * parent, int uniqueID);
+    PlaylistWidget (QWidget * parent, int playlist);
     ~PlaylistWidget ();
+
+    int playlist () const
+        { return m_playlist; }
 
     void scrollToCurrent (bool force = false);
     void updatePlaybackIndicator ();
-    void update (const Playlist::Update & update);
+    void playlistUpdate ();
     void playCurrentIndex ();
     void setFilter (const char * text);
+    void setFirstVisibleColumn (int col);
     void moveFocus (int distance);
 
     void setContextMenu (QMenu * menu)
         { contextMenu = menu; }
 
 private:
+    int m_playlist;
     PlaylistModel * model;
     PlaylistProxyModel * proxyModel;
     QMenu * contextMenu = nullptr;
 
     int currentPos = -1;
     bool inUpdate = false;
-    bool needIndicatorUpdate = false;
-    bool scrollQueued = false;
+    int firstVisibleColumn = 0;
 
     QModelIndex rowToIndex (int row);
     int indexToRow (const QModelIndex & index);
 
-    void getSelectedRanges (const Playlist::Update & update,
+    void getSelectedRanges (int rowsBefore, int rowsAfter,
      QItemSelection & selected, QItemSelection & deselected);
+    void updateSelection (int rowsBefore, int rowsAfter);
 
     void contextMenuEvent (QContextMenuEvent * event);
     void keyPressEvent (QKeyEvent * event);

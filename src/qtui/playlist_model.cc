@@ -25,8 +25,7 @@
 #include <libaudcore/i18n.h>
 #include <libaudcore/audstrings.h>
 #include <libaudcore/drct.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/tuple.h>
+#include <libaudqt/libaudqt.h>
 
 #include "playlist_model.h"
 
@@ -74,19 +73,15 @@ static_assert (aud::n_elems (s_fields) == PlaylistModel::n_cols, "update s_field
 static inline QPixmap get_icon (const char * name)
 {
     qreal r = qApp->devicePixelRatio ();
-    QPixmap pm = QIcon::fromTheme (name).pixmap (16 * r);
+    QPixmap pm = audqt::get_icon (name).pixmap (16 * r);
     pm.setDevicePixelRatio (r);
     return pm;
 }
 
-PlaylistModel::PlaylistModel (QObject * parent, int uniqueID) :
+PlaylistModel::PlaylistModel (QObject * parent, int playlist) :
     QAbstractListModel (parent),
-    m_uniqueID (uniqueID)
-{
-    m_rows = aud_playlist_entry_count (playlist ());
-}
-
-PlaylistModel::~PlaylistModel () {}
+    m_playlist (playlist),
+    m_rows (aud_playlist_entry_count (playlist)) {}
 
 int PlaylistModel::rowCount (const QModelIndex & parent) const
 {
@@ -125,7 +120,7 @@ QVariant PlaylistModel::data (const QModelIndex &index, int role) const
     case Qt::DisplayRole:
         if (s_fields[col] != Tuple::Invalid)
         {
-            tuple = aud_playlist_entry_get_tuple (playlist (), index.row (), Playlist::NoWait);
+            tuple = aud_playlist_entry_get_tuple (m_playlist, index.row (), Playlist::NoWait);
 
             switch (tuple.get_value_type (s_fields[col]))
             {
@@ -142,8 +137,6 @@ QVariant PlaylistModel::data (const QModelIndex &index, int role) const
         switch (col)
         {
         case NowPlaying:
-            if (index.row () == aud_playlist_get_position (playlist ()))
-                return QString (_("*"));
             return QVariant ();
         case EntryNumber:
             return QString ("%1").arg (index.row () + 1);
@@ -161,9 +154,9 @@ QVariant PlaylistModel::data (const QModelIndex &index, int role) const
         return alignment (col);
 
     case Qt::DecorationRole:
-        if (col == NowPlaying && index.row () == aud_playlist_get_position (playlist ()))
+        if (col == NowPlaying && index.row () == aud_playlist_get_position (m_playlist))
         {
-            if (aud_playlist_get_playing () == playlist ())
+            if (aud_playlist_get_playing () == m_playlist)
                 if (aud_drct_get_paused ())
                     return get_icon ("media-playback-pause");
                 else
@@ -190,15 +183,10 @@ QVariant PlaylistModel::headerData (int section, Qt::Orientation orientation, in
     case Qt::DisplayRole:
         switch (col)
         {
-        case EntryNumber:
-            return QString (_("Entry#"));
-        case QueuePos:
-            return QString (_("Qpsn"));
-        case Track:
-            return QString (_("Trk"));
         case NowPlaying:
-            //return QVariant ();
-            return QString (_("On"));
+        case EntryNumber:
+        case QueuePos:
+            return QVariant ();
         }
 
         return QString (_(labels[col]));
@@ -231,10 +219,8 @@ QStringList PlaylistModel::mimeTypes () const
 
 QMimeData * PlaylistModel::mimeData (const QModelIndexList & indexes) const
 {
-    int list = playlist ();
-
     /* we assume that <indexes> contains the selected entries */
-    aud_playlist_cache_selected (list);
+    aud_playlist_cache_selected (m_playlist);
 
     QList<QUrl> urls;
     int prev = -1;
@@ -244,7 +230,7 @@ QMimeData * PlaylistModel::mimeData (const QModelIndexList & indexes) const
         int row = index.row ();
         if (row != prev)  /* skip multiple cells in same row */
         {
-            urls.append (QString (aud_playlist_entry_get_filename (list, row)));
+            urls.append (QString (aud_playlist_entry_get_filename (m_playlist, row)));
             prev = row;
         }
     }
@@ -264,18 +250,8 @@ bool PlaylistModel::dropMimeData (const QMimeData * data, Qt::DropAction action,
     for (auto & url : data->urls ())
         items.append (String (url.toEncoded ()));
 
-    aud_playlist_entry_insert_batch (playlist (), row, std::move (items), false);
+    aud_playlist_entry_insert_batch (m_playlist, row, std::move (items), false);
     return true;
-}
-
-int PlaylistModel::playlist () const
-{
-    return aud_playlist_by_unique_id (m_uniqueID);
-}
-
-int PlaylistModel::uniqueId () const
-{
-    return m_uniqueID;
 }
 
 void PlaylistModel::entriesAdded (int row, int count)
@@ -313,7 +289,7 @@ void PlaylistModel::entriesChanged (int row, int count)
 
 QString PlaylistModel::queuePos (int row) const
 {
-    int at = aud_playlist_queue_find_entry (playlist (), row);
+    int at = aud_playlist_queue_find_entry (m_playlist, row);
     if (at < 0)
         return QString ();
     else
@@ -333,8 +309,7 @@ bool PlaylistProxyModel::filterAcceptsRow (int source_row, const QModelIndex &) 
     if (! m_searchTerms.len ())
         return true;
 
-    int list = aud_playlist_by_unique_id (m_uniqueID);
-    Tuple tuple = aud_playlist_entry_get_tuple (list, source_row);
+    Tuple tuple = aud_playlist_entry_get_tuple (m_playlist, source_row);
 
     String strings[] = {
         tuple.get_str (Tuple::Title),

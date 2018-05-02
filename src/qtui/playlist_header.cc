@@ -19,7 +19,7 @@
 
 #include "playlist_header.h"
 #include "playlist_model.h"
-#include "playlist.h"
+#include "playlist-qt.h"
 #include "settings.h"
 
 #include <string.h>
@@ -242,6 +242,9 @@ void PlaylistHeader::updateColumns ()
     // but doing so repeatedly causes flicker
     if (last >= 0 && last != m_lastCol)
         m_playlist->setColumnWidth (1 + last, 0);
+
+    // this should come after all setColumnHidden() calls
+    m_playlist->setFirstVisibleColumn ((n_shown > 0) ? 1 + s_cols[0] : 0);
 
     m_inUpdate = false;
     m_lastCol = last;
