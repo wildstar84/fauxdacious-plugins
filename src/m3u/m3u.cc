@@ -65,7 +65,6 @@ bool M3ULoader::load (const char * filename, VFSFile & file, String & title,
 
     text.append (0);  /* null-terminate */
 
-    char * cur = g_get_current_dir ();
     char * parse = text.begin ();
     if (! strncmp (parse, "\xef\xbb\xbf", 3)) /* byte order mark */
         parse += 3;
@@ -87,16 +86,17 @@ bool M3ULoader::load (const char * filename, VFSFile & file, String & title,
             }
             else
             {
+                char * cur = g_get_current_dir ();
                 String cur_path = String (filename_to_uri (filename_build ({cur, filename+8})));
                 StringBuf s = uri_construct (parse, cur_path);
                 if (s)
                     items.append (String (s));
+                g_free (cur);
             }
         }
 
         parse = next;
     }
-    g_free (cur);
 
     return true;
 }
