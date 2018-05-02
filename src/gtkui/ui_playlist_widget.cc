@@ -114,6 +114,14 @@ static void set_string_from_tuple (GValue * value, const Tuple & tuple, Tuple::F
     g_value_set_string (value, tuple.get_str (field));
 }
 
+/* JWT:ADDED TO KEEP MULTI-LINE TITLES FROM GARBLING UP THE PLAYLIST ROWS.
+   NOTE:WE DECIDED AGAINST CHANGING IT FOR THE "CUSTOM" TITLE FIELD.
+*/
+static void set_string_from_tuple_oneline (GValue * value, const Tuple & tuple, Tuple::Field field)
+{
+    g_value_set_string (value, (const char *) str_get_first_line (tuple.get_str (field)));
+}
+
 static void set_queued (GValue * value, int list, int row)
 {
     int q = aud_playlist_queue_find_entry (list, row);
@@ -151,7 +159,7 @@ static void get_value (void * user, int row, int column, GValue * value)
         g_value_set_int (value, 1 + row);
         break;
     case PW_COL_TITLE:
-        set_string_from_tuple (value, tuple, Tuple::Title);
+        set_string_from_tuple_oneline (value, tuple, Tuple::Title);
         break;
     case PW_COL_ARTIST:
         set_string_from_tuple (value, tuple, Tuple::Artist);

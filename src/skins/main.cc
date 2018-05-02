@@ -53,7 +53,7 @@
 #include "equalizer.h"
 #include "main.h"
 #include "vis-callbacks.h"
-#include "playlist.h"
+#include "playlistwin.h"
 #include "button.h"
 #include "hslider.h"
 #include "menurow.h"
@@ -230,7 +230,7 @@ static void mainwin_set_song_title (const char * title)
     StringBuf buf;
 
     if (title)
-        buf = str_printf (_("%s - Fauxdacious"), title);
+        buf = str_printf (_("%s - Fauxdacious"), (const char *) str_get_first_line (title));
     else
         buf = str_copy (_("Fauxdacious"));
 
@@ -242,7 +242,8 @@ static void mainwin_set_song_title (const char * title)
     if (strcmp (instancename, "audacious"))
         str_append_printf (buf, " (%s)", instancename);
     mainwin->setWindowTitle ((const char *) buf);
-    mainwin_set_info_text (title ? title : "");
+//    mainwin_set_info_text (title ? (const char *) str_get_first_line (title) : "");
+    mainwin_set_info_text ((const char *) buf);
 }
 
 static void title_change ()

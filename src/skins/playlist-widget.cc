@@ -265,7 +265,7 @@ void PlaylistWidget::draw (cairo_t * cr)
         Tuple tuple = aud_playlist_entry_get_tuple (m_playlist, i, Playlist::NoWait);
         String title = tuple.get_str (Tuple::FormattedTitle);
 
-        layout = gtk_widget_create_pango_layout (gtk_dr (), title);
+        layout = gtk_widget_create_pango_layout (gtk_dr (), (const char *) str_get_first_line (title));
         pango_layout_set_font_description (layout, m_font.get ());
         pango_layout_set_width (layout, PANGO_SCALE * (m_width - left - right));
         pango_layout_set_ellipsize (layout, PANGO_ELLIPSIZE_END);

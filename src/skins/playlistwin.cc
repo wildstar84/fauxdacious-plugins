@@ -26,6 +26,9 @@
 #include <inttypes.h>
 #include <string.h>
 
+#include <gdk/gdkkeysyms.h>
+#include <gtk/gtk.h>
+
 #include <libaudcore/audstrings.h>
 #include <libaudcore/drct.h>
 #include <libaudcore/hook.h>
@@ -33,6 +36,7 @@
 #include <libaudcore/playlist.h>
 #include <libaudcore/runtime.h>
 #include <libaudcore/tuple.h>
+#include <libaudgui/libaudgui.h>
 
 #include "actions-mainwin.h"
 #include "dnd.h"
@@ -41,7 +45,7 @@
 #include "plugin.h"
 #include "skins_cfg.h"
 #include "main.h"
-#include "playlist.h"
+#include "playlistwin.h"
 #include "button.h"
 #include "playlist-widget.h"
 #include "playlist-slider.h"
@@ -66,9 +70,9 @@ public:
      config.playlist_height, shaded) {}
 
 private:
-    void draw (QPainter & cr);
-    bool button_press (QMouseEvent * event);
-    bool scroll (QWheelEvent * event);
+    void draw (cairo_t * cr);
+    bool button_press (GdkEventButton * event);
+    bool scroll (GdkEventScroll * event);
 };
 
 Window * playlistwin;
@@ -89,7 +93,7 @@ static DragHandle * resize_handle, * sresize_handle;
 static Button * button_add, * button_sub, * button_sel, * button_misc, * button_list;
 
 static int resize_base_width, resize_base_height;
-//static int drop_position;
+static int drop_position;
 static bool song_changed;
 
 static void update_info ()
@@ -134,12 +138,12 @@ static void playlistwin_shade_toggle ()
     view_set_playlist_shaded (! aud_get_bool ("skins", "playlist_shaded"));
 }
 
-static void playlistwin_scroll (float dir)
+static void playlistwin_scroll (int dir)
 {
     int rows, first;
 
     playlistwin_list->row_info (& rows, & first);
-    playlistwin_list->scroll_to (first + (int) (dir * rows / 3));
+    playlistwin_list->scroll_to (first + dir * rows / 3);
 }
 
 static void playlistwin_scroll_up_pushed ()
@@ -212,27 +216,35 @@ static void playlistwin_resize (int w, int h)
     playlistwin->move_widget (false, button_list, w - 46, h - 29);
 }
 
-bool PlWindow::scroll (QWheelEvent * event)
+bool PlWindow::scroll (GdkEventScroll * event)
 {
-    float delta = -event->angleDelta ().y () / 120.0f;
-    if (delta)
-        playlistwin_scroll (delta);
+    switch (event->direction)
+    {
+    case GDK_SCROLL_DOWN:
+        playlistwin_scroll (1);
+        break;
+    case GDK_SCROLL_UP:
+        playlistwin_scroll (-1);
+        break;
+    default:
+        break;
+    }
 
     return true;
 }
 
-bool PlWindow::button_press (QMouseEvent * event)
+bool PlWindow::button_press (GdkEventButton * event)
 {
-    if (event->button () == Qt::LeftButton &&
-     event->type () == QEvent::MouseButtonDblClick && event->y () < 14)
+    if (event->button == 1 && event->type == GDK_2BUTTON_PRESS &&
+     event->window == gtk_widget_get_window (gtk ()) && event->y < 14)
     {
         playlistwin_shade_toggle ();
         return true;
     }
 
-    if (event->button () == Qt::RightButton && event->type () == QEvent::MouseButtonPress)
+    if (event->button == 3 && event->type == GDK_BUTTON_PRESS)
     {
-        menu_popup (UI_MENU_PLAYLIST, event->globalX (), event->globalY (), false, false);
+        menu_popup (UI_MENU_PLAYLIST, event->x_root, event->y_root, false, false, 3, event->time);
         return true;
     }
 
@@ -251,7 +263,6 @@ void playlistwin_set_time (const char * minutes, const char * seconds)
     playlistwin_time_sec->set_text (seconds);
 }
 
-#if 0
 static void drag_motion (GtkWidget * widget, GdkDragContext * context, int x,
  int y, unsigned time, void * unused)
 {
@@ -285,7 +296,6 @@ static void drag_data_received (GtkWidget * widget, GdkDragContext * context,
      (const char *) gtk_selection_data_get_data (data));
     drop_position = -1;
 }
-#endif
 
 static void playlistwin_hide ()
 {
@@ -310,45 +320,50 @@ static void resize_drag (int x_offset, int y_offset)
      PLAYLISTWIN_SHADED_HEIGHT : config.playlist_height);
 }
 
-static void button_add_cb (Button * button, QMouseEvent * event)
+static void button_add_cb (Button * button, GdkEventButton * event)
 {
     int xpos, ypos;
     playlistwin->getPosition (& xpos, & ypos);
     menu_popup (UI_MENU_PLAYLIST_ADD, xpos + 12 * config.scale,
-     ypos + (config.playlist_height - 8) * config.scale, false, true);
+     ypos + (config.playlist_height - 8) * config.scale, false, true,
+     event->button, event->time);
 }
 
-static void button_sub_cb (Button * button, QMouseEvent * event)
+static void button_sub_cb (Button * button, GdkEventButton * event)
 {
     int xpos, ypos;
     playlistwin->getPosition (& xpos, & ypos);
     menu_popup (UI_MENU_PLAYLIST_REMOVE, xpos + 40 * config.scale,
-     ypos + (config.playlist_height - 8) * config.scale, false, true);
+     ypos + (config.playlist_height - 8) * config.scale, false, true,
+     event->button, event->time);
 }
 
-static void button_sel_cb (Button * button, QMouseEvent * event)
+static void button_sel_cb (Button * button, GdkEventButton * event)
 {
     int xpos, ypos;
     playlistwin->getPosition (& xpos, & ypos);
     menu_popup (UI_MENU_PLAYLIST_SELECT, xpos + 68 * config.scale,
-     ypos + (config.playlist_height - 8) * config.scale, false, true);
+     ypos + (config.playlist_height - 8) * config.scale, false, true,
+     event->button, event->time);
 }
 
-static void button_misc_cb (Button * button, QMouseEvent * event)
+static void button_misc_cb (Button * button, GdkEventButton * event)
 {
     int xpos, ypos;
     playlistwin->getPosition (& xpos, & ypos);
     menu_popup (UI_MENU_PLAYLIST_SORT, xpos + 100 * config.scale,
-     ypos + (config.playlist_height - 8) * config.scale, false, true);
+     ypos + (config.playlist_height - 8) * config.scale, false, true,
+     event->button, event->time);
 }
 
-static void button_list_cb (Button * button, QMouseEvent * event)
+static void button_list_cb (Button * button, GdkEventButton * event)
 {
     int xpos, ypos;
     playlistwin->getPosition (& xpos, & ypos);
     menu_popup (UI_MENU_PLAYLIST,
      xpos + (config.playlist_width - 12) * config.scale,
-     ypos + (config.playlist_height - 8) * config.scale, true, true);
+     ypos + (config.playlist_height - 8) * config.scale, true, true,
+     event->button, event->time);
 }
 
 static void playlistwin_create_widgets ()
@@ -460,7 +475,7 @@ static void playlistwin_create_widgets ()
     button_list->on_press (button_list_cb);
 }
 
-void PlWindow::draw (QPainter & cr)
+void PlWindow::draw (cairo_t * cr)
 {
     if (is_shaded ())
         skin_draw_playlistwin_shaded (cr, config.playlist_width, true);
@@ -476,7 +491,6 @@ static void playlistwin_create_window ()
     playlistwin = new PlWindow (shaded);
     playlistwin->setWindowTitle (_("Fauxdacious Playlist Editor"));
 
-#if 0
     GtkWidget * w = playlistwin->gtk ();
     drag_dest_set (w);
     drop_position = -1;
@@ -485,7 +499,6 @@ static void playlistwin_create_window ()
     g_signal_connect (w, "drag-leave", (GCallback) drag_leave, nullptr);
     g_signal_connect (w, "drag-drop", (GCallback) drag_drop, nullptr);
     g_signal_connect (w, "drag-data-received", (GCallback) drag_data_received, nullptr);
-#endif
 }
 
 static void update_cb (void *, void *)
