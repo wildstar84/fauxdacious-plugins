@@ -90,7 +90,6 @@ class FFaudio : public InputPlugin
 public:
     static const char about[];
     static const char * const exts[], * const mimes[];
-    static const char *const schemes[];
     static const char * const defaults[];
     static const PreferencesWidget widgets[];
     static const PluginPreferences prefs;
@@ -105,7 +104,6 @@ public:
     constexpr FFaudio () : InputPlugin (info, InputInfo (FlagWritesTag)
         .with_priority (10) /* lowest priority fallback */
         .with_exts (exts)
-        .with_schemes (schemes)
         .with_mimes (mimes)) {}
 
     bool init ();
@@ -160,7 +158,8 @@ const PreferencesWidget FFaudio::widgets[] = {
 
 const PluginPreferences FFaudio::prefs = {{widgets}};
 
-static bool play_video;  /* JWT: TRUE IF USER IS CURRENTLY PLAYING VIDEO (KILLING VID. WINDOW TURNS OFF)! */
+static bool play_video;      /* JWT: TRUE IF USER IS CURRENTLY PLAYING VIDEO (KILLING VID. WINDOW TURNS OFF)! */
+static bool initted = false; /* JWT:TRUE AFTER libav/ffaudio stuff initialized. */
 #if SDL != 2
 #ifdef _WIN32
 HWND hwnd;
@@ -353,8 +352,15 @@ bool FFaudio::init ()
     AUDINFO ("Starting up FFaudio.\n");
     
     aud_config_set_defaults ("ffaudio", defaults);
-    av_register_all ();
     av_lockmgr_register (lockmgr);
+
+    if (! initted)
+    {
+        AUDINFO ("i:INITTED IN init()\n");
+        avformat_network_init ();
+        av_register_all ();
+        initted = true;
+    }
 
     create_extension_dict ();
 
@@ -366,6 +372,12 @@ bool FFaudio::init ()
 void FFaudio::cleanup ()
 {
     AUDINFO ("Shutting down FFaudio.\n");
+
+    if (initted)
+    {
+        avformat_network_deinit ();
+        initted = false;
+    }
 
     aud_set_bool ("ffaudio", "save_video", false);  // JWT:MAKE SURE WE DON'T LEAVE VIDEO RECORDING ON!
     extension_dict.clear ();
@@ -397,6 +409,7 @@ static void create_extension_dict ()
             continue;
 
         StringBuf exts = str_tolower (f->extensions);
+        AUDDBG ("i:create_extension_dict EXTS=%s=!\n", (const char *) exts);
         Index<String> extlist = str_list_to_index (exts, ",");
 
         for (auto & ext : extlist)
@@ -410,20 +423,20 @@ static AVInputFormat * get_format_by_extension (const char * name)
     if (! ext)
         return nullptr;
 
-    AUDDBG ("Get format by extension: %s\n", name);
+    AUDINFO ("Get format by extension: %s\n", name);
     AVInputFormat * * f = extension_dict.lookup (String (str_tolower (ext)));
 
     if (f && * f)
-        AUDDBG ("Format %s.\n", (* f)->name);
+        AUDINFO ("Format %s.\n", (* f)->name);
     else
-        AUDDBG ("Format unknown.\n");
+        AUDINFO ("Format unknown.\n");
 
     return f ? * f : nullptr;
 }
 
 static AVInputFormat * get_format_by_content (const char * name, VFSFile & file)
 {
-    AUDDBG ("Get format by content: %s\n", name);
+    AUDINFO ("Get format by content: %s\n", name);
 
     AVInputFormat * f = nullptr;
 
@@ -457,7 +470,7 @@ static AVInputFormat * get_format_by_content (const char * name, VFSFile & file)
     if (f)
         AUDDBG ("Format %s, buffer size %d, score %d.\n", f->name, filled, score);
     else
-        AUDDBG ("Format unknown.\n");
+        AUDINFO ("Format unknown.\n");
 
     if (file.fseek (0, VFS_SEEK_SET) < 0)
         ; /* ignore errors here */
@@ -476,60 +489,25 @@ static AVFormatContext * open_input_file (const char * name, VFSFile & file)
     AVFormatContext * c = nullptr;
 
     play_video = aud_get_bool ("ffaudio", "play_video");  /* JWT:RESET PLAY-VIDEO, CASE TURNED OFF ON PREV. PLAY. */
-    if (! strcmp (name, "-") || strstr (name, "://-."))   /* (DEPRECIATED?) WE'RE OPENING UP stdin */
+
+    AVInputFormat * f = nullptr;
+    const char * xname = strncmp (name, "stdin://", 8) ? name : "pipe:";
+
+    if (! strncmp (name, "stdin://-.mp4", 13))   /* JWT:SOME MP4's OPENED VIA STDIN REQUIRE THIS TO WORK?! */
     {
-        AUDDBG ("-open_input_file (stdin)\n");
-        const char * xname = "pipe:";
+        AUDINFO ("-open_input_file (STDIN!)\n");
         if (LOG (avformat_open_input, & c, xname, nullptr, nullptr) < 0)
             return nullptr;
     }
-    else if (strstr (name, "ytdl://"))  /* (DEPRECIATED?) WE'RE OPENING A PIPED-IN STREAM (LIKE stdin but w/an open filehandle), NO SEEKING! */
+    else
     {
-        const char * xname = "pipe:";
-        AUDDBG ("-open_input_file for youtube-dl (%s)\n", xname);
-        AVInputFormat * f = nullptr;
+        AUDINFO ("-open_input_file (%s)\n", name);
         if (! file)
         {
-            AUDDBG ("i:File wasn't opened sooner, so we're gonna open it now(%s)\n", name);
+            AUDINFO ("i:File wasn't opened sooner(probe or read_tag), so we're gonna open it now(%s)\n", name);
             file = VFSFile (name, "r");
             if (! file)
                 return nullptr;
-        }
-        f = get_format (name, file);
-        if (! f)
-        {
-            AUDERR ("e:Unknown format for %s.\n", name);
-            return nullptr;
-        }
-        c = avformat_alloc_context ();
-        AVIOContext * io = io_context_new2 (file);
-        if (c)
-            c->pb = io;
-        if (LOG (avformat_open_input, & c, xname, f, nullptr) < 0)
-        {
-            if (c)
-                avformat_free_context (c);
-            if (io)
-                io_context_free (io);
-            return nullptr;
-        }
-    }
-    else  /* WE'RE OPENING A NORMAL SEEKABLE FILE OR STREAM. */
-    {
-        AUDDBG ("-open_input_file (%s)\n", name);
-        AVInputFormat * f = nullptr;
-        if (! file)
-        {
-            AUDDBG ("i:File wasn't opened sooner(probe or read_tag), so we're gonna open it now(%s)\n", name);
-            file = VFSFile (name, "r");
-            if (! file)
-                return nullptr;
-        }
-        else
-        {
-            AUDDBG ("i:REWINDING!\n");
-            if (file.fseek (0, VFS_SEEK_SET) < 0)
-                AUDWARN ("w:Could not rewind file?! (%s)\n", name);
         }
         f = get_format (name, file);
         if (! f)
@@ -541,7 +519,7 @@ static AVFormatContext * open_input_file (const char * name, VFSFile & file)
         AVIOContext * io = io_context_new (file);
         if (c)
             c->pb = io;
-        if (LOG (avformat_open_input, & c, name, f, nullptr) < 0)
+        if (LOG (avformat_open_input, & c, xname, f, nullptr) < 0)
         {
             if (c)
                 avformat_free_context (c);
@@ -682,34 +660,7 @@ static void read_metadata_dict (Tuple & tuple, AVDictionary * dict)
 
 bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<char> * image)
 {
-    bool fromstdin = (!strcmp (filename, "-") || strstr (filename, "://-.")) ? true : false;
-    AUDDBG ("i:read_tag: fid=%s=\n", filename);
-    if (fromstdin || strstr (filename, "ytdl://"))  /* (DEPRECIATED?) NON-SEEKABLE STREAMS */
-    {
-        tuple.set_filename (filename);  /* All we can do here is just get the file name. */
-        if (! fromstdin)  // WE'RE A YOUTUBE-DL STREAM, GET TAGS FROM SPECIAL TAG FILE CREATED BY THE HELPER SCRIPT (IF AVAILABLE):
-        {
-            Tuple file_tuple = Tuple ();
-            if (aud_read_tag_from_tagfile (filename, "tmp_tag_data", file_tuple))
-            {
-                //tuple = std::move (file_tuple);
-                const char * tfld = (const char *) file_tuple.get_str (Tuple::Title);
-                if (tfld)
-                    tuple.set_str (Tuple::Title, tfld);
-                tfld = (const char *) file_tuple.get_str (Tuple::Artist);
-                if (tfld)
-                    tuple.set_str (Tuple::Artist, tfld);
-                String lasturl = aud_get_str ("youtubedl", "lasturl");
-                if (lasturl == String (filename))
-                {
-                    int restore_length = aud_get_int ("youtubedl", "lastlen");
-                    if (restore_length && restore_length > 0)
-                        tuple.set_int (Tuple::Length, restore_length);
-                }
-            }
-        }
-    }
-    else  /* JWT:THIS STUFF DEFERRED UNTIL PLAY() FOR STDIN(nonseekable), BUT SEEMS TO HAVE TO BE HERE FOR DIRECT */
+    if (strncmp (filename, "stdin://", 8))  /* WE'RE NOT STDIN! */
     {
         SmartPtr<AVFormatContext, close_input_file> ic (open_input_file (filename, file));
         if (! ic)
@@ -751,6 +702,7 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
                 }
             }
         }
+
 #endif
 #ifdef ALLOC_CONTEXT
         avcodec_free_context (& cinfo.context);
@@ -758,6 +710,10 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
 #else
         avcodec_close (cinfo.context);
 #endif
+    }
+    else  /* JWT:THIS STUFF DEFERRED UNTIL PLAY() FOR STDIN(nonseekable), BUT SEEMS TO HAVE TO BE HERE FOR DIRECT */
+    {
+        tuple.set_filename (filename);  /* All we can do here is just get the file name. */
     }
 
     return true;
@@ -1056,7 +1012,6 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 {
     AUDDBG ("FFaudio::play(%s).\n", filename);
 
-    bool fromstdin = (!strcmp (filename, "-") || strstr (filename, "://-.")) ? true : false;
     SmartPtr<AVFormatContext, close_input_file> ic (open_input_file (filename, file));
     if (! ic)
         return false;
@@ -1083,7 +1038,6 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     int video_qsize = 0;
     time_t last_resizeevent_time = time (nullptr);  // TIME OF LAST RESIZE EVENT, SO WE CAN DETERMINE WHEN SAFE TO RE-ASPECT.
     float video_aspect_ratio = 0;  // ASPECT RATIO OF VIDEO, SAVED TO PERMIT RE-ASPECTING AFTER USER RESIZES (WARPS) WINDOW.
-    /* JWT:SAVE (static)fromstdin's STATE AT START OF PLAY, SINCE PROBES WILL CHANGE IT IN PLAYLIST ADVANCE BEFORE WE CLOSE! */
     bool myplay_video = play_video; // WHETHER OR NOT TO DISPLAY THE VIDEO.
     bool codec_opened = false;     // TRUE IF SUCCESSFULLY OPENED CODECS:
     bool vcodec_opened = false;
@@ -1091,9 +1045,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     bool returnok = false;
     bool eof = false;
     bool last_resized = true;      // TRUE IF VIDEO-WINDOW HAS BEEN RE-ASPECTED SINCE LAST RESIZE EVENT (HAS CORRECT ASPECT RATIO).
-    bool is_youtubedl = false;     // TRUE IF WE'RE STREAMING A Youtube-DL STREAM (UNSEEKABLE).
     bool sdl_initialized = false;  // TRUE IF SDL (VIDEO) IS SUCCESSFULLY INITIALIZED.
-    String ytdl_songtitle;         // SONG-TITLE SNIPPET TO ADD FOR Youtube-DL STREAMS THAT WE CAN'T GET METADATA FOR.
     pktQueue *pktQ = nullptr;      // QUEUE FOR VIDEO-PACKET QUEUEING.
     pktQueue *apktQ = nullptr;     // QUEUE FOR AUDIO-PACKET QUEUEING.
     SDL_Event       event;         // SDL EVENTS, IE. RESIZE, KILL WINDOW, ETC.
@@ -1127,11 +1079,11 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 
     /* JWT:WE CAN NOT RE-OPEN stdin or youtube-dl PIPED STREAMS (THEY CAN ONLY BE OPENED ONE TIME, SO WE 
        DON'T OPEN THOSE UNTIL HERE - WE'RE READY TO PLAY)! */
-    if (fromstdin || strstr (filename, "ytdl://"))  /* (DEPRECIATED?) JWT: FOR STDIN: TRY TO GET "read_tag()" STUFF NOW, SINCE FILE COULD NOT BE OPENED EARLIER IN read_tag()! */
+    if (! strncmp (filename, "stdin://", 8))  /* JWT: FOR STDIN: TRY AGAIN TO GET "read_tag()" STUFF NOW (NEEDED TO SHOW LENGTH W/O SLIDER)! */
     {
         Tuple tuple;
 
-        AUDDBG ("---- playing from STDIN: get TUPLE stuff now (if at front of stream): IC is defined\n");
+        AUDINFO ("---- playing from STDIN: get TUPLE stuff now (if at front of stream): IC is defined\n");
         tuple.set_filename (filename);
 
         if ((int)ic->duration != 0)
@@ -1147,30 +1099,8 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         if (cinfo.stream->metadata)
             read_metadata_dict (tuple, cinfo.stream->metadata);
 
-        if (strstr (filename, "ytdl://"))  // FETCH TITLE, ARTIST SAVED BY Youtube-DL METADATA HELPER SCRIPT:
-        {
-            Tuple file_tuple = Tuple ();
-            /* TEMPORARILY SAVE STREAM TIME WHILST PLAYING IN CASE USER HOVERS MOUSE OVER PLAYLIST TITLE WHILST PLAYING */
-            aud_set_str ("youtubedl", "lasturl", filename);  /* JWT:WE GOTTA SAVE THE LENGTH OF CURRENTLY PLAYING */
-            aud_set_int ("youtubedl", "lastlen", ic->duration / 1000);  /* VIDEO SINCE IT'S LOST IF read_tag() CALLED DURING PLAY. */
-            if (aud_read_tag_from_tagfile (filename, "tmp_tag_data", file_tuple))
-            {
-                //tuple = std::move (file_tuple);
-                const char * tfld = (const char *) file_tuple.get_str (Tuple::Title);
-                if (tfld)
-                {
-                    tuple.set_str (Tuple::Title, tfld);
-                    ytdl_songtitle = String (tfld);
-                }
-                tfld = (const char *) file_tuple.get_str (Tuple::Artist);
-                if (tfld)
-                    tuple.set_str (Tuple::Artist, tfld);
-            }
-            is_youtubedl = true;
-        }
         set_playback_tuple (tuple.ref ());
     }
-
     AUDDBG ("got codec %s for stream index %d, opening\n", cinfo.codec->name, cinfo.stream_idx);
 
     if (LOG (avcodec_open2, cinfo.context, cinfo.codec, nullptr) < 0)
@@ -1186,24 +1116,8 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         String video_windowtitle;
         String song_title;
         int current_playlist = aud_playlist_get_active ();
-        if (is_youtubedl)  // DON'T FETCH TITLE FROM TUPLE - CAUSES STREAM TO BE RE-OPENED, & IT'S USELESS ANYWAY!
-        {
-            if (ytdl_songtitle && ytdl_songtitle[0])
-                song_title = ytdl_songtitle;
-            else
-            {
-                String youtube_windowtitle = aud_get_str ("youtubedl", "video_windowtitle");
-                if (youtube_windowtitle[0])
-                    song_title = (youtube_windowtitle == String ("FILENAME")) ? String (filename) : youtube_windowtitle;
-                else
-                    song_title = String ("Youtube-DL");
-            }
-        }
-        else
-        {
-            Tuple tuple = aud_playlist_entry_get_tuple (current_playlist, aud_playlist_get_position (current_playlist));
-            song_title = tuple.get_str (Tuple::Title);
-        }
+        Tuple tuple = aud_playlist_entry_get_tuple (current_playlist, aud_playlist_get_position (current_playlist));
+        song_title = tuple.get_str (Tuple::Title);
         /* JWT: time in seconds to wait for user to stop dragging before resetting window aspect */
         video_resizedelay = aud_get_int ("ffaudio", "video_resizedelay");
         if (video_resizedelay <= 0 or video_resizedelay > 9)
@@ -1433,8 +1347,6 @@ breakout1:
         NOT ENOUGH = JITTERY VIDEO
         TOO MANY = AUDIO/VIDEO BECOME NOTICABLY OUT OF SYNC!
     */
-    if (strstr (filename, "ytdl://"))  // Youtube-DL STREAMING SEEMS TO WORK BETTER W/LARGER QUEUE-SIZE.
-        video_qsize = aud_get_int ("youtubedl", "video_qsize");
     if (video_qsize < 1)
         video_qsize = (aud_get_int ("ffaudio", "video_qsize"))
                 ? aud_get_int ("ffaudio", "video_qsize") : 6;
@@ -2025,4 +1937,3 @@ const char * const FFaudio::exts[] = {
 };
 
 const char * const FFaudio::mimes[] = {"application/ogg", nullptr};
-const char * const FFaudio::schemes[] = {"ytdl", nullptr};

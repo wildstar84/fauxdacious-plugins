@@ -231,6 +231,8 @@ static bool reader_please_die;  /* SIGNAL READER/DEMUXER THREAD TO TERMINATE */
 static bool playing_a_menu;     /* TRUE IF WE'RE PLAYING A "MENU" (VS. A "MOVIE") */
 static bool checkcodecs;        /* SIGNAL THAT WE NEED TO RELOAD THE CODECS (TRACK CHANGE, ETC.) */
 static bool readblock;          /* PREVENT READER/DEMUXER THREAD FROM CONTINUING UNTIL DATA READY TO READ */
+static bool initted = false;    /* JWT:TRUE AFTER libav/ffaudio stuff initialized. */
+
 #ifdef _WIN32
 static HANDLE output_fd;        /* OUTPUT FILE-HANDLE TO PIPE */
 static bool pipebusy = false;
@@ -405,7 +407,14 @@ bool DVD::init ()
 {
     aud_config_set_defaults ("dvd", defaults);
 
-    av_register_all ();
+    if (! initted)
+    {
+        AUDINFO ("i:INITTED IN init()\n");
+        avformat_network_init ();
+        av_register_all ();
+        initted = true;
+    }
+
     av_log_set_callback (ffaudio_log_cb);
 
     return true;
@@ -1049,6 +1058,7 @@ AUDDBG("PLAY:opening input0!!!!!!!!...\n");
         return nullptr;
     }
 #endif
+
     AVFormatContext * c = avformat_alloc_context ();
     if (! c)
     {
@@ -1111,6 +1121,7 @@ AUDDBG("PLAY:opening input0!!!!!!!!...\n");
     }
     AUDDBG ("DONE PROBING!\n");
     playback_fifo_hasbeenopened = true;
+
     return c;
 }
 
@@ -2705,6 +2716,12 @@ void DVD::cleanup ()
     purge_func.stop ();
 
     pthread_mutex_unlock (& mutex);
+
+    if (initted)
+    {
+        avformat_network_deinit ();
+        initted = false;
+    }
 }
 
 // from mplayer.stream_dvdnav.c:
@@ -2787,7 +2804,7 @@ static bool open_dvd ()
     if (! device[0])
         device = String ("/dev/dvd");
 
-    AUDERR ("i:Opening DVD drive: DEVICE =%s=\n", (const char *)device);
+    AUDINFO ("i:Opening DVD drive: DEVICE =%s=\n", (const char *)device);
 
     //MAY NEED SOMEWHERE:const char *dvdnav_err_to_string (dvdnav_priv->dvdnav)
 
