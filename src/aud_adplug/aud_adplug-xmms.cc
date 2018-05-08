@@ -161,6 +161,11 @@ bool AudAdPlugXMMS::read_tag (const char * filename, VFSFile & file, Tuple & tup
   CSilentopl tmpopl;
 
   CFileProvider fp (file);
+
+  /* JWT:FIXME: FUSE ADDED B/C FOLLOWING LINE *SEGFAULTS* IF .dll FILE PIPED IN VIA STDIN?! */
+  if (! strncmp (filename, "stdin://-.d00", 13))
+      return false;
+
   CPlayer *p = CAdPlug::factory (filename, &tmpopl, fp);
 
   if (! p)
