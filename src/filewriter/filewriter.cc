@@ -54,6 +54,7 @@ public:
     constexpr FileWriter () : OutputPlugin (info, 0, true) {}
 
     bool init ();
+    void cleanup ();
 
     StereoVolume get_volume () { return {0, 0}; }
     void set_volume (StereoVolume v) {}
@@ -85,6 +86,8 @@ enum {
 /* really a boolean, but stored here as an integer
  * since WidgetRadio supports only integer settings */
 static int save_original;
+static int resetStdoutFmt;
+static int resetfilename_mode;
 
 /* stored as two separate booleans in the config file */
 static int filename_mode;
@@ -154,7 +157,7 @@ const char * const FileWriter::defaults[] = {
  "filenamefromtags", "TRUE",
  "prependnumber", "FALSE",
  "save_original", "FALSE",
- "stdout_close", "TRUE",
+ "stdout_close", "FALSE",
  "use_suffix", "FALSE",
  "use_stdout", "FALSE",  /* JWT: ADDED TO WRITE TO STDOUT, IF TRUE. */
  nullptr};
@@ -165,6 +168,9 @@ bool FileWriter::init ()
 
     save_original = aud_get_bool ("filewriter", "save_original");
 
+    for (int i=0; i<FILEEXT_MAX;i++)  // JWT:NEEDED BY MAIN (-o OPTION)!
+        aud_set_int ("filewriter", (const char *) str_concat ({"have_", fileext_str[i]+1}), i+1);
+
     if (aud_get_bool ("filewriter", "filenamefromtags"))
         filename_mode = FILENAME_FROM_TAG;
     else if (aud_get_bool ("filewriter", "use_suffix"))
@@ -173,6 +179,12 @@ bool FileWriter::init ()
         filename_mode = FILENAME_STDOUT;
     else
         filename_mode = FILENAME_ORIGINAL_NO_SUFFIX;
+    if (aud_get_stdout_fmt ())
+    {
+        resetfilename_mode = filename_mode;
+        filename_mode = FILENAME_STDOUT;
+        aud_set_bool ("filewriter", "stdout_close", false);
+    }
 
     for (auto p : plugins)
     {
@@ -199,6 +211,29 @@ bool FileWriter::init ()
     return true;
 }
 
+void FileWriter::cleanup ()
+{
+    if (output_file && filename_mode == FILENAME_STDOUT 
+            && aud_get_stdout_fmt () && plugin)
+    {
+        plugin->close (output_file);
+        convert_free ();
+
+        plugin = nullptr;
+        output_file = VFSFile ();
+        in_filename = String ();
+        in_tuple = Tuple ();
+    }
+    if (aud_get_stdout_fmt ())
+    {
+        filename_mode = resetfilename_mode;
+        aud_set_int ("filewriter", "fileext", resetStdoutFmt);
+        aud_set_bool ("filewriter", "filenamefromtags", (filename_mode == FILENAME_FROM_TAG));
+        aud_set_bool ("filewriter", "use_suffix", (filename_mode == FILENAME_ORIGINAL));
+        aud_set_bool ("filewriter", "use_stdout", (filename_mode == FILENAME_STDOUT));
+    }
+}
+
 static StringBuf get_file_path ()
 {
     String path = aud_get_str ("filewriter", "file_path");
@@ -207,7 +242,7 @@ static StringBuf get_file_path ()
 
 static VFSFile safe_create (const char * filename)
 {
-    if (aud_get_bool ("filewriter", "use_stdout") || ! VFSFile::test_file (filename, VFS_EXISTS))
+    if (filename_mode == FILENAME_STDOUT || ! VFSFile::test_file (filename, VFS_EXISTS))
         return VFSFile (filename, "w");
 
     const char * extension = strrchr (filename, '.');
@@ -233,12 +268,12 @@ void FileWriter::set_info (const char * filename, const Tuple & tuple)
 
 static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
 {
-    const char * slash = in_filename ? strrchr ((const char *)in_filename, '/') : nullptr;
+    const char * slash = in_filename ? strrchr ((const char *) in_filename, '/') : nullptr;
     const char * base = slash ? slash + 1 : nullptr;
 
     StringBuf filename;
 
-    if (! fallback2unnamed && aud_get_bool ("filewriter", "use_stdout"))
+    if (! fallback2unnamed && filename_mode == FILENAME_STDOUT)
     {
 #ifdef _WINDOWS
         filename = str_copy ("file://CON");
@@ -251,7 +286,7 @@ static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
         if (save_original)
         {
             g_return_val_if_fail (base, StringBuf ());
-            filename.insert (0, in_filename, base - (const char *)in_filename);
+            filename.insert (0, in_filename, base - (const char *) in_filename);
         }
         else
         {
@@ -299,7 +334,7 @@ static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
 
             if (fallback2unnamed || ! base || base[0] == '\0')
             {
-                if (aud_get_bool ("filewriter", "use_stdout"))
+                if (filename_mode == FILENAME_STDOUT)
                     filename.insert (-1, "stdout", 6);
                 else if (! strncmp ((const char *)in_filename, "stdin:/", 7))
                     filename.insert (-1, "stdin", 5);
@@ -324,13 +359,19 @@ static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
 
 bool FileWriter::open_audio (int fmt, int rate, int nch, String & error)
 {
-    if (output_file && aud_get_bool ("filewriter", "use_stdout"))
+    if (output_file && filename_mode == FILENAME_STDOUT)
     {   /* JWT: IF WRITING TO STDOUT, ONLY OPEN EVERYTHING UP THE *FIRST* TIME!
            JUST SET THE CONVERSION TYPE (IT MAY'VE CHANGED) AND RETURN */
         convert_init (fmt, plugin->format_required (fmt));
         return true;
     }
     int ext = aud_get_int ("filewriter", "fileext");
+    /* JWT:SAVE AND TEMP. OVERRIDE, IF SET ON COMMAND-LINE: */
+    if (aud_get_stdout_fmt ())
+    {
+        resetStdoutFmt = ext;
+        ext = aud_get_stdout_fmt () - 1;  // CONVERT 1-BASED (0=OFF) TO 0-BASED FMT!
+    }
     g_return_val_if_fail (ext >= 0 && ext < FILEEXT_MAX, false);
 
     StringBuf filename = format_filename (fileext_str[ext], false);
@@ -370,7 +411,7 @@ int FileWriter::write_audio (const void * ptr, int length)
 
 void FileWriter::close_audio ()
 {
-    if (output_file && aud_get_bool ("filewriter", "use_stdout") 
+    if (output_file && filename_mode == FILENAME_STDOUT 
             && ! aud_get_bool ("filewriter", "stdout_close"))
     {
         /* JWT: IF WRITING TO STDOUT, DON'T CLOSE OUTPUT, BUT NEXT OPEN WILL CHANGE CONVERSION TYPE! */
@@ -391,7 +432,6 @@ void FileWriter::close_audio ()
 static void save_original_cb ()
 {
     aud_set_bool ("filewriter", "save_original", save_original);
-    // gtk_widget_set_sensitive (path_dirbrowser, ! (save_original || filename_mode == FILENAME_STDOUT));
 }
 
 static void filename_mode_cb ()
@@ -399,7 +439,6 @@ static void filename_mode_cb ()
     aud_set_bool ("filewriter", "filenamefromtags", (filename_mode == FILENAME_FROM_TAG));
     aud_set_bool ("filewriter", "use_suffix", (filename_mode == FILENAME_ORIGINAL));
     aud_set_bool ("filewriter", "use_stdout", (filename_mode == FILENAME_STDOUT));
-    // gtk_widget_set_sensitive (path_dirbrowser, ! (save_original || filename_mode == FILENAME_STDOUT));
 }
 
 const char FileWriter::about[] =
