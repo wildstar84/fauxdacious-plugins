@@ -226,9 +226,9 @@ static void title_change (void * = nullptr)
     else
         title = str_copy (_("Fauxdacious"));
 
-    char * instancename = aud_get_instancename ();
-    if (strcmp (instancename, "audacious"))
-        str_append_printf (title, " (%s)", instancename);
+    String instancename = aud_get_instancename ();
+    if (instancename != String ("audacious"))
+        str_append_printf (title, " (%s)", (const char *) instancename);
     gtk_window_set_title ((GtkWindow *) window, title);
 }
 

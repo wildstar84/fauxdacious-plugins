@@ -71,11 +71,11 @@ private:
 
 static QString get_config_name ()
 {
-    char * instancename = aud_get_instancename ();
-    if (strcmp (instancename, "audacious"))
+    String instancename = aud_get_instancename ();
+    if (instancename == String ("audacious"))
         return QString ("audacious");
     else
-        return QString ("audacious-%1").arg (instancename);
+        return QString ("audacious-%1").arg ((const char *) instancename);
 }
 
 static void toggle_search_tool (bool enable)
@@ -214,11 +214,11 @@ void MainWindow::read_settings ()
 
 void MainWindow::set_title (const QString & title)
 {
-    char * instancename = aud_get_instancename ();
-    if (strcmp (instancename, "audacious"))
-        QMainWindow::setWindowTitle (QString ("%1 (%2)").arg (title).arg (instancename));
-    else
+    String instancename = aud_get_instancename ();
+    if (instancename == String ("audacious"))
         QMainWindow::setWindowTitle (title);
+    else
+        QMainWindow::setWindowTitle (QString ("%1 (%2)").arg (title).arg ((const char *) instancename));
 }
 
 void MainWindow::update_toggles ()
@@ -307,7 +307,7 @@ void MainWindow::pause_cb ()
 
 void MainWindow::playback_stop_cb ()
 {
-    set_title ("Audacious");
+    set_title ("Fauxdacious");
     m_buffering_timer.stop ();
 
     update_play_pause ();

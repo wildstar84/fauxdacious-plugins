@@ -244,9 +244,9 @@ static void mainwin_set_song_title (const char * title)
     if (instance != 1)
         str_append_printf (buf, " (%d)", instance);
 */
-    char * instancename = aud_get_instancename ();
-    if (strcmp (instancename, "audacious"))
-        str_append_printf (buf, " (%s)", instancename);
+    String instancename = aud_get_instancename ();
+    if (instancename != String ("audacious"))
+        str_append_printf (buf, " (%s)", (const char *) instancename);
     mainwin->setWindowTitle ((const char *) buf);
 //    mainwin_set_info_text (title ? (const char *) str_get_first_line (title) : "");
     mainwin_set_info_text ((const char *) buf);
