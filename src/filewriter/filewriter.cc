@@ -85,9 +85,9 @@ enum {
 
 /* really a boolean, but stored here as an integer
  * since WidgetRadio supports only integer settings */
-static int save_original;
-static int resetStdoutFmt;
-static int resetfilename_mode;
+static int save_original;       // SAVE NEW FILE IN ORIGINAL DIRECTORY (OF FILE BEING PLAYED).
+static int resetStdoutFmt;      // SAVE USER'S PREVIOUSLY-SELECTED FILE EXTENSION.
+static int resetfilename_mode;  // SAVE USER'S PREVIOUSLY-SELECTED FILENAME MODE.
 
 /* stored as two separate booleans in the config file */
 static int filename_mode;
@@ -158,12 +158,14 @@ const char * const FileWriter::defaults[] = {
  "prependnumber", "FALSE",
  "save_original", "FALSE",
  "stdout_close", "FALSE",
+ "stdout_recclose", "TRUE",
  "use_suffix", "FALSE",
  "use_stdout", "FALSE",  /* JWT: ADDED TO WRITE TO STDOUT, IF TRUE. */
  nullptr};
 
 bool FileWriter::init ()
 {
+    AUDDBG ("--FILEWRITER INIT\n");
     aud_config_set_defaults ("filewriter", defaults);
 
     save_original = aud_get_bool ("filewriter", "save_original");
@@ -179,11 +181,11 @@ bool FileWriter::init ()
         filename_mode = FILENAME_STDOUT;
     else
         filename_mode = FILENAME_ORIGINAL_NO_SUFFIX;
-    if (aud_get_stdout_fmt ())
+    if (aud_get_stdout_fmt ())  // USER SPECIFIED "--out=<ext>", TEMPORARILY SWITCH TO stdout:
     {
-        resetfilename_mode = filename_mode;
-        filename_mode = FILENAME_STDOUT;
-        aud_set_bool ("filewriter", "stdout_close", false);
+        resetfilename_mode = filename_mode;  // SAVE USER'S PREVIOUSLY-SELECTED FILENAME MODE.
+        resetStdoutFmt = aud_get_int ("filewriter", "fileext");  // SAVE USER'S PREVIOUSLY-SELECTED FILE EXTENSION.
+        filename_mode = FILENAME_STDOUT;     // TEMPORARILY SWITCH (FORCE) FILENAME MODE TO stdout.
     }
 
     for (auto p : plugins)
@@ -213,9 +215,11 @@ bool FileWriter::init ()
 
 void FileWriter::cleanup ()
 {
-    if (output_file && filename_mode == FILENAME_STDOUT 
-            && aud_get_stdout_fmt () && plugin)
+    AUDDBG ("--FILEWRITER CLEANUP\n");
+    if (output_file && plugin && filename_mode == FILENAME_STDOUT 
+            && (aud_get_stdout_fmt () || aud_get_bool ("filewriter", "stdout_recclose")))  // CLOSE UP ANY DANGLING OPEN OUTPUT STREAM (INCLUDING stdout!):
     {
+        AUDDBG ("-----ACTUALLY CLOSING STDOUT!\n");
         plugin->close (output_file);
         convert_free ();
 
@@ -226,11 +230,12 @@ void FileWriter::cleanup ()
     }
     if (aud_get_stdout_fmt ())
     {
+        // RESTORE USER'S PREVIOUSLY-SELECTED PARAMETERS WE TEMPORARILY CHANGED FOR "--out=<ext>" (stdout)!:
         filename_mode = resetfilename_mode;
-        aud_set_int ("filewriter", "fileext", resetStdoutFmt);
         aud_set_bool ("filewriter", "filenamefromtags", (filename_mode == FILENAME_FROM_TAG));
         aud_set_bool ("filewriter", "use_suffix", (filename_mode == FILENAME_ORIGINAL));
         aud_set_bool ("filewriter", "use_stdout", (filename_mode == FILENAME_STDOUT));
+        aud_set_int ("filewriter", "fileext", resetStdoutFmt);  // RESTORE USER'S PREVIOUSLY-SELECTED FILE EXTENSION.
     }
 }
 
@@ -285,8 +290,18 @@ static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
     {
         if (save_original)
         {
-            g_return_val_if_fail (base, StringBuf ());
-            filename.insert (0, in_filename, base - (const char *) in_filename);
+            StringBuf scheme = uri_get_scheme ((const char *) in_filename);
+            if (! strcmp (scheme, "file") || ! aud_get_bool ("filewriter", "save_original_local"))
+            {
+                g_return_val_if_fail (base, StringBuf ());
+                filename.insert (0, in_filename, base - (const char *) in_filename);
+            }
+            else
+            {
+                filename = get_file_path ();
+                if (filename[filename.len () - 1] != '/')
+                    filename.insert (-1, "/");
+            }
         }
         else
         {
@@ -359,7 +374,7 @@ static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
 
 bool FileWriter::open_audio (int fmt, int rate, int nch, String & error)
 {
-    if (output_file && filename_mode == FILENAME_STDOUT)
+    if (output_file && filename_mode == FILENAME_STDOUT && plugin)
     {   /* JWT: IF WRITING TO STDOUT, ONLY OPEN EVERYTHING UP THE *FIRST* TIME!
            JUST SET THE CONVERSION TYPE (IT MAY'VE CHANGED) AND RETURN */
         convert_init (fmt, plugin->format_required (fmt));
@@ -369,8 +384,8 @@ bool FileWriter::open_audio (int fmt, int rate, int nch, String & error)
     /* JWT:SAVE AND TEMP. OVERRIDE, IF SET ON COMMAND-LINE: */
     if (aud_get_stdout_fmt ())
     {
-        resetStdoutFmt = ext;
-        ext = aud_get_stdout_fmt () - 1;  // CONVERT 1-BASED (0=OFF) TO 0-BASED FMT!
+        resetStdoutFmt = ext;  // SAVE USER'S PREVIOUSLY-SELECTED FILE EXTENSION.
+        ext = aud_get_stdout_fmt () - 1;  // CONVERT 1-BASED (0=OFF) TO 0-BASED FMT INDEX!
     }
     g_return_val_if_fail (ext >= 0 && ext < FILEEXT_MAX, false);
 
@@ -411,21 +426,27 @@ int FileWriter::write_audio (const void * ptr, int length)
 
 void FileWriter::close_audio ()
 {
-    if (output_file && filename_mode == FILENAME_STDOUT 
-            && ! aud_get_bool ("filewriter", "stdout_close"))
+    AUDDBG ("--FILEWRITER:CLOSE AUDIO\n");
+    if (output_file && plugin)
     {
-        /* JWT: IF WRITING TO STDOUT, DON'T CLOSE OUTPUT, BUT NEXT OPEN WILL CHANGE CONVERSION TYPE! */
-        convert_free ();
-    }
-    else
-    {
-        plugin->close (output_file);
-        convert_free ();
+        if (filename_mode == FILENAME_STDOUT && 
+                (aud_get_stdout_fmt () || ! aud_get_bool ("filewriter", "stdout_close")))
+        {
+            /* JWT: IF WRITING TO STDOUT, DON'T CLOSE OUTPUT, BUT NEXT OPEN WILL CHANGE CONVERSION TYPE! */
+            convert_free ();
+            AUDDBG ("-----FILEWRITER:NOT ACTUALLY CLOSING!...\n");
+        }
+        else
+        {
+            plugin->close (output_file);
+            convert_free ();
 
-        plugin = nullptr;
-        output_file = VFSFile ();
-        in_filename = String ();
-        in_tuple = Tuple ();
+            plugin = nullptr;
+            output_file = VFSFile ();
+            in_filename = String ();
+            in_tuple = Tuple ();
+            AUDDBG ("-----FILEWRITER:CLOSING!\n");
+        }
     }
 }
 
@@ -476,6 +497,9 @@ static const PreferencesWidget main_widgets[] = {
     WidgetRadio (N_("Save into original directory"),
         WidgetInt (save_original, save_original_cb),
         {true}),
+    WidgetCheck (N_("(use custom for non-local directories)"),
+        WidgetBool ("filewriter", "save_original_local"),
+    WIDGET_CHILD),
     WidgetRadio (N_("Save into custom directory:"),
         WidgetInt (save_original, save_original_cb),
         {false}),
@@ -499,6 +523,9 @@ static const PreferencesWidget main_widgets[] = {
         {FILENAME_STDOUT}),
     WidgetCheck (N_("close after song chg."),
         WidgetBool ("filewriter", "stdout_close"),
+    WIDGET_CHILD),
+    WidgetCheck (N_("close when recording stopped."),
+        WidgetBool ("filewriter", "stdout_recclose"),
     WIDGET_CHILD),
     WidgetSeparator ({true}),
     WidgetCheck (N_("Prepend track number to file name"),
