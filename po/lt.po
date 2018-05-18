@@ -894,7 +894,7 @@ msgstr "Pridėti CD"
 
 #: src/compressor/compressor.cc:45
 msgid "<b>Compression</b>"
-msgstr "<b>Glaudinimas</b>"
+msgstr "<b>Glfauxdinimas</b>"
 
 #: src/compressor/compressor.cc:46
 msgid "Center volume:"

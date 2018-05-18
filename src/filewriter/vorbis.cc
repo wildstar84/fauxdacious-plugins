@@ -26,9 +26,9 @@
 #include <stdlib.h>
 #include <vorbis/vorbisenc.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
 
 static ogg_stream_state os;
 static ogg_page og;

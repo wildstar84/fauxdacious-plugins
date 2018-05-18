@@ -33,11 +33,11 @@
 #include "playlist-widget.h"
 #include "playlist-slider.h"
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/playlist.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/playlist.h>
 
 enum {
     DRAG_SELECT = 1,

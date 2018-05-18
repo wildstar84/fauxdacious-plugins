@@ -27,10 +27,10 @@
 #define WAVE_FORMAT_IEEE_FLOAT 3
 #endif
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/runtime.h>
 
 #define NUM_BLOCKS 4
 

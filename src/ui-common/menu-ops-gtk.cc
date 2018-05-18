@@ -22,11 +22,11 @@
 #include <string.h>
 #include <gtk/gtk.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/playlist.h>
-#include <libaudgui/libaudgui.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdgui/libfauxdgui.h>
 
 static void uri_get_func (GtkClipboard *, GtkSelectionData * sel, unsigned, void * data)
     { gtk_selection_data_set_uris (sel, (char * *) data); }

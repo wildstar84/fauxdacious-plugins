@@ -35,13 +35,13 @@
 #include <glib.h>
 #include <lirc/lirc_client.h>
 
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/hook.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/hook.h>
 
 class LIRCPlugin : public GeneralPlugin
 {
@@ -89,7 +89,7 @@ void init_lirc ()
 {
     int flags;
 
-    if ((lirc_fd = lirc_init ((char *) "audacious", 1)) == -1)
+    if ((lirc_fd = lirc_init ((char *) "fauxdacious", 1)) == -1)
     {
         AUDERR ("could not init LIRC support\n");
         return;
@@ -379,8 +379,8 @@ static gboolean lirc_input_callback (GIOChannel * source, GIOCondition condition
 }
 
 const char LIRCPlugin::about[] =
- N_("A simple plugin to control Audacious using the LIRC remote control daemon\n\n"
-    "Adapted for Audacious by:\n"
+ N_("A simple plugin to control Fauxdacious using the LIRC remote control daemon\n\n"
+    "Adapted for Fauxdacious by:\n"
     "Tony Vroon <chainsaw@gentoo.org>\n"
     "Joonas Harjumäki <jharjuma@gmail.com>\n\n"
     "Based on the XMMS LIRC plugin by:\n"

@@ -12,7 +12,7 @@
 
 #include <ogg/ogg.h>
 #include <vorbis/codec.h>
-#include <libaudcore/vfs.h>
+#include <libfauxdcore/vfs.h>
 
 class VCEdit
 {

@@ -49,7 +49,7 @@
 #include "audiodevice.h"
 #import <Cocoa/Cocoa.h>
 
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/runtime.h>
 
 char *OSTStr(OSType type)
 {

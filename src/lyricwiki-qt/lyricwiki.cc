@@ -35,16 +35,16 @@
 #include <libxml/xpath.h>
 
 #define AUD_GLIB_INTEGRATION
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/plugins.h>
-#include <libaudcore/audstrings.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/vfs_async.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/plugins.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/vfs_async.h>
+#include <libfauxdcore/runtime.h>
 
-#include <libaudqt/libaudqt.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 typedef struct {
     String filename; /* of song file */

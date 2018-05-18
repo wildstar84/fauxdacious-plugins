@@ -2,10 +2,10 @@
  * Written by Johan Levin, 1999
  * Modified by John Lindgren, 2009-2012 */
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/preferences.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
 
 class ExtraStereo : public EffectPlugin
 {

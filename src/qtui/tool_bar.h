@@ -22,7 +22,7 @@
 
 #include <QToolBar>
 
-#include <libaudcore/objects.h>
+#include <libfauxdcore/objects.h>
 
 struct ToolBarItem {
     const char * icon_name;

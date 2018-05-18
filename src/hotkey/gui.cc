@@ -33,10 +33,10 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/preferences.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/preferences.h>
 
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>

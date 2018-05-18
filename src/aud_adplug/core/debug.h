@@ -32,7 +32,7 @@
 #ifndef H_DEBUG
 #define H_DEBUG
 
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/runtime.h>
 
 #define AdPlug_LogWrite(...) AUDDBG(__VA_ARGS__)
 

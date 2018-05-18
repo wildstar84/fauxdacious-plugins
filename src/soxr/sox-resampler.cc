@@ -23,10 +23,10 @@
 #include <stdlib.h>
 #include <soxr.h>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/preferences.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
 
 #define MIN_RATE 8000
 #define MAX_RATE 192000

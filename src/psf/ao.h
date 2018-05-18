@@ -10,8 +10,8 @@
 #include <stdint.h>
 
 #define WANT_AUD_BSWAP
-#include <libaudcore/audio.h>
-#include <libaudcore/index.h>
+#include <libfauxdcore/audio.h>
+#include <libfauxdcore/index.h>
 
 #define AO_SUCCESS					1
 #define AO_FAIL						0

@@ -27,9 +27,9 @@
 
 #include <string.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/objects.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/objects.h>
 
 #include "skins_cfg.h"
 #include "skin.h"

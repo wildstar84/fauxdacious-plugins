@@ -3,8 +3,8 @@
 
 #include <vorbis/vorbisfile.h>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
 
 extern ov_callbacks vorbis_callbacks;
 

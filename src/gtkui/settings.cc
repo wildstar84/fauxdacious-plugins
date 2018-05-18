@@ -19,8 +19,8 @@
 
 #include "gtkui.h"
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/preferences.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/preferences.h>
 
 #include "ui_playlist_notebook.h"
 #include "ui_playlist_widget.h"

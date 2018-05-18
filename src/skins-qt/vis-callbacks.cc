@@ -20,11 +20,11 @@
 
 #include <math.h>
 
-#include <libaudcore/drct.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/runtime.h>
 
 #include "skins_cfg.h"
 #include "main.h"

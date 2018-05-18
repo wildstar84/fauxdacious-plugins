@@ -37,8 +37,8 @@
 #include <sidplayfp/SidTuneInfo.h>
 #include <sidplayfp/builders/residfp.h>
 
-#include <libaudcore/runtime.h>
-#include <libaudcore/vfs.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/vfs.h>
 
 struct SidState {
     sidplayfp *currEng;

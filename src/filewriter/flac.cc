@@ -25,7 +25,7 @@
 
 #include <FLAC/all.h>
 
-#include <libaudcore/audstrings.h>
+#include <libfauxdcore/audstrings.h>
 
 static int channels;
 static FLAC__StreamEncoder *flac_encoder;

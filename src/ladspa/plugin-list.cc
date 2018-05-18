@@ -17,7 +17,7 @@
  * the use of this software.
  */
 
-#include <libaudgui/list.h>
+#include <libfauxdgui/list.h>
 
 #include "plugin.h"
 

@@ -35,12 +35,12 @@
 #endif
 
 #define WANT_VFS_STDIO_COMPAT
-#include <libaudcore/audstrings.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/preferences.h>
-#include <audacious/audtag.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
+#include <fauxdacious/audtag.h>
 
 class MPG123Plugin : public InputPlugin
 {

@@ -20,9 +20,9 @@
 
 #include "i_configure.h"
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/preferences.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/preferences.h>
 
 #include "i_configure-fluidsynth.h"
 

@@ -20,10 +20,10 @@
 #ifndef AUDACIOUS_ALSA_H
 #define AUDACIOUS_ALSA_H
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/runtime.h>
 
 #define CHECK_VAL(value, function, ...) \
 do { \

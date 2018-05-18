@@ -22,7 +22,7 @@
 #define _I_MIDI_H 1
 
 #include <stdint.h>
-#include <libaudcore/index.h>
+#include <libfauxdcore/index.h>
 
 #include "i_midievent.h"
 

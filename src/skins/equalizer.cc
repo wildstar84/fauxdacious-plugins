@@ -26,14 +26,14 @@
 #include <string.h>
 #include <gtk/gtk.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/equalizer.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudgui/libaudgui.h>
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/equalizer.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "menus.h"
 #include "plugin.h"

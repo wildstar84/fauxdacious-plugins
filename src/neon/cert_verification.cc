@@ -27,8 +27,8 @@
 #include <ne_ssl.h>
 #include <ne_session.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
 
 #include "cert_verification.h"
 

@@ -21,18 +21,18 @@
 #include "event.h"
 #include "osd.h"
 
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/audstrings.h>
-#include <libaudcore/hook.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
 
 #ifdef USE_GTK
-#include <libaudgui/libaudgui.h>
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 #endif
 #ifdef USE_QT
-#include <libaudqt/libaudqt.h>
+#include <libfauxdqt/libfauxdqt.h>
 #endif
 
 static String last_title, last_message;
@@ -94,7 +94,7 @@ static void get_album_art ()
 
 static void show_stopped ()
 {
-    osd_show (_("Stopped"), _("Audacious is not playing."), "audacious", nullptr);
+    osd_show (_("Stopped"), _("Fauxdacious is not playing."), "fauxdacious", nullptr);
 }
 
 static void show_playing ()

@@ -37,8 +37,8 @@
 #define AUD_GLIB_INTEGRATION
 #define WANT_AUD_BSWAP
 #define WANT_VFS_STDIO_COMPAT
-#include <libaudcore/audstrings.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
 
 #include "vorbis.h"
 

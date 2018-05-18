@@ -19,8 +19,8 @@
 
 #include "dialogs-qt.h"
 
-#include <libaudcore/i18n.h>
-#include <libaudqt/libaudqt.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 void DialogWindows::create_progress ()
 {

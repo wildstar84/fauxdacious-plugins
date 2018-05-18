@@ -31,12 +31,12 @@
 
 #include <glib/gstdio.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/multihash.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/vfs.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/multihash.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/vfs.h>
 
 #include "skins_util.h"
 

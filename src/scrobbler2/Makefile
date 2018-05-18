@@ -9,7 +9,7 @@ SRCS = scrobbler.cc \
 include ../../buildsys.mk
 include ../../extra.mk
 
-PACKAGE_NAME = audacious
+PACKAGE_NAME = fauxdacious
 
 plugindir := ${plugindir}/${GENERAL_PLUGIN_DIR}
 

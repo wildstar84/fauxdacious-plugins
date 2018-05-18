@@ -26,7 +26,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <libaudcore/vfs.h>
+#include <libfauxdcore/vfs.h>
 
 typedef void (* DirForeachFunc) (const char * path, const char * basename);
 

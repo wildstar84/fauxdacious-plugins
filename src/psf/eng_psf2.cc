@@ -47,7 +47,7 @@
 #include <stdlib.h>
 
 #include <zlib.h>
-#include <libaudcore/audstrings.h>
+#include <libfauxdcore/audstrings.h>
 
 #include "ao.h"
 #include "eng_protos.h"

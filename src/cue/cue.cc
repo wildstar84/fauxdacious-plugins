@@ -28,10 +28,10 @@ extern "C" {
 }
 #endif
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/probe.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/probe.h>
 
 static const char * const cue_exts[] = {"cue"};
 

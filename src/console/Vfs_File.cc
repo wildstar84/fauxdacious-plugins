@@ -2,7 +2,7 @@
 
 #include "Vfs_File.h"
 
-#include "libaudcore/vfs.h"
+#include "libfauxdcore/vfs.h"
 
 void Vfs_File_Reader::reset(VFSFile &file_)
 {

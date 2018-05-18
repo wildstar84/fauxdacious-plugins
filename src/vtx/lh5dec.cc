@@ -5,7 +5,7 @@
 #include <string.h>   /* memmove */
 #include <limits.h>
 
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/runtime.h>
 
 #include "vtx.h"
 

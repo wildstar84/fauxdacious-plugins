@@ -21,12 +21,12 @@
 
 #include <gtk/gtk.h>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/index.h>
-#include <libaudcore/audstrings.h>
-#include <libaudgui/libaudgui-gtk.h>
-#include <libaudgui/list.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/index.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
+#include <libfauxdgui/list.h>
 
 #include "ui_playlist_notebook.h"
 #include "ui_playlist_widget.h"

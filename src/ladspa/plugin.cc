@@ -27,10 +27,10 @@
 #include <gmodule.h>
 #include <gtk/gtk.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/runtime.h>
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "plugin.h"
 

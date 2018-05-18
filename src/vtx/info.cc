@@ -3,11 +3,11 @@
 
 #ifdef USE_GTK
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudgui/libaudgui.h>
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 void vtx_file_info(const char *filename, VFSFile &file)
 {

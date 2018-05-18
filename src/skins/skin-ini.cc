@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <glib.h>
 
-#include <libaudcore/inifile.h>
+#include <libfauxdcore/inifile.h>
 
 #include "skins_cfg.h"
 #include "skin.h"

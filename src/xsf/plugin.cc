@@ -28,11 +28,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/audstrings.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
 
 #include "ao.h"
 #include "corlett.h"

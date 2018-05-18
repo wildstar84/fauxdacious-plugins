@@ -22,10 +22,10 @@
 
 #include <gtk/gtk.h>
 
-#include <libaudcore/drct.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/interface.h>
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "ui_infoarea.h"
 

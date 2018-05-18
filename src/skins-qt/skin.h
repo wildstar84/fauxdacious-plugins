@@ -29,8 +29,8 @@
 #include <stdint.h>
 #include <QImage>
 
-#include <libaudcore/index.h>
-#include <libaudcore/objects.h>
+#include <libfauxdcore/index.h>
+#include <libfauxdcore/objects.h>
 
 typedef enum {
     SKIN_MAIN = 0,

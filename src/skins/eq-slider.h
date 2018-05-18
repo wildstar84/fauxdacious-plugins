@@ -25,7 +25,7 @@
 #ifndef SKINS_UI_SKINNED_EQUALIZER_SLIDER_H
 #define SKINS_UI_SKINNED_EQUALIZER_SLIDER_H
 
-#include <libaudcore/objects.h>
+#include <libfauxdcore/objects.h>
 
 #include "widget.h"
 

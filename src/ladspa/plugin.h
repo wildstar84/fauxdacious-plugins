@@ -23,8 +23,8 @@
 #include <pthread.h>
 #include <gtk/gtk.h>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
 
 #include "ladspa.h"
 

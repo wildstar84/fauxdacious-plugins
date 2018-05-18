@@ -20,15 +20,15 @@
 
 #include <stdlib.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/hook.h>
-#include <libaudgui/libaudgui.h>
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "menus.h"
 #include "plugin.h"
@@ -99,7 +99,7 @@ static String skin_thumb_dir;
 const char * skins_get_user_skin_dir ()
 {
     if (! user_skin_dir)
-        user_skin_dir = String (filename_build ({g_get_user_data_dir (), "audacious", "Skins"}));
+        user_skin_dir = String (filename_build ({g_get_user_data_dir (), "fauxdacious", "Skins"}));
 
     return user_skin_dir;
 }
@@ -107,7 +107,7 @@ const char * skins_get_user_skin_dir ()
 const char * skins_get_skin_thumb_dir ()
 {
     if (! skin_thumb_dir)
-        skin_thumb_dir = String (filename_build ({g_get_user_cache_dir (), "audacious", "thumbs-unscaled"}));
+        skin_thumb_dir = String (filename_build ({g_get_user_cache_dir (), "fauxdacious", "thumbs-unscaled"}));
 
     return skin_thumb_dir;
 }

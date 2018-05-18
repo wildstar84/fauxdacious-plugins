@@ -21,9 +21,9 @@
 
 #include "view.h"
 
-#include <libaudcore/hook.h>
-#include <libaudcore/mainloop.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/mainloop.h>
+#include <libfauxdcore/runtime.h>
 
 #include "plugin.h"
 #include "plugin-window.h"

@@ -20,7 +20,7 @@
 #ifndef DIALOG_WINDOWS_H
 #define DIALOG_WINDOWS_H
 
-#include <libaudcore/hook.h>
+#include <libfauxdcore/hook.h>
 
 class QMessageBox;
 class QWidget;

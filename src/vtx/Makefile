@@ -18,5 +18,5 @@ CPPFLAGS += ${PLUGIN_CPPFLAGS} -I../..
 
 ifeq ($(USE_GTK),yes)
 CPPFLAGS += ${GTK_CFLAGS}
-LIBS += ${GTK_LIBS} -laudgui
+LIBS += ${GTK_LIBS} -lfauxdgui
 endif

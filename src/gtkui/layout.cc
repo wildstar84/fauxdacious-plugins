@@ -23,10 +23,10 @@
 #include <gtk/gtk.h>
 
 #define AUD_GLIB_INTEGRATION
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/plugins.h>
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/plugins.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "layout.h"
 

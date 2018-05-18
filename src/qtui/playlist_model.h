@@ -23,9 +23,9 @@
 #include <QAbstractListModel>
 #include <QSortFilterProxyModel>
 
-#include <libaudcore/index.h>
-#include <libaudcore/objects.h>
-#include <libaudcore/playlist.h>
+#include <libfauxdcore/index.h>
+#include <libfauxdcore/objects.h>
+#include <libfauxdcore/playlist.h>
 
 class PlaylistModel : public QAbstractListModel
 {

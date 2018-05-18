@@ -23,7 +23,7 @@
 #include <QLabel>
 #include <QSlider>
 
-#include <libaudcore/hook.h>
+#include <libfauxdcore/hook.h>
 
 class QMouseEvent;
 

@@ -28,14 +28,14 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/ringbuf.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/drct.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/ringbuf.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/drct.h>
 
 #include <CoreAudio/CoreAudio.h>
 #include <AudioUnit/AudioUnit.h>

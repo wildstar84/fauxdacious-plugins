@@ -36,17 +36,17 @@
 
 #include <pthread.h>
 
-#include <audacious/audtag.h>
-#include <libaudcore/audstrings.h>
+#include <fauxdacious/audtag.h>
+#include <libfauxdcore/audstrings.h>
 #ifdef _WIN32
-#include <libaudcore/drct.h>
+#include <libfauxdcore/drct.h>
 #endif
-#include <libaudcore/i18n.h>
-#include <libaudcore/multihash.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/probe.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/multihash.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/probe.h>
 
 extern "C" {
 #if SDL != 2
@@ -1228,7 +1228,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 #if SDL == 2
         if (! SDL_WasInit (SDL_INIT_VIDEO) && ! sdl_initialized)
         {
-            AUDERR ("w:SDL2 NOT INITIALIZED IN (Audacious) main(), MAY SEGFAULT ON EXIT!\n");
+            AUDERR ("w:SDL2 NOT INITIALIZED IN (Fauxdacious) main(), MAY SEGFAULT ON EXIT!\n");
             SDL_SetMainReady ();
             if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0)
             {

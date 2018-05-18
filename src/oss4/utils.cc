@@ -19,7 +19,7 @@
 
 #include "oss.h"
 
-#include <libaudcore/audstrings.h>
+#include <libfauxdcore/audstrings.h>
 
 const char *oss_format_to_text(int format)
 {

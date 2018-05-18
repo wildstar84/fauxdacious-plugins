@@ -23,14 +23,14 @@
 
 #include <QMenu>
 
-#include <libaudcore/drct.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/plugins.h>
-#include <libaudcore/runtime.h>
-#include <libaudqt/menu.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/plugins.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdqt/menu.h>
 
 #include "actions-mainwin.h"
 #include "actions-playlist.h"

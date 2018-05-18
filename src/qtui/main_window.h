@@ -20,9 +20,9 @@
 #ifndef MAIN_WINDOW_H
 #define MAIN_WINDOW_H
 
-#include <libaudcore/hook.h>
-#include <libaudcore/index.h>
-#include <libaudcore/mainloop.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/index.h>
+#include <libfauxdcore/mainloop.h>
 
 #include "../ui-common/dialogs-qt.h"
 

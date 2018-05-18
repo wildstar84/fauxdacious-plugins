@@ -1,4 +1,4 @@
-#include <libaudcore/index.h>
+#include <libfauxdcore/index.h>
 
 int xsf_start(void *pfile, unsigned bytes);
 int xsf_gen(void *pbuffer, unsigned samples);

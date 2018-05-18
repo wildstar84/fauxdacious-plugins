@@ -20,10 +20,10 @@
 
 #include <libnotify/notify.h>
 
-#include <libaudcore/plugin.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
 
 #include "event.h"
 

@@ -23,12 +23,12 @@
 
 #include <gtk/gtk.h>
 
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/plugin.h>
-#include <libaudgui/libaudgui.h>
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 #define MAX_BANDS   (256)
 #define VIS_DELAY 2 /* delay before falloff in frames */

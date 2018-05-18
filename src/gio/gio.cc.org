@@ -24,11 +24,11 @@
 
 #include <gio/gio.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/runtime.h>
 
 static const char gio_about[] =
  N_("GIO Plugin for Audacious\n"

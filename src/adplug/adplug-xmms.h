@@ -23,7 +23,7 @@
 #include <libbinio/binio.h>
 #include <adplug/fprovide.h>
 
-#include <libaudcore/vfs.h>
+#include <libfauxdcore/vfs.h>
 
 class vfsistream : public binistream
 {

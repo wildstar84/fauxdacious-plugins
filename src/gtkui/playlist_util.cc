@@ -20,11 +20,11 @@
 #include <string.h>
 #include <gtk/gtk.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/playlist.h>
-#include <libaudgui/libaudgui.h>
-#include <libaudgui/list.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/list.h>
 
 #include "playlist_util.h"
 #include "ui_playlist_notebook.h"

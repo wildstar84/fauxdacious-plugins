@@ -22,11 +22,11 @@
 #include <string.h>
 #include <gtk/gtk.h>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/audstrings.h>
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "dnd.h"
 #include "skins_cfg.h"

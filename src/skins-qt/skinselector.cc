@@ -24,9 +24,9 @@
 #include <stdlib.h>
 #include <glib.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
 
 #include "plugin.h"
 #include "skin.h"

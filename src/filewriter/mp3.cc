@@ -28,8 +28,8 @@
 
 #include <lame/lame.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
 
 static lame_global_flags *gfp;
 static unsigned char encbuffer[LAME_MAXMP3BUFFER];

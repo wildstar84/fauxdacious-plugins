@@ -21,7 +21,7 @@
 #define UI_PLAYLIST_WIDGET_H
 
 #include <gtk/gtk.h>
-#include <libaudcore/playlist.h>
+#include <libfauxdcore/playlist.h>
 
 GtkWidget * ui_playlist_widget_new (int playlist);
 int ui_playlist_widget_get_playlist (GtkWidget * widget);

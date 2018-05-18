@@ -24,9 +24,9 @@
 #define FILEWRITER_H
 
 #define WANT_AUD_BSWAP
-#include <libaudcore/audio.h>
-#include <libaudcore/tuple.h>
-#include <libaudcore/vfs.h>
+#include <libfauxdcore/audio.h>
+#include <libfauxdcore/tuple.h>
+#include <libfauxdcore/vfs.h>
 
 struct format_info {
     int format;

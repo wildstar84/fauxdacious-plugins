@@ -25,9 +25,9 @@
 #include <dbus/dbus-glib-bindings.h>
 #include <glib-object.h>
 
-#include <libaudcore/drct.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/i18n.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/i18n.h>
 
 class GNOMEShortcuts : public GeneralPlugin
 {
@@ -91,7 +91,7 @@ hotkey_marshal_VOID__STRING_STRING (GClosure     *closure,
 static void
 on_media_player_key_pressed (DBusGProxy *proxy, const char *application, const char *key)
 {
-    if (strcmp ("Audacious", application) == 0) {
+    if (strcmp ("Fauxdacious", application) == 0) {
         int current_volume /* , old_volume */ ;
         static int volume_static = 0;
         bool mute;
@@ -140,7 +140,7 @@ on_media_player_key_pressed (DBusGProxy *proxy, const char *application, const c
 
             if (current_volume != old_volume)
             {
-                xmms_remote_set_main_volume (audacioushotkey.xmms_session,
+                xmms_remote_set_main_volume (fauxdacioushotkey.xmms_session,
                  current_volume);
             }
 
@@ -165,7 +165,7 @@ on_media_player_key_pressed (DBusGProxy *proxy, const char *application, const c
 
             if (current_volume != old_volume)
             {
-                xmms_remote_set_main_volume (audacioushotkey.xmms_session,
+                xmms_remote_set_main_volume (fauxdacioushotkey.xmms_session,
                  current_volume);
             }
 
@@ -213,7 +213,7 @@ void GNOMEShortcuts::cleanup ()
 
     dbus_g_proxy_call (media_player_keys_proxy,
      "ReleaseMediaPlayerKeys", &error,
-     G_TYPE_STRING, "Audacious",
+     G_TYPE_STRING, "Fauxdacious",
      G_TYPE_INVALID, G_TYPE_INVALID);
     if (error != nullptr) {
         g_warning ("Could not release media player keys: %s", error->message);
@@ -244,7 +244,7 @@ bool GNOMEShortcuts::init ()
 
         dbus_g_proxy_call (media_player_keys_proxy,
          "GrabMediaPlayerKeys", &error,
-         G_TYPE_STRING, "Audacious",
+         G_TYPE_STRING, "Fauxdacious",
          G_TYPE_UINT, 0,
          G_TYPE_INVALID,
          G_TYPE_INVALID);
@@ -262,7 +262,7 @@ bool GNOMEShortcuts::init ()
 
             dbus_g_proxy_call (media_player_keys_proxy,
              "GrabMediaPlayerKeys", &error,
-             G_TYPE_STRING, "Audacious",
+             G_TYPE_STRING, "Fauxdacious",
              G_TYPE_UINT, 0,
              G_TYPE_INVALID,
              G_TYPE_INVALID);

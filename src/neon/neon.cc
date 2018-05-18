@@ -26,12 +26,12 @@
 
 #include <glib.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/ringbuf.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/ringbuf.h>
+#include <libfauxdcore/runtime.h>
 
 #include <ne_auth.h>
 #include <ne_session.h>

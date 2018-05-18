@@ -17,15 +17,15 @@
  * the use of this software.
  */
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/preferences.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/preferences.h>
 
-#include <libaudqt/menu.h>
+#include <libfauxdqt/menu.h>
 
 #include <QApplication>
 #include <QMenu>

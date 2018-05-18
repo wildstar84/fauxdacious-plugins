@@ -21,7 +21,7 @@
 #define PLAYLIST_HEADER_H
 
 #include <QHeaderView>
-#include <libaudcore/hook.h>
+#include <libfauxdcore/hook.h>
 
 class PlaylistWidget;
 class QAction;

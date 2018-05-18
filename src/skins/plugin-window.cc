@@ -26,13 +26,13 @@
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/plugins.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/runtime.h>
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/plugins.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "main.h"
 #include "window.h"

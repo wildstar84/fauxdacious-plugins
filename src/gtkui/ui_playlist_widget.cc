@@ -21,15 +21,15 @@
 
 #include <gtk/gtk.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/mainloop.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/tuple.h>
-#include <libaudgui/libaudgui.h>
-#include <libaudgui/libaudgui-gtk.h>
-#include <libaudgui/list.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/mainloop.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/tuple.h>
+#include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
+#include <libfauxdgui/list.h>
 
 #include "gtkui.h"
 #include "playlist_util.h"

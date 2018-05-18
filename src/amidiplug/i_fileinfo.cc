@@ -27,8 +27,8 @@
 #include <string.h>
 #include <gtk/gtk.h>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
 
 #include "i_configure.h"
 /* this is needed to retrieve information */

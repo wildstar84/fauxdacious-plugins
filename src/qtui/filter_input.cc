@@ -17,7 +17,7 @@
  * the use of this software.
  */
 
-#include <libaudcore/i18n.h>
+#include <libfauxdcore/i18n.h>
 
 #include "filter_input.h"
 

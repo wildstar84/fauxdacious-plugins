@@ -22,8 +22,8 @@
 
 #include "oss.h"
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
 
 #include <poll.h>
 

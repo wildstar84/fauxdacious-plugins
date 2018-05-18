@@ -19,13 +19,13 @@
 
 #include "main_window.h"
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/plugins.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/plugins.h>
 
-#include <libaudqt/libaudqt.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 #include "info_bar.h"
 #include "menus.h"
@@ -72,10 +72,10 @@ private:
 static QString get_config_name ()
 {
     String instancename = aud_get_instancename ();
-    if (instancename == String ("audacious"))
-        return QString ("audacious");
+    if (instancename == String ("fauxdacious"))
+        return QString ("fauxdacious");
     else
-        return QString ("audacious-%1").arg ((const char *) instancename);
+        return QString ("fauxdacious-%1").arg ((const char *) instancename);
 }
 
 static void toggle_search_tool (bool enable)
@@ -215,7 +215,7 @@ void MainWindow::read_settings ()
 void MainWindow::set_title (const QString & title)
 {
     String instancename = aud_get_instancename ();
-    if (instancename == String ("audacious"))
+    if (instancename == String ("fauxdacious"))
         QMainWindow::setWindowTitle (title);
     else
         QMainWindow::setWindowTitle (QString ("%1 (%2)").arg (title).arg ((const char *) instancename));

@@ -18,9 +18,9 @@
  */
 
 #include <gtk/gtk.h>
-#include <libaudcore/i18n.h>
-#include <libaudgui/libaudgui.h>
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "callbacks.h"
 

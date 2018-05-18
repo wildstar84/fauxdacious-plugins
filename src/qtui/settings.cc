@@ -19,9 +19,9 @@
 
 #include "settings.h"
 
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/preferences.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/preferences.h>
 
 #include <QApplication>
 #include <QDesktopWidget>

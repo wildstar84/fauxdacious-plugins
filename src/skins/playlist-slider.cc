@@ -25,8 +25,8 @@
  * Audacious or using our public API to be a derived work.
  */
 
-#include <libaudcore/objects.h>
-#include <libaudcore/playlist.h>
+#include <libfauxdcore/objects.h>
+#include <libfauxdcore/playlist.h>
 
 #include "skins_cfg.h"
 #include "skin.h"

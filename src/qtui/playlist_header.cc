@@ -28,11 +28,11 @@
 #include <QContextMenuEvent>
 #include <QMenu>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudqt/libaudqt.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 static const char * const s_col_keys[] = {
     "playing",

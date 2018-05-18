@@ -22,17 +22,17 @@
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/mainloop.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/plugins.h>
-#include <libaudcore/runtime.h>
-#include <libaudgui/libaudgui.h>
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/mainloop.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/plugins.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "gtkui.h"
 #include "layout.h"
@@ -227,7 +227,7 @@ static void title_change (void * = nullptr)
         title = str_copy (_("Fauxdacious"));
 
     String instancename = aud_get_instancename ();
-    if (instancename != String ("audacious"))
+    if (instancename != String ("fauxdacious"))
         str_append_printf (title, " (%s)", (const char *) instancename);
     gtk_window_set_title ((GtkWindow *) window, title);
 }
@@ -1030,7 +1030,7 @@ void show_hide_menu ()
         if (! menu_button)
         {
             menu_button = gtk_toggle_tool_button_new ();
-            gtk_tool_button_set_icon_name ((GtkToolButton *) menu_button, "audacious");
+            gtk_tool_button_set_icon_name ((GtkToolButton *) menu_button, "fauxdacious");
             g_signal_connect (menu_button, "destroy", (GCallback)
              gtk_widget_destroyed, & menu_button);
             gtk_widget_show ((GtkWidget *) menu_button);

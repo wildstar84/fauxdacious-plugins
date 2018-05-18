@@ -19,13 +19,13 @@
  * the use of this software.
  */
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/ringbuf.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/ringbuf.h>
+#include <libfauxdcore/runtime.h>
 
 #include <algorithm>
 #include <iterator>
@@ -190,7 +190,7 @@ bool JACKOutput::open_audio (int format, int rate, int channels, String & error)
     if (format != FMT_FLOAT)
     {
         error = String (_("JACK supports only floating-point audio.  You "
-         "must change the output bit depth to floating-point in Audacious "
+         "must change the output bit depth to floating-point in Fauxdacious "
          "settings."));
         return false;
     }
@@ -200,7 +200,7 @@ bool JACKOutput::open_audio (int format, int rate, int channels, String & error)
 
     jack_set_error_function (error_cb);
 
-    if (! (m_client = jack_client_open ("audacious", JackNoStartServer, nullptr)))
+    if (! (m_client = jack_client_open ("fauxdacious", JackNoStartServer, nullptr)))
     {
         error = String (_("Failed to connect to the JACK server; is it running?"));
         goto fail;
@@ -279,7 +279,7 @@ void JACKOutput::generate (jack_nframes_t frames)
         if (! m_rate_mismatch)
         {
             aud_ui_show_error (str_printf (_("The JACK server requires a "
-             "sample rate of %d Hz, but Audacious is playing at %d Hz.  Please "
+             "sample rate of %d Hz, but Fauxdacious is playing at %d Hz.  Please "
              "use the Sample Rate Converter effect to correct the mismatch."),
              jack_rate, m_rate));
             m_rate_mismatch = true;

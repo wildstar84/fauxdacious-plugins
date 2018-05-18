@@ -22,18 +22,18 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/plugins.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/runtime.h>
-#include <libaudgui/libaudgui.h>
-#include <libaudgui/libaudgui-gtk.h>
-#include <libaudgui/menu.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/plugins.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
+#include <libfauxdgui/menu.h>
 
 class StatusIcon : public GeneralPlugin
 {
@@ -86,10 +86,10 @@ static GtkStatusIcon * si_create ()
     GtkStatusIcon * icon;
     GtkIconTheme * theme = gtk_icon_theme_get_default ();
 
-    if (gtk_icon_theme_has_icon (theme, "audacious-panel"))
-        icon = gtk_status_icon_new_from_icon_name ("audacious-panel");
-    else if (gtk_icon_theme_has_icon (theme, "audacious"))
-        icon = gtk_status_icon_new_from_icon_name ("audacious");
+    if (gtk_icon_theme_has_icon (theme, "fauxdacious-panel"))
+        icon = gtk_status_icon_new_from_icon_name ("fauxdacious-panel");
+    else if (gtk_icon_theme_has_icon (theme, "fauxdacious"))
+        icon = gtk_status_icon_new_from_icon_name ("fauxdacious");
     else
         icon = gtk_status_icon_new_from_file (aud_get_path (AudPath::IconFile));
 
@@ -336,7 +336,7 @@ static void si_enable (bool enable)
     if (! enable && si_applet)
     {
         /* Prevent accidentally hiding of the interface
-         * by disabling the plugin while Audacious is closed to the tray. */
+         * by disabling the plugin while Fauxdacious is closed to the tray. */
         PluginHandle * si = aud_plugin_by_header (& aud_plugin_instance);
         if (! aud_plugin_get_enabled (si) && ! aud_get_headless_mode () && ! aud_ui_is_shown ())
             aud_ui_show (true);

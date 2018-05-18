@@ -23,10 +23,10 @@
 
 #include <fluidsynth.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/index.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/index.h>
+#include <libfauxdcore/runtime.h>
 
 #include "../i_backend.h"
 #include "../i_configure.h"

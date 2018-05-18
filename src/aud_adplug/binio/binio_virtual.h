@@ -8,7 +8,7 @@
 
 #include "binio.h"
 
-#include <libaudcore/vfs.h>
+#include <libfauxdcore/vfs.h>
 
 class vfsistream : public binistream {
 private:

@@ -27,13 +27,13 @@
 #include <QWidget>
 #include <QWindow>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/plugins.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/runtime.h>
-#include <libaudqt/libaudqt.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/plugins.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 #include "main.h"
 #include "window.h"

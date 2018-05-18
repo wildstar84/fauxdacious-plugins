@@ -30,11 +30,11 @@
 
 #include "../ui-common/menu-ops.h"
 
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/plugins.h>
-#include <libaudqt/libaudqt.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/plugins.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 #define ACTIVE (aud_playlist_get_active ())
 

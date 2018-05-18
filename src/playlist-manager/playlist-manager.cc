@@ -17,16 +17,16 @@
  * the use of this software.
  */
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/runtime.h>
 
-#include <libaudgui/libaudgui.h>
-#include <libaudgui/libaudgui-gtk.h>
-#include <libaudgui/list.h>
+#include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
+#include <libfauxdgui/list.h>
 
 #include <string.h>
 

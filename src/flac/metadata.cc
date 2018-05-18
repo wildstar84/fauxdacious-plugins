@@ -23,9 +23,9 @@
 #include <string.h>
 
 #define WANT_VFS_STDIO_COMPAT
-#include <libaudcore/runtime.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/audstrings.h>
 
 #include "flacng.h"
 

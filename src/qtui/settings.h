@@ -20,7 +20,7 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
-#include <libaudcore/templates.h>
+#include <libfauxdcore/templates.h>
 
 #define DEFAULT_COLUMNS "playing title artist album queued length"
 

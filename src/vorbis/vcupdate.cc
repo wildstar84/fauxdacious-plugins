@@ -27,10 +27,10 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/multihash.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/multihash.h>
+#include <libfauxdcore/runtime.h>
 
 #include "vorbis.h"
 #include "vcedit.h"

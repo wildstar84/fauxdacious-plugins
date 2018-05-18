@@ -24,9 +24,9 @@
 #include "xmms-sid.h"
 #include "xs_config.h"
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/runtime.h>
 
 /*
  * Configuration specific stuff

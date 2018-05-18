@@ -21,7 +21,7 @@
 #ifndef _I_AOSD_H
 #define _I_AOSD_H 1
 
-#include <libaudcore/plugin.h>
+#include <libfauxdcore/plugin.h>
 
 struct PreferencesWidget;
 

@@ -25,7 +25,7 @@
  */
 
 #include <string.h>
-#include <libaudcore/objects.h>
+#include <libfauxdcore/objects.h>
 
 #include "skins_cfg.h"
 #include "skin.h"

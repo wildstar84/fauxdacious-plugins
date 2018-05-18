@@ -33,9 +33,9 @@
 #include <soundcard.h>
 #endif
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/runtime.h>
 
 #define DESCRIBE_ERROR AUDERR("%s\n", oss_describe_error())
 

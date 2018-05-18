@@ -24,7 +24,7 @@
 #include "filewriter.h"
 
 #include <string.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/runtime.h>
 
 #pragma pack(push) /* must be byte-aligned */
 #pragma pack(1)

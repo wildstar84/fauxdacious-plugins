@@ -26,11 +26,11 @@
 #include <QListView>
 #include <QToolButton>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/index.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/index.h>
+#include <libfauxdcore/runtime.h>
 
 const char * const pl_col_names[PL_COLS] = {
     N_("Now Playing"),

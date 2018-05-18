@@ -23,9 +23,9 @@
 #include <libxml/tree.h>
 #include <libxml/xmlsave.h>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/runtime.h>
 
 static const char * const asx3_exts[] = {"asx"};
 

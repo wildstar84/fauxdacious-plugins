@@ -20,12 +20,12 @@
 #include <QLabel>
 #include <QPixmap>
 
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/hook.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/hook.h>
 
-#include <libaudqt/libaudqt.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 class AlbumArtQt : public GeneralPlugin {
 public:

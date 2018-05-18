@@ -26,13 +26,13 @@
 #include <inttypes.h>
 #include <string.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/tuple.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/tuple.h>
 
 #include "actions-mainwin.h"
 #include "dnd.h"

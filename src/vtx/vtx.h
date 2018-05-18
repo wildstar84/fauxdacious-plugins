@@ -1,7 +1,7 @@
 #ifndef VTX_H
 #define VTX_H
 
-#include <libaudcore/index.h>
+#include <libfauxdcore/index.h>
 
 class VFSFile;
 

@@ -2,7 +2,7 @@ ffaudio todo
 ------------
 
 - Tagging: reading should probably be done through ffmpeg 
-  (unless there is a reason not to), writing through libaudtag.
+  (unless there is a reason not to), writing through libfauxdtag.
 
 Candidates with problems:
 

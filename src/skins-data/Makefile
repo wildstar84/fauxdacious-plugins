@@ -2,7 +2,7 @@ include ../../buildsys.mk
 include ../../extra.mk
 
 # These overrides variables in buildsys.mk and so must come after it.
-PACKAGE_NAME = audacious
+PACKAGE_NAME = fauxdacious
 DATA = Skins/Classic/balance.png	\
        Skins/Classic/cbuttons.png	\
        Skins/Classic/eq_ex.png		\

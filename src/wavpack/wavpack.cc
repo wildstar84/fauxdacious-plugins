@@ -4,11 +4,11 @@
 #include <wavpack/wavpack.h>
 
 #define WANT_VFS_STDIO_COMPAT
-#include <audacious/audtag.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/audstrings.h>
+#include <fauxdacious/audtag.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/audstrings.h>
 
 #define BUFFER_SIZE 256 /* read buffer size, in samples / frames */
 #define SAMPLE_SIZE(a) (a == 8 ? sizeof(uint8_t) : (a == 16 ? sizeof(uint16_t) : sizeof(uint32_t)))

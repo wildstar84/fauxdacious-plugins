@@ -23,7 +23,7 @@
 #include <QStaticText>
 #include <QWidget>
 
-#include <libaudcore/hook.h>
+#include <libfauxdcore/hook.h>
 
 class InfoVis;
 struct PixelSizes;

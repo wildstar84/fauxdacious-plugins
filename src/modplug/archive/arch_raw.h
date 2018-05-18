@@ -9,7 +9,7 @@
 
 #include "archive.h"
 
-#include <libaudcore/vfs.h>
+#include <libfauxdcore/vfs.h>
 
 class arch_Raw: public Archive
 {

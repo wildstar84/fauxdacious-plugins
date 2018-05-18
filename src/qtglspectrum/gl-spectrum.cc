@@ -25,8 +25,8 @@
 #include <math.h>
 #include <string.h>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
 
 #include <QGLWidget>
 #include <QGLFunctions>

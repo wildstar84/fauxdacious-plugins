@@ -22,9 +22,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libaudcore/runtime.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
 
 #include "i_backend.h"
 #include "i_configure.h"

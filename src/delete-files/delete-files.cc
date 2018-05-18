@@ -25,21 +25,21 @@
 #include <gio/gio.h>
 #include <glib/gstdio.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/runtime.h>
 
 #ifdef USE_GTK
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 #endif
 #ifdef USE_QT
 #include <QMessageBox>
 #include <QPushButton>
-#include <libaudqt/libaudqt.h>
+#include <libfauxdqt/libfauxdqt.h>
 #endif
 
 class DeleteFiles : public GeneralPlugin

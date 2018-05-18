@@ -23,9 +23,9 @@
 #include <sndfile.h>
 
 #define WANT_VFS_STDIO_COMPAT
-#include <libaudcore/plugin.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/audstrings.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/audstrings.h>
 
 class SndfilePlugin : public InputPlugin
 {

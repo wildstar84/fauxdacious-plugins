@@ -19,8 +19,8 @@
 
 #include <alsa/asoundlib.h>
 
-#include <libaudcore/hook.h>
-#include <libaudcore/preferences.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/preferences.h>
 
 #include "alsa.h"
 

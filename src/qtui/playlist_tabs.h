@@ -23,8 +23,8 @@
 #include <QTabBar>
 #include <QTabWidget>
 
-#include <libaudcore/hook.h>
-#include <libaudcore/playlist.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/playlist.h>
 
 class PlaylistTabBar;
 class PlaylistWidget;

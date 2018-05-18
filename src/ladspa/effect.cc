@@ -22,7 +22,7 @@
 #include "ladspa.h"
 #include "plugin.h"
 
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/runtime.h>
 
 static int ladspa_channels, ladspa_rate;
 

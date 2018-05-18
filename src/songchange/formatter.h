@@ -1,7 +1,7 @@
 #ifndef FORMATTER_H
 #define FORMATTER_H
 
-#include <libaudcore/objects.h>
+#include <libfauxdcore/objects.h>
 
 struct Formatter
 {

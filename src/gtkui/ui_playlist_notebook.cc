@@ -23,12 +23,12 @@
 #include <gtk/gtk.h>
 
 #define AUD_GLIB_INTEGRATION
-#include <libaudcore/runtime.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/audstrings.h>
-#include <libaudcore/hook.h>
-#include <libaudgui/list.h>
-#include <libaudgui/libaudgui.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdgui/list.h>
+#include <libfauxdgui/libfauxdgui.h>
 
 #include "gtkui.h"
 #include "ui_playlist_notebook.h"

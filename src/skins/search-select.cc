@@ -30,9 +30,9 @@
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/runtime.h>
 
 static void search_cbt_cb (GtkWidget * called_cbt, GtkWidget * other_cbt)
 {

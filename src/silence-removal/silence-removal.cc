@@ -17,11 +17,11 @@
  * the use of this software.
  */
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/ringbuf.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/ringbuf.h>
+#include <libfauxdcore/runtime.h>
 
 #include <math.h>
 

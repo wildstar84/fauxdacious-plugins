@@ -23,8 +23,8 @@
 #ifndef XMMS_SID_H
 #define XMMS_SID_H
 
-#include <libaudcore/index.h>
-#include <libaudcore/objects.h>
+#include <libfauxdcore/index.h>
+#include <libfauxdcore/objects.h>
 
 /*
  * Some constants and defines

@@ -25,9 +25,9 @@
 
 #include <pulse/pulseaudio.h>
 
-#include <libaudcore/runtime.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/i18n.h>
 
 using scoped_lock = std::unique_lock<std::mutex>;
 

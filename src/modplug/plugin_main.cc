@@ -11,8 +11,8 @@
 #include <libmodplug/stdafx.h>
 #include <libmodplug/sndfile.h>
 
-#include <libaudcore/runtime.h>
-#include <libaudcore/preferences.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/preferences.h>
 
 #define MODPLUG_CFGID "modplug"
 

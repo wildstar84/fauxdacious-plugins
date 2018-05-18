@@ -28,14 +28,14 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/mainloop.h>
-#include <libaudcore/plugins.h>
-#include <libaudcore/runtime.h>
-#include <libaudqt/libaudqt.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/mainloop.h>
+#include <libfauxdcore/plugins.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 #include "actions-mainwin.h"
 #include "actions-playlist.h"

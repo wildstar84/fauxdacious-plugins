@@ -4,9 +4,9 @@
 #include <ctype.h>
 #include <inttypes.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/vfs.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/vfs.h>
+#include <libfauxdcore/runtime.h>
 
 #include "ayemu.h"
 #include "vtx.h"

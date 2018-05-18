@@ -46,7 +46,7 @@
 #include <unistd.h>
 
 #include <alsa/asoundlib.h>
-#include <libaudcore/ringbuf.h>
+#include <libfauxdcore/ringbuf.h>
 
 #include "alsa.h"
 

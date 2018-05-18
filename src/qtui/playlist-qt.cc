@@ -22,11 +22,11 @@
 #include <QMenu>
 #include <QSortFilterProxyModel>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/runtime.h>
 
 #include "playlist-qt.h"
 #include "playlist_header.h"

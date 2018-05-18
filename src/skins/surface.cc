@@ -23,8 +23,8 @@
 
 #include "surface.h"
 
-#include <libaudcore/runtime.h>
-#include <libaudgui/libaudgui-gtk.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 cairo_surface_t * surface_new (int w, int h)
 {

@@ -19,9 +19,9 @@
 
 #include "time_slider.h"
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/runtime.h>
 
 #include <QMouseEvent>
 #include <QStyle>

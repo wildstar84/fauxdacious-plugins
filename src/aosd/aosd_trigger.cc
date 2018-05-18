@@ -21,10 +21,10 @@
 #include <glib.h>
 #include <string.h>
 
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/audstrings.h>
-#include <libaudcore/hook.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
 
 #include "aosd_trigger.h"
 #include "aosd_trigger_private.h"

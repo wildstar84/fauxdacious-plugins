@@ -20,13 +20,13 @@
 #include <math.h>
 #include <stdint.h>
 
-#include <libaudcore/drct.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/probe.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/probe.h>
+#include <libfauxdcore/runtime.h>
 
 #include "object-core.h"
 #include "object-player.h"
@@ -314,7 +314,7 @@ bool MPRIS2Plugin::init ()
         return false;
     }
 
-    g_bus_own_name_on_connection (bus, "org.mpris.MediaPlayer2.audacious",
+    g_bus_own_name_on_connection (bus, "org.mpris.MediaPlayer2.fauxdacious",
      (GBusNameOwnerFlags) 0, nullptr, nullptr, nullptr, nullptr);
 
     object_core = (GObject *) mpris_media_player2_skeleton_new ();
@@ -322,8 +322,8 @@ bool MPRIS2Plugin::init ()
     g_object_set (object_core,
      "can-quit", (gboolean) true,
      "can-raise", (gboolean) true,
-     "desktop-entry", "audacious",
-     "identity", "Audacious",
+     "desktop-entry", "fauxdacious",
+     "identity", "Fauxdacious",
      nullptr);
 
     g_signal_connect (object_core, "handle-quit", (GCallback) quit_cb, nullptr);

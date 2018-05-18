@@ -17,8 +17,8 @@
  * the use of this software.
  */
 
-#include <libaudcore/drct.h>
-#include <libaudcore/playlist.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/playlist.h>
 
 #define ACTIVE aud_playlist_get_active ()
 

@@ -28,7 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <libaudcore/audstrings.h>
+#include <libfauxdcore/audstrings.h>
 
 #include "ao.h"
 #include "eng_protos.h"

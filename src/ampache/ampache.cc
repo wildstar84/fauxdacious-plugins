@@ -7,13 +7,13 @@
 
 #include <QWidget>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/vfs_async.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/vfs_async.h>
 
 #include <ampache_browser/settings.h>
 #include <ampache_browser/ampache_browser.h>

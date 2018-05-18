@@ -7,8 +7,8 @@
 
 #include <glib.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/interface.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/interface.h>
 
 //plugin includes
 #include "scrobbler.h"

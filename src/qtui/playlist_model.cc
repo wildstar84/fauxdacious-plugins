@@ -22,10 +22,10 @@
 #include <QMimeData>
 #include <QUrl>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudqt/libaudqt.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 #include "playlist_model.h"
 

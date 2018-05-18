@@ -23,15 +23,15 @@
 
 #include <gdk/gdkkeysyms.h>
 
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/plugins.h>
-#include <libaudcore/runtime.h>
-#include <libaudgui/libaudgui.h>
-#include <libaudgui/libaudgui-gtk.h>
-#include <libaudgui/menu.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/plugins.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
+#include <libfauxdgui/menu.h>
 
 #include "actions-mainwin.h"
 #include "actions-playlist.h"

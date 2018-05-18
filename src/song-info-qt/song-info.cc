@@ -17,15 +17,15 @@
  * the use of this software.
  */
 
-#include <libaudcore/drct.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/probe.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/probe.h>
 
-#include <libaudqt/libaudqt.h>
-#include <libaudqt/info-widget.h>
+#include <libfauxdqt/libfauxdqt.h>
+#include <libfauxdqt/info-widget.h>
 
 class SongInfo : public GeneralPlugin {
 public:

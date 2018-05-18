@@ -24,7 +24,7 @@
 
 #include "widget.h"
 
-#include <libaudcore/objects.h>
+#include <libfauxdcore/objects.h>
 
 enum {
     WINDOW_MAIN,

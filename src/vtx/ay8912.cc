@@ -3,7 +3,7 @@
 #include <inttypes.h>
 #include "ayemu.h"
 
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/runtime.h>
 
 const char *ayemu_err;
 

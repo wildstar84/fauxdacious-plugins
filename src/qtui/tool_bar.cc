@@ -22,8 +22,8 @@
 #include <QAction>
 #include <QIcon>
 
-#include <libaudcore/runtime.h>
-#include <libaudqt/libaudqt.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 ToolBar::ToolBar (QWidget * parent, ArrayRef<ToolBarItem> items)
     : QToolBar (parent)

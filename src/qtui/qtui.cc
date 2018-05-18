@@ -19,12 +19,12 @@
 
 #include <QApplication>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/runtime.h>
 
-#include <libaudqt/libaudqt.h>
-#include <libaudqt/iface.h>
+#include <libfauxdqt/libfauxdqt.h>
+#include <libfauxdqt/iface.h>
 
 #include "main_window.h"
 #include "settings.h"

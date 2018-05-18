@@ -23,9 +23,9 @@
 #include <libmms/mms.h>
 #include <libmms/mmsh.h>
 
-#include <libaudcore/runtime.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
 
 static const char * const mms_schemes[] = {"mms"};
 

@@ -11,7 +11,7 @@
 
 #include <zlib.h>
 
-#include <libaudcore/audstrings.h>
+#include <libfauxdcore/audstrings.h>
 
 #include "tagget.h"
 #include "vio2sf.h"

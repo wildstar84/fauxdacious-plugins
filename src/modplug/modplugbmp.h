@@ -7,8 +7,8 @@
 #ifndef __MODPLUGXMMS_CMODPLUGXMMS_H_INCLUDED__
 #define __MODPLUGXMMS_CMODPLUGXMMS_H_INCLUDED__
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
 
 #include "settings.h"
 

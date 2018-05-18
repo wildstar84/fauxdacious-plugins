@@ -11,4 +11,4 @@ LD = ${CXX}
 
 CFLAGS += ${PLUGIN_CFLAGS}
 CPPFLAGS += ${PLUGIN_CPPFLAGS} -I../..
-LIBS += -lfaad -lm -laudtag
+LIBS += -lfaad -lm -lfauxdtag

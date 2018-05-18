@@ -22,10 +22,10 @@
 #include "info_bar.h"
 #include "settings.h"
 
-#include <libaudcore/drct.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/runtime.h>
-#include <libaudqt/libaudqt.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 #include <QPainter>
 

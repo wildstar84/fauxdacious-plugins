@@ -25,8 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
 
 static aosd_color_t str_to_color (const char * str)
 {

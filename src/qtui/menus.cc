@@ -22,17 +22,17 @@
 
 #include <QMenuBar>
 
-#include <libaudcore/drct.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/plugins.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/playlist.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/plugins.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/playlist.h>
 
-#include <libaudqt/libaudqt.h>
-#include <libaudqt/menu.h>
+#include <libfauxdqt/libfauxdqt.h>
+#include <libfauxdqt/menu.h>
 
 static QMenu * services_menu () { return audqt::menu_get_by_id (AudMenuID::Main); }
 static QMenu * services_menu_pl () { return audqt::menu_get_by_id (AudMenuID::Playlist); }

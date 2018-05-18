@@ -2,7 +2,7 @@
 #define _AYEMU_vtxfile_h
 
 #include <inttypes.h>
-#include <libaudcore/vfs.h>
+#include <libfauxdcore/vfs.h>
 #include "ayemu_8912.h"
 
 /* The following constants and data structure comes from

@@ -19,8 +19,8 @@
 
 #include "oss.h"
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/preferences.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/preferences.h>
 
 EXPORT OSSPlugin aud_plugin_instance;
 

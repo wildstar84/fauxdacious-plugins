@@ -20,10 +20,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/audstrings.h>
-#include <libaudcore/inifile.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/inifile.h>
 
 static const char * const asx_exts[] = {"asx"};
 

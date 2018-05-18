@@ -82,7 +82,7 @@ The following data is optional and may be omitted:
 
 #include <zlib.h>
 
-#include <libaudcore/audstrings.h>
+#include <libfauxdcore/audstrings.h>
 
 #include "ao.h"
 #include "corlett.h"

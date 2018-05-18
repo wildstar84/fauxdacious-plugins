@@ -20,7 +20,7 @@
 
 #include <string.h>
 
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/runtime.h>
 
 #include "flacng.h"
 

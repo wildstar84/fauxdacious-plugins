@@ -22,10 +22,10 @@
  * along with this program;  If not, see <http://www.gnu.org/licenses>.
  */
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/equalizer.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/equalizer.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
 
 #include "skins_cfg.h"
 #include "main.h"

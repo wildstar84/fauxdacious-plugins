@@ -22,8 +22,8 @@
  * along with this program;  If not, see <http://www.gnu.org/licenses>.
  */
 
-#include <libaudcore/equalizer.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/equalizer.h>
+#include <libfauxdcore/runtime.h>
 
 #include "skins_cfg.h"
 #include "skin.h"

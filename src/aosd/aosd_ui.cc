@@ -22,9 +22,9 @@
 
 #include <gtk/gtk.h>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/index.h>
-#include <libaudcore/preferences.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/index.h>
+#include <libfauxdcore/preferences.h>
 
 #include "aosd.h"
 #include "aosd_style.h"

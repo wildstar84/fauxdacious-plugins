@@ -31,8 +31,8 @@
 #include <glib.h>
 #include <QPainter>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
 
 #include "plugin.h"
 #include "skins_cfg.h"

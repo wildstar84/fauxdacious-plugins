@@ -20,11 +20,11 @@
 #include <math.h>
 #include <samplerate.h>
 
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/preferences.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
 
 /* The general idea of the speed change algorithm is to divide the input signal
  * into pieces, spaced at a time interval A, using a cosine-shaped window

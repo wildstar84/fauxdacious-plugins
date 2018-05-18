@@ -21,7 +21,7 @@
 #ifndef _I_AOSD_CFG_H
 #define _I_AOSD_CFG_H 1
 
-#include <libaudcore/objects.h>
+#include <libfauxdcore/objects.h>
 
 /* in this release only one user font is supported */
 #define AOSD_TEXT_FONTS_NUM 1

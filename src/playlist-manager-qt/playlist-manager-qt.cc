@@ -27,11 +27,11 @@
 #include <QToolButton>
 #include <QTreeView>
 
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/plugin.h>
-#include <libaudqt/libaudqt.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 class PlaylistManagerQt : public GeneralPlugin
 {

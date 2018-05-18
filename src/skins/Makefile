@@ -44,4 +44,4 @@ LD = ${CXX}
 
 CPPFLAGS += ${PLUGIN_CPPFLAGS} -I../.. ${GTK_CFLAGS}
 CFLAGS += ${PLUGIN_CFLAGS}
-LIBS += -lm ${GTK_LIBS} -laudgui
+LIBS += -lm ${GTK_LIBS} -lfauxdgui

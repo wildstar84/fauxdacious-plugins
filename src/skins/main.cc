@@ -35,15 +35,15 @@
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/mainloop.h>
-#include <libaudcore/plugins.h>
-#include <libaudcore/runtime.h>
-#include <libaudgui/libaudgui.h>
-#include <libaudcore/playlist.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/mainloop.h>
+#include <libfauxdcore/plugins.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdcore/playlist.h>
 
 #include "actions-mainwin.h"
 #include "actions-playlist.h"
@@ -144,7 +144,8 @@ static void seek_timeout (void * rewind);
 
 static bool showing_about_window = false;  /* JWT: TRUE WHEN "ABOUT" WINDOW IS DISPLAYED, SO WE CAN TOGGLE IF OFF */
 
-static void format_time (char buf[7], int time, int length)
+/* always returns a 6-character string */
+static StringBuf format_time (int time, int length)
 {
     bool zero = aud_get_bool (nullptr, "leading_zero");
     bool remaining = aud_get_bool ("skins", "show_remaining_time");
@@ -155,11 +156,11 @@ static void format_time (char buf[7], int time, int length)
         time = aud::clamp(0, time, 359999); // 99:59:59
 
         if (time < 60)
-            snprintf (buf, 7, zero ? "-00:%02d" : " -0:%02d", time);
+            return str_printf (zero ? "-00:%02d" : " -0:%02d", time);
         else if (time < 6000)
-            snprintf (buf, 7, zero ? "%03d:%02d" : "%3d:%02d", -time / 60, time % 60);
+            return str_printf (zero ? "%03d:%02d" : "%3d:%02d", -time / 60, time % 60);
         else
-            snprintf (buf, 7, "%3d:%02d", -time / 3600, time / 60 % 60);
+            return str_printf ("%3d:%02d", -time / 3600, time / 60 % 60);
     }
     else
     {
@@ -167,11 +168,11 @@ static void format_time (char buf[7], int time, int length)
         time = aud::clamp(0, time, 3599999); // 999:59:59
 
         if (time < 6000)
-            snprintf (buf, 7, zero ? " %02d:%02d" : " %2d:%02d", time / 60, time % 60);
+            return str_printf (zero ? " %02d:%02d" : " %2d:%02d", time / 60, time % 60);
         else if (time < 60000)
-            snprintf (buf, 7, "%3d:%02d", time / 60, time % 60);
+            return str_printf ("%3d:%02d", time / 60, time % 60);
         else
-            snprintf (buf, 7, "%3d:%02d", time / 3600, time / 60 % 60);
+            return str_printf ("%3d:%02d", time / 3600, time / 60 % 60);
     }
 }
 
@@ -245,7 +246,7 @@ static void mainwin_set_song_title (const char * title)
         str_append_printf (buf, " (%d)", instance);
 */
     String instancename = aud_get_instancename ();
-    if (instancename != String ("audacious"))
+    if (instancename != String ("fauxdacious"))
         str_append_printf (buf, " (%s)", (const char *) instancename);
     mainwin->setWindowTitle ((const char *) buf);
 //    mainwin_set_info_text (title ? (const char *) str_get_first_line (title) : "");
@@ -773,8 +774,7 @@ static void mainwin_spos_motion_cb ()
     int length = aud_drct_get_length ();
     int time = (pos - 1) * length / 12;
 
-    char buf[7];
-    format_time (buf, time, length);
+    StringBuf buf = format_time (time, length);
 
     mainwin_stime_min->set_text (buf);
     mainwin_stime_sec->set_text (buf + 4);
@@ -1312,8 +1312,7 @@ static void mainwin_update_volume ()
 
 static void mainwin_update_time_display (int time, int length)
 {
-    char scratch[7];
-    format_time (scratch, time, length);
+    StringBuf scratch = format_time (time, length);
 
     mainwin_minus_num->set (scratch[0]);
     mainwin_10min_num->set (scratch[1]);

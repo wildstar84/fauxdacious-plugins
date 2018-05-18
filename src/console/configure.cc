@@ -11,7 +11,7 @@
 #include "configure.h"
 #include "plugin.h"
 
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/runtime.h>
 
 #define CON_CFGID "console"
 

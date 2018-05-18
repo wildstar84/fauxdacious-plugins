@@ -28,8 +28,8 @@
 #ifndef SKINS_UI_SKINNED_TEXTBOX_H
 #define SKINS_UI_SKINNED_TEXTBOX_H
 
-#include <libaudcore/hook.h>
-#include <libaudcore/objects.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/objects.h>
 
 #include "widget.h"
 

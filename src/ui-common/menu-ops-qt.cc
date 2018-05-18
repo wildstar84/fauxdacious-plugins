@@ -25,9 +25,9 @@
 #include <QMimeData>
 #include <QUrl>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/playlist.h>
-#include <libaudqt/libaudqt.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 void pl_copy ()
 {

@@ -31,7 +31,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/runtime.h>
 
 #include "ghosd.h"
 

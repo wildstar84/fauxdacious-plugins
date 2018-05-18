@@ -20,10 +20,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/inifile.h>
-#include <libaudcore/plugin.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/inifile.h>
+#include <libfauxdcore/plugin.h>
 
 static const char * const audpl_exts[] = {"audpl"};
 

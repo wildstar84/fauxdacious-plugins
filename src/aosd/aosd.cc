@@ -18,7 +18,7 @@
 *
 */
 
-#include <libaudcore/i18n.h>
+#include <libfauxdcore/i18n.h>
 
 #include "aosd.h"
 #include "aosd_osd.h"

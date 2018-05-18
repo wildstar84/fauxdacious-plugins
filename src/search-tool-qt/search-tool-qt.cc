@@ -36,17 +36,17 @@
 #include <QTreeView>
 #include <QUrl>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/mainloop.h>
-#include <libaudcore/multihash.h>
-#include <libaudcore/runtime.h>
-#include <libaudqt/libaudqt.h>
-#include <libaudqt/menu.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/mainloop.h>
+#include <libfauxdcore/multihash.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdqt/libfauxdqt.h>
+#include <libfauxdqt/menu.h>
 
 #define CFG_ID "search-tool"
 #define SEARCH_DELAY 300
@@ -83,7 +83,7 @@ const char * const SearchToolQt::defaults[] = {
 };
 
 const PreferencesWidget SearchToolQt::widgets[] = {
-    WidgetSpin (N_("Maximum number of search results"),
+    WidgetSpin (N_("Number of results to show:"),
         WidgetInt (CFG_ID, "max_results", trigger_search),
          {10, 10000, 10}),
 };

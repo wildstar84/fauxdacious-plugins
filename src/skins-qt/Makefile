@@ -43,4 +43,4 @@ LD = ${CXX}
 
 CPPFLAGS += ${PLUGIN_CPPFLAGS} -I../.. ${GLIB_CFLAGS} ${QT_CFLAGS}
 CFLAGS += ${PLUGIN_CFLAGS}
-LIBS += -lm ${GLIB_LIBS} ${QT_LIBS} -laudqt
+LIBS += -lm ${GLIB_LIBS} ${QT_LIBS} -lfauxdqt

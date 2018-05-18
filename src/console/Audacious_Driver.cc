@@ -10,8 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
 
 #include "configure.h"
 #include "plugin.h"

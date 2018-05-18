@@ -5,7 +5,7 @@ dnl ***
 dnl Initialize
 dnl ==========
 AC_PREREQ([2.59])
-AC_INIT([audacious-plugins], [3.9-beta2])
+AC_INIT([faxudacious-plugins], [3.9-beta3])
 AC_COPYRIGHT([Copyright (C) 2001-2016 Audacious developers and others])
 
 AC_DEFINE_UNQUOTED([PACKAGE], "$PACKAGE_NAME", [Name of package])
@@ -29,12 +29,12 @@ fi
 
 LIBS="$LIBS $LIBINTL"
 
-dnl Check for Audacious
+dnl Check for Fauxdacious
 dnl ===================
 
-PKG_CHECK_MODULES(AUDACIOUS, [audacious >= 3.8],
+PKG_CHECK_MODULES(AUDACIOUS, [fauxdacious >= 3.8],
     [],
-    [AC_MSG_ERROR([Cannot find Audacious 3.8; have you installed Audacious yet?])]
+    [AC_MSG_ERROR([Cannot find Fauxdacious 3.8; have you installed Fauxdacious yet?])]
 )
 
 CPPFLAGS="$CPPFLAGS $AUDACIOUS_CFLAGS"
@@ -654,7 +654,7 @@ fi
 
 dnl *** End of all plugin checks ***
 
-plugindir=`pkg-config audacious --variable=plugin_dir`
+plugindir=`pkg-config fauxdacious --variable=plugin_dir`
 AC_SUBST(plugindir)
 
 dnl XXX

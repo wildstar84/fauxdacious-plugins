@@ -19,12 +19,12 @@
 
 #include "status_bar.h"
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/mainloop.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/tinylock.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/mainloop.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/tinylock.h>
 
 #include <QLabel>
 

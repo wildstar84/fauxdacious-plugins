@@ -28,9 +28,9 @@
 #ifndef SKINS_UI_SKINNED_PLAYLIST_H
 #define SKINS_UI_SKINNED_PLAYLIST_H
 
-#include <libaudcore/hook.h>
-#include <libaudcore/mainloop.h>
-#include <libaudcore/objects.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/mainloop.h>
+#include <libfauxdcore/objects.h>
 
 #include "widget.h"
 

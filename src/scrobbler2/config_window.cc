@@ -1,6 +1,6 @@
 ﻿//audacious includes
-#include <libaudcore/audstrings.h>
-#include <libaudcore/hook.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
 
 //plugin includes
 #include "scrobbler.h"

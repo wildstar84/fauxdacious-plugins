@@ -32,11 +32,11 @@
 
 #include <gtk/gtk.h>
 
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/plugins.h>
-#include <libaudgui/libaudgui.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/plugins.h>
+#include <libfauxdgui/libfauxdgui.h>
 
 #define ACTIVE (aud_playlist_get_active ())
 

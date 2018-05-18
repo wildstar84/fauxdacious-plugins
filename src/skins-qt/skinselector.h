@@ -23,8 +23,8 @@
 #ifndef SKINS_UI_SKINSELECTOR_H
 #define SKINS_UI_SKINSELECTOR_H
 
-#include <libaudcore/index.h>
-#include <libaudcore/objects.h>
+#include <libfauxdcore/index.h>
+#include <libfauxdcore/objects.h>
 
 struct SkinNode {
     String name, desc, path;

@@ -9,9 +9,9 @@
 #ifndef CONSOLE_PLUGIN_H
 #define CONSOLE_PLUGIN_H
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/preferences.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
 
 class ConsolePlugin : public InputPlugin
 {

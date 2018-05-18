@@ -76,8 +76,8 @@ The following data is optional and may be omitted:
 #include <zlib.h>
 
 #define WANT_AUD_BSWAP
-#include <libaudcore/audio.h>
-#include <libaudcore/audstrings.h>
+#include <libfauxdcore/audio.h>
+#include <libfauxdcore/audstrings.h>
 
 #include "ao.h"
 #include "corlett.h"

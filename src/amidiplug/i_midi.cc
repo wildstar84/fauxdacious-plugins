@@ -26,9 +26,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/vfs.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/vfs.h>
 
 #include "i_configure.h"
 

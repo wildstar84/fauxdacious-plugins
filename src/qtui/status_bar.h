@@ -22,8 +22,8 @@
 
 #include <QStatusBar>
 
-#include <libaudcore/hook.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/runtime.h>
 
 class QLabel;
 

@@ -21,18 +21,18 @@
 #include <gtk/gtk.h>
 
 #define AUD_GLIB_INTEGRATION
-#include <libaudcore/audstrings.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/mainloop.h>
-#include <libaudcore/multihash.h>
-#include <libaudcore/runtime.h>
-#include <libaudcore/preferences.h>
-#include <libaudgui/libaudgui-gtk.h>
-#include <libaudgui/list.h>
-#include <libaudgui/menu.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/mainloop.h>
+#include <libfauxdcore/multihash.h>
+#include <libfauxdcore/runtime.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
+#include <libfauxdgui/list.h>
+#include <libfauxdgui/menu.h>
 
 #define CFG_ID "search-tool"
 #define SEARCH_DELAY 300
@@ -69,7 +69,7 @@ const char * const SearchTool::defaults[] = {
 };
 
 const PreferencesWidget SearchTool::widgets[] = {
-    WidgetSpin (N_("Maximum number of search results"),
+    WidgetSpin (N_("Number of results to show:"),
         WidgetInt (CFG_ID, "max_results", trigger_search),
          {10, 10000, 10}),
 };

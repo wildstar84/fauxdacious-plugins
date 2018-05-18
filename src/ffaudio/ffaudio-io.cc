@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "ffaudio-stdinc.h"
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/runtime.h>
 
 #define IOBUF 4096
 

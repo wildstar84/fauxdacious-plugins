@@ -23,10 +23,10 @@
 #include <libnotify/notify.h>
 
 #define AUD_GLIB_INTEGRATION
-#include <libaudcore/drct.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/runtime.h>
 
 static void show_cb ()
 {
@@ -38,7 +38,7 @@ static void osd_setup (NotifyNotification *notification)
     bool resident = aud_get_bool ("notify", "resident");
 
     notify_notification_set_hint (notification, "desktop-entry",
-     g_variant_new_string ("audacious"));
+     g_variant_new_string ("fauxdacious"));
 
     notify_notification_set_hint (notification, "action-icons", g_variant_new_boolean (true));
     notify_notification_set_hint (notification, "resident", g_variant_new_boolean (resident));

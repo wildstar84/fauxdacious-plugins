@@ -4,7 +4,7 @@
 #define BLARGG_ENDIAN
 
 #define WANT_AUD_BSWAP
-#include <libaudcore/audio.h>
+#include <libfauxdcore/audio.h>
 
 #include "blargg_common.h"
 

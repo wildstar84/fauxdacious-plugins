@@ -20,7 +20,7 @@
 #define __FFAUDIO_STDINC_H__GUARD
 
 #define __STDC_CONSTANT_MACROS
-#include <libaudcore/plugin.h>
+#include <libfauxdcore/plugin.h>
 
 extern "C" {
 #include <libavformat/avformat.h>

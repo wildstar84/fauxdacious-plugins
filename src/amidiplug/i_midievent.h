@@ -21,8 +21,8 @@
 #ifndef _I_MIDIEVENT_H
 #define _I_MIDIEVENT_H 1
 
-#include <libaudcore/list.h>
-#include <libaudcore/objects.h>
+#include <libfauxdcore/list.h>
+#include <libfauxdcore/objects.h>
 
 struct midievent_t : public ListNode
 {

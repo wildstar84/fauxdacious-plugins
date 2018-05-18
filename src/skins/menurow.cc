@@ -25,7 +25,7 @@
  * Audacious or using our public API to be a derived work.
  */
 
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/runtime.h>
 
 #include "skins_cfg.h"
 #include "skin.h"

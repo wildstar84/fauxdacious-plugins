@@ -22,11 +22,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/ringbuf.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/ringbuf.h>
+#include <libfauxdcore/runtime.h>
 
 /* Response time adjustments.  Maybe this should be adjustable? */
 #define CHUNK_TIME 0.2f /* seconds */

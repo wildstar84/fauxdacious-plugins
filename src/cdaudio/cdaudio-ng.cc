@@ -44,16 +44,16 @@ extern "C" {
 
 #include <cddb/cddb.h>
 
-#include <libaudcore/audstrings.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/mainloop.h>
-#include <libaudcore/playlist.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/probe.h>
-#include <libaudcore/preferences.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/mainloop.h>
+#include <libfauxdcore/playlist.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/probe.h>
+#include <libfauxdcore/preferences.h>
+#include <libfauxdcore/runtime.h>
 
 #define MIN_DISC_SPEED 2
 #define MAX_DISC_SPEED 24

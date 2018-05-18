@@ -10,11 +10,11 @@
 #include <glib/gstdio.h>
 
 //audacious includes
-#include <libaudcore/audstrings.h>
-#include <libaudcore/drct.h>
-#include <libaudcore/hook.h>
-#include <libaudcore/interface.h>
-#include <libaudcore/plugin.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/drct.h>
+#include <libfauxdcore/hook.h>
+#include <libfauxdcore/interface.h>
+#include <libfauxdcore/plugin.h>
 
 
 //plugin includes

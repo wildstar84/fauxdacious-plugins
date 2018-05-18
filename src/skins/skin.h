@@ -29,8 +29,8 @@
 #include <stdint.h>
 #include <gtk/gtk.h>
 
-#include <libaudcore/index.h>
-#include <libaudcore/objects.h>
+#include <libfauxdcore/index.h>
+#include <libfauxdcore/objects.h>
 
 typedef SmartPtr<cairo_surface_t, cairo_surface_destroy> CairoSurfacePtr;
 typedef SmartPtr<PangoFontDescription, pango_font_description_free> PangoFontDescPtr;

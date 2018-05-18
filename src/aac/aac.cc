@@ -4,10 +4,10 @@
 
 #include <neaacdec.h>
 
-#include <audacious/audtag.h>
-#include <libaudcore/i18n.h>
-#include <libaudcore/plugin.h>
-#include <libaudcore/runtime.h>
+#include <fauxdacious/audtag.h>
+#include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
+#include <libfauxdcore/runtime.h>
 
 class AACDecoder : public InputPlugin
 {
