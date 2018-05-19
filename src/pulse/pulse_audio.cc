@@ -397,7 +397,7 @@ static bool create_context (scoped_lock & lock)
         return false;
     }
 
-    if (! (context = pa_context_new (pa_mainloop_get_api (mainloop), "Audacious")))
+    if (! (context = pa_context_new (pa_mainloop_get_api (mainloop), "Fauxdacious")))
     {
         AUDERR ("Failed to allocate context\n");
         return false;
@@ -427,7 +427,7 @@ static bool create_context (scoped_lock & lock)
 
 static bool create_stream (scoped_lock & lock, const pa_sample_spec & ss)
 {
-    if (! (stream = pa_stream_new (context, "Audacious", & ss, nullptr)))
+    if (! (stream = pa_stream_new (context, "Fauxdacious", & ss, nullptr)))
     {
         REPORT ("pa_stream_new");
         return false;
