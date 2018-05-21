@@ -109,6 +109,7 @@ static bool skip_toggle = true;  //JWT:NEEDED SINCE mainwin_playback_begin SEEMS
 static bool infopopup_on = false;
 static bool seeking = false;
 static int seek_start, seek_time;
+static int volume_delta = 5;
 
 static TextBox * locked_textbox = nullptr;
 static String locked_old_text;
@@ -334,6 +335,9 @@ void mainwin_refresh_hints ()
         mainwin->resize (p->mainwin_width, p->mainwin_height);
 
     mainwin_vis->set_colors ();
+    volume_delta = aud_get_int ("skins", "scroll_volume_steps");
+    if (volume_delta < 1 || volume_delta > 50)
+	    volume_delta = 5;
 }
 
 /* note that the song info is not translated since it is displayed using
@@ -519,10 +523,10 @@ bool MainWindow::scroll (GdkEventScroll * event)
     switch (event->direction)
     {
         case GDK_SCROLL_UP:
-            mainwin_set_volume_diff (5);
+            mainwin_set_volume_diff (volume_delta);
             break;
         case GDK_SCROLL_DOWN:
-            mainwin_set_volume_diff (-5);
+            mainwin_set_volume_diff (-1 * volume_delta);
             break;
         case GDK_SCROLL_LEFT:
             aud_drct_seek (aud_drct_get_time () - 5000);
