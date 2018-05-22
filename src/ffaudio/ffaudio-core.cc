@@ -292,6 +292,7 @@ static SimpleHash<String, AVInputFormat *> extension_dict;
 
 static void create_extension_dict ();
 
+#if ! CHECK_LIBAVCODEC_VERSION (58, 9, 100, 255, 255, 255)
 static int lockmgr (void * * mutexp, enum AVLockOp op)
 {
     switch (op)
@@ -314,6 +315,7 @@ static int lockmgr (void * * mutexp, enum AVLockOp op)
 
     return 0;
 }
+#endif
 
 static void ffaudio_log_cb (void * avcl, int av_level, const char * fmt, va_list va)
 {
@@ -352,15 +354,19 @@ bool FFaudio::init ()
     AUDINFO ("Starting up FFaudio.\n");
     
     aud_config_set_defaults ("ffaudio", defaults);
-    av_lockmgr_register (lockmgr);
 
     if (! initted)
     {
         AUDINFO ("i:INITTED IN init()\n");
         avformat_network_init ();
+#if ! CHECK_LIBAVFORMAT_VERSION (58, 9, 100, 255, 255, 255)
         av_register_all ();
+#endif
         initted = true;
     }
+#if ! CHECK_LIBAVCODEC_VERSION (58, 9, 100, 255, 255, 255)
+    av_lockmgr_register (lockmgr);
+#endif
 
     create_extension_dict ();
 
@@ -381,7 +387,9 @@ void FFaudio::cleanup ()
 
     aud_set_bool ("ffaudio", "save_video", false);  // JWT:MAKE SURE WE DON'T LEAVE VIDEO RECORDING ON!
     extension_dict.clear ();
+#if ! CHECK_LIBAVCODEC_VERSION (58, 9, 100, 255, 255, 255)
     av_lockmgr_register (nullptr);
+#endif
 }
 
 static int log_result (const char * func, int ret)
@@ -403,7 +411,12 @@ static int log_result (const char * func, int ret)
 static void create_extension_dict ()
 {
     AVInputFormat * f;
+#if CHECK_LIBAVFORMAT_VERSION(58, 9, 100, 255, 255, 255)
+    void * iter = nullptr;
+    while ((f = const_cast<AVInputFormat *> (av_demuxer_iterate (& iter))))
+#else
     for (f = av_iformat_next (nullptr); f; f = av_iformat_next (f))
+#endif
     {
         if (! f->extensions)
             continue;
@@ -427,16 +440,16 @@ static AVInputFormat * get_format_by_extension (const char * name)
     AVInputFormat * * f = extension_dict.lookup (String (str_tolower (ext)));
 
     if (f && * f)
-        AUDINFO ("Format %s.\n", (* f)->name);
+        AUDINFO ("Matched format %s by extension.\n", (* f)->name);
     else
-        AUDINFO ("Format unknown.\n");
+        AUDINFO ("No format matched by extension.\n");
 
     return f ? * f : nullptr;
 }
 
 static AVInputFormat * get_format_by_content (const char * name, VFSFile & file)
 {
-    AUDINFO ("Get format by content: %s\n", name);
+    AUDINFO ("Probing content: %s\n", name);
 
     AVInputFormat * f = nullptr;
 
@@ -468,9 +481,9 @@ static AVInputFormat * get_format_by_content (const char * name, VFSFile & file)
     }
 
     if (f)
-        AUDDBG ("Format %s, buffer size %d, score %d.\n", f->name, filled, score);
+        AUDINFO ("Probe matched format %s, buffer size %d, score %d.\n", f->name, filled, score);
     else
-        AUDINFO ("Format unknown.\n");
+        AUDINFO ("Probe did not match any known formats.\n");
 
     if (file.fseek (0, VFS_SEEK_SET) < 0)
         ; /* ignore errors here */
