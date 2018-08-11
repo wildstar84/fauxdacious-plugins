@@ -411,7 +411,9 @@ bool DVD::init ()
     {
         AUDINFO ("i:INITTED IN init()\n");
         avformat_network_init ();
+#if ! CHECK_LIBAVFORMAT_VERSION(58, 9, 100, 255, 255, 255)
         av_register_all ();
+#endif
         initted = true;
     }
 
@@ -1374,10 +1376,10 @@ AUDDBG("---INPUT PIPE OPENED!\n");
             vcinfo.context = c->streams[videoStream]->codec;  // AVCodecContext *
 #endif
             //JWT:AS/OF v3.8, LOW-QUALITY VIDEOS SEEM BETTER W/O THIS, BUT WE LEAVE IT AS A CONFIG. OPTION - YMMV:
-            if (aud_get_bool ("dvd", "video_codec_flag_truncated") && vcodec->capabilities&CODEC_CAP_TRUNCATED)
-                vcinfo.context->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+            if (aud_get_bool ("dvd", "video_codec_flag_truncated") && vcodec->capabilities&AV_CODEC_CAP_TRUNCATED)
+                vcinfo.context->flags |= AV_CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
             if (aud_get_bool ("dvd", "video_codec_flag_gray"))
-                vcinfo.context->flags |= CODEC_FLAG_GRAY; /* output in monochrome (REQUIRES FFMPEG COMPILED W/--enable-gray!) */
+                vcinfo.context->flags |= AV_CODEC_FLAG_GRAY; /* output in monochrome (REQUIRES FFMPEG COMPILED W/--enable-gray!) */
             vcodec_opened = true;
             AUDINFO ("got VIDEO codec %s for stream index %d, opening; w=%d= h=%d=\n", vcinfo.codec->name, vcinfo.stream_idx,
                     vcinfo.context->width, vcinfo.context->height);

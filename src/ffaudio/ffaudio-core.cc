@@ -612,10 +612,10 @@ static bool find_codec (AVFormatContext * c, CodecInfo * cinfo, CodecInfo * vcin
                 vcinfo->context = c->streams[videoStream]->codec;  // AVCodecContext *
 #endif
                 //JWT:AS/OF v3.8, LOW-QUALITY VIDEOS SEEM BETTER W/O THIS, BUT WE LEAVE IT AS A CONFIG. OPTION - YMMV:
-                if (aud_get_bool ("ffaudio", "video_codec_flag_truncated") && vcodec->capabilities&CODEC_CAP_TRUNCATED)
-                    vcinfo->context->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+                if (aud_get_bool ("ffaudio", "video_codec_flag_truncated") && vcodec->capabilities&AV_CODEC_CAP_TRUNCATED)
+                    vcinfo->context->flags |= AV_CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
                 if (aud_get_bool ("ffaudio", "video_codec_flag_gray"))
-                    vcinfo->context->flags |= CODEC_FLAG_GRAY; /* output in monochrome (REQUIRES FFMPEG COMPILED W/--enable-gray!) */
+                    vcinfo->context->flags |= AV_CODEC_FLAG_GRAY; /* output in monochrome (REQUIRES FFMPEG COMPILED W/--enable-gray!) */
             }
             else
                 play_video = false;  /* TURN OFF VIDEO PLAYBACK, SINCE NO VIDEO CODEC! */
