@@ -65,6 +65,7 @@ static void trigger_search ();
 
 const char * const SearchTool::defaults[] = {
     "max_results", "20",
+    "rescan_on_startup", "FALSE",
     nullptr
 };
 
@@ -72,6 +73,8 @@ const PreferencesWidget SearchTool::widgets[] = {
     WidgetSpin (N_("Number of results to show:"),
         WidgetInt (CFG_ID, "max_results", trigger_search),
          {10, 10000, 10}),
+    WidgetCheck (N_("Rescan library at startup"),
+        WidgetBool (CFG_ID, "rescan_on_startup"))
 };
 
 const PluginPreferences SearchTool::prefs = {{widgets}};
@@ -529,6 +532,8 @@ static void search_init ()
 
     update_database ();
 
+    if (aud_get_bool (CFG_ID, "rescan_on_startup"))
+        begin_add (get_uri ());
     hook_associate ("playlist add complete", add_complete_cb, nullptr);
     hook_associate ("playlist scan complete", scan_complete_cb, nullptr);
     hook_associate ("playlist update", playlist_update_cb, nullptr);
