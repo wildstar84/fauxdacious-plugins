@@ -1,8 +1,6 @@
 # Please don't update this file manually - use ./update-potfiles.sh instead!
 src/aac/aac.cc
 src/adplug/adplug-xmms.cc
-src/adplug/core/rix.cc
-src/adplug/core/rix.h
 src/alarm/alarm.cc
 src/alarm/interface.cc
 src/albumart/albumart.cc
@@ -21,6 +19,9 @@ src/aosd/aosd_trigger.cc
 src/aosd/aosd_ui.cc
 src/asx3/asx3.cc
 src/asx/asx.cc
+src/aud_adplug/aud_adplug-xmms.cc
+src/aud_adplug/core/rix.cc
+src/aud_adplug/core/rix.h
 src/audpl/audpl.cc
 src/blur_scope/blur_scope.cc
 src/bs2b/plugin.cc
@@ -87,6 +88,7 @@ src/crossfade/crossfade.cc
 src/crystalizer/crystalizer.cc
 src/cue/cue.cc
 src/delete-files/delete-files.cc
+src/dvd/dvd-ng.cc
 src/echo_plugin/echo.cc
 src/ffaudio/ffaudio-core.cc
 src/filewriter/filewriter.cc
@@ -138,8 +140,11 @@ src/qtui/dialog_windows.cc
 src/qtui/filter_input.cc
 src/qtui/main_window.cc
 src/qtui/menus.cc
+src/qtui/playlist_columns.cc
+src/qtui/playlist_header.cc
 src/qtui/playlist_model.cc
 src/qtui/qtui.cc
+src/qtui/search_bar.cc
 src/qtui/settings.cc
 src/qtui/status_bar.cc
 src/resample/resample.cc
@@ -156,15 +161,15 @@ src/skins/actions.cc
 src/skins/equalizer.cc
 src/skins/main.cc
 src/skins/menus.cc
-src/skins/playlist.cc
 src/skins/playlist-widget.cc
+src/skins/playlistwin.cc
 src/skins/plugin.cc
 src/skins-qt/actions.cc
 src/skins-qt/equalizer.cc
 src/skins-qt/main.cc
 src/skins-qt/menus.cc
-src/skins-qt/playlist.cc
 src/skins-qt/playlist-widget.cc
+src/skins-qt/playlistwin.cc
 src/skins-qt/plugin.cc
 src/skins-qt/skins_cfg.cc
 src/skins-qt/skinselector.cc
@@ -181,6 +186,7 @@ src/statusicon-qt/statusicon.cc
 src/statusicon/statusicon.cc
 src/stereo_plugin/stereo.cc
 src/tonegen/tonegen.cc
+src/ui-common/dialogs-qt.cc
 src/voice_removal/voice_removal.cc
 src/vorbis/vorbis.cc
 src/vorbis/vorbis.h

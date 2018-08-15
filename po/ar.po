@@ -1,114 +1,83 @@
-# Chinese (traditional) translation for Audacious Plugins
+# Arabic translation for Audacious Plugins
 # Copyright (C) Audacious translators
 # This file is distributed under the same license as the Audacious Plugins package.
 #
 # Translators:
-# 盧瑞元（ryuanlu） <rueiyuan.lu@gmail.com>, 2014
-# Ruei-Yuan Lu <RueiYuan.Lu@gmail.com>, 2011
-# 盧瑞元（ryuanlu） <rueiyuan.lu@gmail.com>, 2016-2017
-#: src/cdaudio/cdaudio-ng.cc:494 src/cdaudio/cdaudio-ng.cc:514
-#: src/cdaudio/cdaudio-ng.cc:556 src/dvd/dvd-ng.cc:2953 src/dvd/dvd-ng.cc:2976
+# abouzakaria kov <zakariakov@gmail.com>, 2016
 msgid ""
 msgstr ""
 "Project-Id-Version: Audacious Plugins\n"
 "Report-Msgid-Bugs-To: https://redmine.audacious-media-player.org/\n"
-"POT-Creation-Date: 2018-08-15 12:39-0500\n"
+"POT-Creation-Date: 2018-08-04 20:48+0200\n"
 "PO-Revision-Date: 2018-07-29 21:54+0000\n"
 "Last-Translator: Thomas Lange\n"
-"Language-Team: Chinese (Taiwan) (http://www.transifex.com/audacious/"
-"audacious/language/zh_TW/)\n"
-"Language: zh_TW\n"
+"Language-Team: Arabic (http://www.transifex.com/audacious/audacious/language/"
+"ar/)\n"
+"Language: ar\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
 
 #: src/aac/aac.cc:18
 msgid "AAC (Raw) Decoder"
-msgstr "AAC (Raw) 解碼器"
+msgstr "AAC (Raw) Decoder"
 
-#: src/adplug/adplug-xmms.cc:61
+#: src/adplug/adplug-xmms.cc:50
 msgid "AdPlug (AdLib Player)"
-msgstr "AdPlug (AdLib 播放器)"
+msgstr "AdPlug (AdLib Player)"
 
-#: src/adplug/adplug-xmms.cc:81
-msgid ""
-"AdPlug/XMMS - AdPlug XMMS Plugin\n"
-"AdPlug is a free, cross-platform, hardware independent\n"
-"AdLib sound player library.  AdPlug plays sound data,\n"
-"originally created for the AdLib (OPL2) and Sound Blaster\n"
-"(Dual OPL2/OPL3) audio boards.\n"
-"\n"
-"Fauxdacious plugin by:\n"
-"Copyright (C) 2002, 2003 Simon Peter <dn.tlp@gmx.net>\n"
-"\n"
-"This is the modern version of AdPlug that uses the\n"
-"separate libadplug library.\n"
-"See: http://adplug.sourceforge.net/\n"
-"\n"
-"If Fauxdacious crashes with a memory dump on your system,\n"
-"then your libadplug lacks a patch and you will need\n"
-"to either upgrade libadplug to v2.3 or later OR switch\n"
-"to the Adplug Classic plugin, which has the same features.\n"
-"See Audacious feature #759:\n"
-"https://redmine.audacious-media-player.org/issues/759\n"
-"\n"
-"Do NOT enable both this and the AdPlug Classic plugin\n"
-"at same time!"
-msgstr ""
-
-#: src/adplug/adplug-xmms.cc:189 src/aud_adplug/aud_adplug-xmms.cc:183
-#: src/modplug/modplugbmp.cc:337 src/psf/plugin.cc:136 src/vtx/vtx.cc:89
-#: src/xsf/plugin.cc:106
+#: src/adplug/adplug-xmms.cc:148 src/modplug/modplugbmp.cc:337
+#: src/psf/plugin.cc:136 src/vtx/vtx.cc:89 src/xsf/plugin.cc:106
 msgid "sequenced"
-msgstr "編曲機"
+msgstr "متسلسلة"
 
-#: src/adplug/adplug-xmms.cc:338 src/aud_adplug/aud_adplug-xmms.cc:334
-#: src/ffaudio/ffaudio-core.cc:146 src/mpg123/mpg123.cc:80
-msgid "<b>Advanced</b>"
-msgstr "<b>進階</b>"
+#: src/adplug/adplug-xmms.cc:297 src/sid/xs_config.cc:61
+msgid "<b>Output</b>"
+msgstr "<b>مخرج</b>"
 
-#: src/adplug/adplug-xmms.cc:339 src/aud_adplug/aud_adplug-xmms.cc:335
-msgid "16 Bit Format (vs. 8 Bit)?"
+#: src/adplug/adplug-xmms.cc:298
+msgid "16-bit output (if unchecked, output is 8-bit)"
 msgstr ""
 
-#: src/adplug/adplug-xmms.cc:341 src/aud_adplug/aud_adplug-xmms.cc:337
-#, fuzzy
-msgid "Stereo?"
-msgstr "立體聲"
-
-#: src/adplug/adplug-xmms.cc:343 src/aud_adplug/aud_adplug-xmms.cc:339
-msgid "Frequency (Rate)"
+#: src/adplug/adplug-xmms.cc:300
+msgid "Duplicate mono output to two channels"
 msgstr ""
 
-#: src/adplug/adplug-xmms.cc:344 src/amidiplug/i_configure.cc:152
-#: src/aud_adplug/aud_adplug-xmms.cc:340 src/bs2b/plugin.cc:141
-#: src/console/plugin.cc:47 src/modplug/plugin_main.cc:81
-#: src/resample/resample.cc:201 src/resample/resample.cc:207
-#: src/resample/resample.cc:211 src/resample/resample.cc:215
-#: src/resample/resample.cc:219 src/resample/resample.cc:223
-#: src/resample/resample.cc:227 src/resample/resample.cc:231
-#: src/resample/resample.cc:235 src/resample/resample.cc:239
-#: src/resample/resample.cc:243 src/sid/xs_config.cc:67
-#: src/soxr/sox-resampler.cc:190
+#: src/adplug/adplug-xmms.cc:302
+msgid "Sample rate"
+msgstr ""
+
+#: src/adplug/adplug-xmms.cc:303 src/amidiplug/i_configure.cc:152
+#: src/bs2b/plugin.cc:141 src/console/plugin.cc:47
+#: src/modplug/plugin_main.cc:81 src/resample/resample.cc:201
+#: src/resample/resample.cc:207 src/resample/resample.cc:211
+#: src/resample/resample.cc:215 src/resample/resample.cc:219
+#: src/resample/resample.cc:223 src/resample/resample.cc:227
+#: src/resample/resample.cc:231 src/resample/resample.cc:235
+#: src/resample/resample.cc:239 src/resample/resample.cc:243
+#: src/sid/xs_config.cc:67 src/soxr/sox-resampler.cc:190
 msgid "Hz"
-msgstr "Hz"
+msgstr "هرتز"
 
-#: src/adplug/adplug-xmms.cc:345 src/aud_adplug/aud_adplug-xmms.cc:341
-msgid "Repeat song in continuous loop?"
-msgstr ""
+#: src/adplug/adplug-xmms.cc:304 src/gtkui/settings.cc:46
+#: src/modplug/plugin_main.cc:109 src/qtui/settings.cc:66
+#: src/skins-qt/skins_cfg.cc:298 src/skins/skins_cfg.cc:280
+msgid "<b>Miscellaneous</b>"
+msgstr "<b>متفرقات</b>"
 
-#: src/adplug/adplug-xmms.cc:347 src/aud_adplug/aud_adplug-xmms.cc:343
-msgid "<b>(Changes take effect after restarting play)</b>"
+#: src/adplug/adplug-xmms.cc:305
+msgid "Repeat song in endless loop"
 msgstr ""
 
 #: src/alarm/alarm.cc:55 src/alarm/interface.cc:79
 msgid "Alarm"
-msgstr "鬧鐘"
+msgstr "إنذار"
 
 #: src/alarm/alarm.cc:782
 msgid "Set Alarm ..."
-msgstr "設定鬧鐘 ..."
+msgstr "ضبط المنبه ..."
 
 #: src/alarm/alarm.cc:810
 msgid ""
@@ -116,9 +85,9 @@ msgid ""
 "\n"
 "Originally written by Adam Feakin and Daniel Stodden."
 msgstr ""
-"您可以使用此外掛在特定時間播放。\n"
+"البرنامج المساعد الذي يمكن استخدامه لبدء التشغيل في وقت معين.\n"
 "\n"
-"Originally written by Adam Feakin and Daniel Stodden."
+"الاصلية كتبت بواسطة Adam Feakin and Daniel Stodden."
 
 #: src/alarm/interface.cc:28
 msgid ""
@@ -170,193 +139,197 @@ msgid ""
 "    Type the reminder in the input field and enable\n"
 "    the checkbox if you want it to be shown."
 msgstr ""
-"時間\n"
-"  鈴響於：\n"
-"    鬧鐘的觸發時間。\n"
+"الوقت\n"
+"انذار في:\n"
+"    The time for the alarm to come on.\n"
 "\n"
-"  多久後靜音：\n"
-"    鈴響的時間長度。\n"
-"       (若喚醒的對話視窗未被關閉)\n"
-"\n"
-"\n"
-"週排程\n"
-"  哪幾天：\n"
-"    選擇哪幾天要啟用鬧鐘。\n"
-"\n"
-"  時間：\n"
-"    選擇每天的鬧鐘時間，\n"
-"    或者勾選使用預設值。\n"
+"  خروج بعد:\n"
+"    Stop alarm after this amount of time.\n"
+"       (if the wakeup dialog is not closed)\n"
 "\n"
 "\n"
-"音量\n"
-"  淡入：\n"
-"    在指定的時間內將音量\n"
-"    漸漸提升到指定的音量。\n"
+"أيام\n"
+"  يوم:\n"
+"    Select the days for the alarm to activate.\n"
 "\n"
-"  初始音量：\n"
-"    從此音量開始淡入。\n"
-"\n"
-"  最終音量：\n"
-"    音量淡入的終點。若淡\n"
-"    入的時間長為零則直\n"
-"    接使用此音量開始播放。\n"
+"  وقت:\n"
+"    Choose the time for the alarm on each day,\n"
+"    or select the toggle button to use the default\n"
+"    time.\n"
 "\n"
 "\n"
-"選項：\n"
-"  額外的命令：\n"
-"    鬧鐘觸發時執行這個指令。\n"
+"الصوت\n"
+"  ابهات:\n"
+"    Fade the volume up to the chosen volume\n"
+"    for this amount of time.\n"
 "\n"
-"  播放清單：\n"
-"    載入此播放清單。如果沒有指定則使用現有的。\n"
-"    也可以在這裡輸入 mp3/ogg 串流的網址。\n"
+"  بداية في:\n"
+"    Start fading from this volume.\n"
 "\n"
-"  提醒：\n"
-"    鬧鐘停止以後顯示提示訊息。\n"
-"    請在欄位中輸入提示訊息並勾選啟用。"
+"  نهاية:\n"
+"    The volume to stop fading at.  If the fading\n"
+"    time is 0 then set volume to this and start\n"
+"    playing.\n"
+"\n"
+"\n"
+"خيارات:\n"
+"  Additional Command:\n"
+"    Run this command at the alarm time.\n"
+"\n"
+"  قائمة التشغيل:\n"
+"    Load this playlist. If no playlist\n"
+"    is given, the current one will be used.\n"
+"    The URL of an mp3/ogg stream\n"
+"    can also be entered here.\n"
+"\n"
+"  تذكير:\n"
+"    Display a reminder when the alarm goes off.\n"
+"    Type the reminder in the input field and enable\n"
+"    the checkbox if you want it to be shown."
 
 #: src/alarm/interface.cc:78
 msgid "This is your wakeup call."
-msgstr "這是您的喚醒。"
+msgstr "هذا هو جرس انذار لديك."
 
 #: src/alarm/interface.cc:96
 msgid "Your reminder for today is..."
-msgstr "您今天的提醒"
+msgstr "التذكير لهذا اليوم ..."
 
 #: src/alarm/interface.cc:98 src/alarm/interface.cc:372
 msgid "Reminder"
-msgstr "提醒"
+msgstr "تذكير"
 
 #: src/alarm/interface.cc:122
 msgid "Monday"
-msgstr "星期一"
+msgstr "الإثنين"
 
 #: src/alarm/interface.cc:122
 msgid "Tuesday"
-msgstr "星期二"
+msgstr "الثلاثاء"
 
 #: src/alarm/interface.cc:122
 msgid "Wednesday"
-msgstr "星期三"
+msgstr "الأربعاء"
 
 #: src/alarm/interface.cc:123
 msgid "Thursday"
-msgstr "星期四"
+msgstr "الخميس"
 
 #: src/alarm/interface.cc:123
 msgid "Friday"
-msgstr "星期五"
+msgstr "الجمعة"
 
 #: src/alarm/interface.cc:123
 msgid "Saturday"
-msgstr "星期六"
+msgstr "السبت"
 
 #: src/alarm/interface.cc:123
 msgid "Sunday"
-msgstr "星期日"
+msgstr "الأحد"
 
 #: src/alarm/interface.cc:160 src/alarm/interface.cc:219
 #: src/alarm/interface.cc:234
 msgid "Time"
-msgstr "時間"
+msgstr "وقت"
 
 #: src/alarm/interface.cc:167
 msgid "Alarm at (default):"
-msgstr "鈴響於 (預設)"
+msgstr "ناقوس التحذير في (الافتراضي):"
 
 #: src/alarm/interface.cc:189
 msgid "h"
-msgstr "h"
+msgstr "س"
 
 #: src/alarm/interface.cc:192
 msgid "Quiet after:"
-msgstr "多久後靜音："
+msgstr "اخرج بعد:"
 
 #: src/alarm/interface.cc:204
 msgid "hours"
-msgstr "小時"
+msgstr "ساعات"
 
 #: src/alarm/interface.cc:215
 msgid "minutes"
-msgstr "分鐘"
+msgstr "دقائق"
 
 #: src/alarm/interface.cc:224
 msgid "Choose the days for the alarm to come on"
-msgstr "選擇想要在哪幾天啟用鬧鐘"
+msgstr "اختر يوما للتنبيه"
 
 #: src/alarm/interface.cc:231
 msgid "Day"
-msgstr "哪幾天"
+msgstr "يوم"
 
 #: src/alarm/interface.cc:248 src/bs2b/plugin.cc:130
 msgid "Default"
-msgstr "預設"
+msgstr "افتراضي"
 
 #: src/alarm/interface.cc:277
 msgid "Days"
-msgstr "週排程"
+msgstr "أيام"
 
 #: src/alarm/interface.cc:286
 msgid "Fading"
-msgstr "淡出"
+msgstr "تضاؤل"
 
 #: src/alarm/interface.cc:294 src/console/plugin.cc:41
 #: src/crossfade/crossfade.cc:52 src/crossfade/crossfade.cc:58
-#: src/gtkui/settings.cc:49 src/lirc/lirc.cc:398 src/qtui/settings.cc:69
+#: src/gtkui/settings.cc:49 src/lirc/lirc.cc:395 src/qtui/settings.cc:69
 #: src/sid/xs_config.cc:85 src/sid/xs_config.cc:94 src/sid/xs_config.cc:103
 msgid "seconds"
-msgstr "秒"
+msgstr "ثواني"
 
 #: src/alarm/interface.cc:301 src/alarm/interface.cc:342
 msgid "Volume"
-msgstr "音量"
+msgstr "الصوت"
 
 #: src/alarm/interface.cc:306
 msgid "Start at"
-msgstr "初始音量"
+msgstr "تبدأ في"
 
 #: src/alarm/interface.cc:322
 msgid "Final"
-msgstr "最終音量"
+msgstr "نهائي"
 
 #: src/alarm/interface.cc:335
 msgid "Current"
-msgstr "目前音量"
+msgstr "حالي"
 
 #: src/alarm/interface.cc:348
 msgid "Additional Command"
-msgstr "額外命令"
+msgstr "أمر اضافي"
 
 #: src/alarm/interface.cc:354 src/alarm/interface.cc:377
 msgid "enable"
-msgstr "啟用"
+msgstr "تمكين"
 
 #: src/alarm/interface.cc:361
 msgid "Playlist (optional)"
-msgstr "播放清單 (選用)"
+msgstr "قائمة التشغيل (اختياري)"
 
 #: src/alarm/interface.cc:365
 msgid "Select a playlist"
-msgstr "請選擇播放清單"
+msgstr "حدد قائمة التشغيل"
 
 #: src/alarm/interface.cc:385
 msgid "Options"
-msgstr "選項"
+msgstr "خيارات"
 
 #: src/alarm/interface.cc:390
 msgid "What do these options mean?"
-msgstr "這些選項代表什麼意思？"
+msgstr "ماذا تفعل هذه الخيارات تعني؟"
 
 #: src/alarm/interface.cc:404
 msgid "Help"
-msgstr "說明"
+msgstr "مساعدة"
 
 #: src/albumart/albumart.cc:31 src/albumart-qt/albumart.cc:33
 msgid "Album Art"
-msgstr "專輯封面"
+msgstr "ألبوم الفنان"
 
 #: src/alsa/alsa.h:64
 msgid "ALSA Output"
-msgstr "ALSA 輸出"
+msgstr "ناتج ALSA"
 
 #: src/alsa/config.cc:28
 msgid ""
@@ -372,38 +345,33 @@ msgstr ""
 "My thanks to William Pitcock, author of the ALSA Output Plugin NG, whose "
 "code served as a reference when the ALSA manual was not enough."
 
-#: src/alsa/config.cc:62
+#: src/alsa/config.cc:61
 msgid "(no description)"
-msgstr "(無描述訊息)"
+msgstr "(بدون وصف)"
 
-#: src/alsa/config.cc:167
+#: src/alsa/config.cc:166
 msgid "Default PCM device"
-msgstr "預設 PCM 裝置"
+msgstr "الجهاز الافتراضي PCM"
 
-#: src/alsa/config.cc:189
+#: src/alsa/config.cc:188
 msgid "Default mixer device"
-msgstr "預設混音器裝置"
+msgstr "لجهاز الخالط الافتراضي"
 
-#: src/alsa/config.cc:303
+#: src/alsa/config.cc:296
 msgid "PCM device:"
-msgstr "PCM 裝置："
+msgstr "جهاز PCM:"
 
-#: src/alsa/config.cc:306
+#: src/alsa/config.cc:299
 msgid "Mixer device:"
-msgstr "混音器裝置："
+msgstr "جهاز الخالط:"
 
-#: src/alsa/config.cc:309
+#: src/alsa/config.cc:302
 msgid "Mixer element:"
-msgstr "混音器元件："
-
-#: src/alsa/config.cc:312
-#, fuzzy
-msgid "Extra Mixer element?:"
-msgstr "混音器元件："
+msgstr "عنصر خالط:"
 
 #: src/amidiplug/amidi-plug.cc:41
 msgid "AMIDI-Plug (MIDI Player)"
-msgstr "AMIDI-Plug (MIDI 播放器)"
+msgstr "AMIDI-التوصيل(MIDI مشغل)"
 
 #: src/amidiplug/amidi-plug.cc:435
 msgid ""
@@ -449,51 +417,51 @@ msgstr ""
 
 #: src/amidiplug/i_configure.cc:94
 msgid "Override default gain:"
-msgstr "覆載預設的增益值："
+msgstr "تجاوز الكاسب الافتراضي:"
 
 #: src/amidiplug/i_configure.cc:102
 msgid "Override default polyphony:"
-msgstr "覆載預設的同時發音數："
+msgstr "تجاوز تعدد الأصوات الافتراضية:"
 
 #: src/amidiplug/i_configure.cc:110
 msgid "Override default reverb:"
-msgstr "覆載預設的殘響強度："
+msgstr "تجاوز التردد الافتراضي:"
 
 #: src/amidiplug/i_configure.cc:112 src/amidiplug/i_configure.cc:120
 msgid "On"
-msgstr "啟用"
+msgstr "مفتوح"
 
 #: src/amidiplug/i_configure.cc:118
 msgid "Override default chorus:"
-msgstr "覆載預設和聲強度："
+msgstr "تجاوز الجوقة الافتراضية:"
 
 #: src/amidiplug/i_configure.cc:128 src/console/plugin.cc:29
 msgid "<b>Playback</b>"
-msgstr "<b>播放</b>"
+msgstr "<b>التشغيل</b>"
 
 #: src/amidiplug/i_configure.cc:129
 msgid "Transpose:"
-msgstr "移調："
+msgstr "ترجم:"
 
 #: src/amidiplug/i_configure.cc:131 src/speedpitch/speed-pitch.cc:257
 msgid "semitones"
-msgstr "半音"
+msgstr "نصف نغمة"
 
 #: src/amidiplug/i_configure.cc:132
 msgid "Drum shift:"
-msgstr "鼓移："
+msgstr "تحول الطبل:"
 
 #: src/amidiplug/i_configure.cc:134
 msgid "note numbers"
-msgstr "音符數量"
+msgstr "ارقام النوتة"
 
 #: src/amidiplug/i_configure.cc:135
 msgid "Skip leading silence"
-msgstr "跳過開頭的靜音"
+msgstr "تخطي  leading silence"
 
 #: src/amidiplug/i_configure.cc:137
 msgid "Skip trailing silence"
-msgstr "跳過結尾的靜音"
+msgstr "تخطي  trailing silence"
 
 #: src/amidiplug/i_configure.cc:141
 msgid "<b>SoundFont</b>"
@@ -501,113 +469,105 @@ msgstr "<b>SoundFont</b>"
 
 #: src/amidiplug/i_configure.cc:145
 msgid "<b>Synthesizer</b>"
-msgstr "<b>合成器</b>"
+msgstr "<b>المزج</b>"
 
 #: src/amidiplug/i_configure.cc:150 src/console/plugin.cc:45
-#: src/filewriter/filewriter.cc:601 src/sid/xs_config.cc:65
+#: src/filewriter/filewriter.cc:473 src/sid/xs_config.cc:65
 msgid "Sample rate:"
-msgstr "取樣率："
+msgstr "معدل العينة:"
 
 #: src/amidiplug/i_configure-fluidsynth.cc:54
 msgid "AMIDI-Plug - select SoundFont file"
-msgstr "AMIDI-Plug - 選擇 SoundFont 檔案"
+msgstr "AMIDI-Plug - حدد ملف  SoundFont "
 
 #: src/amidiplug/i_configure-fluidsynth.cc:57
 msgid "_Cancel"
-msgstr "取消(_C)"
+msgstr "_إلغ"
 
 #: src/amidiplug/i_configure-fluidsynth.cc:58
 msgid "_Open"
-msgstr "開啟(_O)"
+msgstr "_افتح"
 
 #: src/amidiplug/i_configure-fluidsynth.cc:227 src/gtkui/columns.cc:46
-#: src/gtkui/columns.cc:64 src/qtui/playlist_columns.cc:48
 msgid "File name"
-msgstr "檔案名稱"
+msgstr "إسم الملف"
 
 #: src/amidiplug/i_configure-fluidsynth.cc:231
 msgid "Size (bytes)"
-msgstr "大小 (位元組)"
+msgstr "حجم(بايت)"
 
 #: src/amidiplug/i_fileinfo.cc:169
 msgid "Name:"
-msgstr "名稱："
+msgstr "اسم:"
 
 #: src/amidiplug/i_fileinfo.cc:187
 msgid "<span size=\"smaller\"> MIDI Info </span>"
-msgstr "<span size=\"smaller\"> MIDI 資訊 </span>"
+msgstr "<span size=\"smaller\"> ميدي معلومات</span>"
 
 #: src/amidiplug/i_fileinfo.cc:201
 msgid "Format:"
-msgstr "格式："
+msgstr "صِيغة:"
 
 #: src/amidiplug/i_fileinfo.cc:204
 msgid "Length (msec):"
-msgstr "長度 (毫秒)："
+msgstr "طول (مللي ثانية):"
 
 #: src/amidiplug/i_fileinfo.cc:207
 msgid "No. of Tracks:"
-msgstr "音軌編號："
+msgstr "عدد المقاطع:"
 
 #: src/amidiplug/i_fileinfo.cc:213
 msgid "variable"
-msgstr "變動的"
+msgstr "متغير"
 
 #: src/amidiplug/i_fileinfo.cc:215
 msgid "BPM:"
-msgstr "BPM："
+msgstr "BPM:"
 
 #: src/amidiplug/i_fileinfo.cc:223
 msgid "BPM (wavg):"
-msgstr "BPM (wavg)："
+msgstr "BPM (wavg):"
 
 #: src/amidiplug/i_fileinfo.cc:226
 msgid "Time Div:"
-msgstr "時間分割："
+msgstr "الوقت Div:"
 
 #: src/amidiplug/i_fileinfo.cc:237
 msgid "<span size=\"smaller\"> MIDI Comments and Lyrics </span>"
-msgstr "<span size=\"smaller\"> MIDI 備註與歌詞 </span>"
+msgstr "<span size=\"smaller\">تعليقات  MIDI and Lyrics </span>"
 
 #: src/amidiplug/i_fileinfo.cc:284
 msgid "* no comments available in this MIDI file *"
-msgstr "* 這個 MIDI 檔不包含備註資料 *"
+msgstr "* لا يوجد تعليقات متاحة في ملف MIDI *"
 
 #: src/amidiplug/i_fileinfo.cc:296
 msgid "* no lyrics available in this MIDI file *"
-msgstr "* 這個 MIDI 檔不包含歌詞資料 *"
+msgstr "* لا كلمات متاحة في ملف MIDI *"
 
 #: src/amidiplug/i_fileinfo.cc:306 src/ladspa/plugin.cc:417
 msgid "_Close"
-msgstr "關閉(_C)"
+msgstr "_اخرج"
 
 #: src/amidiplug/i_fileinfo.cc:331
 msgid "  (invalid UTF-8)"
-msgstr "  (無效的 UTF-8 字串)"
+msgstr "  (غير صالحة UTF-8)"
 
 #: src/ampache/ampache.cc:33
 msgid "Ampache Browser"
-msgstr "Ampache 瀏覽器"
+msgstr "Ampache متصفخ"
 
 #: src/ampache/ampache.cc:46
-#, fuzzy
 msgid ""
-"Ampache Browser for Fauxdacious\n"
-"http://ampache-browser.org/\n"
-"\n"
-"Copyright (C) Róbert Čerňanský and John Lindgren\n"
-"License: GNU GPLv3"
-msgstr ""
 "Ampache Browser for Audacious\n"
 "http://ampache-browser.org/\n"
 "\n"
 "Copyright (C) Róbert Čerňanský and John Lindgren\n"
 "License: GNU GPLv3"
+msgstr ""
 
 #: src/aosd/aosd.cc:31
-#, fuzzy
 msgid ""
-"Fauxdacious OSD\n"
+"Audacious OSD\n"
 "http://www.develia.org/projects.php?p=audacious#aosd\n"
 "\n"
 "Written by Giacomo Lozito <james@develia.org>\n"
@@ -625,142 +585,142 @@ msgstr ""
 
 #: src/aosd/aosd.h:37
 msgid "AOSD (On-Screen Display)"
-msgstr "AOSD (Audacious OSD)"
+msgstr "AOSD (العرض على الشاشة)"
 
 #: src/aosd/aosd_style.cc:54
 msgid "Rectangle"
-msgstr "矩形"
+msgstr "مستطيل"
 
 #: src/aosd/aosd_style.cc:59
 msgid "Rounded Rectangle"
-msgstr "圓角矩形"
+msgstr "مستطيل دائري"
 
 #: src/aosd/aosd_style.cc:64
 msgid "Concave Rectangle"
-msgstr "角落凹陷的矩形"
+msgstr "مستطيل مقعر"
 
 #: src/aosd/aosd_style.cc:69
 msgid "None"
-msgstr "無"
+msgstr "لا شيء"
 
 #: src/aosd/aosd_trigger.cc:49
 msgid "Playback Start"
-msgstr "開始播放"
+msgstr "بداية التشغيل"
 
 #: src/aosd/aosd_trigger.cc:50
 msgid "Triggers OSD when a playlist entry is played."
-msgstr "當播放清單中的項目被播放時觸發 OSD"
+msgstr "اطلق OSD عند تشغيل القائمة."
 
 #: src/aosd/aosd_trigger.cc:55
 msgid "Title Change"
-msgstr "標題變更"
+msgstr "تغير العنوان"
 
 #: src/aosd/aosd_trigger.cc:56
 msgid "Triggers OSD when the song title changes (for internet streams)."
-msgstr "歌曲標題改變時顯示 OSD (網路串流用)。"
+msgstr "اطلق OSD عند تغيير عنوان المقطع (لتيارات الإنترنت)."
 
 #: src/aosd/aosd_trigger.cc:61
 msgid "Pause On"
-msgstr "暫停播放"
+msgstr "اللبث مشغل"
 
 #: src/aosd/aosd_trigger.cc:62
 msgid "Triggers OSD when playback is paused."
-msgstr "當播放暫停時觸發 OSD"
+msgstr "يطلق OSD عند لبث التشغيل."
 
 #: src/aosd/aosd_trigger.cc:67
 msgid "Pause Off"
-msgstr "解除暫停"
+msgstr "الليث متوقف"
 
 #: src/aosd/aosd_trigger.cc:68
 msgid "Triggers OSD when playback is unpaused."
-msgstr "當解除暫停時觸發 OSD"
+msgstr "يطلق OSD عندما التشغيل يتم إيقافه مؤقتا."
 
 #: src/aosd/aosd_ui.cc:162
 msgid "Placement"
-msgstr "放置位置"
+msgstr "الموضع"
 
 #: src/aosd/aosd_ui.cc:195
 msgid "Relative X offset:"
-msgstr "X 軸相對位移："
+msgstr "نسبية X أوفسات:"
 
 #: src/aosd/aosd_ui.cc:202
 msgid "Relative Y offset:"
-msgstr "Y 軸相對位移："
+msgstr "نسبية  Y أوفسات:"
 
 #: src/aosd/aosd_ui.cc:209
 msgid "Max OSD width:"
-msgstr "最大 OSD 寬度："
+msgstr "اكبر عرض OSD  :"
 
 #: src/aosd/aosd_ui.cc:220
 msgid "Multi-Monitor options"
-msgstr "多螢幕選項"
+msgstr "خيارات الشاشه المتعددة "
 
 #: src/aosd/aosd_ui.cc:224
 msgid "Display OSD using:"
-msgstr "顯示 OSD："
+msgstr "عرض OSD باستخدام:"
 
 #: src/aosd/aosd_ui.cc:226
 msgid "all monitors"
-msgstr "所有螢幕"
+msgstr "كل الشاشات"
 
 #: src/aosd/aosd_ui.cc:229
 #, c-format
 msgid "monitor %i"
-msgstr "螢幕 %i"
+msgstr "شاشة%i"
 
 #: src/aosd/aosd_ui.cc:281
 msgid "Timing (ms)"
-msgstr "計時 (毫秒)"
+msgstr "توقيت (مللي ثانية)"
 
 #: src/aosd/aosd_ui.cc:286
 msgid "Display:"
-msgstr "顯示："
+msgstr "عرض:"
 
 #: src/aosd/aosd_ui.cc:291
 msgid "Fade in:"
-msgstr "淡入："
+msgstr "تتلاشى في:"
 
 #: src/aosd/aosd_ui.cc:296
 msgid "Fade out:"
-msgstr "淡出："
+msgstr "تتلاشى خارج:"
 
 #: src/aosd/aosd_ui.cc:360
 msgid "Fonts"
-msgstr "字型"
+msgstr "خطوط"
 
 #: src/aosd/aosd_ui.cc:367
 #, c-format
 msgid "Font %i:"
-msgstr "字型 %i："
+msgstr "خط %i:"
 
 #: src/aosd/aosd_ui.cc:381
 msgid "Shadow"
-msgstr "陰影"
+msgstr "ظل"
 
 #: src/aosd/aosd_ui.cc:485
 msgid "Render Style"
-msgstr "呈現樣式"
+msgstr "نمط الاداء"
 
 #: src/aosd/aosd_ui.cc:501
 msgid "Colors"
-msgstr "顏色"
+msgstr "الوان"
 
 #: src/aosd/aosd_ui.cc:512
 #, c-format
 msgid "Color %i:"
-msgstr "顏色 %i："
+msgstr "خط %i:"
 
 #: src/aosd/aosd_ui.cc:599
 msgid "Enable trigger"
-msgstr "啟用觸發器"
+msgstr "تمكين المشغل"
 
 #: src/aosd/aosd_ui.cc:626
 msgid "Event"
-msgstr "事件"
+msgstr "حدث"
 
 #: src/aosd/aosd_ui.cc:653
 msgid "Composite manager detected"
-msgstr "已偵測到合成特效管理程式"
+msgstr "Composite manager عثر على"
 
 #: src/aosd/aosd_ui.cc:660
 msgid ""
@@ -768,105 +728,81 @@ msgid ""
 "unless you know that you have one running, please activate a composite "
 "manager otherwise the OSD won't work properly"
 msgstr ""
-"未偵測到合成特效管理程式；\n"
-"除非您確定已經執行，否則 OSD 將無法正確啟用。"
+"لم يعثر على Composite manager;\n"
+"إلا إذا كنت تعرف أن لديك  واحد مشغل, الرجاء تنشيط Composite manager   "
 
 #: src/aosd/aosd_ui.cc:668
 msgid "Composite manager not required for fake transparency"
-msgstr "假的透明特效不需要 Composite manager"
+msgstr "مدير مركب غير مطلوب للشفافية "
 
 #: src/aosd/aosd_ui.cc:705
 msgid "Transparency"
-msgstr "透明"
+msgstr "الشفافية"
 
 #: src/aosd/aosd_ui.cc:711
 msgid "Fake transparency"
-msgstr "假的透明特效"
+msgstr "شفافية وهمية"
 
 #: src/aosd/aosd_ui.cc:713
 msgid "Real transparency (requires X Composite Ext.)"
-msgstr "真的透明特效 (需要 X Composite 延伸功能)"
+msgstr "الشفافية الحقيقية (تتطلب X Composite Ext.)"
 
 #: src/aosd/aosd_ui.cc:754
 msgid "Composite extension not loaded"
-msgstr "Composite 延伸功能未載入"
+msgstr "Composite extension لم يحمل"
 
 #: src/aosd/aosd_ui.cc:771
-#, fuzzy, c-format
-msgid "<span font_desc='%s'>Fauxdacious OSD</span>"
+#, c-format
+msgid "<span font_desc='%s'>Audacious OSD</span>"
 msgstr "<span font_desc='%s'>Audacious OSD</span>"
 
 #: src/aosd/aosd_ui.cc:834
 msgid "Position"
-msgstr "位置"
+msgstr "الموضع"
 
 #: src/aosd/aosd_ui.cc:839
 msgid "Animation"
-msgstr "動畫"
+msgstr "الحركة"
 
 #: src/aosd/aosd_ui.cc:844
 msgid "Text"
-msgstr "文字"
+msgstr "نص"
 
 #: src/aosd/aosd_ui.cc:849
 msgid "Decoration"
-msgstr "裝飾"
+msgstr "زخرفة"
 
 #: src/aosd/aosd_ui.cc:854
 msgid "Trigger"
-msgstr "觸發"
+msgstr "أثار"
 
 #: src/aosd/aosd_ui.cc:859
 msgid "Misc"
-msgstr "雜項"
+msgstr "متفرقات"
 
 #: src/aosd/aosd_ui.cc:868
 msgid "Test"
-msgstr "測試"
+msgstr "تجربة"
 
 #: src/asx3/asx3.cc:35
 msgid "ASXv3 Playlists"
-msgstr "ASXv3 播放清單"
+msgstr "قوائم ASXv3"
 
 #: src/asx/asx.cc:33
 msgid "ASXv1/ASXv2 Playlists"
-msgstr "ASXv1／ASXv2 播放清單"
-
-#: src/aud_adplug/aud_adplug-xmms.cc:62
-#, fuzzy
-msgid "AdPlug Classic (AdLib Player)"
-msgstr "AdPlug (AdLib 播放器)"
-
-#: src/aud_adplug/aud_adplug-xmms.cc:82
-msgid ""
-"AdPlug/XMMS - AdPlug XMMS Plugin\n"
-"(Local Fauxdacious Classic version)\n"
-"\n"
-"Fauxdacious plugin by:\n"
-"Copyright (C) 2002, 2003 Simon Peter <dn.tlp@gmx.net>\n"
-"\n"
-"This is the classic Audacious internal version of AdPlug.\n"
-"\n"
-"NOTE:  THIS PLUGIN IS *DEPRECIATED*!\n"
-"MOST USERS SHOULD USE THE MODERN VERSION which\n"
-"uses the separate libadplug package now installed\n"
-"on most systems.  See Audacious feature #759:\n"
-"https://redmine.audacious-media-player.org/issues/759\n"
-"\n"
-"Do NOT enable both this and the AdPlug plugin at same time!"
-msgstr ""
+msgstr "قوائم ASXv1/ASXv2"
 
 #: src/audpl/audpl.cc:33
 msgid "Audacious Playlists (audpl)"
-msgstr "Audacious 播放清單 (audpl)"
+msgstr "قوائم Audacious (audpl)"
 
 #: src/blur_scope/blur_scope.cc:39
 msgid "<b>Color</b>"
-msgstr "<b>色彩</b>"
+msgstr "<b>لون</b>"
 
 #: src/blur_scope/blur_scope.cc:55
 msgid "Blur Scope"
-msgstr "模糊波形"
+msgstr "نطاق الضباب"
 
 #: src/bs2b/plugin.cc:38
 msgid "Bauer Stereophonic-to-Binaural (BS2B)"
@@ -874,11 +810,11 @@ msgstr "Bauer Stereophonic-to-Binaural (BS2B)"
 
 #: src/bs2b/plugin.cc:129
 msgid "Presets:"
-msgstr "預設集："
+msgstr "معادلات:"
 
 #: src/bs2b/plugin.cc:136
 msgid "Feed level:"
-msgstr "饋送等級："
+msgstr "مستوى التغذية:"
 
 #: src/bs2b/plugin.cc:138
 msgid "x1/10 dB"
@@ -886,17 +822,17 @@ msgstr "x1/10 dB"
 
 #: src/bs2b/plugin.cc:139
 msgid "Cut frequency:"
-msgstr "截斷頻率："
+msgstr "قطع التردد:"
 
 #: src/cairo-spectrum/cairo-spectrum.cc:41
 msgid "Spectrum Analyzer"
-msgstr "頻譜分析儀"
+msgstr "محلل الطيف"
 
-#: src/cdaudio/cdaudio-ng.cc:75
+#: src/cdaudio/cdaudio-ng.cc:71
 msgid "Audio CD Plugin"
-msgstr "音樂 CD 外掛"
+msgstr "صوت CD المساعد"
 
-#: src/cdaudio/cdaudio-ng.cc:128
+#: src/cdaudio/cdaudio-ng.cc:118
 msgid ""
 "Copyright (C) 2007-2012 Calin Crisan <ccrisan@gmail.com> and others.\n"
 "\n"
@@ -916,180 +852,156 @@ msgstr ""
 "\n"
 "This was a Google Summer of Code 2007 project."
 
-#: src/cdaudio/cdaudio-ng.cc:145 src/dvd/dvd-ng.cc:288
+#: src/cdaudio/cdaudio-ng.cc:134
 msgid "<b>Device</b>"
-msgstr "<b>裝置</b>"
+msgstr "<b>الجهاز</b>"
 
-#: src/cdaudio/cdaudio-ng.cc:146 src/dvd/dvd-ng.cc:289
+#: src/cdaudio/cdaudio-ng.cc:135
 msgid "Read speed:"
-msgstr "讀取速度："
+msgstr "سرعة القراءة:"
 
-#: src/cdaudio/cdaudio-ng.cc:149 src/dvd/dvd-ng.cc:295
+#: src/cdaudio/cdaudio-ng.cc:138
 msgid "Override device:"
-msgstr "覆載裝置："
+msgstr "تجاوز الجهاز:"
 
-#: src/cdaudio/cdaudio-ng.cc:151
+#: src/cdaudio/cdaudio-ng.cc:140
 msgid "<b>Metadata</b>"
-msgstr "<b>詮釋資料</b>"
+msgstr "<b>البيانات الوصفية</b>"
+
+#: src/cdaudio/cdaudio-ng.cc:141
+msgid "Use CD-Text"
+msgstr "استخدم CD-Text"
+
+#: src/cdaudio/cdaudio-ng.cc:143
+msgid "Use CDDB"
+msgstr "استخدم CDDB"
+
+#: src/cdaudio/cdaudio-ng.cc:145
+msgid "Use HTTP instead of CDDBP"
+msgstr "استخدم HTTP بدلا من CDDBP"
+
+#: src/cdaudio/cdaudio-ng.cc:148
+msgid "Server:"
+msgstr "الخادم:"
 
 #: src/cdaudio/cdaudio-ng.cc:152
-msgid "Use CD-Text"
-msgstr "使用 CD-Text"
-
-#: src/cdaudio/cdaudio-ng.cc:154
-msgid "Use CDDB"
-msgstr "使用 CDDB"
+msgid "Path:"
+msgstr "المسار:"
 
 #: src/cdaudio/cdaudio-ng.cc:156
-msgid "Use HTTP instead of CDDBP"
-msgstr "使用 HTTP 而非 CDDBP"
-
-#: src/cdaudio/cdaudio-ng.cc:159
-msgid "Server:"
-msgstr "伺服器："
-
-#: src/cdaudio/cdaudio-ng.cc:163
-msgid "Path:"
-msgstr "路徑："
-
-#: src/cdaudio/cdaudio-ng.cc:167
 msgid "Port:"
-msgstr "連接埠："
+msgstr "المنفذ:"
 
-#: src/cdaudio/cdaudio-ng.cc:171
-#, fuzzy
-msgid "Allow Custom Tag-files"
-msgstr "自訂標題"
-
-#: src/cdaudio/cdaudio-ng.cc:234
+#: src/cdaudio/cdaudio-ng.cc:220
 msgid "Failed to initialize cdio subsystem."
-msgstr "無法初始化 cdio 子系統。"
+msgstr "فشل تهيئة cdio الفرعي."
 
-#: src/cdaudio/cdaudio-ng.cc:264
+#: src/cdaudio/cdaudio-ng.cc:250
 #, c-format
 msgid "Invalid URI %s."
-msgstr "無效的 URI %s。"
+msgstr "غير صالح  URI %s."
 
-#: src/cdaudio/cdaudio-ng.cc:266
+#: src/cdaudio/cdaudio-ng.cc:252
 #, c-format
 msgid "Track %d not found."
-msgstr "找不到音軌 %d。"
+msgstr "المقطع %d غير موجود."
 
-#: src/cdaudio/cdaudio-ng.cc:268
+#: src/cdaudio/cdaudio-ng.cc:254
 #, c-format
 msgid "Track %d is a data track."
-msgstr "軌道 %d 是資料軌。"
+msgstr "المسار %d هو مسار البيانات."
 
-#: src/cdaudio/cdaudio-ng.cc:344
+#: src/cdaudio/cdaudio-ng.cc:329
 msgid "Error reading audio CD."
-msgstr "讀取音樂 CD 時發生錯誤。"
+msgstr "خطأ في قراءة صوت CD."
 
-#: src/cdaudio/cdaudio-ng.cc:417
+#: src/cdaudio/cdaudio-ng.cc:398
 msgid "Audio CD"
-msgstr "音樂 CD"
+msgstr "صوت CD"
 
-#: src/cdaudio/cdaudio-ng.cc:626
-#, fuzzy, c-format
-msgid "Failed to open CD Device %s."
-msgstr "無法開啟 CD 裝置 %s。"
-
-#: src/cdaudio/cdaudio-ng.cc:635
+#: src/cdaudio/cdaudio-ng.cc:434 src/cdaudio/cdaudio-ng.cc:443
 #, c-format
 msgid "Failed to open CD device %s."
-msgstr "無法開啟 CD 裝置 %s。"
+msgstr "خطأ في فتح جهاز CD %s."
 
-#: src/cdaudio/cdaudio-ng.cc:638
+#: src/cdaudio/cdaudio-ng.cc:446
 msgid "No audio capable CD drive found."
-msgstr "找不到可以播放音訊的光碟機。"
+msgstr "لم يتم العثور على الصوت محرك الأقراص قادرة."
 
-#: src/cdaudio/cdaudio-ng.cc:661
+#: src/cdaudio/cdaudio-ng.cc:469
 msgid "Drive is empty."
-msgstr "光碟機是空的。"
+msgstr "القرص فارغ"
 
-#: src/cdaudio/cdaudio-ng.cc:663
+#: src/cdaudio/cdaudio-ng.cc:471
 msgid "Unsupported disk type."
-msgstr "未支援的光碟類型"
+msgstr "نوع القرص غير معتمد."
 
-#: src/cdaudio/cdaudio-ng.cc:690
+#: src/cdaudio/cdaudio-ng.cc:495
 msgid "Failed to finish initializing opened CD drive."
-msgstr "開啟的光碟機無法完成初始化。"
+msgstr "فشل في إنهاء تهيئة فتح محرك الأقراص."
 
-#: src/cdaudio/cdaudio-ng.cc:703 src/dvd/dvd-ng.cc:3014 src/dvd/dvd-ng.cc:3027
+#: src/cdaudio/cdaudio-ng.cc:508
 msgid "Failed to retrieve first/last track number."
-msgstr "無法取得第一個或最後的音軌編號。"
+msgstr "فشل في استرداد الأول / آخر عدد المسار."
 
-#: src/cdaudio/cdaudio-ng.cc:726
+#: src/cdaudio/cdaudio-ng.cc:529
 #, c-format
 msgid "Cannot read start/end LSN for track %d."
-msgstr "無法讀取音軌 %d 的起始／結束邏輯磁區編號。"
+msgstr "لا يمكن قراءة بداية / نهاية LSN للمسار %d."
 
-#: src/cdaudio/cdaudio-ng.cc:808
-msgid "Failed to create the cddb connection."
+#: src/cdaudio/cdaudio-ng.cc:611
+msgid "Failed to create the CDDB connection."
 msgstr ""
 
-#: src/cdaudio/cdaudio-ng.cc:875
+#: src/cdaudio/cdaudio-ng.cc:677
 msgid "Failed to query the CDDB server"
-msgstr "無法查詢 CDDB 伺服器"
+msgstr "فشل الاستعلام عن الخادم CDDB"
 
-#: src/cdaudio/cdaudio-ng.cc:877
+#: src/cdaudio/cdaudio-ng.cc:679
 #, c-format
 msgid "Failed to query the CDDB server: %s"
-msgstr "無法查詢 CDDB 伺服器：%s"
+msgstr "فشل الاستعلام عن الخادم  CDDB: %s"
 
-#: src/cdaudio/cdaudio-ng.cc:901
-#, fuzzy, c-format
-msgid "Failed to read the cddb info: %s"
-msgstr "無法查詢 CDDB 伺服器：%s"
+#: src/cdaudio/cdaudio-ng.cc:703
+#, c-format
+msgid "Failed to read the CDDB info: %s"
+msgstr ""
 
 #: src/cd-menu-items/cd-menu-items.cc:33
 msgid "Audio CD Menu Items"
-msgstr "音樂 CD 選單項目"
+msgstr "Audio CD قائمة عناصر"
 
-#: src/cd-menu-items/cd-menu-items.cc:47 src/cd-menu-items/cd-menu-items.cc:51
-#, fuzzy
-msgid "Play CD"
-msgstr "播放"
-
-#: src/cd-menu-items/cd-menu-items.cc:47 src/cd-menu-items/cd-menu-items.cc:51
-msgid "Add CD"
+#: src/cd-menu-items/cd-menu-items.cc:45
+msgid "Pla_y CD"
 msgstr ""
 
-#: src/cd-menu-items/cd-menu-items.cc:47 src/cd-menu-items/cd-menu-items.cc:51
-#, fuzzy
-msgid "Play DVD"
-msgstr "播放"
-
-#: src/cd-menu-items/cd-menu-items.cc:47 src/cd-menu-items/cd-menu-items.cc:51
-msgid "Add DVD"
-msgstr ""
-
-#: src/cd-menu-items/cd-menu-items.cc:51
-msgid "Eject Disk"
+#: src/cd-menu-items/cd-menu-items.cc:45
+msgid "_Add CD"
 msgstr ""
 
 #: src/compressor/compressor.cc:45
 msgid "<b>Compression</b>"
-msgstr "<b>壓縮</b>"
+msgstr "<b>ضغط</b>"
 
 #: src/compressor/compressor.cc:46
 msgid "Center volume:"
-msgstr "中央音量："
+msgstr "وسط حجم الصوت"
 
 #: src/compressor/compressor.cc:49
 msgid "Dynamic range:"
-msgstr "動態範圍："
+msgstr "النطاق الديناميكي:"
 
 #: src/compressor/compressor.cc:57
 msgid ""
 "Dynamic Range Compression Plugin for Audacious\n"
 "Copyright 2010-2014 John Lindgren"
 msgstr ""
-"Dynamic Range Compression Plugin for Audacious\n"
+"النطاق الديناميكي للضغط Audacious\n"
 "Copyright 2010-2014 John Lindgren"
 
 #: src/compressor/compressor.cc:64
 msgid "Dynamic Range Compressor"
-msgstr "動態範圍壓縮"
+msgstr "ضغط النطاق الديناميكي"
 
 #: src/console/plugin.cc:15
 msgid ""
@@ -1109,27 +1021,29 @@ msgstr ""
 
 #: src/console/plugin.cc:30
 msgid "Bass:"
-msgstr "低音"
+msgstr "صوت عميق:"
 
 #: src/console/plugin.cc:33
 msgid "Treble:"
-msgstr "高音"
+msgstr "صوت مرتفع:"
 
 #: src/console/plugin.cc:36
 msgid "Echo:"
-msgstr "回音："
+msgstr "صدى:"
 
 #: src/console/plugin.cc:39
 msgid "Default song length:"
-msgstr "預設歌曲長度："
+msgstr "المدة الافتراضية للقطعة:"
 
 #: src/console/plugin.cc:42 src/modplug/plugin_main.cc:62
 msgid "<b>Resampling</b>"
-msgstr "<b>重取樣</b>"
+msgstr ""
+"<b>\n"
+"اختزال</b>"
 
 #: src/console/plugin.cc:43
 msgid "Enable audio resampling"
-msgstr "啟用聲音重取樣"
+msgstr "تمكين اختزال الصوت"
 
 #: src/console/plugin.cc:49
 msgid "<b>SPC</b>"
@@ -1137,19 +1051,19 @@ msgstr "<b>SPC</b>"
 
 #: src/console/plugin.cc:50
 msgid "Ignore length from SPC tags"
-msgstr "忽略 SPC 標籤裡記錄的長度"
+msgstr "تجاهل الطول من علاماتSPC"
 
 #: src/console/plugin.cc:52
 msgid "Increase reverb"
-msgstr "增加殘響強度"
+msgstr "زيادة التردد"
 
 #: src/console/plugin.h:26
 msgid "Game Console Music Decoder"
-msgstr "遊戲主機音樂解碼器"
+msgstr "فك لعبة وحدة تحكم الموسيقى"
 
 #: src/coreaudio/coreaudio.cc:53
 msgid "CoreAudio output"
-msgstr "CoreAudio 輸出"
+msgstr "إخراج الصوت الأساسي"
 
 #: src/coreaudio/coreaudio.cc:156
 msgid ""
@@ -1165,10 +1079,10 @@ msgstr ""
 
 #: src/coreaudio/coreaudio.cc:172
 msgid "Use exclusive mode"
-msgstr "使用獨占模式"
+msgstr "استخدام وضع خاص"
 
 #: src/coreaudio/coreaudio.cc:174
-msgid "Use bitperfect audio (adapt device sampling rate)"
+msgid "Use bit perfect audio (adapt device sampling rate)"
 msgstr ""
 
 #: src/crossfade/crossfade.cc:43
@@ -1176,168 +1090,110 @@ msgid ""
 "Crossfade Plugin for Audacious\n"
 "Copyright 2010-2014 John Lindgren"
 msgstr ""
-"Crossfade Plugin for Audacious\n"
+"الاضافة الخافت ل أوداسيو\n"
 "Copyright 2010-2014 John Lindgren"
 
 #: src/crossfade/crossfade.cc:47
 msgid "<b>Crossfade</b>"
-msgstr "<b>淡入淡出</b>"
+msgstr "<b>الخافت</b>"
 
 #: src/crossfade/crossfade.cc:48
 msgid "On automatic song change"
-msgstr "自動切換歌曲時"
+msgstr "عند التغيير التلقائي للمقطوعة"
 
 #: src/crossfade/crossfade.cc:50 src/crossfade/crossfade.cc:56
 msgid "Overlap:"
-msgstr "重疊："
+msgstr "التداخل:"
 
 #: src/crossfade/crossfade.cc:54
 msgid "On seek or manual song change"
-msgstr "跳轉或手動切換歌曲時"
+msgstr "عند التطبيق او تغيير المقطوعة يدويا"
 
 #: src/crossfade/crossfade.cc:60
 msgid "<b>Tip</b>"
-msgstr "<b>提示</b>"
+msgstr "<b>Tip</b>"
 
 #: src/crossfade/crossfade.cc:61
 msgid ""
 "For better crossfading, enable\n"
 "the Silence Removal effect."
-msgstr "為了有較佳的效果，請一併啟用移除靜音。"
+msgstr ""
+"لأفضل إبهات متداخل، تمكين\n"
+"تأثير إزالة الصمت."
 
 #: src/crossfade/crossfade.cc:71
 msgid "Crossfade"
-msgstr "淡入淡出"
+msgstr "خافت"
 
 #: src/crystalizer/crystalizer.cc:31
 msgid "<b>Crystalizer</b>"
-msgstr "<b>Crystalizer</b>"
+msgstr "<b>الكريستال</b>"
 
 #: src/crystalizer/crystalizer.cc:32 src/stereo_plugin/stereo.cc:45
 msgid "Intensity:"
-msgstr "效果強度："
+msgstr "الكثافة:"
 
 #: src/crystalizer/crystalizer.cc:43
 msgid "Crystalizer"
-msgstr "Crystalizer"
+msgstr "الكريستال"
 
 #: src/cue/cue.cc:42
 msgid "Cue Sheet Plugin"
-msgstr "Cue Sheet 外掛"
+msgstr "اضافة Cue Sheet"
 
-#: src/delete-files/delete-files.cc:53 src/delete-files/delete-files.cc:162
-#: src/delete-files/delete-files.cc:177
+#: src/delete-files/delete-files.cc:53 src/delete-files/delete-files.cc:215
+#: src/delete-files/delete-files.cc:230
 msgid "Delete Files"
-msgstr "刪除檔案"
+msgstr "حذف ملفات"
 
-#: src/delete-files/delete-files.cc:87
+#: src/delete-files/delete-files.cc:120
+msgid "No files are selected."
+msgstr ""
+
+#: src/delete-files/delete-files.cc:125
 #, c-format
-msgid "Error moving %s to trash: %s."
+msgid "Do you want to move %s to the trash?"
 msgstr ""
 
-#: src/delete-files/delete-files.cc:98
+#: src/delete-files/delete-files.cc:126
 #, c-format
-msgid "Error deleting %s: %s."
+msgid "Do you want to permanently delete %s?"
 msgstr ""
 
-#: src/delete-files/delete-files.cc:129
+#: src/delete-files/delete-files.cc:133
 #, c-format
-msgid "Error deleting %s: not a local file."
+msgid "Do you want to move %d files to the trash?"
 msgstr ""
 
-#: src/delete-files/delete-files.cc:139
-msgid "Do you want to move the selected files to the trash?"
+#: src/delete-files/delete-files.cc:134
+#, c-format
+msgid "Do you want to permanently delete %d files?"
 msgstr ""
 
-#: src/delete-files/delete-files.cc:140
-msgid "Move to Trash"
-msgstr ""
-
-#: src/delete-files/delete-files.cc:145
-msgid "Do you want to permanently delete the selected files?"
+#: src/delete-files/delete-files.cc:146
+msgid "Move to trash"
 msgstr ""
 
 #: src/delete-files/delete-files.cc:146
 msgid "Delete"
-msgstr "刪除"
+msgstr "حذف"
 
-#: src/delete-files/delete-files.cc:160 src/delete-files/delete-files.cc:181
+#: src/delete-files/delete-files.cc:213 src/delete-files/delete-files.cc:234
 #: src/skins/search-select.cc:76
 msgid "Cancel"
-msgstr "取消"
+msgstr "إلغ"
 
-#: src/delete-files/delete-files.cc:212
+#: src/delete-files/delete-files.cc:268
 msgid "Delete Selected Files"
-msgstr "刪除選擇的檔案"
+msgstr "حذف الملفات المحددة"
 
-#: src/delete-files/delete-files.cc:232
+#: src/delete-files/delete-files.cc:288
 msgid "<b>Delete Method</b>"
-msgstr "<b>刪除方式</b>"
+msgstr "<b>طريقة الحذف</b>"
 
-#: src/delete-files/delete-files.cc:233
+#: src/delete-files/delete-files.cc:289
 msgid "Move to trash instead of deleting immediately"
-msgstr "移動到垃圾桶而不是直接刪除"
-
-#: src/dvd/dvd-ng.cc:135
-#, fuzzy
-msgid "DVD Plugin"
-msgstr "GIO 外掛"
-
-#: src/dvd/dvd-ng.cc:262
-msgid ""
-"DVD-player Plugin for Fauxdacious\n"
-"\n"
-"Copyright (C) 2017 Jim Turner <turnerjw784@yahoo.com>.\n"
-"\n"
-"Many thanks to libdvdnav developers <http://www.gnu.org/software/libdvdnav/>."
-msgstr ""
-
-#: src/dvd/dvd-ng.cc:292
-msgid "Max Tries to Open Disk:"
-msgstr ""
-
-#: src/dvd/dvd-ng.cc:297
-#, fuzzy
-msgid "<b>Playback options:</b>"
-msgstr "<b>播放時間</b>"
-
-#: src/dvd/dvd-ng.cc:298 src/ffaudio/ffaudio-core.cc:149
-msgid "Video packet queue size"
-msgstr ""
-
-#: src/dvd/dvd-ng.cc:300 src/ffaudio/ffaudio-core.cc:147
-msgid "Play video stream in popup window when video stream found"
-msgstr ""
-
-#: src/dvd/dvd-ng.cc:302
-msgid "Highlight menu buttons (with a rectangle)"
-msgstr ""
-
-#: src/dvd/dvd-ng.cc:304
-msgid "Continue at end of menus"
-msgstr ""
-
-#: src/dvd/dvd-ng.cc:306
-msgid "Only Title Track in Playlist (menus)"
-msgstr ""
-
-#: src/dvd/dvd-ng.cc:308
-msgid "Only 1st Track Playlist (movie)"
-msgstr ""
-
-#: src/dvd/dvd-ng.cc:310
-msgid "Skip Menus (Auto-select)"
-msgstr ""
-
-#: src/dvd/dvd-ng.cc:2923
-#, fuzzy
-msgid "Unknown Title"
-msgstr "發生未知的 HTTP 錯誤"
-
-#: src/dvd/dvd-ng.cc:3019
-#, fuzzy
-msgid "Failed to retrieve any titles."
-msgstr "無法取得第一個或最後的音軌編號。"
+msgstr "النقل إلى سلة المهملات بدلا من الحذف الفوري"
 
 #: src/echo_plugin/echo.cc:9
 msgid ""
@@ -1346,63 +1202,49 @@ msgid ""
 "Surround echo by Carl van Schaik, 1999\n"
 "Updated for Audacious by William Pitcock and John Lindgren, 2010-2014"
 msgstr ""
-"Echo Plugin\n"
-"By Johan Levin, 1999\n"
+"اضافة صدى الصوت\n"
+"بواسطة Johan Levin, 1999\n"
 "Surround echo by Carl van Schaik, 1999\n"
 "Updated for Audacious by William Pitcock and John Lindgren, 2010-2014"
 
 #: src/echo_plugin/echo.cc:21
 msgid "<b>Echo</b>"
-msgstr "<b>回音</b>"
+msgstr "<b>ضدى</b>"
 
 #: src/echo_plugin/echo.cc:22 src/modplug/plugin_main.cc:76
 #: src/modplug/plugin_main.cc:86
 msgid "Delay:"
-msgstr "延遲："
+msgstr "تأخير:"
 
 #: src/echo_plugin/echo.cc:24 src/modplug/plugin_main.cc:76
 #: src/modplug/plugin_main.cc:86
 msgid "ms"
-msgstr "毫秒"
+msgstr "م ث"
 
 #: src/echo_plugin/echo.cc:25
 msgid "Feedback:"
-msgstr "反饋："
+msgstr "التردد:"
 
 #: src/echo_plugin/echo.cc:28 src/modplug/plugin_main.cc:90
 msgid "Volume:"
-msgstr "音量："
+msgstr "الصوت:"
 
 #: src/echo_plugin/echo.cc:39
 msgid "Echo"
-msgstr "回音"
+msgstr "صدى"
 
-#: src/ffaudio/ffaudio-core.cc:98
+#: src/ffaudio/ffaudio-core.cc:49
 msgid "FFmpeg Plugin"
-msgstr "FFmpeg 外掛"
+msgstr "اضافة FFmpeg"
 
-#: src/ffaudio/ffaudio-core.cc:151
-#, fuzzy
-msgid "Record video to file"
-msgstr "錄音關閉"
-
-#: src/ffaudio/ffaudio-core.cc:153
-#, fuzzy
-msgid "Record path/filename:"
-msgstr "錄音"
-
-#: src/ffaudio/ffaudio-core.cc:1882
-#, fuzzy
+#: src/ffaudio/ffaudio-core.cc:627
 msgid ""
-"Multi-format audio decoding plugin for Fauxdacious using\n"
+"Multi-format audio decoding plugin for Audacious using\n"
 "FFmpeg multimedia framework (http://www.ffmpeg.org/)\n"
 "\n"
 "Audacious plugin by:\n"
 "William Pitcock <nenolod@nenolod.net>\n"
-"Matti Hämäläinen <ccr@tnsp.org>\n"
-"\n"
-"Video-playing capability (added 2015) by:\n"
-"Jim Turner <turnerjw784@yahoo.com>"
+"Matti Hämäläinen <ccr@tnsp.org>"
 msgstr ""
 "Multi-format audio decoding plugin for Audacious using\n"
 "FFmpeg multimedia framework (http://www.ffmpeg.org/)\n"
@@ -1413,9 +1255,9 @@ msgstr ""
 
 #: src/filewriter/filewriter.cc:48
 msgid "FileWriter Plugin"
-msgstr "檔案輸出外掛"
+msgstr "FileWriter اضافة"
 
-#: src/filewriter/filewriter.cc:466
+#: src/filewriter/filewriter.cc:350
 msgid ""
 "This program is free software; you can redistribute it and/or modify it "
 "under the terms of the GNU General Public License as published by the Free "
@@ -1445,293 +1287,276 @@ msgstr ""
 "this program; if not, write to the Free Software Foundation, Inc., 51 "
 "Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA."
 
-#: src/filewriter/filewriter.cc:493
+#: src/filewriter/filewriter.cc:377
 msgid "Output file format:"
-msgstr "輸出檔案格式："
+msgstr "صيغة اخراج الملف:"
 
-#: src/filewriter/filewriter.cc:497
+#: src/filewriter/filewriter.cc:381
 msgid "Save into original directory"
-msgstr "儲存到原始資料夾"
+msgstr "حفظ في المجلد الاصلي"
 
-#: src/filewriter/filewriter.cc:500
-msgid "(use custom for non-local directories)"
-msgstr ""
-
-#: src/filewriter/filewriter.cc:503
+#: src/filewriter/filewriter.cc:384
 msgid "Save into custom directory:"
-msgstr "儲存到自訂資料夾："
+msgstr "حفظ في مجلد مخصص:"
 
-#: src/filewriter/filewriter.cc:511
+#: src/filewriter/filewriter.cc:392
 msgid "Generate file name from:"
-msgstr "產生檔名自："
+msgstr "توليد اسم ملف من:"
 
-#: src/filewriter/filewriter.cc:512
+#: src/filewriter/filewriter.cc:393
 msgid "Original file name"
-msgstr "原始檔案的檔名"
+msgstr "اسم الملف الاصلي"
 
-#: src/filewriter/filewriter.cc:515
+#: src/filewriter/filewriter.cc:396
 msgid "Original file name (no suffix)"
-msgstr "原始的檔案名稱(移除原本的副檔名)"
+msgstr "اسم الملف الاصلي  (بدون ملحق)"
 
-#: src/filewriter/filewriter.cc:518
+#: src/filewriter/filewriter.cc:399
 msgid "Original file tag"
-msgstr "原始檔案的標籤"
+msgstr "وسم الملف الاصلي"
 
-#: src/filewriter/filewriter.cc:521
-msgid "stdout"
-msgstr ""
-
-#: src/filewriter/filewriter.cc:524
-#, fuzzy
-msgid "close after song chg."
-msgstr "播放完成後停止。"
-
-#: src/filewriter/filewriter.cc:527
-msgid "close when recording stopped."
-msgstr ""
-
-#: src/filewriter/filewriter.cc:531
+#: src/filewriter/filewriter.cc:403
 msgid "Prepend track number to file name"
-msgstr "在檔案名稱前加入音軌編號"
+msgstr "ارفق رقم المقطوعة في اسم الملف"
 
-#: src/filewriter/filewriter.cc:537 src/filewriter/filewriter.cc:569
+#: src/filewriter/filewriter.cc:409 src/filewriter/filewriter.cc:441
 msgid "Auto"
-msgstr "自動"
+msgstr "تلقائي"
 
-#: src/filewriter/filewriter.cc:538
+#: src/filewriter/filewriter.cc:410
 msgid "8000 Hz"
-msgstr "8000 Hz"
+msgstr "8000 هرتز"
 
-#: src/filewriter/filewriter.cc:539
+#: src/filewriter/filewriter.cc:411
 msgid "11025 Hz"
-msgstr "11025 Hz"
+msgstr "11025 هرتز"
 
-#: src/filewriter/filewriter.cc:540
+#: src/filewriter/filewriter.cc:412
 msgid "12000 Hz"
-msgstr "12000 Hz"
+msgstr "12000 هرتز"
 
-#: src/filewriter/filewriter.cc:541
+#: src/filewriter/filewriter.cc:413
 msgid "16000 Hz"
-msgstr "16000 Hz"
+msgstr "16000 هرتز"
 
-#: src/filewriter/filewriter.cc:542
+#: src/filewriter/filewriter.cc:414
 msgid "22050 Hz"
-msgstr "22050 Hz"
+msgstr "22050 هرتز"
 
-#: src/filewriter/filewriter.cc:543
+#: src/filewriter/filewriter.cc:415
 msgid "24000 Hz"
-msgstr "24000 Hz"
+msgstr "24000 هرتز"
 
-#: src/filewriter/filewriter.cc:544
+#: src/filewriter/filewriter.cc:416
 msgid "32000 Hz"
-msgstr "32000 Hz"
+msgstr "32000 هرتز"
 
-#: src/filewriter/filewriter.cc:545
+#: src/filewriter/filewriter.cc:417
 msgid "44100 Hz"
-msgstr "44100 Hz"
+msgstr "44100 هرتز"
 
-#: src/filewriter/filewriter.cc:546
+#: src/filewriter/filewriter.cc:418
 msgid "48000 Hz"
-msgstr "48000 Hz"
+msgstr "48000 هرتز"
 
-#: src/filewriter/filewriter.cc:550
+#: src/filewriter/filewriter.cc:422
 msgid "8 kbps"
-msgstr "8 kbps"
+msgstr "8 كب/ث"
 
-#: src/filewriter/filewriter.cc:551
+#: src/filewriter/filewriter.cc:423
 msgid "16 kbps"
-msgstr "16 kbps"
+msgstr "16 كب/ث"
 
-#: src/filewriter/filewriter.cc:552
+#: src/filewriter/filewriter.cc:424
 msgid "32 kbps"
-msgstr "32 kbps"
+msgstr "32 كب/ث"
 
-#: src/filewriter/filewriter.cc:553
+#: src/filewriter/filewriter.cc:425
 msgid "40 kbps"
-msgstr "40 kbps"
+msgstr "40 كب/ث"
 
-#: src/filewriter/filewriter.cc:554
+#: src/filewriter/filewriter.cc:426
 msgid "48 kbps"
-msgstr "48 kbps"
+msgstr "48 كب/ث"
 
-#: src/filewriter/filewriter.cc:555
+#: src/filewriter/filewriter.cc:427
 msgid "56 kbps"
-msgstr "56 kbps"
+msgstr "56 كب/ث"
 
-#: src/filewriter/filewriter.cc:556
+#: src/filewriter/filewriter.cc:428
 msgid "64 kbps"
-msgstr "64 kbps"
+msgstr "64 كب/ث"
 
-#: src/filewriter/filewriter.cc:557
+#: src/filewriter/filewriter.cc:429
 msgid "80 kbps"
-msgstr "80 kbps"
+msgstr "80 كب/ث"
 
-#: src/filewriter/filewriter.cc:558
+#: src/filewriter/filewriter.cc:430
 msgid "96 kbps"
-msgstr "96 kbps"
+msgstr "96 كب/ث"
 
-#: src/filewriter/filewriter.cc:559
+#: src/filewriter/filewriter.cc:431
 msgid "112 kbps"
-msgstr "112 kbps"
+msgstr "112 كب/ث"
 
-#: src/filewriter/filewriter.cc:560
+#: src/filewriter/filewriter.cc:432
 msgid "128 kbps"
-msgstr "128 kbps"
+msgstr "128 كب/ث"
 
-#: src/filewriter/filewriter.cc:561
+#: src/filewriter/filewriter.cc:433
 msgid "160 kbps"
-msgstr "160 kbps"
+msgstr "160 كب/ث"
 
-#: src/filewriter/filewriter.cc:562
+#: src/filewriter/filewriter.cc:434
 msgid "192 kbps"
-msgstr "192 kbps"
+msgstr "192 كب/ث"
 
-#: src/filewriter/filewriter.cc:563
+#: src/filewriter/filewriter.cc:435
 msgid "224 kbps"
-msgstr "224 kbps"
+msgstr "224 كب/ث"
 
-#: src/filewriter/filewriter.cc:564
+#: src/filewriter/filewriter.cc:436
 msgid "256 kbps"
-msgstr "256 kbps"
+msgstr "256 كب/ث"
 
-#: src/filewriter/filewriter.cc:565
+#: src/filewriter/filewriter.cc:437
 msgid "320 kbps"
-msgstr "320 kbps"
+msgstr "320 كب/ث"
 
-#: src/filewriter/filewriter.cc:570
+#: src/filewriter/filewriter.cc:442
 msgid "Joint Stereo"
-msgstr "聯合立體聲"
+msgstr "صوت مُجَسَّم  مشترك"
 
-#: src/filewriter/filewriter.cc:571 src/modplug/plugin_main.cc:61
+#: src/filewriter/filewriter.cc:443 src/modplug/plugin_main.cc:61
 #: src/mpg123/mpg123.cc:245
 msgid "Stereo"
-msgstr "立體聲"
+msgstr "صوت مُجَسَّم"
 
-#: src/filewriter/filewriter.cc:572 src/modplug/plugin_main.cc:60
+#: src/filewriter/filewriter.cc:444 src/modplug/plugin_main.cc:60
 #: src/mpg123/mpg123.cc:245
 msgid "Mono"
-msgstr "單聲道"
+msgstr "أحادي"
 
-#: src/filewriter/filewriter.cc:576
+#: src/filewriter/filewriter.cc:448
 msgid "VBR"
 msgstr "VBR"
 
-#: src/filewriter/filewriter.cc:577
+#: src/filewriter/filewriter.cc:449
 msgid "ABR"
 msgstr "ABR"
 
-#: src/filewriter/filewriter.cc:598
+#: src/filewriter/filewriter.cc:470
 msgid "Algorithm quality:"
-msgstr "演算法品質："
+msgstr "جودة اللغة ريتم:"
 
-#: src/filewriter/filewriter.cc:604
+#: src/filewriter/filewriter.cc:476
 msgid "Bitrate:"
-msgstr "位元率："
+msgstr "معدل البت:"
 
-#: src/filewriter/filewriter.cc:611
+#: src/filewriter/filewriter.cc:483
 msgid "Compression ratio:"
-msgstr "壓縮比率："
+msgstr "نسبة الضغط:"
 
-#: src/filewriter/filewriter.cc:618
+#: src/filewriter/filewriter.cc:490
 msgid "Audio mode:"
-msgstr "音訊模式："
+msgstr "الوضع الصوتي:"
 
-#: src/filewriter/filewriter.cc:621
+#: src/filewriter/filewriter.cc:493
 msgid "Enforce strict ISO compliance"
-msgstr "強制要求 ISO 相容"
+msgstr "إنفاذ الامتثال الصارم ل ISO"
 
-#: src/filewriter/filewriter.cc:623
+#: src/filewriter/filewriter.cc:495
 msgid "Error protection"
-msgstr "錯誤保護"
+msgstr "خطأ الحماية"
 
-#: src/filewriter/filewriter.cc:628
+#: src/filewriter/filewriter.cc:500
 msgid "Enable VBR/ABR"
-msgstr "啟用 VBR／ABR"
+msgstr "تفعيل VBR/ABR"
 
-#: src/filewriter/filewriter.cc:630
+#: src/filewriter/filewriter.cc:502
 msgid "Type:"
-msgstr "類型："
+msgstr "نوع:"
 
-#: src/filewriter/filewriter.cc:634
+#: src/filewriter/filewriter.cc:506
 msgid "Minimum bitrate:"
-msgstr "最低位元率："
+msgstr "الحد الأدنى لمعدل البت:"
 
-#: src/filewriter/filewriter.cc:638
+#: src/filewriter/filewriter.cc:510
 msgid "Maximum bitrate:"
-msgstr "最高位元率："
+msgstr "معدل البت الأقصى:"
 
-#: src/filewriter/filewriter.cc:642
+#: src/filewriter/filewriter.cc:514
 msgid "Average bitrate:"
-msgstr "平均位元率："
+msgstr "متوسط معدل البت:"
 
-#: src/filewriter/filewriter.cc:646
+#: src/filewriter/filewriter.cc:518
 msgid "VBR quality level:"
-msgstr "VBR 品質等級："
+msgstr "VBR مستوى الجودة:"
 
-#: src/filewriter/filewriter.cc:650
+#: src/filewriter/filewriter.cc:522
 msgid "Strictly enforce minimum bitrate"
-msgstr "強制使用最小位元率"
+msgstr "فرض بدقة الحد الأدنى لمعدل البت"
 
-#: src/filewriter/filewriter.cc:653
+#: src/filewriter/filewriter.cc:525
 msgid "Omit Xing VBR header"
-msgstr "省略 Xing VBR 檔頭"
+msgstr "اهمل رأس Xing VBR"
 
-#: src/filewriter/filewriter.cc:659
+#: src/filewriter/filewriter.cc:531
 msgid "<b>Frame Headers</b>"
-msgstr "<b>音格標頭</b>"
+msgstr "<b>رؤوس الإطار</b>"
 
-#: src/filewriter/filewriter.cc:660
+#: src/filewriter/filewriter.cc:532
 msgid "Mark as copyright"
-msgstr "標示為版權"
+msgstr "إجعلها حقوق التأليف والنشر"
 
-#: src/filewriter/filewriter.cc:662
+#: src/filewriter/filewriter.cc:534
 msgid "Mark as original"
-msgstr "標示為原創"
+msgstr "إجعلها الأصلية"
 
-#: src/filewriter/filewriter.cc:664
+#: src/filewriter/filewriter.cc:536
 msgid "<b>ID3 Tags</b>"
-msgstr "<b>ID3 標籤</b>"
+msgstr "<b>ID3 Tags</b>"
 
-#: src/filewriter/filewriter.cc:665
+#: src/filewriter/filewriter.cc:537
 msgid "Force addition of version 2 tag"
-msgstr "強制加入第二版標籤"
+msgstr "اجبر اضافته الى النسخة 2 tag"
 
-#: src/filewriter/filewriter.cc:667
+#: src/filewriter/filewriter.cc:539
 msgid "Only add v1 tag"
-msgstr "只加入第一版標籤"
+msgstr "إضافة فقط v1 tag"
 
-#: src/filewriter/filewriter.cc:669
+#: src/filewriter/filewriter.cc:541
 msgid "Only add v2 tag"
-msgstr "只加入第二版標籤"
+msgstr "إضافة فقط v2 tag"
 
-#: src/filewriter/filewriter.cc:674
+#: src/filewriter/filewriter.cc:546
 msgid "Quality"
-msgstr "品質"
+msgstr "جودة"
 
-#: src/filewriter/filewriter.cc:675
+#: src/filewriter/filewriter.cc:547
 msgid "VBR/ABR"
-msgstr "VBR／ABR"
+msgstr "VBR/ABR"
 
-#: src/filewriter/filewriter.cc:676
+#: src/filewriter/filewriter.cc:548
 msgid "Tags"
-msgstr "標籤"
+msgstr "الاوسمة"
 
-#: src/filewriter/filewriter.cc:686
+#: src/filewriter/filewriter.cc:558
 msgid "Quality (0-1):"
-msgstr "品質 (0-1)："
+msgstr "الجودة (0-1):"
 
-#: src/filewriter/filewriter.cc:693 src/skins-qt/skins_cfg.cc:314
-#: src/skins/skins_cfg.cc:295
+#: src/filewriter/filewriter.cc:565 src/skins-qt/skins_cfg.cc:303
+#: src/skins/skins_cfg.cc:285
 msgid "General"
-msgstr "一般"
+msgstr "عامْ"
 
 #: src/flac/flacng.h:35
 msgid "FLAC Decoder"
-msgstr "FLAC 解碼器"
+msgstr "FLAC مفكك"
 
 #: src/flac/metadata.cc:270 src/wavpack/wavpack.cc:209
 msgid "lossless"
-msgstr "無損"
+msgstr "lossless"
 
 #: src/flac/plugin.cc:169
 msgid ""
@@ -1740,7 +1565,7 @@ msgid ""
 "\n"
 "http://www.skytale.net/projects/bmp-flac2/"
 msgstr ""
-"Original code by\n"
+"الكود الاصلي بواسطة\n"
 "Ralf Ertzinger <ralf@skytale.net>\n"
 "\n"
 "http://www.skytale.net/projects/bmp-flac2/"
@@ -1755,15 +1580,15 @@ msgstr ""
 
 #: src/gio/gio.cc:42
 msgid "GIO Plugin"
-msgstr "GIO 外掛"
+msgstr "GIO اضافة"
 
 #: src/gio/gio.cc:152
 msgid "Read-and-append mode not supported"
-msgstr "不支援讀取並附加的存取模式"
+msgstr "وضع القراءة وإلاحاق غير معتمد"
 
 #: src/gio/gio.cc:165
 msgid "Invalid open mode"
-msgstr "無效的開啟模式"
+msgstr "وضع الفتح غير صالح"
 
 #: src/glspectrum/gl-spectrum.cc:51
 msgid ""
@@ -1776,7 +1601,7 @@ msgid ""
 "\n"
 "License: GPLv2+"
 msgstr ""
-"Audacious 的 OpenGL 頻譜分析儀\n"
+"OpenGL Spectrum Analyzer for Audacious\n"
 "Copyright 2013 Christophe Budé, John Lindgren, and Carlo Bramini\n"
 "\n"
 "Based on the XMMS plugin:\n"
@@ -1787,741 +1612,691 @@ msgstr ""
 
 #: src/glspectrum/gl-spectrum.cc:62 src/qtglspectrum/gl-spectrum.cc:53
 msgid "OpenGL Spectrum Analyzer"
-msgstr "OpenGL 頻譜分析儀"
+msgstr "محلل الطيف برنامج OpenGL"
 
-#: src/gnomeshortcuts/gnomeshortcuts.cc:38
-msgid "GNOME Shortcuts"
-msgstr "Gnome 快速鍵"
-
-#: src/gnomeshortcuts/gnomeshortcuts.cc:54
-msgid ""
-"GNOME Shortcut Plugin\n"
-"Lets you control the player with GNOME's shortcuts.\n"
-"\n"
-"Copyright (C) 2007-2008 Sascha Hlusiak <contact@saschahlusiak.de>"
-msgstr ""
-"GNOME Shortcut Plugin\n"
-"Lets you control the player with GNOME's shortcuts.\n"
-"\n"
-"Copyright (C) 2007-2008 Sascha Hlusiak <contact@saschahlusiak.de>"
-
-#: src/gtkui/columns.cc:35 src/qtui/playlist_columns.cc:37
+#: src/gtkui/columns.cc:35
 msgid "Entry number"
-msgstr "項目編號"
+msgstr "رقم المدخلة"
 
-#: src/gtkui/columns.cc:36 src/gtkui/columns.cc:54
-#: src/playlist-manager/playlist-manager.cc:222
-#: src/playlist-manager-qt/playlist-manager-qt.cc:160
-#: src/qtui/playlist_columns.cc:38 src/qtui/playlist_model.cc:37
+#: src/gtkui/columns.cc:36 src/playlist-manager/playlist-manager.cc:199
+#: src/playlist-manager-qt/playlist-manager-qt.cc:183
+#: src/qtui/playlist_model.cc:37
 msgid "Title"
-msgstr "標題"
+msgstr "العنوان"
 
-#: src/gtkui/columns.cc:37 src/gtkui/columns.cc:55
-#: src/qtui/playlist_columns.cc:39 src/qtui/playlist_model.cc:38
+#: src/gtkui/columns.cc:37 src/qtui/playlist_model.cc:38
 msgid "Artist"
-msgstr "藝人"
+msgstr "المؤدي"
 
-#: src/gtkui/columns.cc:38 src/gtkui/columns.cc:56
-#: src/qtui/playlist_columns.cc:40 src/qtui/playlist_model.cc:39
+#: src/gtkui/columns.cc:38 src/qtui/playlist_model.cc:39
 msgid "Year"
-msgstr "年份"
+msgstr "السَّنة"
 
-#: src/gtkui/columns.cc:39 src/gtkui/columns.cc:57
-#: src/qtui/playlist_columns.cc:41 src/qtui/playlist_model.cc:40
+#: src/gtkui/columns.cc:39 src/qtui/playlist_model.cc:40
 msgid "Album"
-msgstr "專輯"
+msgstr "الألبوم"
 
-#: src/gtkui/columns.cc:40 src/gtkui/columns.cc:58
-#: src/qtui/playlist_columns.cc:42
+#: src/gtkui/columns.cc:40
 msgid "Album artist"
-msgstr "專輯藝人"
+msgstr "ألبوم المؤدي"
 
-#: src/gtkui/columns.cc:41 src/qtui/playlist_columns.cc:43
-#: src/qtui/playlist_model.cc:42
+#: src/gtkui/columns.cc:41 src/qtui/playlist_model.cc:42
 msgid "Track"
-msgstr "音軌"
+msgstr "المقطع"
 
-#: src/gtkui/columns.cc:42 src/gtkui/columns.cc:60
-#: src/qtui/playlist_columns.cc:44 src/qtui/playlist_model.cc:43
+#: src/gtkui/columns.cc:42 src/qtui/playlist_model.cc:43
 msgid "Genre"
-msgstr "類型"
+msgstr "النوع"
 
-#: src/gtkui/columns.cc:43 src/qtui/playlist_columns.cc:45
+#: src/gtkui/columns.cc:43
 msgid "Queue position"
-msgstr "佇列位置"
+msgstr "موقع اضافة قائمة الانتظار"
 
-#: src/gtkui/columns.cc:44 src/gtkui/columns.cc:62
-#: src/qtui/playlist_columns.cc:46 src/qtui/playlist_model.cc:45
+#: src/gtkui/columns.cc:44 src/qtui/playlist_model.cc:45
 msgid "Length"
-msgstr "長度"
+msgstr "المُدة"
 
-#: src/gtkui/columns.cc:45 src/gtkui/columns.cc:63
-#: src/qtui/playlist_columns.cc:47
+#: src/gtkui/columns.cc:45
 msgid "File path"
-msgstr "檔案路徑"
+msgstr "مسار الملف"
 
-#: src/gtkui/columns.cc:47 src/gtkui/columns.cc:65
-#: src/qtui/playlist_columns.cc:49
+#: src/gtkui/columns.cc:47
 msgid "Custom title"
-msgstr "自訂標題"
+msgstr "خصص العنوان"
 
-#: src/gtkui/columns.cc:48 src/qtui/playlist_columns.cc:50
-#: src/qtui/playlist_model.cc:49
+#: src/gtkui/columns.cc:48 src/qtui/playlist_model.cc:49
 msgid "Bitrate"
-msgstr "位元率"
+msgstr "معدل البت"
 
-#: src/gtkui/columns.cc:49 src/gtkui/columns.cc:67
-#: src/qtui/playlist_columns.cc:51 src/qtui/playlist_model.cc:50
+#: src/gtkui/columns.cc:49 src/qtui/playlist_model.cc:50
 msgid "Comment"
-msgstr "備註"
+msgstr "تعليق"
 
-#: src/gtkui/columns.cc:53
-#, fuzzy
-msgid "Entry#"
-msgstr "項目數"
-
-#: src/gtkui/columns.cc:59
-#, fuzzy
-msgid "Trk"
-msgstr "音軌"
-
-#: src/gtkui/columns.cc:61
-msgid "Qpsn"
-msgstr ""
-
-#: src/gtkui/columns.cc:66
-msgid "BPS"
-msgstr ""
-
-#: src/gtkui/columns.cc:333 src/qtui/playlist_columns.cc:391
+#: src/gtkui/columns.cc:315
 msgid "Available columns"
-msgstr "可用的欄位"
+msgstr "الأعمدة المتوفرة"
 
-#: src/gtkui/columns.cc:359 src/qtui/playlist_columns.cc:401
+#: src/gtkui/columns.cc:341
 msgid "Displayed columns"
-msgstr "顯示的欄位"
+msgstr "الأعمدة المعروضة"
 
 #: src/gtkui/layout.cc:73 src/search-tool-qt/search-tool-qt.cc:62
-#: src/search-tool/search-tool.cc:48
+#: src/search-tool/search-tool.cc:49
 msgid "Search Tool"
-msgstr "搜尋工具"
+msgstr "أداة البحث"
 
 #: src/gtkui/layout.cc:168
 msgid "Dock at Left"
-msgstr "嵌入左方"
+msgstr "ارساء على اليسار"
 
 #: src/gtkui/layout.cc:168
 msgid "Dock at Right"
-msgstr "嵌入右方"
+msgstr "ارساء على اليمين"
 
 #: src/gtkui/layout.cc:169
 msgid "Dock at Top"
-msgstr "嵌入頂端"
+msgstr "ارساء الى الفوق"
 
 #: src/gtkui/layout.cc:169
 msgid "Dock at Bottom"
-msgstr "嵌入底端"
+msgstr "ارساء الى الاسفل"
 
 #: src/gtkui/layout.cc:169
 msgid "Undock"
-msgstr "解除嵌入"
+msgstr "لا ترسي"
 
 #: src/gtkui/layout.cc:169 src/ladspa/plugin.cc:534
 msgid "Disable"
-msgstr "關閉"
+msgstr "تعطيل"
 
-#: src/gtkui/menus.cc:87 src/qtui/menus.cc:68
-#: src/statusicon-qt/statusicon.cc:112 src/statusicon/statusicon.cc:277
+#: src/gtkui/menus.cc:79 src/qtui/menus.cc:68
+#: src/statusicon-qt/statusicon.cc:114 src/statusicon/statusicon.cc:283
 msgid "_Open Files ..."
-msgstr "開啟檔案(_O) ..."
+msgstr "_افتح ملفات..."
 
-#: src/gtkui/menus.cc:88 src/qtui/menus.cc:70
+#: src/gtkui/menus.cc:80 src/qtui/menus.cc:70
 msgid "Open _URL ..."
-msgstr "開啟網址(_U) ..."
+msgstr "إفتح ال _رابط ..."
 
-#: src/gtkui/menus.cc:89 src/qtui/menus.cc:71
+#: src/gtkui/menus.cc:81 src/qtui/menus.cc:71
 msgid "_Add Files ..."
-msgstr "加入檔案(_A) ... "
+msgstr "أضف  _ملفات ..."
 
-#: src/gtkui/menus.cc:90 src/qtui/menus.cc:73
+#: src/gtkui/menus.cc:82 src/qtui/menus.cc:73
 msgid "Add U_RL ..."
-msgstr "加入網址(_R) ..."
+msgstr "أض _ف رابط ..."
 
-#: src/gtkui/menus.cc:92 src/qtui/menus.cc:75
+#: src/gtkui/menus.cc:84 src/qtui/menus.cc:75
 msgid "Search _Library"
-msgstr "搜尋媒體櫃(_L)"
+msgstr "مكتبة البح_ث"
 
-#: src/gtkui/menus.cc:94 src/qtui/menus.cc:77
+#: src/gtkui/menus.cc:86 src/qtui/menus.cc:77
 msgid "A_bout ..."
-msgstr "關於(_B) ..."
+msgstr "_حول ..."
 
-#: src/gtkui/menus.cc:95 src/qtui/menus.cc:78
+#: src/gtkui/menus.cc:87 src/qtui/menus.cc:78
 msgid "_Settings ..."
-msgstr "設定(_S) ..."
+msgstr "_اعدادات ..."
 
-#: src/gtkui/menus.cc:96 src/qtui/menus.cc:82
-#: src/statusicon-qt/statusicon.cc:120 src/statusicon/statusicon.cc:285
+#: src/gtkui/menus.cc:88 src/qtui/menus.cc:82
+#: src/statusicon-qt/statusicon.cc:116 src/statusicon/statusicon.cc:285
 msgid "_Quit"
-msgstr "離開(_Q)"
+msgstr "_خروج"
 
-#: src/gtkui/menus.cc:100 src/gtkui/menus.cc:229 src/qtui/menus.cc:86
-#: src/search-tool-qt/search-tool-qt.cc:845 src/search-tool/search-tool.cc:695
-#: src/statusicon-qt/statusicon.cc:114 src/statusicon/statusicon.cc:279
+#: src/gtkui/menus.cc:92 src/gtkui/menus.cc:221 src/qtui/menus.cc:86
+#: src/search-tool-qt/search-tool-qt.cc:831 src/search-tool/search-tool.cc:683
+#: src/statusicon-qt/statusicon.cc:108 src/statusicon/statusicon.cc:277
 msgid "_Play"
-msgstr "播放(_P)"
+msgstr "_قراءة"
 
-#: src/gtkui/menus.cc:101 src/qtui/menus.cc:87
-#: src/statusicon-qt/statusicon.cc:115 src/statusicon/statusicon.cc:280
+#: src/gtkui/menus.cc:93 src/qtui/menus.cc:87
+#: src/statusicon-qt/statusicon.cc:109 src/statusicon/statusicon.cc:278
 msgid "Paus_e"
-msgstr "暫停(_E)"
+msgstr "الب_ث"
 
-#: src/gtkui/menus.cc:102 src/qtui/menus.cc:88
-#: src/statusicon-qt/statusicon.cc:116 src/statusicon/statusicon.cc:281
+#: src/gtkui/menus.cc:94 src/qtui/menus.cc:88
+#: src/statusicon-qt/statusicon.cc:110 src/statusicon/statusicon.cc:279
 msgid "_Stop"
-msgstr "停止(_S)"
+msgstr "تو_قف"
 
-#: src/gtkui/menus.cc:103 src/qtui/menus.cc:89
-#: src/statusicon-qt/statusicon.cc:113 src/statusicon/statusicon.cc:278
+#: src/gtkui/menus.cc:95 src/qtui/menus.cc:89
+#: src/statusicon-qt/statusicon.cc:111 src/statusicon/statusicon.cc:280
 msgid "Pre_vious"
-msgstr "上一個(_V)"
+msgstr "ال_سابق"
 
-#: src/gtkui/menus.cc:104 src/qtui/menus.cc:90
-#: src/statusicon-qt/statusicon.cc:117 src/statusicon/statusicon.cc:282
+#: src/gtkui/menus.cc:96 src/qtui/menus.cc:90
+#: src/statusicon-qt/statusicon.cc:112 src/statusicon/statusicon.cc:281
 msgid "_Next"
-msgstr "下一個(_N)"
+msgstr "ال_تالي"
 
-#: src/gtkui/menus.cc:106 src/qtui/menus.cc:92
+#: src/gtkui/menus.cc:98 src/qtui/menus.cc:92
 msgid "_Repeat"
-msgstr "重複(_R)"
+msgstr "تكر_ار"
 
-#: src/gtkui/menus.cc:107 src/qtui/menus.cc:93
+#: src/gtkui/menus.cc:99 src/qtui/menus.cc:93
 msgid "S_huffle"
-msgstr "亂序(_H)"
+msgstr "_خلط"
 
-#: src/gtkui/menus.cc:108 src/qtui/menus.cc:94
+#: src/gtkui/menus.cc:100 src/qtui/menus.cc:94
 msgid "Shuffle by Albu_m"
-msgstr "以專輯為單位亂序播放(_M)"
+msgstr "_عشوائي حسب الالبوم"
 
-#: src/gtkui/menus.cc:109 src/qtui/menus.cc:95
+#: src/gtkui/menus.cc:101 src/qtui/menus.cc:95
 msgid "N_o Playlist Advance"
-msgstr "不要切換播放清單(_O)"
+msgstr "لا _قائمة التشغيل مسبقة"
 
-#: src/gtkui/menus.cc:110 src/qtui/menus.cc:96
+#: src/gtkui/menus.cc:102 src/qtui/menus.cc:96
 msgid "Stop A_fter This Song"
-msgstr "播放完目前歌曲後停止(_F)"
+msgstr "توقف _بعد هذا المقطع"
 
-#: src/gtkui/menus.cc:112 src/gtkui/menus.cc:213 src/qtui/menus.cc:98
+#: src/gtkui/menus.cc:104 src/gtkui/menus.cc:205 src/qtui/menus.cc:98
 #: src/qtui/menus.cc:200
 msgid "Song _Info ..."
-msgstr "歌曲資訊(_I) ..."
+msgstr "_معلومات المقطع ..."
 
-#: src/gtkui/menus.cc:113
+#: src/gtkui/menus.cc:105
 msgid "Jump to _Time ..."
-msgstr "跳轉到指定時間(_T) ..."
+msgstr "الانتقال ال_سريع للوقت ..."
 
-#: src/gtkui/menus.cc:114
+#: src/gtkui/menus.cc:106
 msgid "_Jump to Song ..."
-msgstr "跳轉到指定歌曲(_J) ..."
+msgstr "إذهب للمق_طع ..."
 
-#: src/gtkui/menus.cc:116
+#: src/gtkui/menus.cc:108
 msgid "Set Repeat Point _A"
-msgstr "設定重複點 _A"
+msgstr "نقطة التكرار _أ"
 
-#: src/gtkui/menus.cc:117
+#: src/gtkui/menus.cc:109
 msgid "Set Repeat Point _B"
-msgstr "設定重複點 _B"
+msgstr "نقطة التكرار _ب"
 
-#: src/gtkui/menus.cc:118
+#: src/gtkui/menus.cc:110
 msgid "_Clear Repeat Points"
-msgstr "清除重複點(_C)"
+msgstr "مسح _نقطة التكرار"
 
-#: src/gtkui/menus.cc:122 src/gtkui/menus.cc:129 src/gtkui/menus.cc:146
+#: src/gtkui/menus.cc:114 src/gtkui/menus.cc:121 src/gtkui/menus.cc:138
 #: src/qtui/menus.cc:102 src/qtui/menus.cc:109 src/qtui/menus.cc:126
 msgid "By _Title"
-msgstr "標題(_T)"
+msgstr "حسب ال_عنوان"
 
-#: src/gtkui/menus.cc:123 src/qtui/menus.cc:103
+#: src/gtkui/menus.cc:115 src/qtui/menus.cc:103
 msgid "By _File Name"
-msgstr "檔案名稱(_F)"
+msgstr "حسب إسم ال_ملف"
 
-#: src/gtkui/menus.cc:124 src/qtui/menus.cc:104
+#: src/gtkui/menus.cc:116 src/qtui/menus.cc:104
 msgid "By File _Path"
-msgstr "檔案路徑(_P)"
+msgstr "حسب م_سار الملف"
 
-#: src/gtkui/menus.cc:128 src/gtkui/menus.cc:145 src/qtui/menus.cc:108
+#: src/gtkui/menus.cc:120 src/gtkui/menus.cc:137 src/qtui/menus.cc:108
 #: src/qtui/menus.cc:125
 msgid "By Track _Number"
-msgstr "音軌編號(_N)"
+msgstr "حسب ر_قم المقطع"
 
-#: src/gtkui/menus.cc:130 src/gtkui/menus.cc:147 src/qtui/menus.cc:110
+#: src/gtkui/menus.cc:122 src/gtkui/menus.cc:139 src/qtui/menus.cc:110
 #: src/qtui/menus.cc:127
 msgid "By _Artist"
-msgstr "藝人(_A)"
+msgstr "حسب المؤ_دي"
 
-#: src/gtkui/menus.cc:131 src/gtkui/menus.cc:148 src/qtui/menus.cc:111
+#: src/gtkui/menus.cc:123 src/gtkui/menus.cc:140 src/qtui/menus.cc:111
 #: src/qtui/menus.cc:128
 msgid "By Al_bum"
-msgstr "專輯(_B)"
+msgstr "حسب _الألبوم"
 
-#: src/gtkui/menus.cc:132 src/gtkui/menus.cc:149 src/qtui/menus.cc:112
+#: src/gtkui/menus.cc:124 src/gtkui/menus.cc:141 src/qtui/menus.cc:112
 #: src/qtui/menus.cc:129
 msgid "By Albu_m Artist"
-msgstr "專輯藝人(_M)"
+msgstr "حسب الالبوم ال_مؤدي"
 
-#: src/gtkui/menus.cc:133 src/gtkui/menus.cc:150 src/qtui/menus.cc:113
+#: src/gtkui/menus.cc:125 src/gtkui/menus.cc:142 src/qtui/menus.cc:113
 #: src/qtui/menus.cc:130
 msgid "By Release _Date"
-msgstr "發行日期(_D)"
+msgstr "حسب _تاريخ الإصدار"
 
-#: src/gtkui/menus.cc:134 src/gtkui/menus.cc:151 src/qtui/menus.cc:114
+#: src/gtkui/menus.cc:126 src/gtkui/menus.cc:143 src/qtui/menus.cc:114
 #: src/qtui/menus.cc:131
 msgid "By _Genre"
-msgstr "類型(_G)"
+msgstr "حسب ال_نوع"
 
-#: src/gtkui/menus.cc:135 src/gtkui/menus.cc:152 src/qtui/menus.cc:115
+#: src/gtkui/menus.cc:127 src/gtkui/menus.cc:144 src/qtui/menus.cc:115
 #: src/qtui/menus.cc:132
 msgid "By _Length"
-msgstr "長度(_L)"
+msgstr "حسب ال_طول"
 
-#: src/gtkui/menus.cc:136 src/gtkui/menus.cc:153 src/qtui/menus.cc:116
+#: src/gtkui/menus.cc:128 src/gtkui/menus.cc:145 src/qtui/menus.cc:116
 #: src/qtui/menus.cc:133
 msgid "By _File Path"
-msgstr "檔案路徑(_F)"
+msgstr "حسب مسار المل_ف"
 
-#: src/gtkui/menus.cc:137 src/gtkui/menus.cc:154 src/qtui/menus.cc:117
+#: src/gtkui/menus.cc:129 src/gtkui/menus.cc:146 src/qtui/menus.cc:117
 #: src/qtui/menus.cc:134
 msgid "By _Custom Title"
-msgstr "自訂標題(_C)"
+msgstr "حسب العنوان المخص_ص"
 
-#: src/gtkui/menus.cc:138 src/gtkui/menus.cc:155 src/qtui/menus.cc:118
+#: src/gtkui/menus.cc:130 src/gtkui/menus.cc:147 src/qtui/menus.cc:118
 #: src/qtui/menus.cc:135
 msgid "By C_omment"
-msgstr "備註(_O)"
+msgstr ""
 
-#: src/gtkui/menus.cc:140 src/gtkui/menus.cc:157 src/qtui/menus.cc:120
+#: src/gtkui/menus.cc:132 src/gtkui/menus.cc:149 src/qtui/menus.cc:120
 #: src/qtui/menus.cc:137
 msgid "R_everse Order"
-msgstr "反向順序(_E)"
+msgstr "اقلب ال_ترتيب"
 
-#: src/gtkui/menus.cc:141 src/gtkui/menus.cc:158 src/qtui/menus.cc:121
+#: src/gtkui/menus.cc:133 src/gtkui/menus.cc:150 src/qtui/menus.cc:121
 #: src/qtui/menus.cc:138
 msgid "_Random Order"
-msgstr "隨機順序(_R)"
+msgstr "ترتيب ع_شوائي"
 
-#: src/gtkui/menus.cc:162 src/qtui/menus.cc:142
+#: src/gtkui/menus.cc:154 src/qtui/menus.cc:142
 msgid "_Play/Resume"
-msgstr "播放／回復(_P)"
+msgstr "_قراءة/استأناف"
 
-#: src/gtkui/menus.cc:163 src/qtui/menus.cc:143
+#: src/gtkui/menus.cc:155 src/qtui/menus.cc:143
 msgid "_Refresh"
-msgstr "重新整理(_R)"
+msgstr "_تحديث"
 
-#: src/gtkui/menus.cc:165 src/qtui/menus.cc:147
+#: src/gtkui/menus.cc:157 src/qtui/menus.cc:147
 msgid "_Sort"
-msgstr "排序(_S)"
+msgstr "_ترتيب"
 
-#: src/gtkui/menus.cc:166 src/qtui/menus.cc:148
+#: src/gtkui/menus.cc:158 src/qtui/menus.cc:148
 msgid "Sort Se_lected"
-msgstr "排序選擇的項目(_L)"
+msgstr "ترتيب ال_محددة"
 
-#: src/gtkui/menus.cc:167 src/qtui/menus.cc:149
+#: src/gtkui/menus.cc:159 src/qtui/menus.cc:149
 msgid "Remove _Duplicates"
-msgstr "移除重複的項目(_D)"
+msgstr "ازالة المك_ررة"
 
-#: src/gtkui/menus.cc:168 src/qtui/menus.cc:150
+#: src/gtkui/menus.cc:160 src/qtui/menus.cc:150
 msgid "Remove _Unavailable Files"
-msgstr "移除不存在的檔案(_U)"
+msgstr "إزالة الملفات _غير متوفر"
 
-#: src/gtkui/menus.cc:170 src/playlist-manager/playlist-manager.cc:241
-#: src/playlist-manager-qt/playlist-manager-qt.cc:312 src/qtui/menus.cc:152
+#: src/gtkui/menus.cc:162 src/playlist-manager/playlist-manager.cc:218
+#: src/playlist-manager-qt/playlist-manager-qt.cc:356 src/qtui/menus.cc:152
 msgid "_New"
-msgstr "新增(_N)"
+msgstr "_جديد"
 
-#: src/gtkui/menus.cc:171 src/qtui/menus.cc:153
+#: src/gtkui/menus.cc:163 src/qtui/menus.cc:153
 msgid "Ren_ame ..."
-msgstr "重新命名(_A) ..."
+msgstr "اع_د التسمية"
 
-#: src/gtkui/menus.cc:172 src/gtkui/menus.cc:231 src/qtui/menus.cc:154
+#: src/gtkui/menus.cc:164 src/gtkui/menus.cc:223 src/qtui/menus.cc:154
 msgid "Remo_ve"
-msgstr "移除(_V)"
+msgstr "ح_ذف"
 
-#: src/gtkui/menus.cc:174 src/qtui/menus.cc:156
+#: src/gtkui/menus.cc:166 src/qtui/menus.cc:156
 msgid "_Import ..."
-msgstr "匯入(_I) ..."
+msgstr "ا_ستيراد ..."
 
-#: src/gtkui/menus.cc:175 src/qtui/menus.cc:157
+#: src/gtkui/menus.cc:167 src/qtui/menus.cc:157
 msgid "_Export ..."
-msgstr "匯出(_E) ..."
+msgstr "_صدر ..."
 
-#: src/gtkui/menus.cc:177 src/qtui/menus.cc:159
+#: src/gtkui/menus.cc:169 src/qtui/menus.cc:159
 msgid "Playlist _Manager ..."
-msgstr "播放清單管理(_M) ..."
+msgstr "مدير _قائمة التشغيل"
 
-#: src/gtkui/menus.cc:178 src/qtui/menus.cc:160
+#: src/gtkui/menus.cc:170 src/qtui/menus.cc:160
 msgid "_Queue Manager ..."
-msgstr "佇列管理(_Q) ..."
+msgstr "_مدير قوائم الانتظار ..."
 
-#: src/gtkui/menus.cc:182 src/qtui/menus.cc:164
+#: src/gtkui/menus.cc:174 src/qtui/menus.cc:164
 msgid "Volume _Up"
-msgstr "提高音量(_U)"
+msgstr "رف_ع الصوت"
 
-#: src/gtkui/menus.cc:183 src/qtui/menus.cc:165
+#: src/gtkui/menus.cc:175 src/qtui/menus.cc:165
 msgid "Volume _Down"
-msgstr "降低音量(_D)"
+msgstr "_خفض الصوت"
 
-#: src/gtkui/menus.cc:185 src/qtui/menus.cc:167
+#: src/gtkui/menus.cc:177 src/qtui/menus.cc:167
 msgid "_Equalizer ..."
-msgstr "等化器(_E) ..."
+msgstr "ال_خالط..."
 
-#: src/gtkui/menus.cc:186 src/qtui/menus.cc:168
+#: src/gtkui/menus.cc:178 src/qtui/menus.cc:168
 msgid "E_ffects ..."
-msgstr "特效(_F) ..."
+msgstr "مؤ_ثرات ..."
 
-#: src/gtkui/menus.cc:188
+#: src/gtkui/menus.cc:180
 msgid "_Record Stream"
-msgstr "錄製串流(_R)"
+msgstr "سجل _ستريم"
 
-#: src/gtkui/menus.cc:189
+#: src/gtkui/menus.cc:181
 msgid "Audio _Settings ..."
-msgstr "音訊設定(_S) ..."
+msgstr "إعدادات ال_صوت ..."
 
-#: src/gtkui/menus.cc:193 src/qtui/menus.cc:175
+#: src/gtkui/menus.cc:185 src/qtui/menus.cc:175
 msgid "Show _Menu Bar"
-msgstr "顯示選單列(_M)"
+msgstr "عرض لوحة ال_قائمة"
 
-#: src/gtkui/menus.cc:194 src/qtui/menus.cc:176
+#: src/gtkui/menus.cc:186 src/qtui/menus.cc:176
 msgid "Show I_nfo Bar"
-msgstr "顯示資訊列(_N)"
+msgstr "عرض لوحة الم_علومات"
 
-#: src/gtkui/menus.cc:195 src/qtui/menus.cc:177
+#: src/gtkui/menus.cc:187 src/qtui/menus.cc:177
 msgid "Show Info Bar Vis_ualization"
-msgstr "顯示資訊列的視覺特效(_U)"
+msgstr "عرض لوحة _معلومات المرئيات"
 
-#: src/gtkui/menus.cc:196 src/qtui/menus.cc:178
+#: src/gtkui/menus.cc:188 src/qtui/menus.cc:178
 msgid "Show _Status Bar"
-msgstr "顯示狀態列(_S)"
+msgstr "عرض لوحة ال_حالة"
 
-#: src/gtkui/menus.cc:198 src/qtui/menus.cc:180
+#: src/gtkui/menus.cc:190 src/qtui/menus.cc:180
 msgid "Show _Remaining Time"
-msgstr "顯示剩餘時間(_R)"
+msgstr "عرض الو_قت المتبقي"
 
-#: src/gtkui/menus.cc:200 src/qtui/menus.cc:182 src/skins/menus.cc:155
-#: src/skins-qt/menus.cc:174
+#: src/gtkui/menus.cc:192 src/qtui/menus.cc:182 src/skins/menus.cc:155
+#: src/skins-qt/menus.cc:150
 msgid "_Visualizations ..."
-msgstr "視覺特效(_V) ..."
+msgstr "ال_مرئيات ..."
 
-#: src/gtkui/menus.cc:204 src/qtui/menus.cc:186
+#: src/gtkui/menus.cc:196 src/qtui/menus.cc:186
 msgid "_File"
-msgstr "檔案(_F)"
+msgstr "_ملف"
 
-#: src/gtkui/menus.cc:205 src/qtui/menus.cc:187
+#: src/gtkui/menus.cc:197 src/qtui/menus.cc:187
 msgid "_Playback"
-msgstr "播放(_P)"
+msgstr "_تشغيل"
 
-#: src/gtkui/menus.cc:206 src/qtui/menus.cc:188
+#: src/gtkui/menus.cc:198 src/qtui/menus.cc:188
 msgid "P_laylist"
-msgstr "播放清單(_L)"
+msgstr "ال_قائمة"
 
-#: src/gtkui/menus.cc:207 src/gtkui/menus.cc:225 src/qtui/menus.cc:189
+#: src/gtkui/menus.cc:199 src/gtkui/menus.cc:217 src/qtui/menus.cc:189
 #: src/qtui/menus.cc:212
 msgid "_Services"
-msgstr "服務(_S)"
+msgstr "_خدمات"
 
-#: src/gtkui/menus.cc:208 src/qtui/menus.cc:190
+#: src/gtkui/menus.cc:200 src/qtui/menus.cc:190
 msgid "_Output"
-msgstr "輸出(_O)"
+msgstr "النات_ج"
 
-#: src/gtkui/menus.cc:209 src/qtui/menus.cc:191
+#: src/gtkui/menus.cc:201 src/qtui/menus.cc:191
 msgid "_View"
-msgstr "檢視(_V)"
+msgstr "_عرض"
 
-#: src/gtkui/menus.cc:214 src/qtui/menus.cc:201
+#: src/gtkui/menus.cc:206 src/qtui/menus.cc:201
 msgid "_Queue/Unqueue"
-msgstr "排入／移出佇列(_Q)"
+msgstr "_اضف/ازل من قائمة الانتظار"
 
-#: src/gtkui/menus.cc:216 src/qtui/menus.cc:203
+#: src/gtkui/menus.cc:208 src/qtui/menus.cc:203
 msgid "_Open Containing Folder"
-msgstr "開啟該資料夾(_O)"
+msgstr "فتح الم_جلد المحتوي"
 
-#: src/gtkui/menus.cc:217 src/qtui/menus.cc:204
+#: src/gtkui/menus.cc:209 src/qtui/menus.cc:204
 msgid "_Refresh Selected"
-msgstr "重新整理選擇的項目(_R)"
+msgstr "تحدي_ث المحددة"
 
-#: src/gtkui/menus.cc:219 src/qtui/menus.cc:206
+#: src/gtkui/menus.cc:211 src/qtui/menus.cc:206
 msgid "Cu_t"
-msgstr "剪下(_T)"
+msgstr "ق_ص"
 
-#: src/gtkui/menus.cc:220 src/qtui/menus.cc:207
+#: src/gtkui/menus.cc:212 src/qtui/menus.cc:207
 msgid "_Copy"
-msgstr "複製(_C)"
+msgstr "_نسخ"
 
-#: src/gtkui/menus.cc:221 src/qtui/menus.cc:208
+#: src/gtkui/menus.cc:213 src/qtui/menus.cc:208
 msgid "_Paste"
-msgstr "貼上(_P)"
+msgstr "_لصق"
 
-#: src/gtkui/menus.cc:222 src/qtui/menus.cc:209
+#: src/gtkui/menus.cc:214 src/qtui/menus.cc:209
 msgid "Paste at _End"
-msgstr "貼到最後(_E)"
+msgstr "لص_ق عند الانتهاء"
 
-#: src/gtkui/menus.cc:223 src/qtui/menus.cc:210
+#: src/gtkui/menus.cc:215 src/qtui/menus.cc:210
 msgid "Select _All"
-msgstr "選擇全部(_A)"
+msgstr "تحديد ال_كل"
 
-#: src/gtkui/menus.cc:230
+#: src/gtkui/menus.cc:222
 msgid "_Rename ..."
-msgstr "重新命名(_R) ..."
+msgstr "_اعد الت_سمية ..."
 
 #: src/gtkui/settings.cc:35 src/qtui/settings.cc:54
 msgid "<b>Playlist Tabs</b>"
-msgstr "<b>播放清單分頁</b>"
+msgstr "<b>علامات قائمة التبويب </b>"
 
 #: src/gtkui/settings.cc:36 src/qtui/settings.cc:56
 msgid "Always show tabs"
-msgstr "永遠顯示分頁"
+msgstr "اظهر دائما علامات التبويب"
 
 #: src/gtkui/settings.cc:38 src/qtui/settings.cc:59
 msgid "Show entry counts"
-msgstr "顯示項目數量"
+msgstr "عرض عدد المدخلاة"
 
 #: src/gtkui/settings.cc:40 src/qtui/settings.cc:61
 msgid "Show close buttons"
-msgstr "顯示關閉按鈕"
+msgstr "عرض زر الخروج"
 
 #: src/gtkui/settings.cc:42 src/qtui/settings.cc:63
 msgid "<b>Playlist Columns</b>"
-msgstr "<b>播放清單欄位</b>"
+msgstr "<b>أعمدة القائمة</b>"
 
 #: src/gtkui/settings.cc:44 src/qtui/settings.cc:64
 msgid "Show column headers"
-msgstr "顯示欄位標頭"
-
-#: src/gtkui/settings.cc:46 src/modplug/plugin_main.cc:109
-#: src/qtui/settings.cc:66 src/skins-qt/skins_cfg.cc:309
-#: src/skins/skins_cfg.cc:290
-msgid "<b>Miscellaneous</b>"
-msgstr "<b>其他選項</b>"
+msgstr "اعرض رؤوس الأعمدة"
 
 #: src/gtkui/settings.cc:47 src/qtui/settings.cc:67
 msgid "Arrow keys seek by:"
-msgstr "按下方向鍵時跳轉的時間長度："
+msgstr "مفاتيح الأسهم تفعيل بواسطة:"
 
 #: src/gtkui/settings.cc:50 src/qtui/settings.cc:70
 msgid "Scroll on song change"
-msgstr "切換歌曲時捲動清單"
+msgstr "انتقل عند تغير المقطع"
 
-#: src/gtkui/ui_gtk.cc:74
+#: src/gtkui/ui_gtk.cc:73
 msgid "GTK Interface"
-msgstr "GTK 介面"
+msgstr "مظهر GTK "
 
-#: src/gtkui/ui_gtk.cc:222 src/skins/main.cc:241 src/skins-qt/main.cc:233
-#, fuzzy, c-format
-msgid "%s - Fauxdacious"
+#: src/gtkui/ui_gtk.cc:221 src/skins/main.cc:222 src/skins-qt/main.cc:222
+#, c-format
+msgid "%s - Audacious"
 msgstr "%s - Audacious"
 
-#: src/gtkui/ui_gtk.cc:224 src/qtui/main_window.cc:296
+#: src/gtkui/ui_gtk.cc:223 src/qtui/main_window.cc:308
 msgid "Buffering ..."
-msgstr "緩衝中 ..."
+msgstr "التخزين المؤقت ..."
 
-#: src/gtkui/ui_gtk.cc:227 src/skins/main.cc:243 src/skins/main.cc:1246
-#: src/skins-qt/main.cc:235
-#, fuzzy
-msgid "Fauxdacious"
+#: src/gtkui/ui_gtk.cc:226 src/skins/main.cc:224 src/skins-qt/main.cc:224
+msgid "Audacious"
 msgstr "Audacious"
 
-#: src/gtkui/ui_gtk.cc:430 src/gtkui/ui_gtk.cc:461 src/gtkui/ui_gtk.cc:825
-#: src/hotkey/gui.cc:72 src/notify/osd.cc:70 src/qtui/main_window.cc:110
-#: src/qtui/main_window.cc:253 src/qtui/main_window.cc:254
-#: src/skins/menus.cc:109 src/skins-qt/menus.cc:122
+#: src/gtkui/ui_gtk.cc:430 src/gtkui/ui_gtk.cc:461 src/gtkui/ui_gtk.cc:811
+#: src/hotkey/gui.cc:72 src/notify/osd.cc:70 src/qtui/main_window.cc:108
+#: src/qtui/main_window.cc:265 src/qtui/main_window.cc:266
+#: src/skins/menus.cc:109 src/skins-qt/menus.cc:100
 msgid "Play"
-msgstr "播放"
+msgstr "شغل"
 
-#: src/gtkui/ui_gtk.cc:430 src/notify/osd.cc:67 src/qtui/main_window.cc:259
-#: src/qtui/main_window.cc:260 src/skins/menus.cc:110 src/skins-qt/menus.cc:123
+#: src/gtkui/ui_gtk.cc:430 src/notify/osd.cc:67 src/qtui/main_window.cc:271
+#: src/qtui/main_window.cc:272 src/skins/menus.cc:110 src/skins-qt/menus.cc:101
 msgid "Pause"
-msgstr "暫停"
+msgstr "البث"
 
-#: src/gtkui/ui_gtk.cc:810 src/qtui/main_window.cc:103 src/skins/menus.cc:86
-#: src/skins-qt/menus.cc:99
+#: src/gtkui/ui_gtk.cc:796 src/qtui/main_window.cc:101 src/skins/menus.cc:86
+#: src/skins-qt/menus.cc:77
 msgid "Search Library"
-msgstr "搜尋媒體櫃"
+msgstr "مكتبة البحث"
 
-#: src/gtkui/ui_gtk.cc:818 src/qtui/main_window.cc:104
+#: src/gtkui/ui_gtk.cc:804 src/qtui/main_window.cc:102
 msgid "Open Files"
-msgstr "開啟檔案"
+msgstr "إفتح ملفات"
 
-#: src/gtkui/ui_gtk.cc:819 src/qtui/main_window.cc:106
+#: src/gtkui/ui_gtk.cc:805 src/qtui/main_window.cc:104
 msgid "Add Files"
-msgstr "加入檔案"
+msgstr "أضف ملفات"
 
-#: src/gtkui/ui_gtk.cc:824 src/qtui/main_window.cc:109 src/skins/menus.cc:112
-#: src/skins-qt/menus.cc:125
+#: src/gtkui/ui_gtk.cc:810 src/qtui/main_window.cc:107 src/skins/menus.cc:112
+#: src/skins-qt/menus.cc:103
 msgid "Previous"
-msgstr "上一個"
+msgstr "السابق"
 
-#: src/gtkui/ui_gtk.cc:826 src/hotkey/gui.cc:74 src/qtui/main_window.cc:111
-#: src/skins/menus.cc:111 src/skins-qt/menus.cc:124
+#: src/gtkui/ui_gtk.cc:812 src/hotkey/gui.cc:74 src/qtui/main_window.cc:109
+#: src/skins/menus.cc:111 src/skins-qt/menus.cc:102
 msgid "Stop"
-msgstr "停止"
+msgstr "توقف"
 
-#: src/gtkui/ui_gtk.cc:827 src/notify/osd.cc:74 src/qtui/main_window.cc:114
-#: src/skins/menus.cc:113 src/skins-qt/menus.cc:126
+#: src/gtkui/ui_gtk.cc:813 src/notify/osd.cc:74 src/qtui/main_window.cc:112
+#: src/skins/menus.cc:113 src/skins-qt/menus.cc:104
 msgid "Next"
-msgstr "下一個"
+msgstr "التالي"
 
-#: src/gtkui/ui_gtk.cc:828 src/qtui/main_window.cc:115 src/qtui/menus.cc:170
-#: src/skins/menus.cc:79 src/skins-qt/menus.cc:91
+#: src/gtkui/ui_gtk.cc:815 src/qtui/main_window.cc:113 src/qtui/menus.cc:170
+#: src/skins/menus.cc:79 src/skins-qt/menus.cc:69
 msgid "Record Stream"
-msgstr "錄音"
+msgstr "سجل ستريم"
 
-#: src/gtkui/ui_gtk.cc:858 src/qtui/main_window.cc:121 src/skins/menus.cc:103
-#: src/skins-qt/menus.cc:116
+#: src/gtkui/ui_gtk.cc:846 src/qtui/main_window.cc:119 src/skins/menus.cc:103
+#: src/skins-qt/menus.cc:94
 msgid "Repeat"
-msgstr "重複"
+msgstr "تكرار"
 
-#: src/gtkui/ui_gtk.cc:860 src/qtui/main_window.cc:123 src/skins/menus.cc:104
-#: src/skins-qt/menus.cc:117
+#: src/gtkui/ui_gtk.cc:848 src/qtui/main_window.cc:121 src/skins/menus.cc:104
+#: src/skins-qt/menus.cc:95
 msgid "Shuffle"
-msgstr "隨機"
+msgstr "عشوائي"
 
 #: src/gtkui/ui_statusbar.cc:63 src/qtui/status_bar.cc:153
 msgid "mono"
-msgstr "單聲道"
+msgstr "احادي"
 
 #: src/gtkui/ui_statusbar.cc:65 src/qtui/status_bar.cc:155
 msgid "stereo"
-msgstr "立體聲"
+msgstr "ستيريو"
 
 #: src/gtkui/ui_statusbar.cc:67 src/qtui/status_bar.cc:157
 #, c-format
 msgid "%d channel"
 msgid_plural "%d channels"
-msgstr[0] "%d 聲道"
+msgstr[0] "%d قناة"
+msgstr[1] "%d قناة"
+msgstr[2] "%d قناتين"
+msgstr[3] "%d قنوات"
+msgstr[4] "%d قنوات"
+msgstr[5] "%d قنوات"
 
 #: src/gtkui/ui_statusbar.cc:75 src/qtui/status_bar.cc:165
 #, c-format
 msgid "%d kHz"
-msgstr "%d kHz"
+msgstr "%d كيلوهرتز"
 
 #: src/gtkui/ui_statusbar.cc:81 src/qtui/status_bar.cc:171
 #, c-format
 msgid "%d kbps"
-msgstr "%d kbps"
+msgstr "%d كب/ث"
 
-#: src/gtkui/ui_statusbar.cc:107 src/skins/main.cc:510 src/skins-qt/main.cc:480
+#: src/gtkui/ui_statusbar.cc:107 src/skins/main.cc:466 src/skins-qt/main.cc:452
 msgid "Single mode."
-msgstr "單一模式。"
+msgstr "وضع فردي."
 
-#: src/gtkui/ui_statusbar.cc:109 src/skins/main.cc:512 src/skins-qt/main.cc:482
+#: src/gtkui/ui_statusbar.cc:109 src/skins/main.cc:468 src/skins-qt/main.cc:454
 msgid "Playlist mode."
-msgstr "播放清單模式。"
+msgstr "وضع قائمة التشغيل."
 
-#: src/gtkui/ui_statusbar.cc:117 src/skins/main.cc:518 src/skins-qt/main.cc:488
+#: src/gtkui/ui_statusbar.cc:117 src/skins/main.cc:474 src/skins-qt/main.cc:460
 msgid "Stopping after song."
-msgstr "播放完成後停止。"
+msgstr "توقف بعد المقطوعة."
 
 #: src/hotkey/gui.cc:71
 msgid "Previous track"
-msgstr "上一個音軌"
+msgstr "المقطوعة السابقة"
 
 #: src/hotkey/gui.cc:73
 msgid "Pause/Resume"
-msgstr "暫停／回復"
+msgstr "لبث/استئناف"
 
 #: src/hotkey/gui.cc:75
 msgid "Next track"
-msgstr "下一個音軌"
+msgstr "المقطوعة التالية"
 
 #: src/hotkey/gui.cc:76
 msgid "Forward 5 seconds"
-msgstr "快轉五秒"
+msgstr "تقدم 5 ثوان"
 
 #: src/hotkey/gui.cc:77
 msgid "Rewind 5 seconds"
-msgstr "倒轉五秒"
+msgstr "التراجع 5 ثوان"
 
 #: src/hotkey/gui.cc:78
 msgid "Mute"
-msgstr "靜音"
+msgstr "كتم"
 
 #: src/hotkey/gui.cc:79
 msgid "Volume up"
-msgstr "提高音量"
+msgstr "رفع الصوت"
 
 #: src/hotkey/gui.cc:80
 msgid "Volume down"
-msgstr "降低音量"
+msgstr "خفض الصوت"
 
 #: src/hotkey/gui.cc:81
 msgid "Jump to file"
-msgstr "跳轉到指定檔案"
+msgstr "انتقال إلى ملف"
 
 #: src/hotkey/gui.cc:82
 msgid "Toggle player window(s)"
-msgstr "切換顯示播放器視窗"
+msgstr "تبديل نافذة(ت) التشغيل"
 
 #: src/hotkey/gui.cc:83
 msgid "Show On-Screen-Display"
-msgstr "顯示 OSD"
+msgstr "اظهار في شاشة العرض"
 
 #: src/hotkey/gui.cc:84
 msgid "Toggle repeat"
-msgstr "切換重複播放"
+msgstr "تبديل التكرار"
 
 #: src/hotkey/gui.cc:85
 msgid "Toggle shuffle"
-msgstr "切換隨機播放"
+msgstr "تبديل الخلط"
 
 #: src/hotkey/gui.cc:86
 msgid "Toggle stop after current"
-msgstr "播放完目前歌曲後停止"
+msgstr "تبديل التوقف بعد الحالية"
 
 #: src/hotkey/gui.cc:87
 msgid "Raise player window(s)"
-msgstr "將播放器視窗放到最上層"
+msgstr "رفع نافذة التشغيل(s)"
 
 #: src/hotkey/gui.cc:97
 msgid "(none)"
-msgstr "(無)"
+msgstr "(لا شيئ)"
 
 #: src/hotkey/gui.cc:234
 msgid ""
-"It is not recommended to bind the primary mouse buttons without "
-"modificators.\n"
+"It is not recommended to bind the primary mouse buttons without modifiers.\n"
 "\n"
 "Do you want to continue?"
 msgstr ""
 
 #: src/hotkey/gui.cc:236
 msgid "Binding mouse buttons"
-msgstr "綁定滑鼠按鈕"
+msgstr "ربط أزرار الماوس"
 
 #: src/hotkey/gui.cc:391
 msgid ""
 "Press a key combination inside a text field.\n"
 "You can also bind mouse buttons."
 msgstr ""
-"請在輸入欄位中按下想要的按鍵組合。\n"
-"您也可以綁定滑鼠按鈕。"
+"اضغط تركيبة مفاتيح داخل حقل النص..\n"
+"يمكنك أيضا ربط أزرار الماوس."
 
 #: src/hotkey/gui.cc:396
 msgid "Hotkeys:"
-msgstr "熱鍵："
+msgstr "المفاتيخ الساخنة:"
 
 #: src/hotkey/gui.cc:413
 msgid "<b>Action:</b>"
-msgstr "<b>動作：</b>"
+msgstr "<b>أمر:</b>"
 
 #: src/hotkey/gui.cc:420
 msgid "<b>Key Binding:</b>"
-msgstr "<b>按鍵綁定：</b>"
+msgstr "<b>مفتاح الربط:</b>"
 
 #: src/hotkey/gui.cc:468
 msgid "_Add"
-msgstr "加入(_A)"
+msgstr "_أضف"
 
 #: src/hotkey/plugin.cc:61
 msgid "Global Hotkeys"
-msgstr "全域熱鍵"
+msgstr "المفاتيح العامة"
 
 #: src/hotkey/plugin.cc:80
 msgid ""
@@ -2551,52 +2326,51 @@ msgstr ""
 
 #: src/jack/jack-ng.cc:50
 msgid "JACK Output"
-msgstr "JACK 輸出"
+msgstr "JACK مخرج"
 
 #: src/jack/jack-ng.cc:115
 msgid "Automatically connect to output ports"
-msgstr "自動連接到輸出埠"
+msgstr "الاتصال تلقائيا إلى منافذ الإخراج"
 
 #: src/jack/jack-ng.cc:156
 #, c-format
 msgid "Only %d JACK output ports were found but %d are required."
-msgstr "只找到 %d 個 JACK 輸出埠，但系統需要 %d 個。"
+msgstr "تم العثور على %d فقط منافذ الإخراج JACK ولكن يلزم %d ."
 
 #: src/jack/jack-ng.cc:172
 #, c-format
 msgid "Failed to connect to JACK port %s."
-msgstr "無法連接到 JACK 埠 %s 。"
+msgstr "فشل الاتصال بمنفذ الخادم   %s."
 
 #: src/jack/jack-ng.cc:192
-#, fuzzy
 msgid ""
 "JACK supports only floating-point audio.  You must change the output bit "
-"depth to floating-point in Fauxdacious settings."
+"depth to floating-point in Audacious settings."
 msgstr ""
-"JACK 只支援浮點數音訊。您必須在 Audacious 設定中將輸出的取樣格式改為浮點數。"
+"جاك يدعم فقط الفاصلة العائمة للصوت. يجب تغيير عمق الاخراج قليلا لالفاصلة "
+"العائمة في إعدادات اوداسيو"
 
 #: src/jack/jack-ng.cc:205
 msgid "Failed to connect to the JACK server; is it running?"
-msgstr "無法連接到 JACK 伺服器。請確認它是否正常運作。"
+msgstr "فشل الاتصال بالخادم JACK. وتشغيله؟"
 
 #: src/jack/jack-ng.cc:281
-#, fuzzy, c-format
+#, c-format
 msgid ""
-"The JACK server requires a sample rate of %d Hz, but Fauxdacious is playing "
-"at %d Hz.  Please use the Sample Rate Converter effect to correct the "
-"mismatch."
+"The JACK server requires a sample rate of %d Hz, but Audacious is playing at "
+"%d Hz.  Please use the Sample Rate Converter effect to correct the mismatch."
 msgstr ""
-"JACK 伺服器需要使用 %d Hz 的取樣率，但 Audacious 目前正以 %d Hz 播放中。請使"
-"用「取樣率轉換」特效修正這個問題。"
+"يتطلب خادم جاك معدل عينة من %d هرتز، ولكن يشغل اوداسيو في %d  هرتز. يرجى "
+"استخدام نموذج تأثير محول معدل العينة لتصحيح عدم التوافق."
 
 #: src/ladspa/plugin.cc:415
 #, c-format
 msgid "%s Settings"
-msgstr "%s 設定"
+msgstr "%s إعدادات"
 
 #: src/ladspa/plugin.cc:481
 msgid "Module paths:"
-msgstr "模組路徑："
+msgstr "مسار الموديول:"
 
 #: src/ladspa/plugin.cc:486
 msgid ""
@@ -2604,27 +2378,27 @@ msgid ""
 "These paths are searched in addition to LADSPA_PATH.\n"
 "After adding new paths, press Enter to scan for new plugins.</small>"
 msgstr ""
-"<small>用逗點區隔不同的路徑。\n"
-"系統除了 LADSPA_PATH 之外也會搜尋這些路徑。\n"
-"加入新路徑之後請按 Enter 掃描新的外掛。</small>"
+"<small>Separate multiple paths with a colon.\n"
+"These paths are searched in addition to LADSPA_PATH.\n"
+"After adding new paths, press Enter to scan for new plugins.</small>"
 
 #: src/ladspa/plugin.cc:502
 msgid "Available plugins:"
-msgstr "可用的外掛："
+msgstr "الاضافات المتوفرة:"
 
 #: src/ladspa/plugin.cc:515 src/modplug/plugin_main.cc:95
 #: src/modplug/plugin_main.cc:98 src/modplug/plugin_main.cc:101
 #: src/modplug/plugin_main.cc:104
 msgid "Enable"
-msgstr "啟用"
+msgstr "تمكين"
 
 #: src/ladspa/plugin.cc:521
 msgid "Enabled plugins:"
-msgstr "啟用外掛："
+msgstr "تفعيل الماحقات:"
 
 #: src/ladspa/plugin.cc:537
 msgid "Settings"
-msgstr "設定"
+msgstr "الإعدادات"
 
 #: src/ladspa/plugin.cc:554
 msgid ""
@@ -2636,18 +2410,17 @@ msgstr ""
 
 #: src/ladspa/plugin.h:78
 msgid "LADSPA Host"
-msgstr "LADSPA 主控端"
+msgstr "LADSPA Host"
 
 #: src/lirc/lirc.cc:55
 msgid "LIRC Plugin"
-msgstr "Linux 紅外線遙控器外掛"
+msgstr "LIRC اضافة"
 
-#: src/lirc/lirc.cc:382
-#, fuzzy
+#: src/lirc/lirc.cc:379
 msgid ""
-"A simple plugin to control Fauxdacious using the LIRC remote control daemon\n"
+"A simple plugin to control Audacious using the LIRC remote control daemon\n"
 "\n"
-"Adapted for Fauxdacious by:\n"
+"Adapted for Audacious by:\n"
 "Tony Vroon <chainsaw@gentoo.org>\n"
 "Joonas Harjumäki <jharjuma@gmail.com>\n"
 "\n"
@@ -2671,81 +2444,81 @@ msgstr ""
 "\n"
 "For more information about LIRC, see http://lirc.org."
 
-#: src/lirc/lirc.cc:393
+#: src/lirc/lirc.cc:390
 msgid "<b>Connection</b>"
-msgstr "<b>連線</b>"
+msgstr "<b>اتصال</b>"
 
-#: src/lirc/lirc.cc:394
+#: src/lirc/lirc.cc:391
 msgid "Reconnect to LIRC server"
-msgstr "重新連線到 LIRC 伺服器"
+msgstr "إعادة الاتصال بخادم LIRC"
 
-#: src/lirc/lirc.cc:396
+#: src/lirc/lirc.cc:393
 msgid "Wait before reconnecting:"
-msgstr "重新連線前的等待時間："
+msgstr "الانتظار حتى إعادةالاتصال:"
 
 #: src/lyricwiki/lyricwiki.cc:42 src/lyricwiki-qt/lyricwiki.cc:70
 msgid "LyricWiki Plugin"
-msgstr "LyricWiki 歌詞外掛"
+msgstr "LyricWiki اضافة"
 
 #: src/lyricwiki/lyricwiki.cc:132 src/lyricwiki-qt/lyricwiki.cc:151
 #: src/lyricwiki-qt/lyricwiki.cc:337
 msgid "No lyrics available"
-msgstr "無可用的歌詞"
+msgstr "lyrics غير متاح"
 
 #: src/lyricwiki/lyricwiki.cc:251 src/lyricwiki/lyricwiki.cc:260
 #: src/lyricwiki/lyricwiki.cc:275 src/lyricwiki/lyricwiki.cc:284
 #: src/lyricwiki/lyricwiki.cc:299 src/lyricwiki-qt/lyricwiki.cc:291
 #: src/lyricwiki-qt/lyricwiki.cc:306 src/lyricwiki-qt/lyricwiki.cc:321
 #: src/lyricwiki-qt/lyricwiki.cc:330 src/lyricwiki-qt/lyricwiki.cc:351
-#: src/qtui/dialog_windows.cc:38 src/ui-common/dialogs-qt.cc:38
+#: src/ui-common/dialogs-qt.cc:38
 msgid "Error"
-msgstr "錯誤"
+msgstr "خطأ"
 
 #: src/lyricwiki/lyricwiki.cc:252 src/lyricwiki/lyricwiki.cc:276
 #: src/lyricwiki-qt/lyricwiki.cc:292 src/lyricwiki-qt/lyricwiki.cc:322
 #, c-format
 msgid "Unable to fetch %s"
-msgstr "無法取得 %s"
+msgstr "غير قادر على جلب %s"
 
 #: src/lyricwiki/lyricwiki.cc:261 src/lyricwiki/lyricwiki.cc:285
 #: src/lyricwiki-qt/lyricwiki.cc:307 src/lyricwiki-qt/lyricwiki.cc:331
 #, c-format
 msgid "Unable to parse %s"
-msgstr "無法分析 %s"
+msgstr "Unable to parse %s"
 
 #: src/lyricwiki/lyricwiki.cc:291 src/lyricwiki-qt/lyricwiki.cc:343
 msgid "Looking for lyrics ..."
-msgstr "尋找歌詞中 ..."
+msgstr "أبحث عن lyrics ..."
 
 #: src/lyricwiki/lyricwiki.cc:299 src/lyricwiki-qt/lyricwiki.cc:351
 msgid "Missing song metadata"
-msgstr "找不到歌曲詮釋資料"
+msgstr "نقص في البيانات الوصفية للمقطوعة"
 
 #: src/lyricwiki/lyricwiki.cc:310 src/lyricwiki-qt/lyricwiki.cc:362
 msgid "Connecting to lyrics.wikia.com ..."
-msgstr "連線到 lyrics.wikia.com 中 ..."
+msgstr "الاتصال ب lyrics.wikia.com ..."
 
 #: src/lyricwiki/lyricwiki.cc:351 src/lyricwiki-qt/lyricwiki.cc:442
 msgid "Edit lyrics ..."
-msgstr "編輯歌詞 ..."
+msgstr "تحرير lyrics ..."
 
-#: src/m3u/m3u.cc:33
+#: src/m3u/m3u.cc:32
 msgid "M3U Playlists"
-msgstr "M3U 播放清單"
+msgstr "قوائم M3U"
 
 #: src/metronom/metronom.cc:44
 msgid "Tact Generator"
-msgstr "節拍產生器"
+msgstr "Tact Generator"
 
 #: src/metronom/metronom.cc:145
 #, c-format
 msgid "Tact generator: %d bpm"
-msgstr "節拍產生器：%d bpm"
+msgstr "Tact generator: %d bpm"
 
 #: src/metronom/metronom.cc:147
 #, c-format
 msgid "Tact generator: %d bpm %d/%d"
-msgstr "節拍產生器：%d bpm %d／%d"
+msgstr "Tact generator: %d bpm %d/%d"
 
 #: src/metronom/metronom.cc:234
 msgid ""
@@ -2757,13 +2530,13 @@ msgid ""
 msgstr ""
 "A Tact Generator by Martin Strauss <mys@faveve.uni-stuttgart.de>\n"
 "\n"
-"用法：加入網址：tact://beats*num/den\n"
-"範例：tact://77 播放 77 BPM\n"
-"或 tact://60*3/4 以 3/4 拍播放 60 BPM"
+"To use it, add a URL: tact://beats*num/den\n"
+"e.g. tact://77 to play 77 beats per minute\n"
+"or tact://60*3/4 to play 60 bpm in 3/4 tacts"
 
 #: src/mixer/mixer.cc:38
 msgid "Channel Mixer"
-msgstr "聲道混合"
+msgstr "خلاط القنوات"
 
 #: src/mixer/mixer.cc:227
 msgid ""
@@ -2775,178 +2548,184 @@ msgstr ""
 
 #: src/mixer/mixer.cc:231
 msgid "<b>Channel Mixer</b>"
-msgstr "<b>聲道混合</b>"
+msgstr "<b>خلاط القنوات</b>"
 
 #: src/mixer/mixer.cc:232
 msgid "Output channels:"
-msgstr "輸出聲道數目："
+msgstr "مخرج القنوات:"
 
 #: src/mms/mms.cc:35
 msgid "MMS Plugin"
-msgstr "MMS 外掛"
+msgstr "اضافة MMS"
 
 #: src/mms/mms.cc:82
 msgid "Error connecting to MMS server"
-msgstr "連線到 MMS 伺服器時發生錯誤"
+msgstr "خطأ في الاتصال بخادم MMS"
 
 #: src/modplug/modplugbmp.h:57
 msgid "ModPlug (Module Player)"
-msgstr "ModPlug (MOD 播放器)"
+msgstr "ModPlug (وحدة القارئ)"
 
 #: src/modplug/plugin_main.cc:56
 msgid "<b>Resolution</b>"
-msgstr "<b>解析度</b>"
+msgstr "<b>ابعاد</b>"
 
 #: src/modplug/plugin_main.cc:57
 msgid "8-bit"
-msgstr "8-bit"
+msgstr "8-بيت"
 
 #: src/modplug/plugin_main.cc:58
 msgid "16-bit"
-msgstr "16-bit"
+msgstr "16-بيت"
 
 #: src/modplug/plugin_main.cc:59
 msgid "<b>Channels</b>"
-msgstr "<b>聲道</b>"
+msgstr "<b>قنوات</b>"
 
 #: src/modplug/plugin_main.cc:63
 msgid "Nearest (fastest)"
-msgstr "最近點取樣(最快)"
+msgstr "الأقرب (أسرع)"
 
 #: src/modplug/plugin_main.cc:64
 msgid "Linear (fast)"
-msgstr "線性取樣(快)"
+msgstr "الخطي (سريع)"
 
 #: src/modplug/plugin_main.cc:65
 msgid "Spline (good)"
-msgstr "曲線函數(佳)"
+msgstr ""
+"13/5000\n"
+"المفتاح (جيد)"
 
 #: src/modplug/plugin_main.cc:66
 msgid "Polyphase (best)"
-msgstr "多相位取樣(最佳)"
+msgstr "الأطوار (أفضل)"
 
 #: src/modplug/plugin_main.cc:67
 msgid "<b>Sample rate</b>"
-msgstr "<b>取樣率</b>"
+msgstr "<b>معدل العينة</b>"
 
 #: src/modplug/plugin_main.cc:68
 msgid "22 kHz"
-msgstr "22 kHz"
+msgstr "22 كيلوهرتز"
 
 #: src/modplug/plugin_main.cc:69
 msgid "44 kHz"
-msgstr "44 kHz"
+msgstr "44 كيلوهرتز"
 
 #: src/modplug/plugin_main.cc:70
 msgid "48 kHz"
-msgstr "48 kHz"
+msgstr "48 كيلوهرتز"
 
 #: src/modplug/plugin_main.cc:71
 msgid "96 kHz"
-msgstr "96 kHz"
+msgstr "96 كيلوهرتز"
 
 #: src/modplug/plugin_main.cc:75 src/modplug/plugin_main.cc:80
 #: src/modplug/plugin_main.cc:85
 msgid "Level:"
-msgstr "強度："
+msgstr "مستوى:"
 
 #: src/modplug/plugin_main.cc:81
 msgid "Cutoff:"
-msgstr "裁切："
+msgstr "قطع:"
 
 #: src/modplug/plugin_main.cc:94
 msgid "<b>Reverb</b>"
-msgstr "<b>殘響</b>"
+msgstr "<b>تردد</b>"
 
 #: src/modplug/plugin_main.cc:97
 msgid "<b>Bass Boost</b>"
-msgstr "<b>重低音強化</b>"
+msgstr "<b>صوت إستهجان</b>"
 
 #: src/modplug/plugin_main.cc:100
 msgid "<b>Surround</b>"
-msgstr "<b>環繞音效</b>"
+msgstr "<b>إحاطة</b>"
 
 #: src/modplug/plugin_main.cc:103
 msgid "<b>Preamp</b>"
-msgstr "<b>前置放大</b>"
+msgstr "<b>Preamp</b>"
 
 #: src/modplug/plugin_main.cc:110
 msgid "Oversample"
-msgstr "超取樣"
+msgstr "Oversample"
 
 #: src/modplug/plugin_main.cc:111
 msgid "Noise reduction"
-msgstr "降噪"
+msgstr "تقليل الضوضاء"
 
 #: src/modplug/plugin_main.cc:112
 msgid "Play Amiga MODs"
-msgstr "播放 Amiga MOD 檔案"
+msgstr "قراءة Amiga MODs"
 
 #: src/modplug/plugin_main.cc:113
 msgid "<b>Repeat</b>"
-msgstr "<b>重複</b>"
+msgstr "<b>تكرار</b>"
 
 #: src/modplug/plugin_main.cc:114
 msgid "Repeat count:"
-msgstr "重複次數："
+msgstr "عدد التكرار:"
 
 #: src/modplug/plugin_main.cc:115
 msgid "To repeat forever, set the repeat count to -1."
-msgstr "將重複次數設定為 -1 表示永遠重複播放。"
+msgstr "للتكرار لا نهائي، تعيين تكرار العد إلى -1."
 
-#: src/modplug/plugin_main.cc:128
-#, fuzzy
-msgid "These settings will take effect when Fauxdacious is restarted."
-msgstr "這些設定值將在 Audacious 重新啟動後生效。"
+#: src/modplug/plugin_main.cc:128 src/sid/xs_config.cc:106
+msgid "These settings will take effect when Audacious is restarted."
+msgstr ""
+"60/5000\n"
+"وهذه الإعدادات نافذة المفعول عند إعادة تشغيل اوداسيو."
 
 #: src/mpg123/mpg123.cc:54
 msgid "MPG123 Plugin"
-msgstr "MPG123 外掛"
+msgstr "MPG123 اضافة"
+
+#: src/mpg123/mpg123.cc:80
+msgid "<b>Advanced</b>"
+msgstr "<b>متقدم</b>"
 
 #: src/mpg123/mpg123.cc:81
 msgid "Use accurate length calculation (slow)"
-msgstr "啟用精確長度計算(慢)"
+msgstr "استخدام دقة حساب طويل (بطيء)"
 
 #: src/mpg123/mpg123.cc:245
 msgid "Surround"
-msgstr "環繞"
+msgstr "إحاطة"
 
 #: src/mpris2/plugin.cc:38
 msgid "MPRIS 2 Server"
-msgstr "MPRIS 2 伺服器"
+msgstr "MPRIS 2 خادم"
 
-#: src/neon/neon.cc:99
+#: src/neon/neon.cc:97
 msgid "Neon HTTP/HTTPS Plugin"
-msgstr "Neon HTTP／HTTPS 外掛"
+msgstr "Neon HTTP/HTTPS اضافة"
 
-#: src/neon/neon.cc:528
+#: src/neon/neon.cc:526
 msgid "Error parsing redirect"
-msgstr "解析重新導向時發生錯誤"
+msgstr "خطأ في توزيع إعادة توجيه"
 
-#: src/neon/neon.cc:542
+#: src/neon/neon.cc:540
 msgid "Unknown HTTP error"
-msgstr "發生未知的 HTTP 錯誤"
+msgstr "خطأ HTTP غير معروف"
 
-#: src/neon/neon.cc:590
+#: src/neon/neon.cc:574
 msgid "Error parsing URL"
-msgstr "解析網址時發生錯誤"
+msgstr "تحليل عنوان خطأ"
 
-#: src/neon/neon.cc:656
+#: src/neon/neon.cc:637
 msgid "Too many redirects"
-msgstr "過多的重新導向"
+msgstr "الكثير من الموجهات"
 
 #: src/notify/event.cc:97
 msgid "Stopped"
-msgstr "已停止"
+msgstr "توقفت"
 
 #: src/notify/event.cc:97
-#, fuzzy
-msgid "Fauxdacious is not playing."
-msgstr "Audacious 非播放中。"
+msgid "Audacious is not playing."
+msgstr "Audacious ليس في حاة تشغيل."
 
 #: src/notify/notify.cc:39
 msgid "Desktop Notifications"
-msgstr "桌面通知"
+msgstr "تنبيهات سطح المكتب"
 
 #: src/notify/notify.cc:57
 msgid ""
@@ -2986,51 +2765,51 @@ msgstr ""
 
 #: src/notify/notify.cc:102
 msgid "Show playback controls"
-msgstr "顯示播放控制元件"
+msgstr "اظهر عناصر التحكم بالتشغيل"
 
 #: src/notify/notify.cc:104
 msgid "Always show notification"
-msgstr "永遠顯示通知"
+msgstr "اعرض دائما الاخطارات"
 
 #: src/notify/notify.cc:106
 msgid "Include album name in notification"
-msgstr "在通知訊息中顯示專輯名稱"
+msgstr "اعرض اسم الالبوم في الاخطارات"
 
 #: src/notify/osd.cc:59
 msgid "Show"
-msgstr "顯示"
+msgstr "اظهار"
 
 #: src/oss4/oss.h:75
 msgid "OSS4 Output"
-msgstr "OSS4 輸出"
+msgstr "OSS4 الناتج"
 
 #: src/oss4/oss.h:77
 msgid "OSS3 Output"
-msgstr "OSS3 輸出"
+msgstr "OSS3 الناتج"
 
 #: src/oss4/plugin.cc:35
 msgid "Default device"
-msgstr "預設裝置"
+msgstr "الجهاز الافتراضي"
 
 #: src/oss4/plugin.cc:78
 msgid "Audio device:"
-msgstr "音訊裝置："
+msgstr "جهاز الصوت:"
 
 #: src/oss4/plugin.cc:81
 msgid "Use alternate device:"
-msgstr "使用替代裝置："
+msgstr "استخدام جهاز بديل:"
 
 #: src/oss4/plugin.cc:85
 msgid "Save volume between sessions."
-msgstr "儲存不同工作階段的音量。"
+msgstr "حفظ الصوت بين الجلسات."
 
 #: src/oss4/plugin.cc:87
 msgid "Enable format conversions made by the OSS software."
-msgstr "啟用格式轉換 (使用 OSS 軟體)。"
+msgstr "تمكين تنسيق التحويلات التي أدلى بها البرنامج OSS."
 
 #: src/oss4/plugin.cc:89
 msgid "Enable exclusive mode to prevent virtual mixing."
-msgstr "啟用獨占模式以防止虛擬混音。"
+msgstr "تمكين وضع خاص لمنع الاختلاط الظاهري."
 
 #: src/oss4/plugin.cc:101
 msgid ""
@@ -3049,34 +2828,34 @@ msgstr ""
 #: src/playlist-manager/playlist-manager.cc:37
 #: src/playlist-manager-qt/playlist-manager-qt.cc:40
 msgid "Playlist Manager"
-msgstr "播放清單管理"
+msgstr "مدير قائمة التشغيل"
 
-#: src/playlist-manager/playlist-manager.cc:223
-#: src/playlist-manager-qt/playlist-manager-qt.cc:162
+#: src/playlist-manager/playlist-manager.cc:200
+#: src/playlist-manager-qt/playlist-manager-qt.cc:185
 msgid "Entries"
-msgstr "項目數"
+msgstr "المدخلات"
 
-#: src/playlist-manager/playlist-manager.cc:243
-#: src/playlist-manager-qt/playlist-manager-qt.cc:320
+#: src/playlist-manager/playlist-manager.cc:220
+#: src/playlist-manager-qt/playlist-manager-qt.cc:364
 msgid "_Remove"
-msgstr "移除(_R)"
+msgstr "_حذف"
 
-#: src/playlist-manager/playlist-manager.cc:244
-#: src/playlist-manager-qt/playlist-manager-qt.cc:315
+#: src/playlist-manager/playlist-manager.cc:221
+#: src/playlist-manager-qt/playlist-manager-qt.cc:359
 msgid "Ren_ame"
-msgstr "重新命名(_A)"
+msgstr "اع_د التسمية"
 
 #: src/pls/pls.cc:35
 msgid "PLS Playlists"
-msgstr "PLS 播放清單"
+msgstr "قوائم PLS"
 
 #: src/psf/plugin.cc:45
 msgid "OpenPSF PSF1/PSF2 Decoder"
-msgstr "OpenPSF PSF1／PSF2 解碼器"
+msgstr "OpenPSF PSF1/PSF2 مفكك"
 
 #: src/pulse/pulse_audio.cc:40
 msgid "PulseAudio Output"
-msgstr "PulseAudio 輸出"
+msgstr "ناتج PulseAudio"
 
 #: src/pulse/pulse_audio.cc:532
 msgid ""
@@ -3114,7 +2893,7 @@ msgstr ""
 
 #: src/qtaudio/qtaudio.cc:44
 msgid "QtMultimedia Output"
-msgstr "QtMultimedia 輸出"
+msgstr "ناتج QtMultimedia"
 
 #: src/qtaudio/qtaudio.cc:72
 msgid ""
@@ -3152,85 +2931,73 @@ msgstr ""
 "\n"
 "License: GPLv2+"
 
-#: src/qtui/dialog_windows.cc:31 src/ui-common/dialogs-qt.cc:31
-msgid "Working ..."
-msgstr "處理中 ..."
-
-#: src/qtui/dialog_windows.cc:43 src/ui-common/dialogs-qt.cc:43
-msgid "Information"
-msgstr "資訊"
-
-#: src/qtui/filter_input.cc:44 src/skins/search-select.cc:76
-msgid "Search"
-msgstr "搜尋"
-
-#: src/qtui/main_window.cc:112 src/skins/menus.cc:107 src/skins-qt/menus.cc:120
+#: src/qtui/main_window.cc:110 src/skins/menus.cc:107 src/skins-qt/menus.cc:98
 msgid "Stop After This Song"
-msgstr "播放完目前歌曲後停止"
+msgstr "توقف بعد هذا المقطع"
 
 #: src/qtui/menus.cc:69
 msgid "_Open Folder ..."
-msgstr "開啟資料夾(_O) ..."
+msgstr "_افتح مجلد ..."
 
 #: src/qtui/menus.cc:72
 msgid "_Add Folder ..."
-msgstr "加入資料夾(_A) ..."
+msgstr "_اضافة مجلد..."
 
 #: src/qtui/menus.cc:80
 msgid "_Log Inspector ..."
-msgstr "監控記錄(_L) ..."
+msgstr "_سجل المفتش..."
 
 #: src/qtui/menus.cc:145
 msgid "_Find ..."
-msgstr "搜尋(_F) ..."
+msgstr ""
 
-#: src/qtui/menus.cc:171 src/skins/menus.cc:80 src/skins-qt/menus.cc:92
+#: src/qtui/menus.cc:171 src/skins/menus.cc:80 src/skins-qt/menus.cc:70
 msgid "Audio Settings ..."
-msgstr "音訊設定 ..."
-
-#: src/qtui/playlist_columns.cc:36 src/qtui/playlist_model.cc:35
-msgid "Now Playing"
-msgstr "正在播放"
+msgstr "إعدادات الصوت ..."
 
 #: src/qtui/playlist_header.cc:201
 msgid "Reset to Defaults"
-msgstr "重置回預設值"
+msgstr ""
+
+#: src/qtui/playlist_model.cc:35
+msgid "Now Playing"
+msgstr "المُشَغّل الأن"
 
 #: src/qtui/playlist_model.cc:36
 msgid "Entry Number"
-msgstr "項目編號"
+msgstr ""
 
 #: src/qtui/playlist_model.cc:41
 msgid "Album Artist"
-msgstr "專輯藝人"
+msgstr "ألبوم المؤدي"
 
 #: src/qtui/playlist_model.cc:44
 msgid "Queue Position"
-msgstr "佇列位置"
+msgstr ""
 
 #: src/qtui/playlist_model.cc:46
 msgid "File Path"
-msgstr "檔案路徑"
+msgstr ""
 
 #: src/qtui/playlist_model.cc:47
 msgid "File Name"
-msgstr "檔案名稱"
+msgstr ""
 
 #: src/qtui/playlist_model.cc:48
 msgid "Custom Title"
-msgstr "自訂標題"
+msgstr ""
 
 #: src/qtui/qtui.cc:39
 msgid "Qt Interface"
-msgstr "Qt 介面"
+msgstr "مظهر كيوتي"
 
 #: src/qtui/search_bar.cc:47
 msgid "Search playlist"
-msgstr "搜尋播放清單"
+msgstr ""
 
 #: src/resample/resample.cc:43
 msgid "Sample Rate Converter"
-msgstr "取樣率轉換"
+msgstr "محول معدل العينة"
 
 #: src/resample/resample.cc:183
 msgid ""
@@ -3242,123 +3009,126 @@ msgstr ""
 
 #: src/resample/resample.cc:187
 msgid "Skip/repeat samples"
-msgstr "跳過／重複取樣"
+msgstr "تخطي/تكرار العينات"
 
 #: src/resample/resample.cc:188
 msgid "Linear interpolation"
-msgstr "線性內插"
+msgstr "استيفاء خطي"
 
 #: src/resample/resample.cc:189
 msgid "Fast sinc interpolation"
-msgstr "快速 sinc 內插"
+msgstr "استيفاء sinc السريع"
 
 #: src/resample/resample.cc:190
 msgid "Medium sinc interpolation"
-msgstr "中等 sinc 內插"
+msgstr "متوسط استيفاء sinc "
 
 #: src/resample/resample.cc:191
 msgid "Best sinc interpolation"
-msgstr "最佳 sinc 內插"
+msgstr "أفضل الاستيفاء sinc "
 
 #: src/resample/resample.cc:195
 msgid "<b>Conversion</b>"
-msgstr "<b>轉換</b>"
+msgstr "<b>تحويل</b>"
 
 #: src/resample/resample.cc:196
 msgid "Method:"
-msgstr "演算法："
+msgstr "طريقة:"
 
 #: src/resample/resample.cc:199 src/soxr/sox-resampler.cc:188
 msgid "Rate:"
-msgstr "取樣率："
+msgstr "معدل:"
 
 #: src/resample/resample.cc:202
 msgid "<b>Rate Mappings</b>"
-msgstr "<b>取樣率映射</b>"
+msgstr "<b>تعيينات معدل</b>"
 
 #: src/resample/resample.cc:203
 msgid "Use rate mappings"
-msgstr "使用取樣率映射"
+msgstr "استخدم تعيينات المعدل"
 
 #: src/resample/resample.cc:205
 msgid "8 kHz:"
-msgstr "8 kHz："
+msgstr "8 كيلوهرتز:"
 
 #: src/resample/resample.cc:209
 msgid "16 kHz:"
-msgstr "16 kHz："
+msgstr "16 كيلوهرتز:"
 
 #: src/resample/resample.cc:213
 msgid "22.05 kHz:"
-msgstr "22.05 kHz："
+msgstr "22.05 كيلوهرتز:"
 
 #: src/resample/resample.cc:217
 msgid "32.0 kHz:"
-msgstr "32.0 kHz："
+msgstr "32.0 كيلوهرتز:"
 
 #: src/resample/resample.cc:221
 msgid "44.1 kHz:"
-msgstr "44.1 kHz："
+msgstr "44.1 كيلوهرتز:"
 
 #: src/resample/resample.cc:225
 msgid "48 kHz:"
-msgstr "48 kHz："
+msgstr "48 كيلوهرتز:"
 
 #: src/resample/resample.cc:229
 msgid "88.2 kHz:"
-msgstr "88.2 kHz："
+msgstr "88.2 كيلوهرتز:"
 
 #: src/resample/resample.cc:233
 msgid "96 kHz:"
-msgstr "96 kHz："
+msgstr "96 كيلوهرتز:"
 
 #: src/resample/resample.cc:237
 msgid "176.4 kHz:"
-msgstr "176.4 kHz："
+msgstr "176.4 كيلوهرتز:"
 
 #: src/resample/resample.cc:241
 msgid "192 kHz:"
-msgstr "192 kHz："
+msgstr "192 كيلوهرتز:"
 
 #: src/scrobbler2/config_window.cc:19
 msgid "Checking Last.fm access ..."
-msgstr "正在檢查 Last.fm 存取權限 ..."
+msgstr "Checking Last.fm access ..."
 
 #: src/scrobbler2/config_window.cc:27
 msgid ""
 "Your scrobbles are being saved on your computer temporarily.  They will be "
 "submitted as soon as Audacious is allowed access."
 msgstr ""
-"您的播放記錄已暫時儲存在電腦上。Audacious 會在狀況允許下盡快地將它們上傳。"
+"يتم حفظ scrobbles على جهاز الكمبيوتر الخاص بك مؤقتا. أنها ستقدم في أقرب وقت "
+"يسمح Audacious بالوصول."
 
 #: src/scrobbler2/config_window.cc:33
 #, c-format
 msgid "Permission granted.  Scrobbling for user %s."
-msgstr "已取得授權。上傳使用者 %s 的播放記錄。"
+msgstr "تم تأمين التصريح Scrobbling للمستخدم  %s."
 
 #: src/scrobbler2/config_window.cc:37
 msgid ""
 "Permission denied.  Open the following URL in a browser, allow Audacious "
 "access to your account, and then click 'Check Permission' again:"
 msgstr ""
-"存取被拒。請用瀏覽器開啟以下連結並允許 Audacious 存取您的帳號，然後再點一次"
-"「檢查授權」："
+"طلب الاذن مرفوض. فتح الرابط التالي في متصفح، سماح بالوصول Audacious إلى "
+"حسابك، ومن ثم انقر فوق \"تحقق تصريح 'مرة أخرى:"
 
 #: src/scrobbler2/config_window.cc:47
 msgid "There was a problem contacting Last.fm."
-msgstr "存取 Last.fm 時發生問題。"
+msgstr "كانت هناك مشكلة الاتصال Last.fm."
 
 #: src/scrobbler2/config_window.cc:86
 msgid "Check Permission"
-msgstr "檢查授權"
+msgstr "التحقق من الاإذن"
 
 #: src/scrobbler2/config_window.cc:87
 msgid "Revoke Permission"
-msgstr "撤銷授權"
+msgstr ""
+"17/5000\n"
+"إلغاء التراخيص"
 
 #: src/scrobbler2/config_window.cc:91
 msgid "You need to allow Audacious to scrobble tracks to your Last.fm account."
-msgstr "您必須允許 Audacious 上傳音軌的播放記錄到您的 Last.fm 帳號。"
+msgstr "تحتاج إلى سماح Audacious  لscrobble المسارات لحساب  Last.fm الخاص بك."
 
 #: src/scrobbler2/scrobbler.cc:29
 msgid "Scrobbler 2.0"
@@ -3369,8 +3139,8 @@ msgid ""
 "The Scrobbler plugin could not be started.\n"
 "There might be a problem with your installation."
 msgstr ""
-"無法啟動 Scrobbler 外掛。\n"
-"您的安裝可能有些問題。"
+"تعذر بدء البرنامج المساعد Scrobbler.\n"
+"قد تكون هناك مشكلة مع التثبيت."
 
 #: src/scrobbler2/scrobbler.cc:289
 msgid ""
@@ -3395,14 +3165,14 @@ msgid ""
 "Audacious is now using an improved version of the Last.fm Scrobbler.\n"
 "Please check the Preferences for the Scrobbler plugin."
 msgstr ""
-"Audacious 現在使用改良版的 Last.fm 播放資訊上傳功能。\n"
-"請參閱偏好設定中的播放資訊外掛。"
+"اوداسيو الآن تستخدم نسخة محسنة من Last.fm Scrobbler.\n"
+"يرجى التحقق من تفضيلات البرنامج المساعد Scrobbler."
 
-#: src/sdlout/sdlout.cc:46
+#: src/sdlout/sdlout.cc:43
 msgid "SDL Output"
-msgstr "SDL 輸出"
+msgstr "SDL ناتج"
 
-#: src/sdlout/sdlout.cc:75
+#: src/sdlout/sdlout.cc:72
 msgid ""
 "SDL Output Plugin for Audacious\n"
 "Copyright 2010 John Lindgren"
@@ -3410,129 +3180,140 @@ msgstr ""
 "SDL Output Plugin for Audacious\n"
 "Copyright 2010 John Lindgren"
 
-#: src/search-tool-qt/search-tool-qt.cc:87 src/search-tool/search-tool.cc:73
+#: src/search-tool-qt/search-tool-qt.cc:87 src/search-tool/search-tool.cc:74
 msgid "Number of results to show:"
 msgstr ""
 
-#: src/search-tool-qt/search-tool-qt.cc:90 src/search-tool/search-tool.cc:76
+#: src/search-tool-qt/search-tool-qt.cc:90 src/search-tool/search-tool.cc:77
 msgid "Rescan library at startup"
 msgstr ""
 
 #: src/search-tool-qt/search-tool-qt.cc:305
-#: src/search-tool-qt/search-tool-qt.cc:313 src/search-tool/search-tool.cc:148
-#: src/search-tool/search-tool.cc:156
+#: src/search-tool-qt/search-tool-qt.cc:316 src/search-tool/search-tool.cc:149
+#: src/search-tool/search-tool.cc:160
 msgid "Library"
-msgstr "媒體櫃"
+msgstr "مكتبة"
 
-#: src/search-tool-qt/search-tool-qt.cc:592 src/search-tool/search-tool.cc:435
+#: src/search-tool-qt/search-tool-qt.cc:586 src/search-tool/search-tool.cc:430
 #, c-format
 msgid "%d of %d result shown"
 msgid_plural "%d of %d results shown"
-msgstr[0] "顯示 %d 項結果，共 %d 項"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
 
-#: src/search-tool-qt/search-tool-qt.cc:596 src/search-tool/search-tool.cc:439
+#: src/search-tool-qt/search-tool-qt.cc:590 src/search-tool/search-tool.cc:434
 #, c-format
 msgid "%d result"
 msgid_plural "%d results"
-msgstr[0] "%d 項結果"
+msgstr[0] "%d ناتج"
+msgstr[1] "%d ناتج"
+msgstr[2] "%d نتيجتين"
+msgstr[3] "%d نتائج"
+msgstr[4] "%d نتائج"
+msgstr[5] "%d النتائج"
 
-#: src/search-tool-qt/search-tool-qt.cc:813 src/search-tool/search-tool.cc:643
+#: src/search-tool-qt/search-tool-qt.cc:799 src/search-tool/search-tool.cc:631
 #, c-format
 msgid "%d song"
 msgid_plural "%d songs"
-msgstr[0] "%d 首歌曲"
+msgstr[0] "%d مقطوعة"
+msgstr[1] "%d مقطوعة"
+msgstr[2] "%d مقطوعات"
+msgstr[3] "%d مقطوعات"
+msgstr[4] "%d مقطوعات"
+msgstr[5] "%d مقطوعات"
 
-#: src/search-tool-qt/search-tool-qt.cc:822 src/search-tool/search-tool.cc:650
+#: src/search-tool-qt/search-tool-qt.cc:808 src/search-tool/search-tool.cc:638
 msgid "of this genre"
-msgstr "符合此分類"
+msgstr "من هذا النوع"
 
-#: src/search-tool-qt/search-tool-qt.cc:828 src/search-tool/search-tool.cc:657
+#: src/search-tool-qt/search-tool-qt.cc:814 src/search-tool/search-tool.cc:645
 msgid "on"
-msgstr "收錄於"
+msgstr "مشغل"
 
-#: src/search-tool-qt/search-tool-qt.cc:828 src/search-tool/search-tool.cc:657
+#: src/search-tool-qt/search-tool-qt.cc:814 src/search-tool/search-tool.cc:645
 msgid "by"
-msgstr "-"
+msgstr "بواسطة"
 
-#: src/search-tool-qt/search-tool-qt.cc:846 src/search-tool/search-tool.cc:697
+#: src/search-tool-qt/search-tool-qt.cc:832 src/search-tool/search-tool.cc:685
 msgid "_Create Playlist"
-msgstr "建立播放清單(_C)"
+msgstr "_انشاء قائمة"
 
-#: src/search-tool-qt/search-tool-qt.cc:847 src/search-tool/search-tool.cc:699
+#: src/search-tool-qt/search-tool-qt.cc:833 src/search-tool/search-tool.cc:687
 msgid "_Add to Playlist"
-msgstr "加到播放清單(_A)"
+msgstr "_اضافة للقائمة"
 
-#: src/search-tool-qt/search-tool-qt.cc:897 src/search-tool/search-tool.cc:794
+#: src/search-tool-qt/search-tool-qt.cc:881 src/search-tool/search-tool.cc:780
 msgid "Search library"
-msgstr "搜尋媒體櫃"
+msgstr "مكتبة البحث"
 
-#: src/search-tool-qt/search-tool-qt.cc:899 src/search-tool/search-tool.cc:798
-#, fuzzy
+#: src/search-tool-qt/search-tool-qt.cc:883 src/search-tool/search-tool.cc:784
 msgid ""
-"To import your music library into Fauxdacious, choose a folder and then "
-"click the \"refresh\" icon."
+"To import your music library into Audacious, choose a folder and then click "
+"the \"refresh\" icon."
 msgstr ""
-"要將您的媒體櫃匯入 Audacious，請選擇目標資料夾並且按下 \"重新整理\" 圖示。"
+"لاستيراد مكتبة الموسيقى الخاصة بك إلى أوداسيو، اختر المجلد ثم انقر فوق رمز "
+"\"تحديث\" ."
 
-#: src/search-tool-qt/search-tool-qt.cc:905 src/search-tool/search-tool.cc:807
+#: src/search-tool-qt/search-tool-qt.cc:889 src/search-tool/search-tool.cc:793
 msgid "Please wait ..."
-msgstr "請稍候 ..."
+msgstr "الرجاء الانتظار ..."
 
-#: src/search-tool/search-tool.cc:835
+#: src/search-tool/search-tool.cc:821
 msgid "Choose Folder"
-msgstr "選擇資料夾"
+msgstr "اختر مجلد"
 
 #: src/sid/xmms-sid.cc:43
 msgid "SID Player"
-msgstr "SID 播放器"
-
-#: src/sid/xs_config.cc:61
-msgid "<b>Output</b>"
-msgstr "<b>輸出</b>"
+msgstr "قارئ SID "
 
 #: src/sid/xs_config.cc:62
 msgid "Channels:"
-msgstr "聲道數："
+msgstr "قنوات:"
 
 #: src/sid/xs_config.cc:68
 msgid "<b>Emulation</b>"
-msgstr "<b>模擬</b>"
+msgstr "<b>محاكاة</b>"
 
 #: src/sid/xs_config.cc:69
 msgid "Emulate MOS 8580 (default: MOS 6581)"
-msgstr "模擬 MOS 8580 (預設值：MOS 6581)"
+msgstr "حاكي MOS 8580 (الافتراضي: MOS 6581)"
 
 #: src/sid/xs_config.cc:71
 msgid "Do not automatically select chip model"
-msgstr "不要自動選擇晶片型號"
+msgstr "لا تحدد تلقائيا نموذج الرقاقة"
 
 #: src/sid/xs_config.cc:73
 msgid "Emulate filter"
-msgstr "模擬濾波器"
+msgstr "فلتر المحاكاة"
 
 #: src/sid/xs_config.cc:75
 msgid "Clock speed:"
-msgstr "時脈："
+msgstr "سرعة الساعة:"
 
 #: src/sid/xs_config.cc:78
 msgid "Do not automatically select clock speed"
-msgstr "不要自動選擇時脈"
+msgstr "لاتحدد تلقائيا سرعة الساعة"
 
 #: src/sid/xs_config.cc:80
 msgid "<b>Playback time</b>"
-msgstr "<b>播放時間</b>"
+msgstr "<b>وقت التشغيل</b>"
 
 #: src/sid/xs_config.cc:81
 msgid "Set maximum playback time:"
-msgstr "設定最大的播放時間："
+msgstr "السرعة القصوى لساعة التشغيل"
 
 #: src/sid/xs_config.cc:87
 msgid "Use only when song length is unknown"
-msgstr "僅在歌曲長度未知時使用"
+msgstr "استخدم فقط عندما يمون طول المقطوعة غير معروف"
 
 #: src/sid/xs_config.cc:90
 msgid "Set minimum playback time:"
-msgstr "設定最小的播放時間："
+msgstr "السرعة الدنيا لساعة التشغيل"
 
 #: src/sid/xs_config.cc:96
 msgid "<b>Subtunes</b>"
@@ -3540,23 +3321,19 @@ msgstr "<b>Subtunes</b>"
 
 #: src/sid/xs_config.cc:97
 msgid "Enable subtunes"
-msgstr "啟用 Subtunes"
+msgstr "تمكين subtunes"
 
 #: src/sid/xs_config.cc:99
 msgid "Ignore subtunes shorter than:"
-msgstr "忽略過短的 Subtunes："
+msgstr "تجاهل subtunes أقصر من:"
 
 #: src/sid/xs_config.cc:105
 msgid "<b>Note</b>"
-msgstr "<b>注意</b>"
-
-#: src/sid/xs_config.cc:106
-msgid "These settings will take effect when Audacious is restarted."
-msgstr "這些設定值將在 Audacious 重新啟動後生效。"
+msgstr "<b>ملاحظة</b>"
 
 #: src/silence-removal/silence-removal.cc:39
 msgid "Silence Removal"
-msgstr "移除靜音"
+msgstr "إزالة الصمت"
 
 #: src/silence-removal/silence-removal.cc:58
 msgid ""
@@ -3568,11 +3345,11 @@ msgstr ""
 
 #: src/silence-removal/silence-removal.cc:67
 msgid "<b>Silence Removal</b>"
-msgstr "<b>移除靜音</b>"
+msgstr "<b>إزالة الصمت</b>"
 
 #: src/silence-removal/silence-removal.cc:68
 msgid "Threshold:"
-msgstr "閥值："
+msgstr "عتبة:"
 
 #: src/silence-removal/silence-removal.cc:70
 msgid "dB"
@@ -3580,633 +3357,631 @@ msgstr "dB"
 
 #: src/skins/actions.cc:45 src/skins-qt/actions.cc:43
 msgid "Repeat points cleared."
-msgstr "已清除重複點。"
+msgstr "كرر نقاط التصفية"
 
 #: src/skins/actions.cc:60 src/skins-qt/actions.cc:58
 msgid "Repeat point A set."
-msgstr "已設定重複點 A。"
+msgstr "كرر النقطة A  مجموعة."
 
 #: src/skins/actions.cc:65 src/skins-qt/actions.cc:63
 msgid "Repeat point B set."
-msgstr "已設定重複點 B。"
+msgstr "كرر النقطة B مجموعة."
 
-#: src/skins/equalizer.cc:243 src/skins-qt/equalizer.cc:242
+#: src/skins/equalizer.cc:224 src/skins-qt/equalizer.cc:220
 msgid "Preamp"
-msgstr "前置放大"
+msgstr "Preamp"
 
-#: src/skins/equalizer.cc:247 src/skins-qt/equalizer.cc:246
+#: src/skins/equalizer.cc:228 src/skins-qt/equalizer.cc:224
 msgid "31 Hz"
-msgstr "31 Hz"
+msgstr "31 هرتز"
 
-#: src/skins/equalizer.cc:248 src/skins-qt/equalizer.cc:247
+#: src/skins/equalizer.cc:229 src/skins-qt/equalizer.cc:225
 msgid "63 Hz"
-msgstr "63 Hz"
+msgstr "63 هرتز"
 
-#: src/skins/equalizer.cc:248 src/skins-qt/equalizer.cc:247
+#: src/skins/equalizer.cc:229 src/skins-qt/equalizer.cc:225
 msgid "125 Hz"
-msgstr "125 Hz"
+msgstr "125 هرتز"
 
-#: src/skins/equalizer.cc:248 src/skins-qt/equalizer.cc:247
+#: src/skins/equalizer.cc:229 src/skins-qt/equalizer.cc:225
 msgid "250 Hz"
-msgstr "250 Hz"
+msgstr "250 هرتز"
 
-#: src/skins/equalizer.cc:248 src/skins-qt/equalizer.cc:247
+#: src/skins/equalizer.cc:229 src/skins-qt/equalizer.cc:225
 msgid "500 Hz"
-msgstr "500 Hz"
+msgstr "500 هرتز"
 
-#: src/skins/equalizer.cc:248 src/skins-qt/equalizer.cc:247
+#: src/skins/equalizer.cc:229 src/skins-qt/equalizer.cc:225
 msgid "1 kHz"
-msgstr "1 kHz"
+msgstr "1 هرتز"
 
-#: src/skins/equalizer.cc:249 src/skins-qt/equalizer.cc:248
+#: src/skins/equalizer.cc:230 src/skins-qt/equalizer.cc:226
 msgid "2 kHz"
-msgstr "2 kHz"
+msgstr "2 هرتز"
 
-#: src/skins/equalizer.cc:249 src/skins-qt/equalizer.cc:248
+#: src/skins/equalizer.cc:230 src/skins-qt/equalizer.cc:226
 msgid "4 kHz"
-msgstr "4 kHz"
+msgstr "4 هرتز"
 
-#: src/skins/equalizer.cc:249 src/skins-qt/equalizer.cc:248
+#: src/skins/equalizer.cc:230 src/skins-qt/equalizer.cc:226
 msgid "8 kHz"
-msgstr "8 kHz"
+msgstr "8 هرتز"
 
-#: src/skins/equalizer.cc:249 src/skins-qt/equalizer.cc:248
+#: src/skins/equalizer.cc:230 src/skins-qt/equalizer.cc:226
 msgid "16 kHz"
-msgstr "16 kHz"
+msgstr "16 هرتز"
 
-#: src/skins/equalizer.cc:290 src/skins-qt/equalizer.cc:289
-#, fuzzy
-msgid "Fauxdacious Equalizer"
-msgstr "Audacious 等化器"
+#: src/skins/equalizer.cc:271 src/skins-qt/equalizer.cc:267
+msgid "Audacious Equalizer"
+msgstr "خالط Audacious"
 
-#: src/skins/main.cc:492 src/skins-qt/main.cc:462 src/skins-qt/menus.cc:67
+#: src/skins/main.cc:447 src/skins-qt/main.cc:433
 msgid "Recording on"
-msgstr "錄音開啟"
+msgstr "التسجيل مفعل"
 
-#: src/skins/main.cc:494 src/skins-qt/main.cc:464 src/skins-qt/menus.cc:67
+#: src/skins/main.cc:449 src/skins-qt/main.cc:435
 msgid "Recording off"
-msgstr "錄音關閉"
+msgstr "التسجيل متوقف"
 
-#: src/skins/main.cc:801 src/skins-qt/main.cc:733
+#: src/skins/main.cc:708 src/skins-qt/main.cc:666
 #, c-format
 msgid "Seek to %d:%-2.2d / %d:%-2.2d"
-msgstr "移動到 %d:%-2.2d／%d:%-2.2d"
+msgstr "انتقل الى %d:%-2.2d / %d:%-2.2d"
 
-#: src/skins/main.cc:818 src/skins-qt/main.cc:750
+#: src/skins/main.cc:725 src/skins-qt/main.cc:683
 #, c-format
 msgid "Volume: %d%%"
-msgstr "音量：%d％"
+msgstr "الصوت: %d%%"
 
-#: src/skins/main.cc:831 src/skins-qt/main.cc:763
+#: src/skins/main.cc:738 src/skins-qt/main.cc:696
 #, c-format
 msgid "Balance: %d%% left"
-msgstr "平衡：%d％ 偏左"
+msgstr "توازن: %d%% يسار"
 
-#: src/skins/main.cc:833 src/skins-qt/main.cc:765
+#: src/skins/main.cc:740 src/skins-qt/main.cc:698
 msgid "Balance: center"
-msgstr "平衡：中間"
+msgstr "توازن: وسط"
 
-#: src/skins/main.cc:835 src/skins-qt/main.cc:767
+#: src/skins/main.cc:742 src/skins-qt/main.cc:700
 #, c-format
 msgid "Balance: %d%% right"
-msgstr "平衡：%d％ 偏右"
+msgstr "توازن: %d%% يمين"
 
-#: src/skins/main.cc:928 src/skins-qt/main.cc:860
+#: src/skins/main.cc:835 src/skins-qt/main.cc:793
 msgid "Options Menu"
-msgstr "選單選項"
+msgstr "خيارات القائمة"
 
-#: src/skins/main.cc:932 src/skins-qt/main.cc:864
+#: src/skins/main.cc:839 src/skins-qt/main.cc:797
 msgid "Disable 'Always On Top'"
-msgstr "關閉置頂"
+msgstr "تعطيل 'دائما فوق الكل'"
 
-#: src/skins/main.cc:934 src/skins-qt/main.cc:866
+#: src/skins/main.cc:841 src/skins-qt/main.cc:799
 msgid "Enable 'Always On Top'"
-msgstr "啟用置頂"
+msgstr "تفعيل 'دائما فوق الكل'"
 
-#: src/skins/main.cc:937 src/skins-qt/main.cc:869
+#: src/skins/main.cc:844 src/skins-qt/main.cc:802
 msgid "File Info Box"
-msgstr "檔案資訊視窗"
+msgstr "مربع معلومات الملف"
 
-#: src/skins/main.cc:940 src/skins/menus.cc:147 src/skins-qt/main.cc:872
-#: src/skins-qt/menus.cc:164
+#: src/skins/main.cc:847 src/skins/menus.cc:147 src/skins-qt/main.cc:805
+#: src/skins-qt/menus.cc:140
 msgid "Double Size"
-msgstr "兩倍大小"
+msgstr "ضعف الحجم"
 
-#: src/skins/main.cc:943 src/skins-qt/main.cc:875
+#: src/skins/main.cc:850 src/skins-qt/main.cc:808
 msgid "Visualizations"
-msgstr "視覺特效"
+msgstr "المرئيات"
 
-#: src/skins/menus.cc:74 src/skins-qt/menus.cc:86
+#: src/skins/menus.cc:74 src/skins-qt/menus.cc:64
 msgid "Volume Up"
-msgstr "提高音量"
+msgstr "رفع الصوت"
 
-#: src/skins/menus.cc:75 src/skins-qt/menus.cc:87
+#: src/skins/menus.cc:75 src/skins-qt/menus.cc:65
 msgid "Volume Down"
-msgstr "降低音量"
+msgstr "خفض الصوت"
 
-#: src/skins/menus.cc:77 src/skins-qt/menus.cc:89
+#: src/skins/menus.cc:77 src/skins-qt/menus.cc:67
 msgid "Effects ..."
-msgstr "特效 ..."
+msgstr "مؤثرات ..."
 
-#: src/skins/menus.cc:84 src/skins-qt/menus.cc:96
+#: src/skins/menus.cc:84 src/skins-qt/menus.cc:74
 msgid "Open Files ..."
-msgstr "開啟檔案 ..."
+msgstr "إفتح الملفات ..."
 
-#: src/skins/menus.cc:85 src/skins-qt/menus.cc:98
+#: src/skins/menus.cc:85 src/skins-qt/menus.cc:76
 msgid "Open URL ..."
-msgstr "開啟網址 ..."
+msgstr "إفتح الرابط ..."
 
-#: src/skins/menus.cc:88 src/skins-qt/menus.cc:101
+#: src/skins/menus.cc:88 src/skins-qt/menus.cc:79
 msgid "Playback"
-msgstr "播放"
+msgstr "التشغيل"
 
-#: src/skins/menus.cc:89 src/skins-qt/menus.cc:102
+#: src/skins/menus.cc:89 src/skins-qt/menus.cc:80
 msgid "Playlist"
-msgstr "播放清單"
+msgstr "قائمة التشغيل"
 
-#: src/skins/menus.cc:90 src/skins-qt/menus.cc:103
+#: src/skins/menus.cc:90 src/skins-qt/menus.cc:81
 msgid "Output"
-msgstr "輸出"
+msgstr "الناتج"
 
-#: src/skins/menus.cc:91 src/skins-qt/menus.cc:104
+#: src/skins/menus.cc:91 src/skins-qt/menus.cc:82
 msgid "View"
-msgstr "檢視"
+msgstr "عرض"
 
 #: src/skins/menus.cc:93 src/skins/menus.cc:159 src/skins/menus.cc:172
-#: src/skins/menus.cc:241 src/skins-qt/menus.cc:106 src/skins-qt/menus.cc:178
-#: src/skins-qt/menus.cc:192 src/skins-qt/menus.cc:259
+#: src/skins/menus.cc:241 src/skins-qt/menus.cc:84 src/skins-qt/menus.cc:154
+#: src/skins-qt/menus.cc:168 src/skins-qt/menus.cc:235
 msgid "Services"
-msgstr "服務"
+msgstr "خدمات"
 
-#: src/skins/menus.cc:95 src/skins-qt/menus.cc:108
+#: src/skins/menus.cc:95 src/skins-qt/menus.cc:86
 msgid "About ..."
-msgstr "關於 ..."
+msgstr "حول ..."
 
-#: src/skins/menus.cc:96 src/skins-qt/menus.cc:109
+#: src/skins/menus.cc:96 src/skins-qt/menus.cc:87
 msgid "Settings ..."
-msgstr "設定 ..."
+msgstr "الإعدادات..."
 
-#: src/skins/menus.cc:97 src/skins-qt/menus.cc:110
+#: src/skins/menus.cc:97 src/skins-qt/menus.cc:88
 msgid "Quit"
-msgstr "離開"
+msgstr "اخرج"
 
-#: src/skins/menus.cc:101 src/skins/menus.cc:231 src/skins-qt/menus.cc:114
-#: src/skins-qt/menus.cc:249
+#: src/skins/menus.cc:101 src/skins/menus.cc:231 src/skins-qt/menus.cc:92
+#: src/skins-qt/menus.cc:225
 msgid "Song Info ..."
-msgstr "歌曲資訊 ..."
+msgstr "معلومات المقطع ..."
 
-#: src/skins/menus.cc:105 src/skins-qt/menus.cc:118
+#: src/skins/menus.cc:105 src/skins-qt/menus.cc:96
 msgid "Shuffle by Album"
-msgstr "以專輯為單位亂序播放"
+msgstr "عشوائي حسب الالبوم"
 
-#: src/skins/menus.cc:106 src/skins-qt/menus.cc:119
+#: src/skins/menus.cc:106 src/skins-qt/menus.cc:97
 msgid "No Playlist Advance"
-msgstr "不要切換播放清單"
+msgstr "لا قائمة التشغيل مسبقة"
 
-#: src/skins/menus.cc:115 src/skins-qt/menus.cc:128
+#: src/skins/menus.cc:115 src/skins-qt/menus.cc:106
 msgid "Set A-B Repeat"
-msgstr "設定 A-B 循環"
+msgstr "تكرار أ-ي"
 
-#: src/skins/menus.cc:116 src/skins-qt/menus.cc:129
+#: src/skins/menus.cc:116 src/skins-qt/menus.cc:107
 msgid "Clear A-B Repeat"
-msgstr "清除 A-B 循環"
+msgstr "مسح تكرار أ-ي"
 
-#: src/skins/menus.cc:118 src/skins-qt/menus.cc:132
+#: src/skins/menus.cc:118 src/skins-qt/menus.cc:110
 msgid "Jump to Song ..."
-msgstr "跳轉到指定歌曲 ..."
+msgstr "إذهب للمقطع ..."
 
-#: src/skins/menus.cc:119 src/skins-qt/menus.cc:133
+#: src/skins/menus.cc:119 src/skins-qt/menus.cc:111
 msgid "Jump to Time ..."
-msgstr "跳轉到指定時間 ..."
+msgstr "الانتقال السريع للوقت ..."
 
-#: src/skins/menus.cc:123 src/skins-qt/menus.cc:138
+#: src/skins/menus.cc:123 src/skins-qt/menus.cc:116
 msgid "Play/Resume"
-msgstr "播放／回復"
+msgstr "لبث/استئناف"
 
-#: src/skins/menus.cc:125 src/skins-qt/menus.cc:140
+#: src/skins/menus.cc:125 src/skins-qt/menus.cc:118
 msgid "New Playlist"
-msgstr "新增播放清單"
+msgstr "قائمة تشغيل جديدة"
 
-#: src/skins/menus.cc:126 src/skins-qt/menus.cc:141
+#: src/skins/menus.cc:126 src/skins-qt/menus.cc:119
 msgid "Rename Playlist ..."
-msgstr "重新命名播放清單 ..."
+msgstr "اعادة تسمية القائمة ..."
 
-#: src/skins/menus.cc:127 src/skins-qt/menus.cc:142
+#: src/skins/menus.cc:127 src/skins-qt/menus.cc:120
 msgid "Remove Playlist"
-msgstr "移除播放清單"
+msgstr "إزالة قائمة التشغيل ..."
 
-#: src/skins/menus.cc:129 src/skins-qt/menus.cc:144
+#: src/skins/menus.cc:129 src/skins-qt/menus.cc:122
 msgid "Previous Playlist"
-msgstr "上一個播放清單"
+msgstr "قائمة النشغيل السابقة"
 
-#: src/skins/menus.cc:130 src/skins-qt/menus.cc:145
+#: src/skins/menus.cc:130 src/skins-qt/menus.cc:123
 msgid "Next Playlist"
-msgstr "下一個播放清單"
+msgstr "قائمة التشغيل التالية"
 
-#: src/skins/menus.cc:132 src/skins-qt/menus.cc:148
+#: src/skins/menus.cc:132 src/skins-qt/menus.cc:125
 msgid "Import Playlist ..."
-msgstr "匯入播放清單 ..."
+msgstr "استورد قائمة التشغيل"
 
-#: src/skins/menus.cc:133 src/skins-qt/menus.cc:149
+#: src/skins/menus.cc:133 src/skins-qt/menus.cc:126
 msgid "Export Playlist ..."
-msgstr "匯出播放清單 ..."
+msgstr "صدر قائمة التشغيل"
 
-#: src/skins/menus.cc:135 src/skins-qt/menus.cc:152
+#: src/skins/menus.cc:135 src/skins-qt/menus.cc:128
 msgid "Playlist Manager ..."
-msgstr "播放清單管理 ..."
+msgstr "مدير قائمة التشغيل"
 
-#: src/skins/menus.cc:136 src/skins-qt/menus.cc:153
+#: src/skins/menus.cc:136 src/skins-qt/menus.cc:129
 msgid "Queue Manager ..."
-msgstr "佇列管理 ..."
+msgstr "مدير قوائم الانتظار ..."
 
-#: src/skins/menus.cc:138 src/skins-qt/menus.cc:155
+#: src/skins/menus.cc:138 src/skins-qt/menus.cc:131
 msgid "Refresh Playlist"
-msgstr "重整播放清單"
+msgstr "حدث قائمة التشغيل"
 
-#: src/skins/menus.cc:142 src/skins-qt/menus.cc:159
+#: src/skins/menus.cc:142 src/skins-qt/menus.cc:135
 msgid "Show Playlist Editor"
-msgstr "顯示播放清單編輯器"
+msgstr "اظهار قائمة التشغيل"
 
-#: src/skins/menus.cc:143 src/skins-qt/menus.cc:160
+#: src/skins/menus.cc:143 src/skins-qt/menus.cc:136
 msgid "Show Equalizer"
-msgstr "顯示等化器"
+msgstr "إظهار الخالط"
 
-#: src/skins/menus.cc:145 src/skins-qt/menus.cc:162
+#: src/skins/menus.cc:145 src/skins-qt/menus.cc:138
 msgid "Show Remaining Time"
-msgstr "顯示剩餘時間"
+msgstr "إظهار الوقت المتبقي"
 
-#: src/skins/menus.cc:148 src/skins-qt/menus.cc:166
+#: src/skins/menus.cc:148 src/skins-qt/menus.cc:142
 msgid "Always on Top"
-msgstr "永遠在最上層"
+msgstr "دائما فوق الكل"
 
-#: src/skins/menus.cc:149 src/skins-qt/menus.cc:167
+#: src/skins/menus.cc:149 src/skins-qt/menus.cc:143
 msgid "On All Workspaces"
-msgstr "在所有工作區顯示"
+msgstr "على كل اسطح المكتب"
 
-#: src/skins/menus.cc:151 src/skins-qt/menus.cc:170
+#: src/skins/menus.cc:151 src/skins-qt/menus.cc:146
 msgid "Roll Up Player"
-msgstr "捲起播放器"
+msgstr "ظلل المشغل"
 
-#: src/skins/menus.cc:152 src/skins-qt/menus.cc:171
+#: src/skins/menus.cc:152 src/skins-qt/menus.cc:147
 msgid "Roll Up Playlist Editor"
-msgstr "捲起播放清單編輯器"
+msgstr "ظلل قائمة التشغيل"
 
-#: src/skins/menus.cc:153 src/skins-qt/menus.cc:172
+#: src/skins/menus.cc:153 src/skins-qt/menus.cc:148
 msgid "Roll Up Equalizer"
-msgstr "捲起等化器"
+msgstr "ظلل الخاط"
 
-#: src/skins/menus.cc:161 src/skins-qt/menus.cc:180
+#: src/skins/menus.cc:161 src/skins-qt/menus.cc:156
 msgid "Add URL ..."
-msgstr "加入網址 ..."
+msgstr "أضف رابط ..."
 
-#: src/skins/menus.cc:162 src/skins-qt/menus.cc:182
+#: src/skins/menus.cc:162 src/skins-qt/menus.cc:158
 msgid "Add Files ..."
-msgstr "加入檔案 ... "
+msgstr "أضف ملفات ..."
 
 #: src/skins/menus.cc:166 src/skins/menus.cc:194 src/skins/menus.cc:209
-#: src/skins-qt/menus.cc:186 src/skins-qt/menus.cc:212
-#: src/skins-qt/menus.cc:227
+#: src/skins-qt/menus.cc:162 src/skins-qt/menus.cc:188
+#: src/skins-qt/menus.cc:203
 msgid "By Title"
-msgstr "標題"
+msgstr "حسب العنوان"
 
 #: src/skins/menus.cc:167 src/skins/menus.cc:201 src/skins/menus.cc:216
-#: src/skins-qt/menus.cc:187 src/skins-qt/menus.cc:219
-#: src/skins-qt/menus.cc:234
+#: src/skins-qt/menus.cc:163 src/skins-qt/menus.cc:195
+#: src/skins-qt/menus.cc:210
 msgid "By File Name"
-msgstr "檔案名稱"
+msgstr "حسب إسم الملف"
 
 #: src/skins/menus.cc:168 src/skins/menus.cc:202 src/skins/menus.cc:217
-#: src/skins-qt/menus.cc:188 src/skins-qt/menus.cc:220
-#: src/skins-qt/menus.cc:235
+#: src/skins-qt/menus.cc:164 src/skins-qt/menus.cc:196
+#: src/skins-qt/menus.cc:211
 msgid "By File Path"
-msgstr "檔案路徑"
+msgstr "حسب مسار الملف"
 
-#: src/skins/menus.cc:174 src/skins-qt/menus.cc:194
+#: src/skins/menus.cc:174 src/skins-qt/menus.cc:170
 msgid "Remove All"
-msgstr "全部移除"
+msgstr "حذف الكل"
 
-#: src/skins/menus.cc:175 src/skins-qt/menus.cc:195
+#: src/skins/menus.cc:175 src/skins-qt/menus.cc:171
 msgid "Clear Queue"
-msgstr "清除佇列"
+msgstr "مسح قائمة انتظار"
 
-#: src/skins/menus.cc:177 src/skins-qt/menus.cc:197
+#: src/skins/menus.cc:177 src/skins-qt/menus.cc:173
 msgid "Remove Unavailable Files"
-msgstr "移除無法使用的檔案"
+msgstr "إزالة الملفات غير متوفر"
 
-#: src/skins/menus.cc:178 src/skins-qt/menus.cc:198
+#: src/skins/menus.cc:178 src/skins-qt/menus.cc:174
 msgid "Remove Duplicates"
-msgstr "移除重複的項目"
+msgstr "ازالة المكررة"
 
-#: src/skins/menus.cc:180 src/skins-qt/menus.cc:200
+#: src/skins/menus.cc:180 src/skins-qt/menus.cc:176
 msgid "Remove Unselected"
-msgstr "移除未選擇的項目"
+msgstr "حذف الغير محددة"
 
-#: src/skins/menus.cc:181 src/skins-qt/menus.cc:201
+#: src/skins/menus.cc:181 src/skins-qt/menus.cc:177
 msgid "Remove Selected"
-msgstr "移除選擇的項目"
+msgstr "حذف المحددة"
 
 #: src/skins/menus.cc:185
 msgid "Search and Select"
-msgstr "搜尋並選擇"
+msgstr "ابحث و حدد"
 
-#: src/skins/menus.cc:187 src/skins-qt/menus.cc:205
+#: src/skins/menus.cc:187 src/skins-qt/menus.cc:181
 msgid "Invert Selection"
-msgstr "反向選擇"
+msgstr "عكس التحديد"
 
-#: src/skins/menus.cc:188 src/skins-qt/menus.cc:206
+#: src/skins/menus.cc:188 src/skins-qt/menus.cc:182
 msgid "Select None"
-msgstr "取消選擇"
+msgstr "لا تحدد شيء"
 
-#: src/skins/menus.cc:189 src/skins-qt/menus.cc:207
+#: src/skins/menus.cc:189 src/skins-qt/menus.cc:183
 msgid "Select All"
-msgstr "選擇全部"
+msgstr "تحديد الكل"
 
-#: src/skins/menus.cc:193 src/skins/menus.cc:208 src/skins-qt/menus.cc:211
-#: src/skins-qt/menus.cc:226
+#: src/skins/menus.cc:193 src/skins/menus.cc:208 src/skins-qt/menus.cc:187
+#: src/skins-qt/menus.cc:202
 msgid "By Track Number"
-msgstr "音軌編號"
+msgstr "حسب رقم المقطع"
 
-#: src/skins/menus.cc:195 src/skins/menus.cc:210 src/skins-qt/menus.cc:213
-#: src/skins-qt/menus.cc:228
+#: src/skins/menus.cc:195 src/skins/menus.cc:210 src/skins-qt/menus.cc:189
+#: src/skins-qt/menus.cc:204
 msgid "By Artist"
-msgstr "藝人"
+msgstr "حسب المؤدي"
 
-#: src/skins/menus.cc:196 src/skins/menus.cc:211 src/skins-qt/menus.cc:214
-#: src/skins-qt/menus.cc:229
+#: src/skins/menus.cc:196 src/skins/menus.cc:211 src/skins-qt/menus.cc:190
+#: src/skins-qt/menus.cc:205
 msgid "By Album"
-msgstr "專輯"
+msgstr "حسب الألبوم"
 
-#: src/skins/menus.cc:197 src/skins/menus.cc:212 src/skins-qt/menus.cc:215
-#: src/skins-qt/menus.cc:230
+#: src/skins/menus.cc:197 src/skins/menus.cc:212 src/skins-qt/menus.cc:191
+#: src/skins-qt/menus.cc:206
 msgid "By Album Artist"
-msgstr "專輯藝人"
+msgstr "حسب الالبوم المؤدي"
 
-#: src/skins/menus.cc:198 src/skins/menus.cc:214 src/skins-qt/menus.cc:216
-#: src/skins-qt/menus.cc:232
+#: src/skins/menus.cc:198 src/skins/menus.cc:214 src/skins-qt/menus.cc:192
+#: src/skins-qt/menus.cc:208
 msgid "By Release Date"
-msgstr "發行日期"
+msgstr "حسب تاريخ الإصدار"
 
-#: src/skins/menus.cc:199 src/skins/menus.cc:213 src/skins-qt/menus.cc:217
-#: src/skins-qt/menus.cc:231
+#: src/skins/menus.cc:199 src/skins/menus.cc:213 src/skins-qt/menus.cc:193
+#: src/skins-qt/menus.cc:207
 msgid "By Genre"
-msgstr "類型"
+msgstr "حسب النوع"
 
-#: src/skins/menus.cc:200 src/skins/menus.cc:215 src/skins-qt/menus.cc:218
-#: src/skins-qt/menus.cc:233
+#: src/skins/menus.cc:200 src/skins/menus.cc:215 src/skins-qt/menus.cc:194
+#: src/skins-qt/menus.cc:209
 msgid "By Length"
-msgstr "長度"
+msgstr "حسب الطول"
 
-#: src/skins/menus.cc:203 src/skins/menus.cc:218 src/skins-qt/menus.cc:221
-#: src/skins-qt/menus.cc:236
+#: src/skins/menus.cc:203 src/skins/menus.cc:218 src/skins-qt/menus.cc:197
+#: src/skins-qt/menus.cc:212
 msgid "By Custom Title"
-msgstr "自訂標題"
+msgstr "حسب العنوان المخصص"
 
-#: src/skins/menus.cc:204 src/skins/menus.cc:219 src/skins-qt/menus.cc:222
-#: src/skins-qt/menus.cc:237
+#: src/skins/menus.cc:204 src/skins/menus.cc:219 src/skins-qt/menus.cc:198
+#: src/skins-qt/menus.cc:213
 msgid "By Comment"
-msgstr "備註"
+msgstr ""
 
-#: src/skins/menus.cc:223 src/skins-qt/menus.cc:241
+#: src/skins/menus.cc:223 src/skins-qt/menus.cc:217
 msgid "Randomize List"
-msgstr "清單隨機排序"
+msgstr "قائمة عشوائية"
 
-#: src/skins/menus.cc:224 src/skins-qt/menus.cc:242
+#: src/skins/menus.cc:224 src/skins-qt/menus.cc:218
 msgid "Reverse List"
-msgstr "清單反向排序"
+msgstr "عكس القائمة"
 
-#: src/skins/menus.cc:226 src/skins-qt/menus.cc:244
+#: src/skins/menus.cc:226 src/skins-qt/menus.cc:220
 msgid "Sort Selected"
-msgstr "排序選擇的項目"
+msgstr "عرض المحدد"
 
-#: src/skins/menus.cc:227 src/skins-qt/menus.cc:245
+#: src/skins/menus.cc:227 src/skins-qt/menus.cc:221
 msgid "Sort List"
-msgstr "排序清單"
+msgstr "عرض القائمة"
 
-#: src/skins/menus.cc:232 src/skins-qt/menus.cc:250
+#: src/skins/menus.cc:232 src/skins-qt/menus.cc:226
 msgid "Open Containing Folder"
-msgstr "開啟所在的資料夾"
+msgstr "فتح المجلد المحتوي"
 
-#: src/skins/menus.cc:234 src/skins-qt/menus.cc:252
+#: src/skins/menus.cc:234 src/skins-qt/menus.cc:228
 msgid "Cut"
-msgstr "剪下"
+msgstr "قص"
 
-#: src/skins/menus.cc:235 src/skins-qt/menus.cc:253
+#: src/skins/menus.cc:235 src/skins-qt/menus.cc:229
 msgid "Copy"
-msgstr "複製"
+msgstr "نسخ"
 
-#: src/skins/menus.cc:236 src/skins-qt/menus.cc:254
+#: src/skins/menus.cc:236 src/skins-qt/menus.cc:230
 msgid "Paste"
-msgstr "貼上"
+msgstr "لصق"
 
-#: src/skins/menus.cc:237 src/skins-qt/menus.cc:255
+#: src/skins/menus.cc:237 src/skins-qt/menus.cc:231
 msgid "Paste at End"
-msgstr "貼到最後"
+msgstr "لصق عند الانتهاء"
 
-#: src/skins/menus.cc:239 src/skins-qt/menus.cc:257
+#: src/skins/menus.cc:239 src/skins-qt/menus.cc:233
 msgid "Queue/Unqueue"
-msgstr "排入／移出佇列"
+msgstr "اضف/ازل من قائمة الانتظار"
 
 #: src/skins/playlist-widget.cc:55 src/skins-qt/playlist-widget.cc:53
 #, c-format
 msgid "%s (%d of %d)"
-msgstr "%s (%d／%d)"
+msgstr "%s (%d الى %d)"
 
 #: src/skins/playlistwin.cc:492 src/skins-qt/playlistwin.cc:477
-#, fuzzy
-msgid "Fauxdacious Playlist Editor"
-msgstr "Audacious 播放清單編輯器"
+msgid "Audacious Playlist Editor"
+msgstr "محرر قائمة أوداسيو"
 
 #: src/skins/plugin.cc:49 src/skins-qt/plugin.cc:51
 msgid "Winamp Classic Interface"
-msgstr "Winamp 傳統介面"
+msgstr "مظهر Winamp  الكلاسيكي"
 
-#: src/skins-qt/menus.cc:97
+#: src/skins-qt/menus.cc:75
 msgid "Open Folder ..."
-msgstr "開啟資料夾 ..."
+msgstr "افتح مجلد ..."
 
-#: src/skins-qt/menus.cc:181
+#: src/skins-qt/menus.cc:157
 msgid "Add Folder ..."
-msgstr "加入資料夾 ..."
+msgstr "اضافة مجلد..."
 
-#: src/skins-qt/skins_cfg.cc:205 src/skins/skins_cfg.cc:188
+#: src/skins-qt/skins_cfg.cc:196 src/skins/skins_cfg.cc:180
 msgid "Player:"
-msgstr "播放器："
+msgstr "مشغل:"
 
-#: src/skins-qt/skins_cfg.cc:207 src/skins/skins_cfg.cc:190
+#: src/skins-qt/skins_cfg.cc:198 src/skins/skins_cfg.cc:182
 msgid "Select main player window font:"
-msgstr "選擇播放器主視窗字型："
+msgstr "حدد الخط الرئيسي لنافذة التشغيل:"
 
-#: src/skins-qt/skins_cfg.cc:208 src/skins/skins_cfg.cc:191
+#: src/skins-qt/skins_cfg.cc:199 src/skins/skins_cfg.cc:183
 msgid "Playlist:"
-msgstr "播放清單："
+msgstr "قائمة التشغيل:"
 
-#: src/skins-qt/skins_cfg.cc:210 src/skins/skins_cfg.cc:193
+#: src/skins-qt/skins_cfg.cc:201 src/skins/skins_cfg.cc:185
 msgid "Select playlist font:"
-msgstr "選擇播放清單字型："
+msgstr "كحدد خط قائمة التشغيل"
 
-#: src/skins-qt/skins_cfg.cc:214 src/skins/skins_cfg.cc:197
+#: src/skins-qt/skins_cfg.cc:205 src/skins/skins_cfg.cc:189
 msgid "<b>Skin</b>"
-msgstr "<b>面板</b>"
+msgstr "<b>المظهر</b>"
 
-#: src/skins-qt/skins_cfg.cc:218 src/skins/skins_cfg.cc:199
+#: src/skins-qt/skins_cfg.cc:209 src/skins/skins_cfg.cc:191
 msgid "<b>Fonts</b>"
-msgstr "<b>字型</b>"
+msgstr "<b>خطوط</b>"
 
-#: src/skins-qt/skins_cfg.cc:220 src/skins/skins_cfg.cc:201
+#: src/skins-qt/skins_cfg.cc:211 src/skins/skins_cfg.cc:193
 msgid "Use bitmap fonts (supports ASCII only)"
-msgstr "使用點陣字型 (只支援 ASCII)"
+msgstr "استخدم صورة خطوط (supports ASCII only)"
 
-#: src/skins-qt/skins_cfg.cc:222 src/skins/skins_cfg.cc:203
+#: src/skins-qt/skins_cfg.cc:213 src/skins/skins_cfg.cc:195
 msgid "Scroll song title"
-msgstr "捲動歌曲標題"
+msgstr "تمرير عنوان المقطع"
 
-#: src/skins-qt/skins_cfg.cc:224 src/skins/skins_cfg.cc:205
+#: src/skins-qt/skins_cfg.cc:215 src/skins/skins_cfg.cc:197
 msgid "Scroll song title in both directions"
-msgstr "雙向捲動歌曲標題"
+msgstr "تمرير عنوان المقطع في كلا الاتجاهين"
 
-#: src/skins-qt/skins_cfg.cc:226 src/skins/skins_cfg.cc:207
-msgid "Random skin on play"
-msgstr ""
-
-#: src/skins-qt/skins_cfg.cc:231 src/skins/skins_cfg.cc:212
+#: src/skins-qt/skins_cfg.cc:220 src/skins/skins_cfg.cc:202
 msgid "Analyzer"
-msgstr "分析儀"
+msgstr "محلل"
 
-#: src/skins-qt/skins_cfg.cc:232 src/skins/skins_cfg.cc:213
+#: src/skins-qt/skins_cfg.cc:221 src/skins/skins_cfg.cc:203
 msgid "Scope"
-msgstr "示波器"
+msgstr "نطاق"
 
-#: src/skins-qt/skins_cfg.cc:233 src/skins/skins_cfg.cc:214
+#: src/skins-qt/skins_cfg.cc:222 src/skins/skins_cfg.cc:204
 msgid "Voiceprint / VU meter"
-msgstr "聲紋／VU 計"
+msgstr "Voiceprint / VU meter"
 
-#: src/skins-qt/skins_cfg.cc:234 src/skins/skins_cfg.cc:215
+#: src/skins-qt/skins_cfg.cc:223 src/skins/skins_cfg.cc:205
 msgid "Off"
-msgstr "關閉"
+msgstr "إيقاف"
 
-#: src/skins-qt/skins_cfg.cc:238 src/skins-qt/skins_cfg.cc:263
-#: src/skins-qt/skins_cfg.cc:269 src/skins/skins_cfg.cc:219
-#: src/skins/skins_cfg.cc:244 src/skins/skins_cfg.cc:250
+#: src/skins-qt/skins_cfg.cc:227 src/skins-qt/skins_cfg.cc:252
+#: src/skins-qt/skins_cfg.cc:258 src/skins/skins_cfg.cc:209
+#: src/skins/skins_cfg.cc:234 src/skins/skins_cfg.cc:240
 msgid "Normal"
-msgstr "標準"
+msgstr "عادي"
 
-#: src/skins-qt/skins_cfg.cc:239 src/skins-qt/skins_cfg.cc:264
-#: src/skins/skins_cfg.cc:220 src/skins/skins_cfg.cc:245
+#: src/skins-qt/skins_cfg.cc:228 src/skins-qt/skins_cfg.cc:253
+#: src/skins/skins_cfg.cc:210 src/skins/skins_cfg.cc:235
 msgid "Fire"
-msgstr "火焰"
+msgstr "ناري"
 
-#: src/skins-qt/skins_cfg.cc:240 src/skins/skins_cfg.cc:221
+#: src/skins-qt/skins_cfg.cc:229 src/skins/skins_cfg.cc:211
 msgid "Vertical lines"
-msgstr "垂直線條"
+msgstr "خطوط افقية"
 
-#: src/skins-qt/skins_cfg.cc:244 src/skins/skins_cfg.cc:225
+#: src/skins-qt/skins_cfg.cc:233 src/skins/skins_cfg.cc:215
 msgid "Lines"
-msgstr "線條"
+msgstr "خطوط"
 
-#: src/skins-qt/skins_cfg.cc:245 src/skins/skins_cfg.cc:226
+#: src/skins-qt/skins_cfg.cc:234 src/skins/skins_cfg.cc:216
 msgid "Bars"
-msgstr "棒狀"
+msgstr "اشرطة"
 
-#: src/skins-qt/skins_cfg.cc:249 src/skins/skins_cfg.cc:230
+#: src/skins-qt/skins_cfg.cc:238 src/skins/skins_cfg.cc:220
 msgid "Slowest"
-msgstr "最慢"
+msgstr "أبطأ"
 
-#: src/skins-qt/skins_cfg.cc:250 src/skins/skins_cfg.cc:231
+#: src/skins-qt/skins_cfg.cc:239 src/skins/skins_cfg.cc:221
 msgid "Slow"
-msgstr "慢"
+msgstr "بطيء"
 
-#: src/skins-qt/skins_cfg.cc:251 src/skins/skins_cfg.cc:232
+#: src/skins-qt/skins_cfg.cc:240 src/skins/skins_cfg.cc:222
 #: src/soxr/sox-resampler.cc:165
 msgid "Medium"
-msgstr "中等"
+msgstr "متوسطة"
 
-#: src/skins-qt/skins_cfg.cc:252 src/skins/skins_cfg.cc:233
+#: src/skins-qt/skins_cfg.cc:241 src/skins/skins_cfg.cc:223
 msgid "Fast"
-msgstr "快"
+msgstr "سرعة"
 
-#: src/skins-qt/skins_cfg.cc:253 src/skins/skins_cfg.cc:234
+#: src/skins-qt/skins_cfg.cc:242 src/skins/skins_cfg.cc:224
 msgid "Fastest"
-msgstr "最快"
+msgstr "أسرع"
 
-#: src/skins-qt/skins_cfg.cc:257 src/skins/skins_cfg.cc:238
+#: src/skins-qt/skins_cfg.cc:246 src/skins/skins_cfg.cc:228
 msgid "Dots"
-msgstr "點狀"
+msgstr "النقاط"
 
-#: src/skins-qt/skins_cfg.cc:258 src/skins/skins_cfg.cc:239
+#: src/skins-qt/skins_cfg.cc:247 src/skins/skins_cfg.cc:229
 msgid "Line"
-msgstr "線條"
+msgstr "خط"
 
-#: src/skins-qt/skins_cfg.cc:259 src/skins/skins_cfg.cc:240
+#: src/skins-qt/skins_cfg.cc:248 src/skins/skins_cfg.cc:230
 msgid "Solid"
-msgstr "實心"
+msgstr "صلب"
 
-#: src/skins-qt/skins_cfg.cc:265 src/skins/skins_cfg.cc:246
+#: src/skins-qt/skins_cfg.cc:254 src/skins/skins_cfg.cc:236
 msgid "Ice"
-msgstr "冰霜"
+msgstr "جليد"
 
-#: src/skins-qt/skins_cfg.cc:270 src/skins/skins_cfg.cc:251
+#: src/skins-qt/skins_cfg.cc:259 src/skins/skins_cfg.cc:241
 msgid "Smooth"
-msgstr "平滑"
+msgstr "ناعم"
 
-#: src/skins-qt/skins_cfg.cc:274 src/skins/skins_cfg.cc:255
+#: src/skins-qt/skins_cfg.cc:263 src/skins/skins_cfg.cc:245
 msgid "Coloring:"
-msgstr "顏色："
+msgstr "تلوين:"
 
-#: src/skins-qt/skins_cfg.cc:277 src/skins/skins_cfg.cc:258
+#: src/skins-qt/skins_cfg.cc:266 src/skins/skins_cfg.cc:248
 msgid "Style:"
-msgstr "樣式："
+msgstr "نمط:"
 
-#: src/skins-qt/skins_cfg.cc:280 src/skins/skins_cfg.cc:261
+#: src/skins-qt/skins_cfg.cc:269 src/skins/skins_cfg.cc:251
 msgid "Falloff:"
-msgstr "陷落："
+msgstr "سقوط"
 
-#: src/skins-qt/skins_cfg.cc:283 src/skins/skins_cfg.cc:264
+#: src/skins-qt/skins_cfg.cc:272 src/skins/skins_cfg.cc:254
 msgid "Peak falloff:"
-msgstr "峰值陷落："
+msgstr "سقوط الذروة:"
 
-#: src/skins-qt/skins_cfg.cc:289 src/skins/skins_cfg.cc:270
+#: src/skins-qt/skins_cfg.cc:278 src/skins/skins_cfg.cc:260
 msgid "Scope Style:"
-msgstr "示波器樣式："
+msgstr "نمط النطاق:"
 
-#: src/skins-qt/skins_cfg.cc:292 src/skins/skins_cfg.cc:273
+#: src/skins-qt/skins_cfg.cc:281 src/skins/skins_cfg.cc:263
 msgid "Voiceprint Coloring:"
-msgstr "聲紋顏色："
+msgstr "تلوين Voiceprint"
 
-#: src/skins-qt/skins_cfg.cc:295 src/skins/skins_cfg.cc:276
+#: src/skins-qt/skins_cfg.cc:284 src/skins/skins_cfg.cc:266
 msgid "VU Meter Style:"
-msgstr "VU 計樣式："
+msgstr "نمط ميتر"
 
-#: src/skins-qt/skins_cfg.cc:301 src/skins/skins_cfg.cc:282
+#: src/skins-qt/skins_cfg.cc:290 src/skins/skins_cfg.cc:272
 msgid "<b>Type</b>"
-msgstr "<b>類型</b>"
+msgstr "<b>النمط</b>"
 
-#: src/skins-qt/skins_cfg.cc:302 src/skins/skins_cfg.cc:283
+#: src/skins-qt/skins_cfg.cc:291 src/skins/skins_cfg.cc:273
 msgid "Visualization type:"
-msgstr "視覺特效類型："
+msgstr "نوع مرئيات:"
 
-#: src/skins-qt/skins_cfg.cc:305 src/skins/skins_cfg.cc:286
+#: src/skins-qt/skins_cfg.cc:294 src/skins/skins_cfg.cc:276
 msgid "<b>Analyzer</b>"
-msgstr "<b>分析儀</b>"
+msgstr "<b>محلل</b>"
 
-#: src/skins-qt/skins_cfg.cc:306 src/skins/skins_cfg.cc:287
+#: src/skins-qt/skins_cfg.cc:295 src/skins/skins_cfg.cc:277
 msgid "Show peaks"
-msgstr "顯示峰值標記"
+msgstr "اظهار القمة"
 
-#: src/skins-qt/skins_cfg.cc:315 src/skins/skins_cfg.cc:296
+#: src/skins-qt/skins_cfg.cc:304 src/skins/skins_cfg.cc:286
 msgid "Visualization"
-msgstr "視覺特效"
+msgstr "مرئيات"
 
-#: src/skins-qt/skinselector.cc:98 src/skins/skinselector.cc:107
+#: src/skins-qt/skinselector.cc:98 src/skins/skinselector.cc:111
 msgid "Archived Winamp 2.x skin"
-msgstr "壓縮的 Winamp 2.x 面板"
+msgstr "ارشفة مظهر Winamp 2.x "
 
-#: src/skins-qt/skinselector.cc:102 src/skins/skinselector.cc:111
+#: src/skins-qt/skinselector.cc:102 src/skins/skinselector.cc:115
 msgid "Unarchived Winamp 2.x skin"
-msgstr "未壓縮的 Winamp 2.x skin"
+msgstr "إلغاء أرشفة مظهر Winamp 2.x "
 
 #: src/skins/search-select.cc:75
 msgid "Search entries in active playlist"
-msgstr "在使用中的播放清單裡搜尋播放項目"
+msgstr "بحث عن مدخلة في قائمة التشغيل النشطة"
+
+#: src/skins/search-select.cc:76
+msgid "Search"
+msgstr "بحث"
 
 #: src/skins/search-select.cc:81
 msgid ""
@@ -4215,40 +3990,41 @@ msgid ""
 "expressions work, simply insert a literal portion of what you're searching "
 "for."
 msgstr ""
-"填入一個或多個欄位以選擇播放清單中的項目。欄位使用正規表示法，大小寫視為不同"
-"字元。若您不知道如何使用正規表示法，請輸入您想搜尋的部分文字。"
+"تحديد إدخالات في قائمة التشغيل عن طريق تعبئة حقل واحد أو أكثر.  استخدام "
+"تعبيرات تركيب منتظم، تحسس حالة الأحرف. إذا كنت لا تعرف كيفية التعبير "
+"العادية ، ببساطة إدراج جزء من الحروف لما تبحث عنه"
 
 #: src/skins/search-select.cc:89
 msgid "Title:"
-msgstr "標題："
+msgstr "العنوان:"
 
 #: src/skins/search-select.cc:95
 msgid "Album:"
-msgstr "專輯："
+msgstr "الألبوم:"
 
 #: src/skins/search-select.cc:101
 msgid "Artist:"
-msgstr "藝人："
+msgstr "المؤدي:"
 
 #: src/skins/search-select.cc:107
 msgid "File Name:"
-msgstr "檔名："
+msgstr "اسم الملف:"
 
 #: src/skins/search-select.cc:115
 msgid "Clear previous selection before searching"
-msgstr "進行搜尋前清空上次的選擇項目"
+msgstr "مسح التحديد السابقة قبل البحث"
 
 #: src/skins/search-select.cc:118
 msgid "Automatically toggle queue for matching entries"
-msgstr "自動切換到符合項目的佇列"
+msgstr "تبديل تلقائيا لقائمة الانتظار لمطابقة الإدخالات"
 
 #: src/skins/search-select.cc:121
 msgid "Create a new playlist with matching entries"
-msgstr "以符合的項目建立新的播放清單"
+msgstr "إنشاء قائمة تشغيل جديدة مع إدخالات مطابقة"
 
 #: src/sndfile/plugin.cc:37
 msgid "Sndfile Plugin"
-msgstr "Sndfile 外掛"
+msgstr "Sndfile اضافة"
 
 #: src/sndfile/plugin.cc:361
 msgid ""
@@ -4292,64 +4068,64 @@ msgstr ""
 
 #: src/sndio/sndio.cc:43
 msgid "Sndio Output"
-msgstr "Sndio 輸出"
+msgstr "Sndio مخرج"
 
 #: src/sndio/sndio.cc:98
 msgid "Device (blank for default):"
-msgstr "裝置 (空白表示預設)："
+msgstr "الجهاز (فارغ لالافتراضي):"
 
 #: src/sndio/sndio.cc:100
 msgid "Save and restore volume:"
-msgstr "儲存與還原音量："
+msgstr "حفظ واستعادة حجم الصوت"
 
 #: src/sndio/sndio.cc:181
 #, c-format
 msgid "Sndio error: Unsupported audio format (%d)"
-msgstr "Sndio 錯誤：未支援的音訊格式 (%d)"
+msgstr "Sndio خطأ: تنسيق الصوت غير معتمد (%d)"
 
 #: src/sndio/sndio.cc:192
 msgid "Sndio error: sio_open() failed"
-msgstr "Sndio 錯誤：sio_open() 失敗"
+msgstr "Sndio خطأ: sio_open() فشل"
 
 #: src/sndio/sndio.cc:221
 msgid "Sndio error: sio_setpar() failed"
-msgstr "Sndio 錯誤：sio_setpar() 失敗"
+msgstr "Sndio خطأ: sio_setpar() فشل"
 
 #: src/sndio/sndio.cc:233
 msgid "Sndio error: sio_start() failed"
-msgstr "Sndio 錯誤：sio_start() 失敗"
+msgstr "Sndio خطأ: sio_start() فشل"
 
 #: src/songchange/song_change.cc:33
 msgid "Song Change"
-msgstr "歌曲切換"
+msgstr "تغير المقطوعة الصوتية"
 
 #: src/songchange/song_change.cc:268
 msgid "<b>Commands</b>"
-msgstr "<b>命令</b>"
+msgstr "<b>أوامر</b>"
 
 #: src/songchange/song_change.cc:270
 msgid "Command to run when starting a new song:"
-msgstr "開始播放新歌曲時執行此命令："
+msgstr "الأوامر لتشغيل عند بدء مقطوعة جديدة:"
 
 #: src/songchange/song_change.cc:273
 msgid "Command to run at the end of a song:"
-msgstr "當某首個播放完時執行此命令："
+msgstr "امر لتشغيل في نهاية تشغيل المقطوعة:"
 
 #: src/songchange/song_change.cc:276
 msgid "Command to run at the end of the playlist:"
-msgstr "播放至播放清單的結尾時執行此命令："
+msgstr "امر لتشغيل في نهاية قائمة التشغيل:"
 
 #: src/songchange/song_change.cc:279
 msgid "Command to run when song title changes (for network streams):"
-msgstr "當歌曲標題改變時執行此命令 (網路串流用)："
+msgstr "اوامر لتشغيل عند تغيير عنوان الأغنية (لتدفق الشبكة):"
 
 #: src/songchange/song_change.cc:282
 msgid ""
 "You can use the following format codes, which will be replaced before "
 "running the command (not all are useful for the end-of-playlist command):"
 msgstr ""
-"您可以使用以下的格式字串來表示特殊欄位(不是全部都能在播放清單結束命令中使"
-"用)："
+"يمكنك استخدام رموز تنسيق التالية التي سيتم استبدالها قبل تشغيل الأمر (ليست "
+"كلها مفيدة للأمر في نهاية قائمة التشغيل):"
 
 #: src/songchange/song_change.cc:285
 msgid ""
@@ -4365,31 +4141,33 @@ msgid ""
 "%t: Playlist position\n"
 "%T: Title (unformatted)"
 msgstr ""
-"%a：藝人\n"
-"%b：專輯\n"
-"%c：聲道數\n"
-"%f：檔案名稱 (完整路徑)\n"
-"%F：頻率 (HZ)\n"
-"%l：長度 (毫秒)\n"
-"%n 或 %s：歌曲名稱\n"
-"%p：播放中 (1 或 0)\n"
-"%r：位元率 (bps)\n"
-"%t：播放清單的位置 (%02d)\n"
-"%T：音軌標題 (未格式化)"
+"%a: المؤدي\n"
+"%b: الالبوم\n"
+"%c: عدد القنوات\n"
+"%f: اسم الملف (المسار كاملا)\n"
+"%F: التردد (هرتز)\n"
+"%l: الطول (الثانية على الالف)\n"
+"%n أو %s: تنسيق العنوان (انظر اعدادات القائمة)\n"
+"%p: القراءة الحالية (1 or 0)\n"
+"%r: المعدل (بايت في الثانية)\n"
+"%t: وضعية القائمة\n"
+"%T: العنوان (غير منسق)"
 
 #: src/songchange/song_change.cc:296
 msgid ""
 "Parameters passed to the shell should be enclosed in quotation marks.  "
 "Unquoted parameters may lead to unexpected results."
-msgstr "傳給 shell 的參數應該用雙引號包起來，否則可能會導致非預期的結果。"
+msgstr ""
+"يجب أن يرفق المعلمات التي تم تمريرها في علامات اقتباس. قد يؤدي المعلمات غير "
+"منسقة إلى نتائج غير متوقعة."
 
 #: src/song-info-qt/song-info.cc:33
 msgid "Song Info"
-msgstr "歌曲資訊"
+msgstr "معلومات المقطوعة"
 
 #: src/soxr/sox-resampler.cc:44
 msgid "SoX Resampler"
-msgstr "SoX 重取樣"
+msgstr "SoX إعادة إعداد"
 
 #: src/soxr/sox-resampler.cc:157
 msgid ""
@@ -4407,19 +4185,19 @@ msgstr ""
 
 #: src/soxr/sox-resampler.cc:163
 msgid "Quick"
-msgstr "快速"
+msgstr "سريع"
 
 #: src/soxr/sox-resampler.cc:164
 msgid "Low"
-msgstr "低"
+msgstr "منخفض"
 
 #: src/soxr/sox-resampler.cc:166
 msgid "High"
-msgstr "高"
+msgstr "عالي"
 
 #: src/soxr/sox-resampler.cc:167
 msgid "Very High"
-msgstr "非常高"
+msgstr "عالي جدا"
 
 #: src/soxr/sox-resampler.cc:168
 msgid "Ultra High"
@@ -4439,7 +4217,7 @@ msgstr ""
 
 #: src/soxr/sox-resampler.cc:178
 msgid "Quality:"
-msgstr "品質："
+msgstr "جودة:"
 
 #: src/soxr/sox-resampler.cc:181
 msgid "Phase:"
@@ -4455,29 +4233,29 @@ msgstr ""
 
 #: src/speedpitch/speed-pitch.cc:54
 msgid "Speed and Pitch"
-msgstr "速度與音調"
+msgstr "السرعة والنغمة"
 
 #: src/speedpitch/speed-pitch.cc:247
 msgid "<b>Speed</b>"
-msgstr "<b>速度</b>"
+msgstr ""
 
 #: src/speedpitch/speed-pitch.cc:248
 msgid "Decouple from pitch"
-msgstr "分離音調"
+msgstr ""
 
 #: src/speedpitch/speed-pitch.cc:250 src/speedpitch/speed-pitch.cc:258
 msgid "Multiplier:"
-msgstr "倍率："
+msgstr ""
 
 #: src/speedpitch/speed-pitch.cc:254
 msgid "<b>Pitch</b>"
-msgstr "<b>音調</b>"
+msgstr ""
 
 #: src/statusicon-qt/statusicon.cc:45 src/statusicon/statusicon.cc:47
 msgid "Status Icon"
-msgstr "狀態圖示"
+msgstr "ايقونة النظام"
 
-#: src/statusicon-qt/statusicon.cc:67
+#: src/statusicon-qt/statusicon.cc:66
 msgid ""
 "Status Icon Plugin (partial port for Qt interface)\n"
 "\n"
@@ -4488,55 +4266,48 @@ msgid ""
 "This plugin provides a status icon, placed in\n"
 "the system tray area of the window manager."
 msgstr ""
-"Status Icon Plugin (給 Qt 介面的部份移植)\n"
+"Status Icon Plugin (partial port for Qt interface)\n"
 "\n"
 "Copyright 2005-2007 Giacomo Lozito <james@develia.org>\n"
 "Copyright 2010 Michał Lipski <tallica@o2.pl>\n"
 "Copyright 2015 Eugene Paskevich <eugene@raptor.kiev.ua>\n"
 "\n"
-"這個外掛提供一個放在系統通知區的狀態圖示。"
+"This plugin provides a status icon, placed in\n"
+"the system tray area of the window manager."
 
-#: src/statusicon-qt/statusicon.cc:89 src/statusicon/statusicon.cc:377
+#: src/statusicon-qt/statusicon.cc:88 src/statusicon/statusicon.cc:381
 msgid "<b>Mouse Scroll Action</b>"
-msgstr "<b>滑鼠滾輪動作</b>"
+msgstr "<b>عملية تمرير المؤشر</b>"
 
-#: src/statusicon-qt/statusicon.cc:90 src/statusicon/statusicon.cc:378
+#: src/statusicon-qt/statusicon.cc:89 src/statusicon/statusicon.cc:382
 msgid "Change volume"
-msgstr "調整音量"
+msgstr "تغيير الصوت"
 
-#: src/statusicon-qt/statusicon.cc:93 src/statusicon/statusicon.cc:381
+#: src/statusicon-qt/statusicon.cc:92 src/statusicon/statusicon.cc:385
 msgid "Change playing song"
-msgstr "切換播放歌曲"
+msgstr "تغيير تشغيل المقطوعة"
 
-#: src/statusicon-qt/statusicon.cc:96 src/statusicon/statusicon.cc:384
+#: src/statusicon-qt/statusicon.cc:95 src/statusicon/statusicon.cc:388
 msgid "<b>Other Settings</b>"
-msgstr "<b>其他設定</b>"
+msgstr "<b>اعدادات اخرى</b>"
 
-#: src/statusicon-qt/statusicon.cc:97 src/statusicon/statusicon.cc:385
+#: src/statusicon-qt/statusicon.cc:96 src/statusicon/statusicon.cc:389
 msgid "Disable the popup window"
-msgstr "關閉彈出式視窗"
+msgstr "تعطيل النافذة المنبثقة"
 
-#: src/statusicon-qt/statusicon.cc:99 src/statusicon/statusicon.cc:387
+#: src/statusicon-qt/statusicon.cc:98 src/statusicon/statusicon.cc:391
 msgid "Close to the system tray"
-msgstr "縮到系統列"
+msgstr "الخروج من علبة النظام"
 
-#: src/statusicon-qt/statusicon.cc:101 src/statusicon/statusicon.cc:389
+#: src/statusicon-qt/statusicon.cc:100 src/statusicon/statusicon.cc:393
 msgid "Advance in playlist when scrolling upward"
-msgstr "以與滑鼠滾輪的反方向切換歌曲"
+msgstr "التقدم في قائمة التشغيل عند التمرير إلى الأعلى"
 
-#: src/statusicon-qt/statusicon.cc:109
-msgid "_Hide"
-msgstr ""
-
-#: src/statusicon-qt/statusicon.cc:110
-msgid "_Restore"
-msgstr ""
-
-#: src/statusicon-qt/statusicon.cc:119 src/statusicon/statusicon.cc:284
+#: src/statusicon-qt/statusicon.cc:115 src/statusicon/statusicon.cc:284
 msgid "Se_ttings ..."
-msgstr "設定(_T) ..."
+msgstr "إع_دادات ..."
 
-#: src/statusicon/statusicon.cc:370
+#: src/statusicon/statusicon.cc:374
 msgid ""
 "Status Icon Plugin\n"
 "\n"
@@ -4551,11 +4322,12 @@ msgstr ""
 "Copyright 2005-2007 Giacomo Lozito <james@develia.org>\n"
 "Copyright 2010 Michał Lipski <tallica@o2.pl>\n"
 "\n"
-"這個外掛提供一個放在系統通知區的狀態圖示。"
+"This plugin provides a status icon, placed in\n"
+"the system tray area of the window manager."
 
 #: src/stereo_plugin/stereo.cc:19
 msgid "Extra Stereo"
-msgstr "額外立體聲效果"
+msgstr "ستيريو إضافية"
 
 #: src/stereo_plugin/stereo.cc:36
 msgid ""
@@ -4563,26 +4335,26 @@ msgid ""
 "\n"
 "By Johan Levin, 1999"
 msgstr ""
-"Extra Stereo Plugin\n"
+"اضافة ستيريو إضافية\n"
 "\n"
-"By Johan Levin, 1999"
+"بواسطة Johan Levin, 1999"
 
 #: src/stereo_plugin/stereo.cc:44
 msgid "<b>Extra Stereo</b>"
-msgstr "<b>額外立體聲效果</b>"
+msgstr "<b>ستيريو إضافية</b>"
 
 #: src/tonegen/tonegen.cc:45
 msgid "Tone Generator"
-msgstr "音調產生器"
+msgstr "مولد النغمة"
 
 #: src/tonegen/tonegen.cc:92
 #, c-format
 msgid "%s %.1f Hz"
-msgstr "%s %.1f Hz"
+msgstr "%s %.1f هرتز"
 
 #: src/tonegen/tonegen.cc:92
 msgid "Tone Generator: "
-msgstr "音調產生器："
+msgstr "مولد النغمة"
 
 #: src/tonegen/tonegen.cc:160
 msgid ""
@@ -4595,12 +4367,20 @@ msgstr ""
 "Sine tone generator by Håvard Kvålen <havardk@xmms.org>\n"
 "Modified by Daniel J. Peng <danielpeng@bigfoot.com>\n"
 "\n"
-"用法：加入網址：tone://frequency1;frequency2;frequency3;...\n"
-"範例：tone://2000;2005 會播放 2000 HZ 和 2005HZ 的正弦波"
+"To use it, add a URL: tone://frequency1;frequency2;frequency3;...\n"
+"e.g. tone://2000;2005 to play a 2000 Hz tone and a 2005 Hz tone"
+
+#: src/ui-common/dialogs-qt.cc:31
+msgid "Working ..."
+msgstr "جاري العمل..."
+
+#: src/ui-common/dialogs-qt.cc:43
+msgid "Information"
+msgstr "معلومات"
 
 #: src/voice_removal/voice_removal.cc:28
 msgid "Voice Removal"
-msgstr "人聲移除"
+msgstr "إزالة صوت"
 
 #: src/vorbis/vorbis.cc:427
 msgid ""
@@ -4642,12 +4422,12 @@ msgstr ""
 
 #: src/vorbis/vorbis.h:18
 msgid "Ogg Vorbis Decoder"
-msgstr "Ogg Vorbis 解碼器"
+msgstr "Ogg Vorbis مفكك"
 
 #: src/vtx/info.cc:24
 #, c-format
 msgid "Details about %s"
-msgstr "關於 %s 的詳細資訊"
+msgstr " تفاصيل حول %s"
 
 #: src/vtx/info.cc:26
 msgid ""
@@ -4663,21 +4443,21 @@ msgid ""
 "Player Freq: %P\n"
 "Year: %y"
 msgstr ""
-"標題：%t\n"
-"作者：%a\n"
-"來自：%f\n"
+"العنوان: %t\n"
+"المؤلف: %a\n"
+"من عند: %f\n"
 "Tracker: %T\n"
-"備註：%C\n"
-"晶片類型：%c\n"
-"立體聲：%s\n"
-"循環：%l\n"
-"晶片頻率：%F\n"
-"播放器頻率：%P\n"
-"年份：%y"
+"التعليق: %C\n"
+"نوع الرقاقة: %c\n"
+"ستيريو: %s\n"
+"حلقة: %l\n"
+"تردد الرقاقة: %F\n"
+"تكرار القراءة: %P\n"
+"عام: %y"
 
 #: src/vtx/vtx.cc:38
 msgid "VTX Decoder"
-msgstr "VTX 解碼器"
+msgstr "VTX مفكك"
 
 #: src/vtx/vtx.cc:176
 msgid ""
@@ -4703,15 +4483,15 @@ msgstr ""
 
 #: src/wavpack/wavpack.cc:24
 msgid "WavPack Decoder"
-msgstr "WavPack 解碼器"
+msgstr "WavPack فك"
 
 #: src/wavpack/wavpack.cc:211
 msgid "lossy (hybrid)"
-msgstr "失真 (混合)"
+msgstr "lossy (hybrid)"
 
 #: src/wavpack/wavpack.cc:213
 msgid "lossy"
-msgstr "失真"
+msgstr "lossy"
 
 #: src/wavpack/wavpack.cc:251
 msgid ""
@@ -4725,16 +4505,30 @@ msgstr ""
 
 #: src/xsf/plugin.cc:50
 msgid "2SF Decoder"
-msgstr "2SF 解碼器"
+msgstr "2SF مفكك"
 
 #: src/xsf/plugin.cc:231
 msgid "<b>XSF Configuration</b>"
-msgstr "<b>XSF 組態</b>"
+msgstr "<b>XSF خيارات</b>"
 
 #: src/xsf/plugin.cc:232
 msgid "Ignore length from file"
-msgstr "忽略來自檔案的長度資訊"
+msgstr "تجاهل الطول من الملف"
 
 #: src/xspf/xspf.cc:91
 msgid "XML Shareable Playlists (XSPF)"
-msgstr "XML 可分享式播放清單 (XSPF)"
+msgstr "XML قوائم التشغيل قابل للمشاركة (XSPF)"
+
+#~ msgid "GNOME Shortcuts"
+#~ msgstr "اختصارات جنوم"
+
+#~ msgid ""
+#~ "GNOME Shortcut Plugin\n"
+#~ "Lets you control the player with GNOME's shortcuts.\n"
+#~ "\n"
+#~ "Copyright (C) 2007-2008 Sascha Hlusiak <contact@saschahlusiak.de>"
+#~ msgstr ""
+#~ "GNOME Shortcut Plugin\n"
+#~ "Lets you control the player with GNOME's shortcuts.\n"
+#~ "\n"
+#~ "Copyright (C) 2007-2008 Sascha Hlusiak <contact@saschahlusiak.de>"
