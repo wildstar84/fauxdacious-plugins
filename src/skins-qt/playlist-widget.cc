@@ -38,6 +38,7 @@
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/playlist.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 enum {
     DRAG_SELECT = 1,
@@ -749,28 +750,22 @@ bool PlaylistWidget::leave ()
 
 void PlaylistWidget::popup_trigger (int pos)
 {
-#if 0
-    audgui_infopopup_hide ();
+    audqt::infopopup_hide ();
 
     m_popup_pos = pos;
     m_popup_timer.queue (aud_get_int (nullptr, "filepopup_delay") * 100,
      aud::obj_member<PlaylistWidget, & PlaylistWidget::popup_show>, this);
-#endif
 }
 
 void PlaylistWidget::popup_show ()
 {
-#if 0
-    audgui_infopopup_show (m_playlist, m_popup_pos);
-#endif
+    audqt::infopopup_show (m_playlist, m_popup_pos);
 }
 
 void PlaylistWidget::popup_hide ()
 {
-#if 0
-    audgui_infopopup_hide ();
+    audqt::infopopup_hide ();
 
     m_popup_pos = -1;
     m_popup_timer.stop ();
-#endif
 }
