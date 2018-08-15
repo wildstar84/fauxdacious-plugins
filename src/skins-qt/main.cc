@@ -36,6 +36,7 @@
 #include <libfauxdcore/mainloop.h>
 #include <libfauxdcore/plugins.h>
 #include <libfauxdcore/runtime.h>
+#include <libfauxdcore/playlist.h>
 #include <libfauxdqt/libfauxdqt.h>
 
 #include "../ui-common/dialogs-qt.h"
@@ -81,6 +82,9 @@ private:
 
     void draw (QPainter & cr);
     bool button_press (QMouseEvent * event);
+    bool leave ();        // JWT:ADDED NEXT 3 FOR POPUP SONG INFO:
+    int m_playlist = -1;
+    int m_popup_pos = -1;
     bool scroll (QWheelEvent * event);
 };
 
@@ -94,7 +98,8 @@ SkinnedVis * mainwin_vis;
 SmallVis * mainwin_svis;
 
 static int last_skin = -1;
-static bool skip_toggle = true;  //JWT:NEEDED SINCE mainwin_playback_begin SEEMS TO GET CALLED *TWICE* EACH TIME?!
+static bool skip_toggle = true;   // JWT:NEEDED SINCE mainwin_playback_begin SEEMS TO GET CALLED *TWICE* EACH TIME?!
+static bool infopopup_on = false; // JWT:ADDED FOR POPUP SONG INFO:
 static bool seeking = false;
 static int seek_start, seek_time;
 
@@ -516,8 +521,47 @@ bool MainWindow::button_press (QMouseEvent * event)
         menu_popup (UI_MENU_MAIN, event->globalX (), event->globalY (), false, false);
         return true;
     }
+    /* JWT:NEXT CONDITION ADDED FOR POPUP SONG INFO: (FIXME:WE COULDN'T GET WORKING W/HOVER?!) */
+    else if (is_shaded () &&event->button () == Qt::LeftButton && event->type () == QEvent::MouseButtonPress)
+    {
+        int mousex = event->x ();
+        if (mousex > 62 && mousex < 164)
+        {
+            if (infopopup_on)
+            {
+                m_popup_pos = -1;
+                audqt::infopopup_hide ();
+                infopopup_on = false;
+            }
+            else if (aud_get_bool (nullptr, "show_filepopup_for_tuple"))
+            {
+                m_playlist = aud_playlist_get_active ();
+                m_popup_pos = aud_playlist_get_position (m_playlist);
+                //audqt::infopopup_hide ();
+
+                if (m_popup_pos >= 0)
+                {
+                    audqt::infopopup_show (m_playlist, m_popup_pos);
+                    infopopup_on = true;
+                }
+            }
+            return true;
+        }
+    }
 
     return Window::button_press (event);
+}
+
+bool MainWindow::leave ()  // JWT:FUNCTION ADDED FOR POPUP SONG INFO (TO UNPOP POPUP WHEN MOUSE LEAVES):
+{
+    if (infopopup_on)
+    {
+        m_popup_pos = -1;
+        audqt::infopopup_hide ();
+        infopopup_on = false;
+    }
+
+    return true;
 }
 
 static void mainwin_playback_rpress (Button * button, QMouseEvent * event)
