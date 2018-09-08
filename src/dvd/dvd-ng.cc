@@ -271,7 +271,7 @@ const char * const DVD::defaults[] = {
 #else
     "device", "/dev/dvd",         // DVD DEVICE NODE
 #endif
-    "video_qsize", "5",           // SIZE OF QUEUES FOR BUFFERING / SMOOTHING AUDIO/VIDEO PLAY.
+    "video_qsize", "6",           // SIZE OF QUEUES FOR BUFFERING / SMOOTHING AUDIO/VIDEO PLAY.
     "play_video", "TRUE",         // TRUE: SHOW VIDEO, FALSE: PLAY AUDIO ONLY.
     "highlight_buttons", "TRUE",  // DRAW RECTANGLE AROUND BUTTONS SO USER CAN SEE THEM.
     "menucontinue", "FALSE",      // CONTINUE TO DEFAULT NEXT FEATURE WHEN MENU FINISHES W/O USER INTERACTION.
@@ -1576,9 +1576,9 @@ AUDDBG("---INPUT PIPE OPENED!\n");
     video_qsize = aud_get_int ("dvd", "video_qsize");
     if (video_qsize < 1)
         video_qsize = (aud_get_int ("ffaudio", "video_qsize"))
-                ? aud_get_int ("ffaudio", "video_qsize") : 5;
+                ? aud_get_int ("ffaudio", "video_qsize") : 6;
     if (video_qsize < 1)
-        video_qsize = 5;
+        video_qsize = 6;
 
     /* TYPICALLY THERE'S TWICE AS MANY AUDIO PACKETS AS VIDEO, SO THIS IS COUNTER-INTUITIVE, BUT IT WORKS BEST! */
     pktQ = playing_a_menu ? createQueue (1) : createQueue (2 * video_qsize);
@@ -1899,7 +1899,29 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                     Dequeue (apktQ);
                 }
                 else
+                {
+                    if (pktQ->size > 2 && (pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))
+                    {   // PROCESS AN EXTRA VIDEO PKT WHEN AUDIO Q EMPTY & A BUNCH OF VIDEO PKTS REMAIN, IE. HD VIDEOS (MAKES 'EM SMOOTHER):
+                        if (myplay_video && vcodec_opened)
+                        {
+                            if (write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
+                                    video_width, video_height, & last_resized, & windowIsStable,
+                                    & resized_window_width, & resized_window_height))
+                            {
+                                if (highlightbuttons)
+                                    draw_highlight_buttons (renderer.get ());
+                                SDL_RenderPresent (renderer.get ());
+                            }
+                            if (playing_a_menu)
+                            {
+                                last_menuframe_time = time (nullptr);
+                                menu_written = true;
+                            }
+                        }
+                        Dequeue (pktQ);
+                    }
                     break;
+                }
             }
         }
         /* NOW PROCESS THE CURRENTLY-READ PACKET, EITHER OUTPUTTING IT OR QUEUEING IT: */

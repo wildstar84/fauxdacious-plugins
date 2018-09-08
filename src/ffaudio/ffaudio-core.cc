@@ -129,7 +129,7 @@ EXPORT FFaudio aud_plugin_instance;
 
 const char * const FFaudio::defaults[] = {
     "play_video", "TRUE",
-    "video_qsize", "6",
+    "video_qsize", "8",
     "video_windowtitle", "Fauxdacious Video",  // APPEND TO VIDEO WINDOW-TITLE
     "video_xmove", "1",     // RESTORE WINDOW TO PREV. SAVED POSITION.
     "video_ysize", "-1",    // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
@@ -411,7 +411,7 @@ static int log_result (const char * func, int ret)
 static void create_extension_dict ()
 {
     AVInputFormat * f;
-#if CHECK_LIBAVFORMAT_VERSION(58, 9, 100, 255, 255, 255)
+#if CHECK_LIBAVFORMAT_VERSION (58, 9, 100, 255, 255, 255)
     void * iter = nullptr;
     while ((f = const_cast<AVInputFormat *> (av_demuxer_iterate (& iter))))
 #else
@@ -553,7 +553,11 @@ static void close_input_file (AVFormatContext * c)
     {
         if (c->pb)
         {
+#if CHECK_LIBAVFORMAT_VERSION (58, 4, 100, 255, 255, 255)
+            if (strcmp (c->url, "pipe:"))
+#else
             if (strcmp (c->filename, "pipe:"))
+#endif
                 io_context_free (c->pb);
         }
 #if CHECK_LIBAVFORMAT_VERSION (53, 25, 0, 53, 17, 0)
@@ -1362,9 +1366,9 @@ breakout1:
     */
     if (video_qsize < 1)
         video_qsize = (aud_get_int ("ffaudio", "video_qsize"))
-                ? aud_get_int ("ffaudio", "video_qsize") : 6;
+                ? aud_get_int ("ffaudio", "video_qsize") : 8;
     if (video_qsize < 1)
-        video_qsize = 6;
+        video_qsize = 8;
 
     /* TYPICALLY THERE'S TWICE AS MANY AUDIO PACKETS AS VIDEO, SO THIS IS COUNTER-INTUITIVE, BUT IT WORKS BEST! */
     pktQ = createQueue (2 * video_qsize);
@@ -1525,59 +1529,66 @@ breakout1:
            WAITING PACKETS UNTIL AT LEAST ONE QUEUE IS EMPTIED, ORDERING OUTPUT AS AUDIO, VIDEO, AUDIO, ... 
            SINCE WE TYPICALLY HAVE TWICE AS MANY AUDIO PACKETS AS VIDEO.  THIS IS THE SECRET TO KEEPING 
            OUTPUT SYNCED & SMOOTH! */
-        if (apktQ->size == apktQ->capacity || pktQ->size == pktQ->capacity)  // ONE OF THE PACKET QUEUES IS FULL:
+        if (myplay_video)
         {
-            AVPacket * pktRef;
-            while (1)  // TRY TO READ AT LEAST 1 AUDIO, THEN 1 VIDEO, BUT KEEP GOING UNTIL ONE QUEUE IS EMPTY:
+            if (apktQ->size == apktQ->capacity || pktQ->size == pktQ->capacity)  // ONE OF THE PACKET QUEUES IS FULL:
             {
-                if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS NEXT AUDIO FRAME IN QUEUE:
+                AVPacket * pktRef;
+                while (1)  // TRY TO READ AT LEAST 1 AUDIO, THEN 1 VIDEO, BUT KEEP GOING UNTIL ONE QUEUE IS EMPTY:
                 {
-                    write_audioframe (& cinfo, pktRef, out_fmt, planar);
-                    Dequeue (apktQ);
-                }
-                if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS NEXT VIDEO FRAME IN QUEUE:
-                {
+                    if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS NEXT AUDIO FRAME IN QUEUE:
+                    {
+                        write_audioframe (& cinfo, pktRef, out_fmt, planar);
+                        Dequeue (apktQ);
+                    }
+                    if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS NEXT VIDEO FRAME IN QUEUE:
+                    {
 #if SDL == 2
-                    write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
-                            video_width, video_height, last_resized, & windowIsStable);
+                        write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
+                                video_width, video_height, last_resized, & windowIsStable);
 #else
-                    write_videoframe (sws_ctx, & vcinfo, bmp, pktRef, 
-                            video_width, video_height, last_resized);
+                        write_videoframe (sws_ctx, & vcinfo, bmp, pktRef, 
+                                video_width, video_height, last_resized);
 #endif
-                    Dequeue (pktQ);
+                        Dequeue (pktQ);
+                    }
+                    else
+                        break;
+                    if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
+                    {
+                        write_audioframe (& cinfo, pktRef, out_fmt, planar);
+                        Dequeue (apktQ);
+                    }
+                    else
+                    {
+                        if (pktQ->size > 2 && (pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))
+                        {   // PROCESS AN EXTRA VIDEO PKT WHEN AUDIO Q EMPTY & A BUNCH OF VIDEO PKTS REMAIN, IE. HD VIDEOS (MAKES 'EM SMOOTHER):
+#if SDL == 2
+                            write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
+                                    video_width, video_height, last_resized, & windowIsStable);
+#else
+                            write_videoframe (sws_ctx, & vcinfo, bmp, pktRef, 
+                                    video_width, video_height, last_resized);
+#endif
+                            Dequeue (pktQ);
+                        }
+                        break;
+                    }
                 }
-                else
-                    break;
-                if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
-                {
-                    write_audioframe (& cinfo, pktRef, out_fmt, planar);
-                    Dequeue (apktQ);
-                }
-                else
-                    break;
             }
-        }
-        /* NOW PROCESS THE CURRENTLY-READ PACKET, EITHER OUTPUTTING IT OR QUEUEING IT: */
-        if (pkt.stream_index == cinfo.stream_idx)  /* WE READ AN AUDIO PACKET, IF PLAYING VIDEO, QUEUE IT, OTHERWISE JUST PROCESS IT: */
-        {
-            if (myplay_video)
+            /* NOW PROCESS THE CURRENTLY-READ PACKET, EITHER OUTPUTTING IT OR QUEUEING IT: */
+            if (pkt.stream_index == cinfo.stream_idx)  /* WE READ AN AUDIO PACKET, IF PLAYING VIDEO, QUEUE IT, OTHERWISE JUST PROCESS IT: */
                 Enqueue (apktQ, pkt);
-            else
-            {
-                write_audioframe (& cinfo, & pkt, out_fmt, planar);
-                av_free_packet (& pkt);
-                continue;
-            }
-        }
-        else if (myplay_video)
-        {
-            if (pkt.stream_index == vcinfo.stream_idx)  /* WE READ A VIDEO PACKET, QUEUE IT (ALWAYS): */
+            else if (pkt.stream_index == vcinfo.stream_idx)  /* WE READ A VIDEO PACKET, QUEUE IT (ALWAYS): */
                 Enqueue (pktQ, pkt);
             else
                 av_free_packet (& pkt);
         }
-        else   /* IGNORE ANY OTHER SUBSTREAMS */
+        else   /* PROCESS AUDIO PACKETS AND IGNORE ANY OTHER SUBSTREAMS */
         {
+            if (pkt.stream_index == cinfo.stream_idx)  /* WE READ AN AUDIO PACKET, IF PLAYING VIDEO, QUEUE IT, OTHERWISE JUST PROCESS IT: */
+                write_audioframe (& cinfo, & pkt, out_fmt, planar);
+
             av_free_packet (& pkt);
             continue;
         }
