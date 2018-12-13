@@ -923,7 +923,8 @@ void * SearchToolQt::get_qt_widget ()
     stats_label->setFont (QApplication::font ("QSmallFont"));
 #endif
 
-    auto chooser = new QLineEdit;
+    auto chooser = audqt::file_entry_new (nullptr, _("Choose Folder"),
+     QFileDialog::Directory, QFileDialog::AcceptOpen);
 
     auto button = new QPushButton (audqt::get_icon ("view-refresh"), QString ());
     button->setFlat (true);
@@ -945,9 +946,7 @@ void * SearchToolQt::get_qt_widget ()
     vbox->addWidget (stats_label);
     vbox->addLayout (hbox);
 
-    String uri = get_uri ();
-    StringBuf path = uri_to_filename (uri, false);
-    chooser->setText (path ? path : uri);
+    audqt::file_entry_set_uri (chooser, get_uri ());
 
     search_init ();
 
@@ -961,14 +960,15 @@ void * SearchToolQt::get_qt_widget ()
         trigger_search ();
     });
 
-    QObject::connect (chooser, & QLineEdit::textEdited, [button] (const QString & text)
+    QObject::connect (chooser, & QLineEdit::textChanged, [button] (const QString & text)
         { button->setDisabled (text.isEmpty ()); });
 
     auto refresh = [chooser] () {
-        QByteArray path = chooser->text ().toUtf8 ();
-        if (! path.isEmpty ())
+        String uri = audqt::file_entry_get_uri (chooser);
+        if (uri)
         {
-            begin_add (strstr (path, "://") ? path : filename_to_uri (path));
+            audqt::file_entry_set_uri (chooser, uri);  // normalize path
+            begin_add (uri);
             update_database ();
         }
     };
