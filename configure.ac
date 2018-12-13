@@ -5,7 +5,7 @@ dnl ***
 dnl Initialize
 dnl ==========
 AC_PREREQ([2.59])
-AC_INIT([faxudacious-plugins], [3.10-beta1])
+AC_INIT([faxudacious-plugins], [3.10-beta2])
 AC_COPYRIGHT([Copyright (C) 2001-2018 Audacious developers and others])
 
 AC_DEFINE_UNQUOTED([PACKAGE], "$PACKAGE_NAME", [Name of package])
@@ -428,7 +428,11 @@ ENABLE_PLUGIN_WITH_TEST(mpris2,
     GENERAL)
 
 test_songchange () {
-    AC_CHECK_HEADERS(sys/wait.h, have_songchange=yes, have_songchange=no)
+    if test $HAVE_MSWINDOWS = yes ; then
+        have_songchange=yes
+    else
+        AC_CHECK_HEADERS(sys/wait.h, have_songchange=yes, have_songchange=no)
+    fi
 }
 
 ENABLE_PLUGIN_WITH_TEST(songchange,
