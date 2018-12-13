@@ -34,7 +34,7 @@
 #include "../ui-common/menu-ops.h"
 
 PlaylistWidget::PlaylistWidget (QWidget * parent, int playlist) :
-    QTreeView (parent),
+    audqt::TreeView (parent),
     m_playlist (playlist),
     model (new PlaylistModel (this, playlist)),
     proxyModel (new PlaylistProxyModel (this, playlist))
@@ -89,6 +89,40 @@ int PlaylistWidget::indexToRow (const QModelIndex & index)
     return proxyModel->mapToSource (index).row ();
 }
 
+QModelIndex PlaylistWidget::visibleIndexNear (int row)
+{
+    QModelIndex index = rowToIndex (row);
+    if (index.isValid ())
+        return index;
+
+    int n_entries = aud_playlist_entry_count (m_playlist);
+
+    for (int r = row + 1; r < n_entries; r ++)
+    {
+        index = rowToIndex (r);
+        if (index.isValid ())
+            return index;
+    }
+
+    for (int r = row - 1; r >= 0; r --)
+    {
+        index = rowToIndex (r);
+        if (index.isValid ())
+            return index;
+    }
+
+    return index;
+}
+
+void PlaylistWidget::activate (const QModelIndex & index)
+{
+    if (index.isValid ())
+    {
+        aud_playlist_set_active (index.row ());
+        aud_playlist_play (index.row ());
+    }
+}
+
 void PlaylistWidget::contextMenuEvent (QContextMenuEvent * event)
 {
     if (contextMenu)
@@ -107,10 +141,10 @@ void PlaylistWidget::keyPressEvent (QKeyEvent * event)
             playCurrentIndex ();
             return;
         case Qt::Key_Right:
-            aud_drct_seek (aud_drct_get_time () + aud_get_double ("qtui", "step_size") * 1000);
+            aud_drct_seek (aud_drct_get_time () + aud_get_int (0, "step_size") * 1000);
             return;
         case Qt::Key_Left:
-            aud_drct_seek (aud_drct_get_time () - aud_get_double ("qtui", "step_size") * 1000);
+            aud_drct_seek (aud_drct_get_time () - aud_get_int (0, "step_size") * 1000);
             return;
         case Qt::Key_Space:
             aud_drct_play_pause ();
@@ -133,10 +167,19 @@ void PlaylistWidget::keyPressEvent (QKeyEvent * event)
         case Qt::Key_B:
             aud_drct_pl_next ();
             return;
+        case Qt::Key_Tab:
+            {
+            	   int activepl = aud_playlist_get_active ();
+            	   if (activepl+1 >= aud_playlist_count ())
+            	       aud_playlist_set_active (0);
+                else
+                    aud_playlist_set_active (aud_playlist_get_active () + 1);
+            }
+            return;
         }
     }
 
-    QTreeView::keyPressEvent (event);
+    audqt::TreeView::keyPressEvent (event);
 }
 
 void PlaylistWidget::mouseDoubleClickEvent (QMouseEvent * event)
@@ -152,18 +195,20 @@ void PlaylistWidget::mouseDoubleClickEvent (QMouseEvent * event)
 void PlaylistWidget::mouseMoveEvent (QMouseEvent * event)
 {
     int row = indexToRow (indexAt (event->pos ()));
+
     if (row < 0)
-    {
         hidePopup ();
-        return;
-    }
-    if (aud_get_bool (nullptr, "show_filepopup_for_tuple") && m_popup_pos != row)
+    else if (aud_get_bool (nullptr, "show_filepopup_for_tuple") && m_popup_pos != row)
         triggerPopup (row);
+
+    audqt::TreeView::mouseMoveEvent (event);
 }
 
-void PlaylistWidget::leaveEvent (QEvent *)
+void PlaylistWidget::leaveEvent (QEvent * event)
 {
     hidePopup ();
+
+    audqt::TreeView::leaveEvent (event);
 }
 
 /* Since Qt doesn't support both DragDrop and InternalMove at once,
@@ -173,7 +218,7 @@ void PlaylistWidget::dragMoveEvent (QDragMoveEvent * event)
     if (event->source () == this)
         event->setDropAction (Qt::MoveAction);
 
-    QTreeView::dragMoveEvent (event);
+    audqt::TreeView::dragMoveEvent (event);
 
     if (event->source () == this)
         event->setDropAction (Qt::MoveAction);
@@ -183,7 +228,7 @@ void PlaylistWidget::dropEvent (QDropEvent * event)
 {
     /* let Qt forward external drops to the PlaylistModel */
     if (event->source () != this)
-        return QTreeView::dropEvent (event);
+        return audqt::TreeView::dropEvent (event);
 
     int from = indexToRow (currentIndex ());
     if (from < 0)
@@ -212,7 +257,7 @@ void PlaylistWidget::dropEvent (QDropEvent * event)
 
 void PlaylistWidget::currentChanged (const QModelIndex & current, const QModelIndex & previous)
 {
-    QTreeView::currentChanged (current, previous);
+    audqt::TreeView::currentChanged (current, previous);
 
     if (! inUpdate)
         aud_playlist_set_focus (m_playlist, indexToRow (current));
@@ -221,7 +266,7 @@ void PlaylistWidget::currentChanged (const QModelIndex & current, const QModelIn
 void PlaylistWidget::selectionChanged (const QItemSelection & selected,
  const QItemSelection & deselected)
 {
-    QTreeView::selectionChanged (selected, deselected);
+    audqt::TreeView::selectionChanged (selected, deselected);
 
     if (! inUpdate)
     {
@@ -232,18 +277,31 @@ void PlaylistWidget::selectionChanged (const QItemSelection & selected,
     }
 }
 
-void PlaylistWidget::scrollToCurrent (bool force)
+/* returns true if the focus changed or the playlist scrolled */
+bool PlaylistWidget::scrollToCurrent (bool force)
 {
+    bool scrolled = false;
     int entry = aud_playlist_get_position (m_playlist);
 
     if (entry >= 0 && (aud_get_bool ("qtui", "autoscroll") || force))
     {
+        if (aud_playlist_get_focus (m_playlist) != entry)
+            scrolled = true;
+
         aud_playlist_select_all (m_playlist, false);
         aud_playlist_entry_set_selected (m_playlist, entry, true);
         aud_playlist_set_focus (m_playlist, entry);
 
-        scrollTo (rowToIndex (entry));
+        auto index = rowToIndex (entry);
+        auto rect = visualRect (index);
+
+        scrollTo (index);
+
+        if (visualRect (index) != rect)
+            scrolled = true;
     }
+
+    return scrolled;
 }
 
 void PlaylistWidget::updatePlaybackIndicator ()
@@ -303,7 +361,6 @@ void PlaylistWidget::updateSelection (int rowsBefore, int rowsAfter)
 
 void PlaylistWidget::playlistUpdate ()
 {
-    //x auto update = m_playlist.update_detail ();
     auto update = aud_playlist_update_detail (m_playlist);
 
     if (update.level == Playlist::NoUpdate)
@@ -365,33 +422,32 @@ void PlaylistWidget::playCurrentIndex ()
 
 void PlaylistWidget::setFilter (const char * text)
 {
+    // Save the current focus before filtering
+    int focus = aud_playlist_get_focus (m_playlist);
+
+    // Empty the model before updating the filter.  This prevents Qt from
+    // performing a series of "rows added" or "rows deleted" updates, which can
+    // be very slow (worst case O(N^2) complexity) on a large playlist.
+    model->entriesRemoved (0, model->rowCount ());
+
+    // Update the filter
     proxyModel->setFilter (text);
 
-    int focus = aud_playlist_get_focus (m_playlist);
-    QModelIndex index;
+    // Repopulate the model
+    model->entriesAdded (0, aud_playlist_entry_count (m_playlist));
 
-    // If there was a valid focus before filtering, Qt updates it for us via
-    // currentChanged().  If not, we will set focus on the first visible row.
+    // If the previously focused row is no longer visible with the new filter,
+    // try to find a nearby one that is, and focus it.
+    auto index = visibleIndexNear (focus);
 
-    if (focus >= 0)
-        index = rowToIndex (focus);
-    else
+    if (index.isValid ())
     {
-        if (! proxyModel->rowCount ())
-            return;
-
-        index = proxyModel->index (0, 0);
         focus = indexToRow (index);
         aud_playlist_set_focus (m_playlist, focus);
-    }
-
-    if (! aud_playlist_entry_get_selected (m_playlist, focus))
-    {
         aud_playlist_select_all (m_playlist, false);
         aud_playlist_entry_set_selected (m_playlist, focus, true);
+        scrollTo (index);
     }
-
-    scrollTo (index);
 }
 
 void PlaylistWidget::setFirstVisibleColumn (int col)
@@ -424,14 +480,16 @@ void PlaylistWidget::showPopup ()
 void PlaylistWidget::triggerPopup (int pos)
 {
     audqt::infopopup_hide ();
+
     m_popup_pos = pos;
     m_popup_timer.queue (aud_get_int (nullptr, "filepopup_delay") * 100,
-     aud::obj_member<PlaylistWidget, & PlaylistWidget::showPopup>, this);
+            aud::obj_member<PlaylistWidget, & PlaylistWidget::showPopup>, this);
 }
 
 void PlaylistWidget::hidePopup ()
 {
     audqt::infopopup_hide ();
+
     m_popup_pos = -1;
     m_popup_timer.stop ();
 }
