@@ -28,8 +28,6 @@
 #ifndef AUDACIOUS1_SONGCHANGE_CROSSPLATFORM_H
 #define AUDACIOUS1_SONGCHANGE_CROSSPLATFORM_H
 
-#include <libaudcore/runtime.h>
-
 #ifdef _WIN32
 
 #include <windows.h>
