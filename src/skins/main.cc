@@ -337,7 +337,7 @@ void mainwin_refresh_hints ()
     mainwin_vis->set_colors ();
     volume_delta = aud_get_int ("skins", "scroll_volume_steps");
     if (volume_delta < 1 || volume_delta > 50)
-	    volume_delta = 5;
+	    volume_delta = aud_get_int (0, "volume_delta");
 }
 
 /* note that the song info is not translated since it is displayed using
@@ -529,10 +529,10 @@ bool MainWindow::scroll (GdkEventScroll * event)
             mainwin_set_volume_diff (-1 * volume_delta);
             break;
         case GDK_SCROLL_LEFT:
-            aud_drct_seek (aud_drct_get_time () - 5000);
+            aud_drct_seek (aud_drct_get_time () - aud_get_int (0, "step_size") * 1000);
             break;
         case GDK_SCROLL_RIGHT:
-            aud_drct_seek (aud_drct_get_time () + 5000);
+            aud_drct_seek (aud_drct_get_time () + aud_get_int (0, "step_size") * 1000);
             break;
         default:
             break;
@@ -626,12 +626,12 @@ bool Window::keypress (GdkEventKey * event)
         case GDK_KEY_Left:
         case GDK_KEY_KP_Left:
         case GDK_KEY_KP_7:
-            aud_drct_seek (aud_drct_get_time () - 5000);
+            aud_drct_seek (aud_drct_get_time () - aud_get_int (0, "step_size") * 1000);
             break;
         case GDK_KEY_Right:
         case GDK_KEY_KP_Right:
         case GDK_KEY_KP_9:
-            aud_drct_seek (aud_drct_get_time () + 5000);
+            aud_drct_seek (aud_drct_get_time () + aud_get_int (0, "step_size") * 1000);
             break;
         case GDK_KEY_KP_4:
             aud_drct_pl_prev ();

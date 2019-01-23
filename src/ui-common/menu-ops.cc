@@ -19,6 +19,7 @@
 
 #include <libfauxdcore/drct.h>
 #include <libfauxdcore/playlist.h>
+#include <libfauxdcore/runtime.h>
 
 #define ACTIVE aud_playlist_get_active ()
 
@@ -126,5 +127,7 @@ void pl_remove_unselected ()
     pl_select_all ();
 }
 
-void volume_up () { aud_drct_set_volume_main (aud_drct_get_volume_main () + 5); }
-void volume_down () { aud_drct_set_volume_main (aud_drct_get_volume_main () - 5); }
+void volume_up ()
+    { aud_drct_set_volume_main (aud_drct_get_volume_main () + aud_get_int (0, "volume_delta")); }
+void volume_down ()
+    { aud_drct_set_volume_main (aud_drct_get_volume_main () - aud_get_int (0, "volume_delta")); }
