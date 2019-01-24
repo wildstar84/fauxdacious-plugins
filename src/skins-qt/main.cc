@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
-#include <time.h>
+#include <QMouseEvent>
 
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/drct.h>
@@ -79,10 +79,12 @@ public:
 
 private:
     DialogWindows m_dialogs;
+    int m_scroll_delta_x = 0;
+    int m_scroll_delta_y = 0;
 
     void draw (QPainter & cr);
     bool button_press (QMouseEvent * event);
-    bool leave ();        // JWT:ADDED NEXT 3 FOR POPUP SONG INFO:
+    void enterEvent (QEvent * event);
     int m_playlist = -1;
     int m_popup_pos = -1;
     bool scroll (QWheelEvent * event);
@@ -99,7 +101,6 @@ SmallVis * mainwin_svis;
 
 static int last_skin = -1;
 static bool skip_toggle = true;   // JWT:NEEDED SINCE mainwin_playback_begin SEEMS TO GET CALLED *TWICE* EACH TIME?!
-static bool infopopup_on = false; // JWT:ADDED FOR POPUP SONG INFO:
 static bool seeking = false;
 static int seek_start, seek_time;
 
@@ -490,18 +491,26 @@ static void stop_after_song_toggled ()
 
 bool MainWindow::scroll (QWheelEvent * event)
 {
-    int delta = event->angleDelta ().y () / 24;
-    if (delta)
-        mainwin_set_volume_diff (delta);
+    m_scroll_delta_x += event->angleDelta ().x ();
+    m_scroll_delta_y += event->angleDelta ().y ();
 
-#if 0
-        case GDK_SCROLL_LEFT:
-            aud_drct_seek (aud_drct_get_time () - 5000);
-            break;
-        case GDK_SCROLL_RIGHT:
-            aud_drct_seek (aud_drct_get_time () + 5000);
-            break;
-#endif
+    /* we want discrete steps here */
+    int steps_x = m_scroll_delta_x / 120;
+    int steps_y = m_scroll_delta_y / 120;
+
+    if (steps_x != 0)
+    {
+        m_scroll_delta_x -= 120 * steps_x;
+        int step_size = aud_get_int (0, "step_size");
+        aud_drct_seek (aud_drct_get_time () - steps_x * step_size * 1000);
+    }
+
+    if (steps_y != 0)
+    {
+        m_scroll_delta_y -= 120 * steps_y;
+        int volume_delta = aud_get_int (0, "volume_delta");
+        aud_drct_set_volume_main (aud_drct_get_volume_main () + steps_y * volume_delta);
+    }
 
     return true;
 }
@@ -509,8 +518,8 @@ bool MainWindow::scroll (QWheelEvent * event)
 bool MainWindow::button_press (QMouseEvent * event)
 {
     if (event->button () == Qt::LeftButton &&
-     event->type () == QEvent::MouseButtonDblClick &&
-     event->y () < 14 * config.scale)
+            event->type () == QEvent::MouseButtonDblClick &&
+            event->y () < 14 * config.scale)
     {
         mainwin_shade_toggle ();
         return true;
@@ -521,47 +530,29 @@ bool MainWindow::button_press (QMouseEvent * event)
         menu_popup (UI_MENU_MAIN, event->globalX (), event->globalY (), false, false);
         return true;
     }
-    /* JWT:NEXT CONDITION ADDED FOR POPUP SONG INFO: (FIXME:WE COULDN'T GET WORKING W/HOVER?!) */
-    else if (is_shaded () &&event->button () == Qt::LeftButton && event->type () == QEvent::MouseButtonPress)
-    {
-        int mousex = event->x ();
-        if (mousex > 62 && mousex < 164)
-        {
-            if (infopopup_on)
-            {
-                m_popup_pos = -1;
-                audqt::infopopup_hide ();
-                infopopup_on = false;
-            }
-            else if (aud_get_bool (nullptr, "show_filepopup_for_tuple"))
-            {
-                m_playlist = aud_playlist_get_active ();
-                m_popup_pos = aud_playlist_get_position (m_playlist);
-                //audqt::infopopup_hide ();
-
-                if (m_popup_pos >= 0)
-                {
-                    audqt::infopopup_show (m_playlist, m_popup_pos);
-                    infopopup_on = true;
-                }
-            }
-            return true;
-        }
-    }
 
     return Window::button_press (event);
 }
 
-bool MainWindow::leave ()  // JWT:FUNCTION ADDED FOR POPUP SONG INFO (TO UNPOP POPUP WHEN MOUSE LEAVES):
-{
-    if (infopopup_on)
+void MainWindow::enterEvent (QEvent * event)  // JWT:FUNCTION ADDED FOR POPUP SONG INFO-
+{                                             // WHEN HOVERING OVER SHADED MAIN WINDOW:
+    if (is_shaded ())
     {
-        m_popup_pos = -1;
-        audqt::infopopup_hide ();
-        infopopup_on = false;
-    }
+        QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
+        int mousex = mouseEvent->y ();  // JWT:THIS SEEMS 2B BASSACKWARDS (x<->y)?!
+        if (mousex > 78 && mousex < 165)
+        {
+            if (aud_get_bool (nullptr, "show_filepopup_for_tuple"))
+        	   {
+        	   	   m_playlist = aud_playlist_get_active ();
+                m_popup_pos = aud_playlist_get_position (m_playlist);
+                //audqt::infopopup_hide ();
 
-    return true;
+                if (m_popup_pos >= 0)
+                    audqt::infopopup_show (m_playlist, m_popup_pos);
+            }
+        }
+    }
 }
 
 static void mainwin_playback_rpress (Button * button, QMouseEvent * event)
