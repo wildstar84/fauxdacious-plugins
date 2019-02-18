@@ -406,8 +406,16 @@ bool FileWriter::open_audio (int fmt, int rate, int nch, String & error)
         filename = format_filename (fileext_str[ext], true);
         output_file = safe_create (filename);
     }
-    if (output_file && plugin->open (output_file, {out_fmt, rate, nch}, in_tuple))
-        return true;
+    if (output_file)
+    {
+        if (plugin->open (output_file, {out_fmt, rate, nch}, in_tuple))
+            return true;
+    }
+    else
+    {
+        error = String (str_printf (_("Error opening %s:\n%s"),
+         (const char *) filename, output_file.error ()));
+    }
 
     plugin = nullptr;
     output_file = VFSFile ();
