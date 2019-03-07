@@ -18,6 +18,7 @@
  */
 
 #include <string.h>
+#include <glib.h>  /* for g_get_current_dir, g_path_is_absolute */
 #include <pthread.h>
 
 #ifdef HAVE_LIBCUE2
@@ -29,10 +30,10 @@ extern "C" {
 #endif
 
 #include <libfauxdcore/audstrings.h>
-#include <libfauxdcore/runtime.h>
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/probe.h>
+#include <libfauxdcore/runtime.h>
 
 static const char * const cue_exts[] = {"cue"};
 
@@ -40,10 +41,12 @@ class CueLoader : public PlaylistPlugin
 {
 public:
     static constexpr PluginInfo info = {N_("Cue Sheet Plugin"), PACKAGE};
-    constexpr CueLoader () : PlaylistPlugin (info, cue_exts, false) {}
+    constexpr CueLoader () : PlaylistPlugin (info, cue_exts, true) {}
 
     bool load (const char * filename, VFSFile & file, String & title,
      Index<PlaylistAddItem> & items);
+    bool save (const char * filename, VFSFile & file, const char * title,
+     const Index<PlaylistAddItem> & items);
 };
 
 EXPORT CueLoader aud_plugin_instance;
@@ -83,6 +86,7 @@ bool CueLoader::load (const char * cue_filename, VFSFile & file, String & title,
     if (! cur_name)
         return false;
 
+    bool from_stdin;
     bool same_file = false;
     String filename;
     PluginHandle * decoder = nullptr;
@@ -93,6 +97,17 @@ bool CueLoader::load (const char * cue_filename, VFSFile & file, String & title,
         if (! same_file)
         {
             filename = String (uri_construct (cur_name, cue_filename));
+            from_stdin = ! strncmp (cue_filename, "stdin://", 8);
+            if (from_stdin)  // WE'RE PIPING IN FROM STDIN:
+            {
+                char * cur = g_get_current_dir ();
+                String cur_path = String (filename_to_uri (filename_build ({cur, cue_filename+8})));
+                filename = String (uri_construct (cur_name, cur_path));
+                g_free (cur);
+            }
+            else
+                filename = String (uri_construct (cur_name, cue_filename));
+
             decoder = nullptr;
             base_tuple = Tuple ();
 
@@ -150,7 +165,7 @@ bool CueLoader::load (const char * cue_filename, VFSFile & file, String & title,
 
         if (base_tuple.valid ())
         {
-            StringBuf tfilename = str_printf ("%s?%d", (const char *) cue_filename, track);
+            StringBuf tfilename = from_stdin ? str_copy (filename) : str_printf ("%s?%d", cue_filename, track);
             Tuple tuple = base_tuple.ref ();
             tuple.set_filename (tfilename);
             tuple.set_int (Tuple::Track, track);
@@ -205,6 +220,86 @@ bool CueLoader::load (const char * cue_filename, VFSFile & file, String & title,
         cur = next;
         cur_name = next_name;
     }
+    if (cd)
+        cd_delete (cd);  // free.
+
+    return true;
+}
+
+bool CueLoader::save (const char * filename, VFSFile & file, const char * title,
+ const Index<PlaylistAddItem> & items)
+{
+    bool haveAlbumInfo = false;
+    bool from_cuesheet;
+    String cueTitle = String ("");
+    String cuePerformer = String ("");
+    StringBuf linesBuf = str_copy ("");
+    String actual_filename;
+    for (auto & item : items)
+    {
+        if (strncmp ((const char *) item.filename, "file://", 7))  // ONLY SAVE "FILE" ENTRIES, NOT URLS, ETC.
+        {
+            AUDWARN ("Skipping adding non-file entry (%s) from playlist (%s).\n", 
+             (const char *) item.filename, filename);
+        }
+        else
+        {
+            from_cuesheet = strstr ((const char *) item.filename, ".cue?") ? true : false;
+            /* FOR CUESHEET ENTRIES, SAVE ACTUAL AUDIO-FILE (NO CUESHEETS EMBEDDED IN CUE FILES)! */
+            actual_filename = from_cuesheet ? item.tuple.get_str (Tuple::AudioFile) : item.filename;
+            if (! actual_filename || ! actual_filename[0])
+                continue;
+
+            StringBuf path = uri_deconstruct (actual_filename, filename);
+            if (item.tuple.valid ())
+            {
+                String songTitle = item.tuple.get_str (Tuple::Title);
+                if (! songTitle)
+                    songTitle = String (filename_get_base (actual_filename));
+                else
+                {
+                    StringBuf songTitleBuff = str_copy (songTitle);
+                    str_replace_char (songTitleBuff, '"', '\'');  // SOME TITLES HAVE DOUBLE-QUOTES¡
+                    songTitle = String (songTitleBuff);
+                }
+                int start_time;
+                int start_time_frames= 0;
+                int start_time_sec = 0;
+                int start_time_min = 0;
+                String songArtist = item.tuple.get_str (Tuple::Artist);
+                if (item.tuple.is_set (Tuple::StartTime)
+                        && (start_time = item.tuple.get_int (Tuple::StartTime)) > 0)
+                {
+                    start_time_frames = ((start_time % 1000) * 75) / 1000;
+                    start_time_sec = start_time / 1000;
+                    start_time_min = start_time_sec / 60;
+                    start_time_sec %= 60;
+                }
+                str_append_printf (linesBuf, "FILE \"%s\" MP3\n  TRACK 01 AUDIO\n    TITLE \"%s\"\n    PERFORMER \"%s\"\n    INDEX 01 %02d:%02d:%02d\n", 
+                        (const char *) path, (const char *) songTitle, (const char *) songArtist,
+                        start_time_min, start_time_sec, start_time_frames);
+
+                if (! haveAlbumInfo)
+                {
+                    String songAlbum = item.tuple.get_str (Tuple::Album);
+                    if (songAlbum && songAlbum[0])
+                    {
+                        cueTitle = songAlbum;
+                        String songAlbumArtist = item.tuple.get_str (Tuple::AlbumArtist);
+                        if (songAlbumArtist && songAlbumArtist[0])
+                            cuePerformer = songAlbumArtist;
+
+                        haveAlbumInfo = true;
+                    }
+                }
+            }
+        }
+    }
+    StringBuf toplineBuf = str_printf ("PERFORMER \"%s\"\nTITLE \"%s\"\n", (const char *) cuePerformer, (const char *) cueTitle);
+    if (file.fwrite (toplineBuf, 1, toplineBuf.len ()) != toplineBuf.len ())
+        return false;
+    if (file.fwrite (linesBuf, 1, linesBuf.len ()) != linesBuf.len ())
+        return false;
 
     return true;
 }
