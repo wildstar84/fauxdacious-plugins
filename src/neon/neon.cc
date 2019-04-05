@@ -26,6 +26,7 @@
 
 #include <glib.h>
 
+#include <libfauxdcore/preferences.h>
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/interface.h>
@@ -46,6 +47,7 @@
 #define NEON_NETBLKSIZE     (4096)
 #define NEON_ICY_BUFSIZE    (4096)
 #define NEON_RETRY_COUNT 6
+#define NEON_TIMEOUTSEC 10
 
 enum FillBufferResult {
     FILL_BUFFER_SUCCESS,
@@ -96,7 +98,10 @@ static const char * const neon_schemes[] = {"http", "https"};
 class NeonTransport : public TransportPlugin
 {
 public:
-    static constexpr PluginInfo info = {N_("Neon HTTP/HTTPS Plugin"), PACKAGE};
+    static const char * const defaults[];
+    static const PreferencesWidget widgets[];
+    static const PluginPreferences prefs;
+    static constexpr PluginInfo info = {N_("Neon HTTP/HTTPS Plugin"), PACKAGE, nullptr, & prefs};
 
     constexpr NeonTransport () : TransportPlugin (info, neon_schemes) {}
 
@@ -108,8 +113,16 @@ public:
 
 EXPORT NeonTransport aud_plugin_instance;
 
+const char * const NeonTransport::defaults[] = {
+    "neon_buffersz", aud::numeric_string<NEON_NETBLKSIZE>::str,
+    "neon_retries", aud::numeric_string<NEON_RETRY_COUNT>::str,
+    "neon_timeoutsec", aud::numeric_string<NEON_TIMEOUTSEC>::str,
+    nullptr
+};
+
 bool NeonTransport::init ()
 {
+    aud_config_set_defaults ("neon", defaults);
     int ret = ne_sock_init ();
 
     if (ret != 0)
@@ -167,6 +180,10 @@ private:
     bool m_eof = false;
 
     RingBuf<char> m_rb;           /* Ringbuffer for our data */
+    int neon_netblksize;
+    char * buffer;
+    int neon_retry_count;
+    int neon_timeoutsec;
     Index<char> m_icy_buf;        /* Buffer for ICY metadata */
     icy_metadata m_icy_metadata;  /* Current ICY metadata */
 
@@ -197,6 +214,16 @@ NeonFile::NeonFile (const char * url) :
 {
     int buffer_kb = aud_get_int (nullptr, "net_buffer_kb");
     m_rb.alloc (1024 * aud::clamp (buffer_kb, 16, 1024));
+    neon_netblksize = aud_get_int("neon", "neon_buffersz");
+    if (neon_netblksize <= 0)
+        neon_netblksize = NEON_NETBLKSIZE;
+    neon_retry_count = aud_get_int("neon", "neon_retries");
+    if (neon_retry_count <= 0)
+        neon_retry_count = NEON_RETRY_COUNT;
+    neon_timeoutsec = aud_get_int("neon", "neon_timeoutsec");
+    if (neon_timeoutsec <= 0)
+        neon_timeoutsec = NEON_TIMEOUTSEC;
+    buffer = (char *) malloc(neon_netblksize);
 }
 
 NeonFile::~NeonFile ()
@@ -606,9 +633,9 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
         ne_add_server_auth (m_session, NE_AUTH_BASIC, server_auth_callback, this);
         ne_set_session_flag (m_session, NE_SESSFLAG_ICYPROTO, 1);
         ne_set_session_flag (m_session, NE_SESSFLAG_PERSIST, 0);
-        ne_set_connect_timeout (m_session, 10);
-        ne_set_read_timeout (m_session, 10);
-        ne_set_useragent (m_session, "Audacious/" PACKAGE_VERSION);
+        ne_set_connect_timeout (m_session, neon_timeoutsec);
+        ne_set_read_timeout (m_session, neon_timeoutsec);
+        ne_set_useragent (m_session, "Fauxdacious/" PACKAGE_VERSION);
 
         if (use_proxy)
         {
@@ -661,11 +688,10 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
 
 FillBufferResult NeonFile::fill_buffer ()
 {
-    char buffer[NEON_NETBLKSIZE];
     int to_read;
 
     pthread_mutex_lock (& m_reader_status.mutex);
-    to_read = aud::min (m_rb.space (), NEON_NETBLKSIZE);
+    to_read = aud::min (m_rb.space (), neon_netblksize);
     pthread_mutex_unlock (& m_reader_status.mutex);
 
     int bsize = ne_read_response_block (m_request, buffer, to_read);
@@ -678,7 +704,11 @@ FillBufferResult NeonFile::fill_buffer ()
 
     if (bsize < 0)
     {
+        const char * ne_error = ne_get_error (m_session);
+
         AUDERR ("<%p> Error while reading from the network\n", this);
+        if (ne_error)
+            AUDERR ("<%p> neon error string: %s\n", this, ne_error);
         ne_request_destroy (m_request);
         m_request = nullptr;
         return FILL_BUFFER_ERROR;
@@ -700,7 +730,7 @@ void NeonFile::reader ()
     while (m_reader_status.reading)
     {
         /* Hit the network only if we have more than NEON_NETBLKSIZE of free buffer */
-        if (m_rb.space () > NEON_NETBLKSIZE)
+        if (m_rb.space () > neon_netblksize)
         {
             pthread_mutex_unlock (& m_reader_status.mutex);
 
@@ -771,12 +801,13 @@ int64_t NeonFile::try_fread (void * ptr, int64_t size, int64_t nmemb, bool & dat
     /* If the buffer is empty, wait for the reader thread to fill it. */
     pthread_mutex_lock (& m_reader_status.mutex);
 
-    for (int retries = 0; retries < NEON_RETRY_COUNT; retries ++)
+    for (int retries = 0; retries < neon_retry_count; retries ++)
     {
         if (m_rb.len () / size > 0 || ! m_reader_status.reading ||
          m_reader_status.status != NEON_READER_RUN)
             break;
 
+        AUDDBG ("  --- RETRY %d OF %d!\n", retries, neon_retry_count);
         pthread_cond_broadcast (& m_reader_status.cond);
         pthread_cond_wait (& m_reader_status.cond, & m_reader_status.mutex);
     }
@@ -1133,3 +1164,18 @@ int64_t NeonFile::fsize ()
 
     return m_content_start + m_content_length;
 }
+
+const PreferencesWidget NeonTransport::widgets[] = {
+    WidgetLabel(N_("<b>Neon Configuration</b>")),
+    WidgetSpin (N_("Network Buffer (bytes):"),
+        WidgetInt ("neon", "neon_buffersz"),
+        {256, 32768, 512}),
+    WidgetSpin (N_("Retries:"),
+        WidgetInt ("neon", "neon_retries"),
+        {2, 16, 1}),
+    WidgetSpin (N_("Timeout (sec):"),
+        WidgetInt ("neon", "neon_timeoutsec"),
+        {1, 30, 1}),
+};
+
+const PluginPreferences NeonTransport::prefs = {{widgets}};
