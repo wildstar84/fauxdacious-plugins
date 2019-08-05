@@ -1366,9 +1366,9 @@ breakout1:
     */
     if (video_qsize < 1)
         video_qsize = (aud_get_int ("ffaudio", "video_qsize"))
-                ? aud_get_int ("ffaudio", "video_qsize") : 8;
+                ? aud_get_int ("ffaudio", "video_qsize") : 6;
     if (video_qsize < 1)
-        video_qsize = 8;
+        video_qsize = 6;
 
     /* TYPICALLY THERE'S TWICE AS MANY AUDIO PACKETS AS VIDEO, SO THIS IS COUNTER-INTUITIVE, BUT IT WORKS BEST! */
     pktQ = createQueue (2 * video_qsize);
@@ -1534,8 +1534,8 @@ breakout1:
             if (apktQ->size == apktQ->capacity || pktQ->size == pktQ->capacity)  // ONE OF THE PACKET QUEUES IS FULL:
             {
                 AVPacket * pktRef;
-                while (1)  // TRY TO READ AT LEAST 1 AUDIO, THEN 1 VIDEO, BUT KEEP GOING UNTIL ONE QUEUE IS EMPTY:
-                {
+                while (1)  // TRY TO PROCESS AT LEAST 1 AUDIO, 1 VIDEO, AND A 2ND AUDIO, BUT KEEP GOING UNTIL ONE QUEUE IS EMPTY:
+                {          // (USUALLY, THERE ARE MORE AUDIOS THAN VIDEOS IN MOST STREAMS):
                     if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS NEXT AUDIO FRAME IN QUEUE:
                     {
                         write_audioframe (& cinfo, pktRef, out_fmt, planar);
@@ -1544,36 +1544,36 @@ breakout1:
                     if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS NEXT VIDEO FRAME IN QUEUE:
                     {
 #if SDL == 2
-                        write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
+                        write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef,
                                 video_width, video_height, last_resized, & windowIsStable);
 #else
-                        write_videoframe (sws_ctx, & vcinfo, bmp, pktRef, 
+                        write_videoframe (sws_ctx, & vcinfo, bmp, pktRef,
                                 video_width, video_height, last_resized);
 #endif
                         Dequeue (pktQ);
-                    }
-                    else
-                        break;
-                    if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
-                    {
-                        write_audioframe (& cinfo, pktRef, out_fmt, planar);
-                        Dequeue (apktQ);
-                    }
-                    else
-                    {
-                        if (pktQ->size > 2 && (pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))
-                        {   // PROCESS AN EXTRA VIDEO PKT WHEN AUDIO Q EMPTY & A BUNCH OF VIDEO PKTS REMAIN, IE. HD VIDEOS (MAKES 'EM SMOOTHER):
-#if SDL == 2
-                            write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
-                                    video_width, video_height, last_resized, & windowIsStable);
-#else
-                            write_videoframe (sws_ctx, & vcinfo, bmp, pktRef, 
-                                    video_width, video_height, last_resized);
-#endif
-                            Dequeue (pktQ);
+                        if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
+                        {
+                            write_audioframe (& cinfo, pktRef, out_fmt, planar);
+                            Dequeue (apktQ);
                         }
-                        break;
+                        else
+                        {
+                            if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))
+                            {   // PROCESS AN EXTRA VIDEO PKT WHEN AUDIO Q EMPTY & A BUNCH OF VIDEO PKTS REMAIN, IE. HD VIDEOS (MAKES 'EM SMOOTHER):
+#if SDL == 2
+                                write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef,
+                                        video_width, video_height, last_resized, & windowIsStable);
+#else
+                                write_videoframe (sws_ctx, & vcinfo, bmp, pktRef,
+                                        video_width, video_height, last_resized);
+#endif
+                                Dequeue (pktQ);
+                            }
+                            break;  // STOP: AUDIO QUEUE IS NOW EMPTY.
+                        }
                     }
+                    else
+                        break;  // STOP: VIDEO QUEUE IS NOW EMPTY.
                 }
             }
             /* NOW PROCESS THE CURRENTLY-READ PACKET, EITHER OUTPUTTING IT OR QUEUEING IT: */
