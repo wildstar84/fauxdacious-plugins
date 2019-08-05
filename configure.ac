@@ -5,7 +5,7 @@ dnl ***
 dnl Initialize
 dnl ==========
 AC_PREREQ([2.59])
-AC_INIT([faxudacious-plugins], [3.10-beta2])
+AC_INIT([faxudacious-plugins], [3.10-beta3])
 AC_COPYRIGHT([Copyright (C) 2001-2018 Audacious developers and others])
 
 AC_DEFINE_UNQUOTED([PACKAGE], "$PACKAGE_NAME", [Name of package])
@@ -82,6 +82,7 @@ fi
 if test "x$USE_QT" = "xyes" ; then
     GENERAL_PLUGINS="$GENERAL_PLUGINS albumart-qt lyricwiki-qt playlist-manager-qt search-tool-qt song-info-qt statusicon-qt"
     GENERAL_PLUGINS="$GENERAL_PLUGINS qtui skins-qt"
+    VISUALIZATION_PLUGINS="$VISUALIZATION_PLUGINS blur_scope-qt qt-spectrum"
 fi
 
 USE_GTK_OR_QT=no
@@ -840,11 +841,13 @@ if test "x$USE_QT" = "xyes" ; then
     echo "  Qt Interface:                           yes"
     echo "  Winamp Classic Interface:               yes"
     echo "  Album Art:                              yes"
+    echo "  Blur Scope:                             yes"
     echo "  LyricWiki viewer:                       yes"
     echo "  OpenGL Spectrum Analyzer:               $have_qtglspectrum"
     echo "  Playlist Manager:                       yes"
     echo "  Search Tool:                            yes"
     echo "  Song Info:                              yes"
+    echo "  Spectrum Analyzer (2D):                 yes"
     echo "  Status Icon:                            yes"
     echo
 fi
