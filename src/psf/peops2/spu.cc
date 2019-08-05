@@ -102,6 +102,7 @@
 #include "../peops2/externals.h"
 #include "../peops2/regs.h"
 #include "../peops2/dma.h"
+#include "../peops2/spu.h"
 
 ////////////////////////////////////////////////////////////////////////
 // globals
@@ -336,10 +337,16 @@ int psf2_seek(u32 t)
  return(0);
 }
 
+static int endless;
+void setendless2(int e)
+{
+ endless=e;
+}
+
 // Counting to 65536 results in full volume offage.
 void setlength2(s32 stop, s32 fade)
 {
- if(stop==~0)
+ if(stop==~0 || endless)
  {
   decaybegin=~0;
  }
@@ -993,6 +1000,7 @@ EXPORT_GCC void CALLBACK SPU2close(void)
  RemoveStreams();                                      // no more streaming
 }
 
+#if 0
 ////////////////////////////////////////////////////////////////////////
 // SPUSHUTDOWN: called by main emu on final exit
 ////////////////////////////////////////////////////////////////////////
@@ -1034,3 +1042,4 @@ EXPORT_GCC void CALLBACK SPU2registerCDDAVolume(void (CALLBACK *CDDAVcallback)(u
 {
  cddavCallback = CDDAVcallback;
 }
+#endif
