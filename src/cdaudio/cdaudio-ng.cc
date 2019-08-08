@@ -457,6 +457,13 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                         tuple.set_str (Tuple::Album, tfld);
                         trackinfo[0].name = String (tfld);
                     }
+                    tfld = (const char *) user_tuple.get_str (Tuple::AlbumArtist);
+                    if (tfld && (precedence < 2 || ! trackinfo[trackno].performer))
+                    {
+                        tuple.set_str (Tuple::AlbumArtist, tfld);
+                        if (! trackinfo[trackno].performer)
+                            trackinfo[trackno].performer = String (tfld);
+                    }
                     tfld = (const char *) user_tuple.get_str (Tuple::Genre);
                     if (tfld && (precedence < 2 || ! trackinfo[trackno].genre))
                     {
