@@ -138,7 +138,7 @@ const char * const CDAudio::defaults[] = {
  "cddbhttp", "FALSE",
  "cddbserver", "freedb.org",
  "cddbport", "8880",
- "use_customtagfiles", "FALSE",
+ "use_customtagfiles", "TRUE",
  nullptr};
 
 const PreferencesWidget CDAudio::widgets[] = {
@@ -405,6 +405,14 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
             goto DONE;
         }
 
+        bool disktagrefresh = aud_get_bool (nullptr, "_disktagrefresh");
+        if (disktagrefresh)
+        {
+            trackinfo[trackno].tag_read = false;
+            custom_tagfile_sought = false;
+        }
+        tuple.set_int (Tuple::Length, calculate_track_length
+             (trackinfo[trackno].startlsn, trackinfo[trackno].endlsn));
         if (! trackinfo[trackno].tag_read)  /* JWT:ONLY NEED TO FETCH TRACK INFO ONCE! */
         {
             if (!cdda_track_audiop (pcdrom_drive, trackno))
@@ -416,8 +424,6 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
             trackinfo[trackno].tag_read = true;
             tuple.set_format (_("Audio CD"), 2, 44100, 1411);
             tuple.set_int (Tuple::Track, trackno);
-            tuple.set_int (Tuple::Length, calculate_track_length
-             (trackinfo[trackno].startlsn, trackinfo[trackno].endlsn));
             if (trackinfo[trackno].name)
                 tuple.set_str (Tuple::Title, trackinfo[trackno].name);
             if (trackinfo[trackno].performer)
@@ -487,7 +493,7 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                 String coverart_path = aud_get_str ("CDDA", "cover_art_path");
                 if (! coverart_path || ! coverart_path[0])
                     coverart_path = String (aud_get_path (AudPath::UserDir));
-                if (trackinfo[0].name)  //SEE IF WE HAVE A COVER-ART IMAGE FILE NAMED AFTER THE TITLE:
+                if (trackinfo[0].name)  //SEE IF WE HAVE A COVER-ART IMAGE FILE NAMED AFTER THE DISK TITLE:
                 {
                     AUDINFO ("--CVAPATH=%s= tk0name=%s=\n", (const char *)coverart_path, (const char *)trackinfo[0].name);
                     StringBuf fid_buf = filename_build ({(const char *)coverart_path, 
@@ -609,6 +615,12 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                     tuple.set_str (Tuple::Comment, coverart_file);
             }
             aud_write_tag_to_tagfile (filename, tuple, "tmp_tag_data");
+        }
+        if (disktagrefresh)
+        {
+            pthread_mutex_unlock (& mutex);
+            aud_set_bool (nullptr, "_disktagrefresh", false);
+            return false;  // JWT:FORCE REFRESH OF PLAYLIST ENTRY.
         }
         valid = true;
     }
@@ -800,6 +812,36 @@ static bool scan_cd ()
         }
     }
 
+    // JWT: FETCH DISK-ID ANYWAY FOR COVERART QUERY:
+    if (! trackinfo[0].discidstr)
+    {
+        cddb_disc_t *pcddb_disc = nullptr;
+        cddb_track_t *pcddb_track = nullptr;
+        lba_t lba;              /* Logical Block Address */
+
+        pcddb_disc = cddb_disc_new ();
+
+        lba = cdio_get_track_lba (pcdrom_drive->p_cdio,
+                                  CDIO_CDROM_LEADOUT_TRACK);
+        cddb_disc_set_length (pcddb_disc, FRAMES_TO_SECONDS (lba));
+
+        for (int trackno = firsttrackno; trackno <= lasttrackno; trackno++)
+        {
+            pcddb_track = cddb_track_new ();
+            cddb_track_set_frame_offset (pcddb_track,
+                                         cdio_get_track_lba (
+                                             pcdrom_drive->p_cdio,
+                                             trackno));
+            cddb_disc_add_track (pcddb_disc, pcddb_track);
+        }
+
+        cddb_disc_calc_discid (pcddb_disc);
+
+        unsigned discid = cddb_disc_get_discid (pcddb_disc);
+        trackinfo[0].discidstr = String (str_printf("%x", discid));
+        AUDINFO ("CDDB2 disc id = %x\n", discid);
+    }
+
     if (!cdtext_was_available)
     {
         /* initialize de cddb subsystem */
@@ -807,8 +849,20 @@ static bool scan_cd ()
         cddb_disc_t *pcddb_disc = nullptr;
         cddb_track_t *pcddb_track = nullptr;
         lba_t lba;              /* Logical Block Address */
+        bool use_cddb = aud_get_bool ("CDDA", "use_cddb");
+        if (use_cddb && aud_get_bool ("CDDA", "use_customtagfiles"))  // JWT:DON'T WASTE TIME W/CDDB IF WE HAVE CUSTOM TAG FILE!:
+        {
+            if (trackinfo[0].discidstr)
+            {
+                StringBuf fid_buf = str_concat ({aud_get_path (AudPath::UserDir), 
+                        "/", (const char *)trackinfo[0].discidstr, ".tag"});
+                struct stat statbuf;
+                if (stat ((const char *)fid_buf, &statbuf) >= 0)
+                    use_cddb = false;
+            }
+        }
 
-        if (aud_get_bool ("CDDA", "use_cddb"))
+        if (use_cddb)
         {
             pcddb_conn = cddb_new ();
             if (pcddb_conn == nullptr)
@@ -942,36 +996,6 @@ static bool scan_cd ()
             cddb_destroy (pcddb_conn);
     }
 
-    // JWT: FETCH DISK-ID ANYWAY FOR COVERART QUERY:
-    if (! trackinfo[0].discidstr)
-    {
-        cddb_disc_t *pcddb_disc = nullptr;
-        cddb_track_t *pcddb_track = nullptr;
-        lba_t lba;              /* Logical Block Address */
-
-        pcddb_disc = cddb_disc_new ();
-
-        lba = cdio_get_track_lba (pcdrom_drive->p_cdio,
-                                  CDIO_CDROM_LEADOUT_TRACK);
-        cddb_disc_set_length (pcddb_disc, FRAMES_TO_SECONDS (lba));
-
-        for (int trackno = firsttrackno; trackno <= lasttrackno; trackno++)
-        {
-            pcddb_track = cddb_track_new ();
-            cddb_track_set_frame_offset (pcddb_track,
-                                         cdio_get_track_lba (
-                                             pcdrom_drive->p_cdio,
-                                             trackno));
-            cddb_disc_add_track (pcddb_disc, pcddb_track);
-        }
-
-        cddb_disc_calc_discid (pcddb_disc);
-
-        unsigned discid = cddb_disc_get_discid (pcddb_disc);
-        trackinfo[0].discidstr = String (str_printf("%x", discid));
-        AUDINFO ("CDDB2 disc id = %x\n", discid);
-    }
-
     return true;
 }
 
@@ -1015,6 +1039,7 @@ static void reset_trackinfo ()
             aud_delete_tag_from_tagfile (str_printf ("%s%d", "cdda://?", i), "tmp_tag_data");
     }
     coverart_file = String ();
+    custom_tagfile_sought = false;
 }
 
 /* thread safe (mutex may be locked) */
