@@ -174,6 +174,7 @@ typedef struct
 {
     String performer;
     String name;
+    String title;
     String genre;
     uint32_t startlsn;
     uint32_t endlsn;
@@ -243,6 +244,7 @@ static Index<SDL_Rect> menubuttons; /* ARRAY OF MENUBUTTONS (EACH HAS 2 SETS OF 
 static bool havebuttons;            /* SIGNALS THAT WE HAVE FETCHED MENU-BUTTONS FOR THE CURRENT MENU */
 static String coverart_file;        /* JWT:PATH OF LAST GOOD COVER ART FILE (IF ANY) FOR CURRENTLY-PLAYING DVD. */
 static bool coverart_file_sought;   /* JWT:TRUE IF WE'VE ALREADY LOOKED FOR A COVER ART FILE FOR CURRENTLY-PLAYING DVD. */
+static bool custom_tagfile_sought; /* JWT:TRUE IF WE'VE ALREADY LOOKED FOR A CUSTOM TAG FILE FOR CURRENTLY-PLAYING CD. */
 
 /* lock mutex to read / set these variables */
 static int firsttrackno = -1;
@@ -277,10 +279,12 @@ const char * const DVD::defaults[] = {
     "menucontinue", "FALSE",      // CONTINUE TO DEFAULT NEXT FEATURE WHEN MENU FINISHES W/O USER INTERACTION.
     "title_track_only", "TRUE",   // ONLY ADD TITLE TRACK TO PLAYLIST (IF BOTH FALSE, ADD ALL TRACKS TO PLAYLIST).
     "first_track_only", "FALSE",  // ONLY ADD 1ST (MOVIE) TRACK TO PLAYLIST.
+    "longest_track_only", "FALSE", // ONLY ADD LONGEST (MOVIE) TRACK TO PLAYLIST.
     "nomenus", "FALSE",           // SKIP MENUS ALWAYS AUTO-SELECTING THE FIRST BUTTON.
     "video_windowtitle", "Fauxdacious DVD",  // APPEND TO DVD TITLE DESCRIPTION IN WINDOW TITLEBAR.
     "video_xmove", "1",           // RESTORE WINDOW TO PREV. SAVED POSITION.
     "video_ysize", "-1",          // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
+    "use_customtagfiles", "TRUE", // ALLOW USE OF CUSTOM TAG FILES.
     nullptr
 };
 
@@ -307,8 +311,12 @@ const PreferencesWidget DVD::widgets[] = {  // GUI-BASED USER-SPECIFIABLE OPTION
         WidgetBool ("dvd", "title_track_only")),
     WidgetCheck (N_("Only 1st Track in Playlist (movie)"),
         WidgetBool ("dvd", "first_track_only")),
+    WidgetCheck (N_("Only Longest Track in Playlist (movie)"),
+        WidgetBool ("dvd", "longest_track_only")),
     WidgetCheck (N_("Skip Menus (Auto-select)"),
         WidgetBool ("dvd", "nomenus")),
+    WidgetCheck (N_("Allow Custom Tag-files"),
+        WidgetBool ("dvd", "use_customtagfiles"))
 };
 
 const PluginPreferences DVD::prefs = {{widgets}};
@@ -1154,7 +1162,8 @@ void DVD::reader_demuxer ()
         AUDDBG ("--(INIT) PLAYING VIDEO!\n");
         String video_windowtitle;
         String song_title;
-        song_title = String (dvdnav_priv->title_str);
+        // song_title = trackinfo[dvdnav_priv->track].title;
+        song_title = trackinfo[0].title;
         /* JWT: time in seconds to wait for user to stop dragging before resetting window aspect */
         video_resizedelay = aud_get_int ("ffaudio", "video_resizedelay");
         if (video_resizedelay <= 0 or video_resizedelay > 9)
@@ -2879,6 +2888,7 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
     bool valid = false;
     bool title_track_only = aud_get_bool ("dvd", "title_track_only");
     bool first_track_only = aud_get_bool ("dvd", "first_track_only");
+    bool longest_track_only = aud_get_bool ("dvd", "longest_track_only");
 
     pthread_mutex_lock (& mutex);
 
@@ -2905,21 +2915,43 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
     {
         Index<short> subtunes;
 
-        if (lasttrackno >= 0 && (! first_track_only || title_track_only))
+        int longest_track = -1;
+        if (lasttrackno >= 0 && longest_track_only)
+        {
+            longest_track = 0;
+            uint32_t maxduration = 0;
+            for (int trackno = 1; trackno <= lasttrackno; trackno++)
+            {
+                if (trackinfo[trackno].endlsn-trackinfo[trackno].startlsn > maxduration)
+                {
+                    maxduration = trackinfo[trackno].endlsn-trackinfo[trackno].startlsn;
+                    longest_track = trackno;
+                }
+            }
+        }
+
+        //x if (lasttrackno >= 0 && (! first_track_only || title_track_only))
+        if (! lasttrackno || ! longest_track || title_track_only
+                || (! first_track_only && ! longest_track_only))
             subtunes.append (0);
-        if (first_track_only || ! title_track_only)
+        if (first_track_only || (! title_track_only && ! longest_track_only))
         {
             for (int trackno = 1; trackno <= lasttrackno; trackno++)
             {
                 if (! first_track_only || (trackinfo[trackno].endlsn-trackinfo[trackno].startlsn) > 27000000)
                 {
                     subtunes.append (trackno);
+                    if (trackno == longest_track)
+                        longest_track = -1;
                     if (first_track_only)
                         break;
                 }
                 AUDDBG ("--TRACK(%d): dur=%o\n", trackno, trackinfo[trackno].endlsn-trackinfo[trackno].startlsn);
             }
         }
+        if (longest_track > 0)
+            subtunes.append (longest_track);
+
         tuple.set_subtunes (subtunes.len (), subtunes.begin ());
         valid = true;
     }
@@ -2932,15 +2964,21 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
             AUDERR ("w:Track %d not found (%s).\n", trackno, filename);
             goto DONE;
         }
+        bool disktagrefresh = aud_get_bool (nullptr, "_disktagrefresh");
+        if (disktagrefresh)
+        {
+            trackinfo[trackno].tag_read = false;
+            custom_tagfile_sought = false;
+        }
+        tuple.set_int (Tuple::Track, trackno);
+        tuple.set_int (Tuple::Length, calculate_track_length
+                (trackinfo[trackno].startlsn, trackinfo[trackno].endlsn));
         if (! trackinfo[trackno].tag_read)  /* JWT:ONLY NEED TO FETCH TRACK INFO ONCE! */
         {
             trackinfo[trackno].tag_read = true;
-            tuple.set_int (Tuple::Track, trackno);
-            tuple.set_int (Tuple::Length, calculate_track_length
-                    (trackinfo[trackno].startlsn, trackinfo[trackno].endlsn));
 
-            if (trackinfo[trackno].name && trackinfo[trackno].name[0])
-                tuple.set_str (Tuple::Title, trackinfo[trackno].name);
+            if (trackinfo[trackno].title && trackinfo[trackno].title[0])
+                tuple.set_str (Tuple::Title, trackinfo[trackno].title);
             else
                 tuple.set_str (Tuple::Title, String (_("Unknown Title")));
             if (trackinfo[trackno].performer)
@@ -2953,11 +2991,61 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
                 tuple.set_str (Tuple::Genre, trackinfo[trackno].genre);
             if (aud_get_bool (nullptr, "user_tag_data"))
             {
-                if (trackno <= 1)
+                if (! custom_tagfile_sought && aud_get_bool ("dvd", "use_customtagfiles") && trackinfo[0].name)
                 {
+                    AUDINFO ("--DISKID=%s= TRYING CUSTOM for track %d\n", (const char *)trackinfo[0].name, trackno);
+                    String tag_file = String (str_concat ({(const char *)trackinfo[0].name, ".tag"}));
+                    Tuple user_tuple = Tuple ();
+                    int precedence = aud_read_tag_from_tagfile ((const char *)str_printf ("%s%d", "dvd://?", trackno), 
+                            (const char *)tag_file, user_tuple);
+                    AUDDBG ("--TAG FID=%s= TRACK=%d= PREC=%d=\n", (const char *)tag_file, trackno, precedence);
+                    if (precedence)
+                    {
+                        AUDINFO ("--CUSTOM TAG(%d) FILE(%s) PRECEDENCE=%d\n", trackno, (const char *)tag_file, precedence);
+                        const char * tfld = (const char *) user_tuple.get_str (Tuple::Title);
+                        if (tfld)
+                        {
+                            tuple.set_str (Tuple::Title, tfld);
+                            trackinfo[trackno].title = String (tfld);
+                        }
+                        tfld = (const char *) user_tuple.get_str (Tuple::Artist);
+                        if (tfld)
+                        {
+                            tuple.set_str (Tuple::Artist, tfld);
+                            trackinfo[trackno].performer = String (tfld);
+                        }
+                        tfld = (const char *) user_tuple.get_str (Tuple::Album);
+                        if (tfld)
+                            tuple.set_str (Tuple::Album, tfld);
+
+                        tfld = (const char *) user_tuple.get_str (Tuple::AlbumArtist);
+                        if (tfld)
+                        {
+                            tuple.set_str (Tuple::AlbumArtist, tfld);
+                            if (! trackinfo[trackno].performer)
+                                trackinfo[trackno].performer = String (tfld);
+                        }
+                        tfld = (const char *) user_tuple.get_str (Tuple::Genre);
+                        if (tfld)
+                        {
+                            tuple.set_str (Tuple::Genre, tfld);
+                            trackinfo[trackno].performer = String (tfld);
+                        }
+                        tfld = (const char *) user_tuple.get_str (Tuple::Comment);
+                        if (tfld)
+                            tuple.set_str (Tuple::Comment, tfld);
+                        int ifld = user_tuple.get_int (Tuple::Year);
+                        if (ifld && ifld > 1000)
+                            tuple.set_int (Tuple::Year, ifld);
+                    }
+                    else if (! trackno)
+                        custom_tagfile_sought = true;  //SEEK FOR EACH TRACK (STOP IF NOT FOUND FOR 1ST TRACK == NO FILE)!
+                }
+//x                if (trackno <= 1)
+//x                {
                     if (! coverart_file_sought)
                     {
-                        if (trackinfo[0].name)  //SEE IF WE HAVE A COVER-ART IMAGE FILE NAMED AFTER THE TITLE:
+                        if (trackinfo[0].name)  //SEE IF WE HAVE A COVER-ART IMAGE FILE NAMED AFTER THE DISK TITLE:
                         {
                             Index<String> extlist = str_list_to_index ("jpg,png,jpeg", ",");
                             String coverart_path = aud_get_str ("dvd", "cover_art_path");
@@ -2983,7 +3071,7 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
                             {
                                 AUDINFO ("--NO COVER ART FOUND, LOOK FOR HELPER:\n");
                                 String cover_helper = aud_get_str ("audacious", "cover_helper");
-                                if (cover_helper[0])  //JWT:WE HAVE A PERL HELPER, LESSEE IF IT CAN FIND/DOWNLOAD A COVER IMAGE FOR US:
+                                if (cover_helper[0] && trackinfo[0].name && trackinfo[0].name[0])  //JWT:WE HAVE A PERL HELPER, LESSEE IF IT CAN FIND/DOWNLOAD A COVER IMAGE FOR US:
                                 {
                                     AUDINFO ("----HELPER FOUND: WILL DO (%s)\n", (const char *)str_concat ({cover_helper, " DVD ", 
                                           (const char *)trackinfo[0].name, " ", aud_get_path (AudPath::UserDir)}));
@@ -3010,8 +3098,14 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
                     if (coverart_file)
                         tuple.set_str (Tuple::Comment, coverart_file);
                     aud_write_tag_to_tagfile (filename, tuple, "tmp_tag_data");
-                }
+//x                }
             }
+        }
+        if (disktagrefresh)
+        {
+            pthread_mutex_unlock (& mutex);
+            aud_set_bool (nullptr, "_disktagrefresh", false);
+            return false;  // JWT:FORCE REFRESH OF PLAYLIST ENTRY.
         }
         valid = true;
     }
@@ -3029,6 +3123,7 @@ static bool scan_dvd ()
     AUDINFO ("Scanning DVD drive...\n");
     trackinfo.clear ();
     coverart_file_sought = false;
+    custom_tagfile_sought = false;
 
     int titles = 0;
     if (dvdnav_get_number_of_titles (dvdnav_priv->dvdnav, &titles) != DVDNAV_STATUS_OK)
@@ -3079,11 +3174,12 @@ static bool scan_dvd ()
     else
     {
         trackinfo[0].name = String (pcdtext);
+        trackinfo[0].title = trackinfo[0].name;
         AUDINFO ("i:GOT DVD TITLE=%s=\n", pcdtext);
     }
 
     /* get track information from cdtext */
-    if (! aud_get_bool ("dvd", "title_track_only"))  //IF SET, ONLY ADD SINGLE TITLE TRACK TO PLAYLIST.
+    //x if (! aud_get_bool ("dvd", "title_track_only"))  //IF SET, ONLY ADD SINGLE TITLE TRACK TO PLAYLIST.
     {
         StringBuf titlebuf;
         for (int trackno = firsttrackno; trackno <= lasttrackno; trackno++)  //ADD ALL TRACKS TO PLAYLIST:
@@ -3091,7 +3187,8 @@ static bool scan_dvd ()
             //titlebuf.steal (str_printf ("%s%d", "dvd://?", trackno));
             titlebuf = str_printf ("%s%d", "DVD Track ", trackno);
             trackinfo[trackno].name = String (titlebuf);
-            AUDINFO ("---ADDED TRACK# %d: name=%s=\n", trackno, (const char *)trackinfo[trackno].name);
+            trackinfo[trackno].title = trackinfo[trackno].name;
+            AUDINFO ("---ADDED TRACK# %d: name=%s=\n", trackno, (const char *)trackinfo[trackno].title);
         }
     }
 
@@ -3167,6 +3264,7 @@ static void reset_trackinfo ()
         aud_delete_tag_from_tagfile ("dvd://?1", "tmp_tag_data");
     }
     coverart_file = String ();
+    custom_tagfile_sought = false;
 }
 
 /* from audacious cdaudio-ng:  thread safe (mutex may be locked) */
