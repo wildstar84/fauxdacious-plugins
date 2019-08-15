@@ -1828,8 +1828,6 @@ breakout1:
 error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
 
     AUDDBG ("end of playback.\n");
-    aud_set_int ("youtubedl", "lastlen", 0);   // CLEAR TEMP. STREAM LENGTH (NEEDED TO DISPLAY TIME IN Youtube-DL STREAMS:
-    aud_set_str ("youtubedl", "lasturl", "");
     if (pktQ)
         destroyQueue (pktQ);
     if (apktQ)
