@@ -230,6 +230,7 @@ static bool playback_thread_running;  /* TRUE IF READER/DEMUXER THREAD IS UP AND
 static bool playback_fifo_hasbeenopened; /* TRUE IF FIFO IS SUCCESSFULLY OPENED */
 static bool reader_please_die;  /* SIGNAL READER/DEMUXER THREAD TO TERMINATE */
 static bool playing_a_menu;     /* TRUE IF WE'RE PLAYING A "MENU" (VS. A "MOVIE") */
+static bool menubuttons_adjusted;  /* TRUE SIGNALS WINDOW HAS CHANGED SZ/RATIO & BUTTON COORD. NEED RECALCULATING. */
 static bool checkcodecs;        /* SIGNAL THAT WE NEED TO RELOAD THE CODECS (TRACK CHANGE, ETC.) */
 static bool readblock;          /* PREVENT READER/DEMUXER THREAD FROM CONTINUING UNTIL DATA READY TO READ */
 static bool initted = false;    /* JWT:TRUE AFTER libav/ffaudio stuff initialized. */
@@ -285,6 +286,7 @@ const char * const DVD::defaults[] = {
     "video_xmove", "1",           // RESTORE WINDOW TO PREV. SAVED POSITION.
     "video_ysize", "-1",          // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
     "use_customtagfiles", "TRUE", // ALLOW USE OF CUSTOM TAG FILES.
+    "skip_coverartlookup", "FALSE", // SKIP USING THE HELPER TO LOOK UP COVER-ART.
     nullptr
 };
 
@@ -316,7 +318,9 @@ const PreferencesWidget DVD::widgets[] = {  // GUI-BASED USER-SPECIFIABLE OPTION
     WidgetCheck (N_("Skip Menus (Auto-select)"),
         WidgetBool ("dvd", "nomenus")),
     WidgetCheck (N_("Allow Custom Tag-files"),
-        WidgetBool ("dvd", "use_customtagfiles"))
+        WidgetBool ("dvd", "use_customtagfiles")),
+    WidgetCheck (N_("Skip cover art lookup"),
+        WidgetBool ("dvd", "skip_coverartlookup"))
 };
 
 const PluginPreferences DVD::prefs = {{widgets}};
@@ -508,21 +512,21 @@ static void show_audio_subs_languages (dvdnav_t *nav)
         if (lang != 0xFFFF && lang && tmp[0])
             AUDINFO ("ID_%d_AID_%d_LANG=%s code=%d\n", lg, id, tmp, audio_attr.lang_code);
     }
-    for(i=0; i<32; i++)
-    {
-        char tmp[] = "unknown";
-        lg = dvdnav_get_spu_logical_stream (nav, i);
-        if (lg == 0xff) continue;
-        lang = dvdnav_spu_stream_to_lang(nav, i);
-        if (lang != 0xFFFF)
-        {
-            tmp[0] = lang >> 8;
-            tmp[1] = lang & 0xFF;
-            tmp[2] = 0;
-        }
-        if (lang != 0xFFFF && lang && tmp[0])
-            AUDINFO ("ID_SID_%d_LANG=%s\n", lg, tmp);
-      }
+//    for(i=0; i<32; i++)
+//    {
+//        char tmp[] = "unknown";
+//        lg = dvdnav_get_spu_logical_stream (nav, i);
+//        if (lg == 0xff) continue;
+//        lang = dvdnav_spu_stream_to_lang(nav, i);
+//        if (lang != 0xFFFF)
+//        {
+//            tmp[0] = lang >> 8;
+//            tmp[1] = lang & 0xFF;
+//            tmp[2] = 0;
+//        }
+//        if (lang != 0xFFFF && lang && tmp[0])
+//            AUDINFO ("ID_SID_%d_LANG=%s\n", lg, tmp);
+//    }
 }
 ---------- */
 
@@ -968,9 +972,9 @@ readagain:
         return -1;
 
     dwRead = 0;
-    red = ReadFile(input_fd_p, buf, size, &dwRead, NULL);
+    red = ReadFile (input_fd_p, buf, size, &dwRead, NULL);
     if (red)
-        red = (int)dwRead;
+        red = (int) dwRead;
     if (red < 2)
     {
         if (readblock && ! reader_please_die)
@@ -986,9 +990,14 @@ readagain:
             return -1;
         AUDDBG ("-XXX- PEEK FAILED, BLOCKING, CONTINUE LOOPING.....\n");
     }
-    red = read (((struct pollfd *)input_fd_p)->fd, buf, size);
-    if (! red && readblock && ! reader_please_die)
-        goto readagain;
+    red = read (((struct pollfd *) input_fd_p)->fd, buf, size);
+    if (red <= 0)
+    {
+        if (readblock && ! reader_please_die)
+            goto readagain;
+        else
+            return -1;
+    }
 #endif
 
     AUDDBG("--READ(%d) BYTES (sz=%d)\n", red, size);
@@ -996,6 +1005,7 @@ readagain:
 }
 
 /* ADJUST MENU BUTTON COORDINATES WHEN MENU WINDOW CHANGES SIZE: */
+/* JWT:NOTE: MUST ADJUST ONCE AND ONLY *ONCE* PER STARTUP OR MENU BUTTON LIST CHANGE (ELSE WILL BE CUMULATIVE)! */
 static bool adjust_menubuttons (uint32_t old_width, uint32_t new_width, uint32_t old_height, uint32_t new_height)
 {
     bool adjusted = false;
@@ -1051,31 +1061,10 @@ AUDDBG("PLAY:opening input0!!!!!!!!...\n");
         AUDERR ("s:COULD NOT ALLOCATE AVIOContext BUFFER!\n");
         return nullptr;
     }
-    /* OPEN THE FIFO HERE FOR INPUT (*NIX). IN WINDOWS, IT'S ALREADY OPEN! */
-#ifndef _WIN32
-    int pollres = 0;
-    input_fd_p->fd = ::open ((const char *)dvdnav_priv->fifo_str, O_RDONLY);
-    if (input_fd_p->fd > 0)
-    {
-        input_fd_p->events = POLLIN;
-        pollres = poll (input_fd_p, 1, 400);
-        AUDINFO ("i:FIFO OPENED FOR INPUT, POLL RES=%d=\n", pollres);
-    }
-    else
-    {
-        AUDERR ("s:FIFO WAS NOT OPENED: ERRNO=%d= DESC=%s=\n", errno, strerror (errno));
-        av_free (buf);
-        return nullptr;
-    }
-#endif
-
     AVFormatContext * c = avformat_alloc_context ();
     if (! c)
     {
         AUDERR ("s:COULD NOT SET UP AVFORMATCONTEXT!\n");
-#ifndef _WIN32
-        ::close (input_fd_p->fd);
-#endif
         av_free (buf);
         return nullptr;
     }
@@ -1083,26 +1072,14 @@ AUDDBG("PLAY:opening input0!!!!!!!!...\n");
     mpegfmt->flags &= AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK;
     //c->skip_initial_bytes = 0;
 
-    //LANGUAGE STUFF TO TEST OUT FURTHER:
-//1    AVDictionary *options = nullptr;
-//1    String langstr = aud_get_str ("dvd", "language");
-//1    if (langstr && langstr[0])
-//1        av_dict_set (& options, "language", (const char *)langstr, 0);
     AVIOContext * io = avio_alloc_context ((unsigned char *) buf, IOBUF, 0, input_fd_p, read_cb, nullptr, nullptr);
     if (! io)
     {
         AUDERR ("s:COULD NOT ALLOCATE AVIOContext!\n");
-//1        if (options)
-//1            av_dict_free (& options);
         avformat_free_context (c);
-#ifndef _WIN32
-        ::close (input_fd_p->fd);
-#endif
         av_free (buf);
         return nullptr;
     }
-//1    if (options)
-//1        av_dict_free (& options);
     c->pb = io;
 
     if (avformat_open_input ( & c, "", mpegfmt, nullptr) < 0)
@@ -1110,9 +1087,6 @@ AUDDBG("PLAY:opening input0!!!!!!!!...\n");
         AUDERR ("s:COULD NOT OPEN AVINPUT!\n");
         close_input_file (c);
         // buf freed by close_input_file!
-#ifndef _WIN32
-        ::close (input_fd_p->fd);
-#endif
         return nullptr;
     }
 
@@ -1123,9 +1097,6 @@ AUDDBG("PLAY:opening input0!!!!!!!!...\n");
     {
         AUDERR ("e:PLAY:FAILED TO FIND STREAM INFO!\n");
         close_input_file (c);
-#ifndef _WIN32
-        ::close (input_fd_p->fd);
-#endif
         // buf freed by close_input_file!
         return nullptr;
     }
@@ -1286,6 +1257,19 @@ breakout1:
     AUDINFO ("i:PIPE OPENED FOR INPUT\n");
 #else
     struct pollfd input_fd_p;    // INPUT FILE DESCRIPTOR TO THE FIFO.
+    int pollres = 0;
+    input_fd_p.fd = ::open ((const char *)dvdnav_priv->fifo_str, O_RDONLY);
+    if (input_fd_p.fd > 0)
+    {
+        input_fd_p.events = POLLIN;
+        pollres = poll (& input_fd_p, 1, 400);
+        AUDINFO ("i:FIFO OPENED FOR INPUT, POLL RES=%d=\n", pollres);
+    }
+    else
+    {
+        AUDERR ("s:FIFO WAS NOT OPENED: ERRNO=%d= DESC=%s=\n", errno, strerror (errno));
+        return;
+    }
 #endif
 
 startover:
@@ -1300,9 +1284,9 @@ startover:
     bool planar = 0;             // USED BY Audacious.
     bool eof = false;            // BECOMES TRUE WHEN EOF REACHED BY THE READER/DECODER. 
     bool last_resized = true;    // TRUE IF VIDEO-WINDOW HAS BEEN RE-ASPECTED SINCE LAST RESIZE EVENT (HAS CORRECT ASPECT RATIO).
-    bool menubuttons_adjusted = false;  // TRUE SIGNALS WINDOW HAS CHANGED SZ/RATIO & BUTTON COORD. NEED RECALCULATING.
     bool menu_flushed = false;   // TRUE AFTER FLUSHING SINGLE-IMAGE MENU.
     bool menu_written = false;   // TRUE AFTER ANY PART OF MENU DISPLAYED.
+    bool menuawaitingclick = false;  // TRUE IF WE'RE WAITING DURATION SECONDS ON MENU-EOF FOR A BUTTON TO BE PRESSED.
     int out_fmt = 0;             // USED BY Audacious.
     int errcount = 0;            // LIMIT FRAME READ RETRIES.
     int vx = 0;
@@ -1332,6 +1316,7 @@ startover:
     video_default_height = 480;
     /* JWT:SAVE (static)fromstdin's STATE AT START OF PLAY, SINCE PROBES WILL CHANGE IT IN PLAYLIST ADVANCE BEFORE WE CLOSE! */
     myplay_video = play_video;   // WHETHER OR NOT TO DISPLAY THE VIDEO.
+    menubuttons_adjusted = false;  // TRUE SIGNALS WINDOW HAS CHANGED SZ/RATIO & BUTTON COORD. NEED RECALCULATING.
 AUDDBG("ABOUT TO OPEN THE INPUT PIPE...\n");
 #ifdef _WIN32
     SmartPtr<AVFormatContext, close_input_file> c (open_input_file (input_fd_p));
@@ -1366,7 +1351,31 @@ AUDDBG("---INPUT PIPE OPENED!\n");
         if (c->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_VIDEO && videoStream < 0)
             videoStream=i;
         else if (c->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_AUDIO && audioStream < 0)
-            audioStream=i;
+            audioStream=i;  // DEFAULT IS (1ST) AUDIO STREAM, SEE BELOW:
+    }
+
+    /* JWT:USER PBLY. SELECTED A LANGUAGE FROM A MENU, SEE IF WE CAN FIND THE ALTERNATE LANGUAGE STREAM 
+       USING THE "LOGICAL" STREAM INDEX INTO THE LIST OF AVAILABLE "AUDIO" STREAMS, IF SO, TRY THAT -
+       SEEMS TO WORK FOR A CPL. DVDs W/LANGUAGE MENUS I'VE TRIED.
+    */
+    if (dvdnav_priv->lastaudiostream > 0)
+    {
+        int idx = 0;  // RELATIVE INDEX OF AUDIO-STREAM ("i" IS INDEX OF ALL STREAMS).
+        AUDINFO ("***** LOGICAL STREAM SET TO NON-DEFAULT LANGUAGE\n");
+        for (unsigned i = 0; i < c->nb_streams; i++)
+        {
+            if (c->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_AUDIO)
+            {
+                AUDINFO ("---AUDIO STREAM FOUND AT I=%d= (IDX=%d)\n", i, idx);
+                if (idx == dvdnav_priv->lastaudiostream)
+                {
+                    audioStream=i;  // WE'RE GONNA TRY USING THE "idx"'TH AUDIO STREAM INSTEAD OF 1ST ONE:
+                    AUDINFO ("------BREAK OUT WITH AUDIO (%d)nd STREAM(%d)!\n", idx, i);
+                    break;
+                }
+                idx++;
+            }
+        }
     }
     if (videoStream >= 0)
     {
@@ -1399,13 +1408,12 @@ AUDDBG("---INPUT PIPE OPENED!\n");
     else
         play_video = false;  /* turn off video playback, since we could not find a video stream! */
 
-    dvdnav_priv->lastaudiostream = audioStream;  // SAVE IT!
     if (audioStream >= 0)
     {
         AVCodec * codec = avcodec_find_decoder (c->streams[audioStream]->codecpar->codec_id);
         if (codec)
         {
-            AUDDBG ("--HAVE AN AUDIO CODEC!\n");
+            AUDDBG ("--HAVE AN AUDIO CODEC: AS=%d= LAST=%d=!\n", audioStream, dvdnav_priv->lastaudiostream);
             cinfo.stream_idx = audioStream;
             cinfo.stream = c->streams[audioStream];
             // JWT:CHGD. TO ifdef BLOCK: cinfo.context = c->streams[audioStream]->codec;
@@ -1431,7 +1439,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
 //AUDERR ("CODEC NAME(%d)=%s=\n", x, xcodec->name);
 //        }
 //    }
-    myplay_video = play_video;
+    myplay_video = false;
 
     if (vcodec_opened)
     {
@@ -1446,6 +1454,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
 #endif
             vcodec_opened = false;
         }
+        myplay_video = play_video;
     }
     if (playing_a_menu && !vcodec_opened && aud_get_bool ("dvd", "play_video"))
     {
@@ -1560,11 +1569,10 @@ AUDDBG("---INPUT PIPE OPENED!\n");
             video_height = video_default_height;
         }
         AUDINFO ("---VIDEO W x H SET TO (%d x %d)!\n", video_width, video_height);
-        if (playing_a_menu && menubuttons.len () > 0)
-        {
+        if (playing_a_menu && ! menubuttons_adjusted && menubuttons.len () > 0)
             menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
                     video_requested_height, (uint32_t)video_height);
-        }
+
         video_aspect_ratio = video_height
             ? (float)video_width / (float)video_height : 1.0;   /* Fall thru to square to avoid possibliity of "/0"! */
 
@@ -1646,6 +1654,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
     menu_written = false;
     menu_flushed = false;
     last_menuframe_time = time (nullptr);
+    menuawaitingclick = false;
     while (! reader_please_die)
     {
         if (playing_a_menu != were_playing_a_menu)  // CHG. FROM MOVIE TO MENU OR VICE VERSA, RECHECK CODECS!
@@ -1737,12 +1746,11 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                         {
                             AVPacket * pktRef;
                             AUDINFO ("WE'RE PLAYING A MENU, FLUSH VIDEO PACKETS (writes a video frame)!\n");
-                            if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS REMAINING VIDEO FRAME IN QUEUE:
+                            while ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS REMAINING VIDEO FRAME(S) IN QUEUE:
                             {
                                 if (write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
                                              video_width, video_height, & last_resized, & windowIsStable,
-                                             & resized_window_width, & resized_window_height)
-                                        && ! playing_a_menu)
+                                             & resized_window_width, & resized_window_height))
                                     SDL_RenderPresent (renderer.get ());
 
                                 Dequeue (pktQ);
@@ -1764,8 +1772,21 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                         if (! myplay_video || pci->hli.hl_gi.btn_ns <= 1 
                                 || (dvdnav_priv->duration > 0 && aud_get_bool ("dvd", "menucontinue")))  // 0|1 BUTTON MENUS DON'T NEED INTERACTION SO JUST "ESCAPE":
                         {
-                            if (pci->hli.hl_gi.btn_ns)
-                                dvdnav_button_select (dvdnav_priv->dvdnav, pci, 1);
+                            if (pci->hli.hl_gi.btn_ns) {
+                                if (! myplay_video)  // JWT:MAKE SURE AUDIO-ONLY DOESN'T HANG WAITING ON MENU!:
+                                {
+                                    AUDINFO ("i:AUDIO-ONLY, SELECT 1ST MENU BUTTON AND BREAK OUT!\n");
+                                    dvdnav_button_select (dvdnav_priv->dvdnav, pci, 1);
+                                    dvdnav_button_activate (dvdnav_priv->dvdnav, pci);
+                                    pci = dvdnav_get_current_nav_pci (dvdnav_priv->dvdnav);
+                                    were_playing_a_menu = playing_a_menu;
+                                    playing_a_menu = ! (dvdnav_is_domain_vts (dvdnav_priv->dvdnav));
+                                    dvdnav_priv->demuxing = playing_a_menu;
+                                    menu_written = false;
+                                    menu_flushed = false;
+                                    continue;
+                                }
+                            }
                             if (dvdnav_priv->duration <= 0 || difftime (time (nullptr), scene_start_time) > dvdnav_priv->duration / 1000)
                             {
                                 dvdnav_priv->nochannelhop = false;
@@ -1779,15 +1800,29 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                                 }
                                 else
                                 {
-                                    AUDERR ("e:WE SEEM TO BE STUCK IN A MENU!...\n");
+                                    AUDERR ("e:WE SEEM TO BE STUCK IN A MENU, IF BUTTONS(%d), SELECT 1ST ONE!...\n",
+                                            pci->hli.hl_gi.btn_ns);
                                     were_playing_a_menu = playing_a_menu;
+                                    if (pci->hli.hl_gi.btn_ns) {
+                                        dvdnav_button_select (dvdnav_priv->dvdnav, pci, 1);
+                                        AUDINFO ("i:SELECT 1ST MENU BUTTON AND BREAK OUT!\n");
+                                        dvdnav_button_activate (dvdnav_priv->dvdnav, pci);
+                                        pci = dvdnav_get_current_nav_pci (dvdnav_priv->dvdnav);
+                                        were_playing_a_menu = playing_a_menu;
+                                        playing_a_menu = ! (dvdnav_is_domain_vts (dvdnav_priv->dvdnav));
+                                        dvdnav_priv->demuxing = playing_a_menu;
+                                        menu_written = false;
+                                        menu_flushed = false;
+                                        continue;
+                                    }
                                 }
                             }
                             else
                             {
                                 AUDINFO ("WAITING %d SECONDS FOR BUTTONLESS MENU...\n", dvdnav_priv->duration / 1000);
-                                eof = false;  //SHOULD BE SAFE HERE SINCE SHOULD FORCE EOF & LOOP TO HERE FOR DURATION.
-                                continue;
+                                eof = false;  //SAFE HERE SINCE SHOULD FORCE EOF & LOOP TO HERE FOR DURATION WHILE CHECKING FOR BUTTON PRESS.
+                                // continue;
+                                menuawaitingclick = true;
                             }
                         }
                     }
@@ -1805,7 +1840,9 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                         checkcodecs = false;
                     }
                 }
-                eof = true;
+                if (! menuawaitingclick)
+                    eof = true;
+
                 if (! playing_a_menu)
                     continue;  // PACKET HAS BEEN FREED!
             }
@@ -1829,6 +1866,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
             eof = false;
             if (! (dvdnav_priv->state & NAV_FLAG_WAIT))
                 readblock = true;  //BLOCK ON MOVIES OR MENUS (SOME NEED!) IFF *NOT* IN WAIT STATE!!
+
             if (playing_a_menu && menu_written && ! menu_flushed
                     && difftime (time (nullptr), last_menuframe_time) > 1)
             {
@@ -1838,12 +1876,11 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 // UNTIL THE MUSIC / ANIMATION ENDS:
                 AVPacket * pktRef;
                 menu_flushed = true;
-                if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS REMAINING VIDEO FRAME IN QUEUE:
+                while ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS REMAINING VIDEO FRAME(S) IN QUEUE:
                 {
                     if (write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
                                  video_width, video_height, & last_resized, & windowIsStable,
-                                 & resized_window_width, & resized_window_height)
-                            && ! playing_a_menu)
+                                 & resized_window_width, & resized_window_height))
                         SDL_RenderPresent (renderer.get ());
 
                     Dequeue (pktQ);
@@ -1888,8 +1925,14 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                                 video_width, video_height, & last_resized, & windowIsStable,
                                 & resized_window_width, & resized_window_height))
                         {
-                            if (highlightbuttons)
-                                draw_highlight_buttons (renderer.get ());
+                            if (playing_a_menu)
+                            {
+                                if (! menubuttons_adjusted && menubuttons.len () > 0)
+                                    menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
+                                            video_requested_height, (uint32_t)video_height);
+                                if (highlightbuttons)
+                                    draw_highlight_buttons (renderer.get ());
+                            }
                             SDL_RenderPresent (renderer.get ());
                         }
                         if (playing_a_menu)
@@ -1966,7 +2009,6 @@ AUDDBG("---INPUT PIPE OPENED!\n");
         {
             switch (event.type) {
                 case SDL_MOUSEBUTTONDOWN: // if the event is mouse click
-//                    if (event.button == SDL_BUTTON_LEFT)
                     if (playing_a_menu)
                     {
                         /* USER PRESSED A MENU BUTTON, SEE WHICH ONE AND ACTIVATE IT: */
@@ -1987,10 +2029,12 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                                 AUDINFO ("i:ACTIVATE MENU BUTTON2 (MAY ASSERT ITSELF)!\n");
                                 dvdnav_button_activate (dvdnav_priv->dvdnav, pci);
                                 pci = dvdnav_get_current_nav_pci (dvdnav_priv->dvdnav);
-                                //were_playing_a_menu = playing_a_menu = ! (dvdnav_is_domain_vts (dvdnav_priv->dvdnav));
+                                were_playing_a_menu = playing_a_menu;
                                 playing_a_menu = ! (dvdnav_is_domain_vts (dvdnav_priv->dvdnav));
-                                dvdnav_priv->demuxing = false;
+                                dvdnav_priv->demuxing = playing_a_menu;
                                 menu_written = false;
+                                menu_flushed = false;
+                                menuawaitingclick = false;
                                 break;
                             }
                         }
@@ -2028,6 +2072,9 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                                 if (windowNowExposed) AUDINFO ("i:WINDOW (was) EXPOSED!\n"); else AUDINFO ("i:WINDOW (was NOT) EXPOSED!\n");
                                 if (playing_a_menu)
                                 {
+                                    if (! menubuttons_adjusted && playing_a_menu && menubuttons.len () > 0)
+                                        menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
+                                                video_requested_height, (uint32_t)video_height);
                                     SDL_RenderCopy (renderer.get (), bmpptr, nullptr, nullptr);
                                     if (highlightbuttons)
                                         draw_highlight_buttons (renderer.get ());
@@ -2118,7 +2165,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 {
                     SDL_RenderClear (renderer.get ());
                     SDL_RenderCopy (renderer.get (), bmpptr, nullptr, nullptr);
-                    if (menubuttons.len () > 0)
+                    if (! menubuttons_adjusted && menubuttons.len () > 0)
                         menubuttons_adjusted = adjust_menubuttons ((uint32_t)video_width, (uint32_t)new_video_width, 
                                 (uint32_t)video_height, (uint32_t)new_video_height);
                     if (highlightbuttons)
@@ -2201,10 +2248,6 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
     }
 
     }  // END OF SUBSCOPE FOR STARTOVER (FREES AVStuff)!
-#ifndef _WIN32
-    if (input_fd_p.fd)
-        ::close (input_fd_p.fd);
-#endif
     if (checkcodecs)
     {
         AUDINFO ("DEMUXER: CODEC CHECK, RESTART!......\n");
@@ -2214,6 +2257,9 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
     }
 #ifdef _WIN32
     CloseHandle (input_fd_p);
+#else
+    if (input_fd_p.fd)
+        ::close (input_fd_p.fd);
 #endif
 
     }  // END OF SUBSCOPE FOR DECLARING SDL2 RENDERER AS SCOPED SMARTPOINTER (FREES RENDERER).
@@ -2497,6 +2543,8 @@ bool DVD::play (const char * name, VFSFile & file)
                             menubuttons[button].h = btni->y_end - btni->y_start;
                         }
                         havebuttons = true;
+                        playing_a_menu = true;
+                        menubuttons_adjusted = false;
                         /* SOME DVDS DON'T HANDLE STREAM ARRANGEMENT CORRECTLY UNLESS YOU PLAY THRU THE MENU,
                            SO WE DEFER SELECTING THE DEFAULT BUTTON NOW UNTIL THE MENU HAS "PLAYED", THIS ALSO 
                            GETS THE USER THE BUMPER MUSIC THAT SOME VIDEO MENUS HAVE, AS A SIDE-EFFECT,
@@ -2522,9 +2570,9 @@ bool DVD::play (const char * name, VFSFile & file)
                 {
                     AUDINFO ("--------------- CHANNEL HOPPING! ------------------------\n");
                     checkcodecs = true;  // RESET READER/DEMUXER LOOP & RESCAN CODECS!
-                    AUDDBG ("FLUSHING OUTPUT FIFO!\n");
 #ifndef _WIN32
-                    fflush (output_fd);
+                    // AUDDBG ("FLUSHING OUTPUT FIFO!\n");
+                    // fflush (output_fd);
 #endif
                     nanosleep ((const struct timespec[]){{0, 40000000L}}, NULL);
                     dvdnav_priv->freshhopped = true;
@@ -2686,10 +2734,11 @@ bool DVD::play (const char * name, VFSFile & file)
                 dvdnav_priv->state |= NAV_FLAG_AUDIO_CHANGE;
                 dvdnav_priv->state |= NAV_FLAG_STREAM_CHANGE;
                 AUDINFO ("DVDNAV_AUDIO_STREAM_CHANGE: logical=%d= physical=%d= prev=%d\n", ev->logical, ev->physical, dvdnav_priv->lastaudiostream);
-                if (ev->physical >= 0 && dvdnav_priv->lastaudiostream < 0 && dvdnav_is_domain_vts (dvdnav_priv->dvdnav))
+                if (ev->physical >= 0 && (dvdnav_priv->lastaudiostream < 0 || ev->logical != dvdnav_priv->lastaudiostream) && dvdnav_is_domain_vts (dvdnav_priv->dvdnav))
                 {
                     AUDINFO ("w:AUDIO CHANGE FORCED CODEC CHANGE! ===================\n");
                     checkcodecs = true;
+                    dvdnav_priv->lastaudiostream = ev->logical;  // JWT:USE LOGICAL - FOR LANGUAGE CHGS!
                 }
                 break;
             }
@@ -2699,7 +2748,8 @@ bool DVD::play (const char * name, VFSFile & file)
                 dvdnav_priv->state |= NAV_FLAG_STREAM_CHANGE;
                 break;
             default:
-                AUDINFO ("Unhandled event (%i)\n", event);
+                if (event > 1)  // WARN UNLESS 1: 1 IS A "NOOP", DVDNAV SAYS IGNORE!
+                    AUDINFO ("Unhandled event (%i)\n", event);
         }
 
         if (stop_playback)
@@ -2805,6 +2855,7 @@ static dvdnav_priv_t * new_dvdnav_stream (const char * filename)
     if (dvdnav_set_PGC_positioning_flag (priv->dvdnav, 1) != DVDNAV_STATUS_OK)
         AUDERR ("e:stream_dvdnav, failed to set PGC positioning\n");
 
+    /* JWT:THIS DOESN'T SEEM TO DO ANYTHING, BUT LEAVE HERE SINCE DOCS SAY IT *SHOULD* MAYBE WORK?! */
     String langstr = aud_get_str ("dvd", "language");
     if (langstr && langstr[0] && langstr[1])
     {
@@ -2815,10 +2866,10 @@ static dvdnav_priv_t * new_dvdnav_stream (const char * filename)
         lang[3] = '\0';
         if (dvdnav_audio_language_select (priv->dvdnav, lang) != DVDNAV_STATUS_OK )
             AUDERR ("e:Could not set language to %s!\n", (const char *)langstr);
-        dvdnav_menu_language_select (priv->dvdnav, lang);
-        dvdnav_spu_language_select (priv->dvdnav, lang);
+//        dvdnav_menu_language_select (priv->dvdnav, lang);
+//        dvdnav_spu_language_select (priv->dvdnav, lang);
         priv->langid = (lang[0] << 8) | (lang[1]);
-        AUDINFO ("i:Language set to (%s), code=%d!\n", (const char *)langstr, priv->langid);
+        AUDINFO ("i:Language set to (%s), code=%d!, BUT PBLY DOESNT WORK!\n", (const char *)langstr, priv->langid);
     }
 
     return priv;
@@ -3071,7 +3122,7 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
                             {
                                 AUDINFO ("--NO COVER ART FOUND, LOOK FOR HELPER:\n");
                                 String cover_helper = aud_get_str ("audacious", "cover_helper");
-                                if (cover_helper[0] && trackinfo[0].name && trackinfo[0].name[0])  //JWT:WE HAVE A PERL HELPER, LESSEE IF IT CAN FIND/DOWNLOAD A COVER IMAGE FOR US:
+                                if (! aud_get_bool ("dvd", "skip_coverartlookup") && cover_helper[0] && trackinfo[0].name && trackinfo[0].name[0])  //JWT:WE HAVE A PERL HELPER, LESSEE IF IT CAN FIND/DOWNLOAD A COVER IMAGE FOR US:
                                 {
                                     AUDINFO ("----HELPER FOUND: WILL DO (%s)\n", (const char *)str_concat ({cover_helper, " DVD ", 
                                           (const char *)trackinfo[0].name, " ", aud_get_path (AudPath::UserDir)}));
@@ -3222,8 +3273,8 @@ tryagain:   // WE TRY 4 TIMES TO GIVE THE DRIVE A CHANCE TO SPIN UP...
 
         //timer_add (TimerRate::Hz1, monitor);
     }
-    AUDINFO ("Success: refresh_trackinfo - DVD opened and scanned!\n");
-    dvdnav_priv->langid = 0;
+    AUDINFO ("Success: refresh_trackinfo - DVD opened and scanned! lang=%d=\n", dvdnav_priv->langid);
+//    dvdnav_priv->langid = 0;
     dvdnav_get_title_string (dvdnav_priv->dvdnav, & dvdnav_priv->title_str);
     return true;
 
