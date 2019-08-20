@@ -152,7 +152,7 @@ public:
             SDL_Texture * bmp, AVPacket *pkt, int video_width, 
             int video_height, bool * last_resized, bool * windowIsStable,
             int * resized_window_width, int * resized_window_height);
-    void draw_highlight_buttons (SDL_Renderer * renderer);
+    void draw_highlight_buttons (SDL_Renderer * renderer, bool highlightall, int action);
 private:
 #ifdef _WIN32
     AVFormatContext * open_input_file (HANDLE input_fd_p);
@@ -544,6 +544,7 @@ int mp_dvdtimetomsec(dvd_time_t *dt)
 }
 
 // from mplayer.stream_dvdnav.c:
+/* ---------
 static void dvdnav_get_highlight (dvdnav_priv_t *priv, int display_mode)
 {
     pci_t *pnavpci = NULL;
@@ -558,28 +559,28 @@ static void dvdnav_get_highlight (dvdnav_priv_t *priv, int display_mode)
         return;
 
     dvdnav_get_current_highlight (priv->dvdnav, (int32_t*)&(hlev->buttonN));
-    hlev->display = display_mode; /* show */
+    hlev->display = display_mode; // show
 
     if (hlev->buttonN > 0 && pnavpci->hli.hl_gi.btn_ns > 0 && hlev->display)
     {
 //1:from: vlc/modules/access/dvdnav.c:1253l (MAY USE SOMEDAY WHEN WE FIGURE OUT HOW):
-//1        bool b_mode = (display_mode ? true : false);
-//1        dvdnav_highlight_area_t hl;
-//1        bool b_button_ok = DVDNAV_STATUS_OK ==
-//1                dvdnav_get_highlight_area (pnavpci, hlev->buttonN, b_mode, &hl);
-//1        if (b_button_ok )
-//1        {
-//1            for (unsigned i = 0; i < 4; i++ )
-//1            {
-//1                uint32_t i_yuv = priv->spu_clut[(hl.palette>>(16+i*4))&0x0f];
-//1                uint8_t i_alpha = ( (hl.palette>>(i*4))&0x0f ) * 0xff / 0xf;
+        bool b_mode = (display_mode ? true : false);
+        dvdnav_highlight_area_t hl;
+        bool b_button_ok = DVDNAV_STATUS_OK ==
+                dvdnav_get_highlight_area (pnavpci, hlev->buttonN, b_mode, &hl);
+        if (b_button_ok )
+        {
+            for (unsigned i = 0; i < 4; i++ )
+            {
+                uint32_t i_yuv = priv->spu_clut[(hl.palette>>(16+i*4))&0x0f];
+                uint8_t i_alpha = ( (hl.palette>>(i*4))&0x0f ) * 0xff / 0xf;
 
-//1                priv->palette[i][0] = (i_yuv >> 16) & 0xff;
-//1                priv->palette[i][1] = (i_yuv >> 0) & 0xff;
-//1                priv->palette[i][2] = (i_yuv >> 8) & 0xff;
-//1                priv->palette[i][3] = i_alpha;
-//1            }
-//1        }
+                priv->palette[i][0] = (i_yuv >> 16) & 0xff;
+                priv->palette[i][1] = (i_yuv >> 0) & 0xff;
+                priv->palette[i][2] = (i_yuv >> 8) & 0xff;
+                priv->palette[i][3] = i_alpha;
+            }
+        }
         AUDDBG ("dvdnav_get_highlight: BUTTON=%d, SHOW=%d HAVE=%d\n", hlev->buttonN, hlev->display, pnavpci->hli.hl_gi.btn_ns);
         for (btnum = 0; btnum < pnavpci->hli.hl_gi.btn_ns; btnum++)
         {
@@ -597,13 +598,14 @@ static void dvdnav_get_highlight (dvdnav_priv_t *priv, int display_mode)
             }
         }
     } 
-    else  /* hide button or no button */
+    else  // hide button or no button
     {
         hlev->sx = hlev->ex = 0;
         hlev->sy = hlev->ey = 0;
         hlev->palette = hlev->buttonN = 0;
     }
 }
+---------- */
 
 // from audacious:
 static void close_input_file (AVFormatContext * c)
@@ -730,12 +732,33 @@ bool DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
 }
 
 // DRAW A RECTANGLE AROUND EACH MENU BUTTON (USER-OPTION, SINCE WE DON'T CURRENTLY DO SUBPICTURES):
-void DVD::draw_highlight_buttons (SDL_Renderer * renderer)
+void DVD::draw_highlight_buttons (SDL_Renderer * renderer, bool highlightall, int action)
 {
-    for (int mbtn = 0; mbtn < menubuttons.len (); mbtn ++)
+    if (highlightall)
     {
-        SDL_RenderDrawRect (renderer, & menubuttons[mbtn]);
+        int32_t hlbutton;
+        pci_t * pci = dvdnav_get_current_nav_pci (dvdnav_priv->dvdnav);
+        SDL_RenderDrawRects (renderer, & menubuttons[0], menubuttons.len ());
+        dvdnav_get_current_highlight (dvdnav_priv->dvdnav, & hlbutton);
+        if (hlbutton > menubuttons.len ())
+            hlbutton = 1;  // SEEMS TO HAPPEN SOMETIMEZ?!
+        if (hlbutton > 0)
+        {
+            if (action && menubuttons.len () > 0)
+            {
+                hlbutton += action;
+                if (hlbutton > menubuttons.len ())
+                    hlbutton = 1;
+                else if (hlbutton < 1)
+                    hlbutton = menubuttons.len ();
+            }
+            dvdnav_button_select (dvdnav_priv->dvdnav, pci, hlbutton);
+            SDL_SetRenderDrawColor (renderer, 255, 0, 0, 255);
+            SDL_RenderDrawRect (renderer, & menubuttons[hlbutton-1]);
+            SDL_SetRenderDrawColor (renderer, 128, 128, 128, 255);
+        }
     }
+    SDL_RenderPresent (renderer);
 }
 
 // CREATE AN SDL "RENDERER":
@@ -1039,6 +1062,7 @@ static bool adjust_menubuttons (uint32_t old_width, uint32_t new_width, uint32_t
         }
         adjusted = true;
     }
+
     return adjusted;
 }
 
@@ -1361,7 +1385,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
     if (dvdnav_priv->lastaudiostream > 0)
     {
         int idx = 0;  // RELATIVE INDEX OF AUDIO-STREAM ("i" IS INDEX OF ALL STREAMS).
-        AUDINFO ("***** LOGICAL STREAM SET TO NON-DEFAULT LANGUAGE\n");
+        AUDINFO ("***** LOGICAL STREAM SET TO NON-DEFAULT LANGUAGE(%d)\n", dvdnav_priv->lastaudiostream);
         for (unsigned i = 0; i < c->nb_streams; i++)
         {
             if (c->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_AUDIO)
@@ -1759,13 +1783,16 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                             av_init_packet (& emptypkt);
                             emptypkt.data=nullptr; emptypkt.size=0;
                             if (write_videoframe (renderer.get (), & vcinfo, bmpptr, & emptypkt, 
-                                  video_width, video_height, & last_resized, & windowIsStable,
-                                  & resized_window_width, & resized_window_height))
+                                    video_width, video_height, & last_resized, & windowIsStable,
+                                    & resized_window_width, & resized_window_height))
                             {
-                                if (highlightbuttons)
-                                    draw_highlight_buttons (renderer.get ());
-                                SDL_RenderPresent (renderer.get ());
+                                if (playing_a_menu && ! menubuttons_adjusted && menubuttons.len () > 0)
+                                    menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
+                                            video_requested_height, (uint32_t)video_height);
+
+                                draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
                             }
+
                             av_free_packet (& emptypkt);
                         }
                         AUDINFO ("i:MENU EOF: BUTTON COUNT IN THIS MENU:  %d! duration=%d\n", pci->hli.hl_gi.btn_ns, dvdnav_priv->duration);
@@ -1895,9 +1922,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                     if (! menubuttons_adjusted && menubuttons.len () > 0)
                         menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
                             video_requested_height, (uint32_t)video_height);
-                    if (highlightbuttons)
-                        draw_highlight_buttons (renderer.get ());
-                    SDL_RenderPresent (renderer.get ());
+
+                    draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
                 }
                 av_free_packet (& emptypkt);
             }
@@ -1925,15 +1951,16 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                                 video_width, video_height, & last_resized, & windowIsStable,
                                 & resized_window_width, & resized_window_height))
                         {
-                            if (playing_a_menu)
+                            if (playing_a_menu && codec_opened && ! checkcodecs)  // SHOULD ONLY NEED FOR MENUS PLAYING MUSIC:
                             {
                                 if (! menubuttons_adjusted && menubuttons.len () > 0)
                                     menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
                                             video_requested_height, (uint32_t)video_height);
-                                if (highlightbuttons)
-                                    draw_highlight_buttons (renderer.get ());
+
+                                draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
                             }
-                            SDL_RenderPresent (renderer.get ());
+                            else
+                                SDL_RenderPresent (renderer.get ());
                         }
                         if (playing_a_menu)
                         {
@@ -1958,14 +1985,9 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                         {
                             if (write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
                                     video_width, video_height, & last_resized, & windowIsStable,
-                                    & resized_window_width, & resized_window_height))
+                                    & resized_window_width, & resized_window_height) && playing_a_menu)
                             {
-                                if (highlightbuttons)
-                                    draw_highlight_buttons (renderer.get ());
-                                SDL_RenderPresent (renderer.get ());
-                            }
-                            if (playing_a_menu)
-                            {
+                                draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
                                 last_menuframe_time = time (nullptr);
                                 menu_written = true;
                             }
@@ -2039,6 +2061,46 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                             }
                         }
                     }
+                case SDL_KEYDOWN:
+                    if (playing_a_menu)
+                    {
+                        if (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_RETURN2
+                                || event.key.keysym.sym == SDLK_SPACE)
+                        {
+                            int32_t mbtn;
+                            dvdnav_get_current_highlight (dvdnav_priv->dvdnav, & mbtn);
+                            if (mbtn > 0)
+                            {
+                                dvdnav_priv->nochannelhop = false;
+                                AUDINFO ("---------- 1MENU BUTTON %d PRESSED! --------------\n", mbtn);
+                                dvdnav_priv->wakeup = true;
+                                //pci_t * pci = dvdnav_get_current_nav_pci (dvdnav_priv->dvdnav);
+                                //dvdnav_get_current_nav_dsi (dvdnav_priv->dvdnav);
+                                dvdnav_button_select (dvdnav_priv->dvdnav, pci, mbtn);
+                                //SDL_RenderFillRect (renderer.get (), nullptr);
+                                SDL_RenderClear (renderer.get ());
+                                SDL_RenderPresent (renderer.get ());
+                                AUDINFO ("i:ACTIVATE MENU BUTTON2 (MAY ASSERT ITSELF)!\n");
+                                dvdnav_button_activate (dvdnav_priv->dvdnav, pci);
+                                pci = dvdnav_get_current_nav_pci (dvdnav_priv->dvdnav);
+                                were_playing_a_menu = playing_a_menu;
+                                playing_a_menu = ! (dvdnav_is_domain_vts (dvdnav_priv->dvdnav));
+                                dvdnav_priv->demuxing = playing_a_menu;
+                                menu_written = false;
+                                menu_flushed = false;
+                                menuawaitingclick = false;
+                            }
+                        }
+                        else if (highlightbuttons)
+                        {
+                            if (event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_RIGHT
+                                    || event.key.keysym.sym == SDLK_TAB)
+                                draw_highlight_buttons (renderer.get (), highlightbuttons, 1);
+                            else if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_LEFT)
+                                draw_highlight_buttons (renderer.get (), highlightbuttons, -1);
+                        }
+                    }
+                    break;
                 case SDL_WINDOWEVENT:
                     bool moved = false;
                     switch (event.window.event)
@@ -2075,11 +2137,13 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                                     if (! menubuttons_adjusted && playing_a_menu && menubuttons.len () > 0)
                                         menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
                                                 video_requested_height, (uint32_t)video_height);
+
                                     SDL_RenderCopy (renderer.get (), bmpptr, nullptr, nullptr);
-                                    if (highlightbuttons)
-                                        draw_highlight_buttons (renderer.get ());
+                                    draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
                                 }
-                                SDL_RenderPresent (renderer.get ());
+                                else
+                                    SDL_RenderPresent (renderer.get ());
+
                                 windowNowExposed = true;
                             }
                             last_resizeevent_time = time (nullptr);  // reset the wait counter for when to assume user's done dragging window corner.
@@ -2168,8 +2232,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                     if (! menubuttons_adjusted && menubuttons.len () > 0)
                         menubuttons_adjusted = adjust_menubuttons ((uint32_t)video_width, (uint32_t)new_video_width, 
                                 (uint32_t)video_height, (uint32_t)new_video_height);
-                    if (highlightbuttons)
-                        draw_highlight_buttons (renderer.get ());
+
+                    draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
                 }
                 video_width = new_video_width;
                 video_height = new_video_height;
@@ -2415,8 +2479,8 @@ bool DVD::play (const char * name, VFSFile & file)
         }
 
         pthread_mutex_lock (& mutex);
-        if (event != DVDNAV_BLOCK_OK)
-            dvdnav_get_highlight (dvdnav_priv, 1);
+        // if (event != DVDNAV_BLOCK_OK)
+        //     dvdnav_get_highlight (dvdnav_priv, 1);
 
         // SEE:  https://github.com/microe/libdvdnav/blob/master/doc/tutorial.cpp:
         switch (event)  // HANDLE EACH TYPE OF DVD PACKET (INSTRUCTIONS AND DATA):
@@ -2458,8 +2522,8 @@ bool DVD::play (const char * name, VFSFile & file)
             }
             case DVDNAV_HIGHLIGHT:
             {
-                AUDINFO ("DVDNAV_HIGHLIGHT\n");
-                dvdnav_get_highlight (dvdnav_priv, 1);
+                // AUDINFO ("DVDNAV_HIGHLIGHT\n");
+                // dvdnav_get_highlight (dvdnav_priv, 1);
                 break;
             }
             case DVDNAV_SPU_CLUT_CHANGE:
@@ -2617,7 +2681,7 @@ bool DVD::play (const char * name, VFSFile & file)
                 if (dvdnav_current_title_info (dvdnav_priv->dvdnav, &tit, &part) == DVDNAV_STATUS_OK)
                 {
                     AUDINFO ("i:VTS_CHANGE: TITLE=%d TIT=%d part=%d\r\n", dvdnav_priv->title, tit, part);
-                    dvdnav_get_highlight (dvdnav_priv, 0);
+                    // dvdnav_get_highlight (dvdnav_priv, 0);
 //                    if (! dvdnav_priv->title && ! tit && part > 1)
                     if (! dvdnav_priv->title && ! tit)
                     {
@@ -2640,6 +2704,8 @@ bool DVD::play (const char * name, VFSFile & file)
                 {
                     AUDINFO ("--------SUBSEQUENT VTS CHG. W/O CHANNEL HOP, CHECK DEM CODECS!!!!!\n");
                     checkcodecs = true;
+                    havebuttons = false;
+                    menubuttons.resize (0);
                 }
                 else
                     dvdnav_priv->freshhopped = false;
@@ -2650,6 +2716,7 @@ bool DVD::play (const char * name, VFSFile & file)
             {
                 AUDINFO ("DVDNAV_CELL_CHANGE:\n");
                 havebuttons = false;
+                menubuttons.resize (0);
                 dvdnav_cell_change_event_t *ev =  (dvdnav_cell_change_event_t*)buf;
                 uint32_t nextstill;
     
@@ -2724,7 +2791,7 @@ bool DVD::play (const char * name, VFSFile & file)
                         }
                     }
                 }
-                dvdnav_get_highlight (dvdnav_priv, 1);
+                // dvdnav_get_highlight (dvdnav_priv, 1);
                 break;
             }
             case DVDNAV_AUDIO_STREAM_CHANGE:
