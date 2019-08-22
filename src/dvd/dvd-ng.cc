@@ -1324,6 +1324,8 @@ startover:
     int audioStream = -1;
     uint32_t video_requested_width;  // WINDOW-SIZE REQUESTED BY VIDEO STREAM ITSELF (just initialize for sanity).
     uint32_t video_requested_height;
+    uint32_t last_requested_width = 720;  // WINDOW-SIZE AFTER LAST RESIZE (NEEDED FOR MENU-BUTTON ADJUSTMENT).
+    uint32_t last_requested_height = 480;
     float video_aspect_ratio = 0;    // ASPECT RATIO OF VIDEO, SAVED TO PERMIT RE-ASPECTING AFTER USER RESIZES (WARPS) WINDOW.
     time_t last_resizeevent_time = time (nullptr);  // TIME OF LAST RESIZE EVENT, SO WE CAN DETERMINE WHEN SAFE TO RE-ASPECT.
     time_t last_menuframe_time = time (nullptr);  // TIME OF LAST MENU FRAME, TO FORCE DISPLAY WHEN "DONE".
@@ -1341,7 +1343,7 @@ startover:
     /* JWT:SAVE (static)fromstdin's STATE AT START OF PLAY, SINCE PROBES WILL CHANGE IT IN PLAYLIST ADVANCE BEFORE WE CLOSE! */
     myplay_video = play_video;   // WHETHER OR NOT TO DISPLAY THE VIDEO.
     menubuttons_adjusted = false;  // TRUE SIGNALS WINDOW HAS CHANGED SZ/RATIO & BUTTON COORD. NEED RECALCULATING.
-AUDDBG("ABOUT TO OPEN THE INPUT PIPE...\n");
+    AUDDBG("ABOUT TO OPEN THE INPUT PIPE...\n");
 #ifdef _WIN32
     SmartPtr<AVFormatContext, close_input_file> c (open_input_file (input_fd_p));
 #else
@@ -1552,6 +1554,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
         vy = aud_get_int ("dvd", "video_ysize");
         video_requested_width = vcinfo.context->width;
         video_requested_height = vcinfo.context->height;
+        last_requested_width = vcinfo.context->width;
+        last_requested_height = vcinfo.context->height;
         if (vx && !vy)   /* User specified (or saved) width only, calc. height based on aspect: */
         {
             video_width = (vx == -1) ? (video_window_w ? video_window_w : video_default_width) : vx;
@@ -1594,8 +1598,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
         }
         AUDINFO ("---VIDEO W x H SET TO (%d x %d)!\n", video_width, video_height);
         if (playing_a_menu && ! menubuttons_adjusted && menubuttons.len () > 0)
-            menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
-                    video_requested_height, (uint32_t)video_height);
+            menubuttons_adjusted = adjust_menubuttons (last_requested_width, (uint32_t)video_width,
+                    last_requested_height, (uint32_t)video_height);
 
         video_aspect_ratio = video_height
             ? (float)video_width / (float)video_height : 1.0;   /* Fall thru to square to avoid possibliity of "/0"! */
@@ -1786,9 +1790,9 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                                     video_width, video_height, & last_resized, & windowIsStable,
                                     & resized_window_width, & resized_window_height))
                             {
-                                if (playing_a_menu && ! menubuttons_adjusted && menubuttons.len () > 0)
-                                    menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
-                                            video_requested_height, (uint32_t)video_height);
+                                if (! menubuttons_adjusted && menubuttons.len () > 0)
+                                    menubuttons_adjusted = adjust_menubuttons (last_requested_width, (uint32_t)video_width,
+                                            last_requested_height, (uint32_t)video_height);
 
                                 draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
                             }
@@ -1920,8 +1924,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                       & resized_window_width, & resized_window_height))
                 {
                     if (! menubuttons_adjusted && menubuttons.len () > 0)
-                        menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
-                            video_requested_height, (uint32_t)video_height);
+                        menubuttons_adjusted = adjust_menubuttons (last_requested_width, (uint32_t)video_width,
+                            last_requested_height, (uint32_t)video_height);
 
                     draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
                 }
@@ -1954,8 +1958,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                             if (playing_a_menu && codec_opened && ! checkcodecs)  // SHOULD ONLY NEED FOR MENUS PLAYING MUSIC:
                             {
                                 if (! menubuttons_adjusted && menubuttons.len () > 0)
-                                    menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
-                                            video_requested_height, (uint32_t)video_height);
+                                    menubuttons_adjusted = adjust_menubuttons (last_requested_width, (uint32_t)video_width,
+                                            last_requested_height, (uint32_t)video_height);
 
                                 draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
                             }
@@ -2114,7 +2118,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                             break;
                         case SDL_WINDOWEVENT_RESIZED:  /* WINDOW CHANGED SIZE EITHER BY US OR BY USER DRAGGING WINDOW CORNER (WE DON'T KNOW WHICH HERE) */
                             AUDINFO ("i:SDL_RESIZE!!!!!! rvw=%d h=%d\n", resized_window_width, resized_window_height);
-                            if (! windowNowExposed)
+                            // if (! windowNowExposed)
+                            if (! windowNowExposed && ! windowIsStable)  // ADDED STABLE TEST TO ALLOW SOME MENUS TO BE USER-RESIZED.
                                 break;
 
                             /* Resize the screen. */
@@ -2122,7 +2127,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                             resized_window_height = event.window.data2;
                             last_resized = false;  // false means now we'll need re-aspecting, so stop blitting!
                             last_resizeevent_time = time (nullptr);  // reset the wait counter for when to assume user's done dragging window corner.
-                            menubuttons_adjusted = false;
+                            // menubuttons_adjusted = false;
                             break;
                         // NOTE: ON LINUX, AT LEAST, MOVING OR RESIZING WINDOW SPEWS "EXPOSED" EVENTS WHILST CHANGING!:
                         case SDL_WINDOWEVENT_MOVED:  // USER MOVED WINDOW.
@@ -2135,8 +2140,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                                 if (playing_a_menu)
                                 {
                                     if (! menubuttons_adjusted && playing_a_menu && menubuttons.len () > 0)
-                                        menubuttons_adjusted = adjust_menubuttons (video_requested_width, (uint32_t)video_width, 
-                                                video_requested_height, (uint32_t)video_height);
+                                        menubuttons_adjusted = adjust_menubuttons (last_requested_width, (uint32_t)video_width,
+                                                last_requested_height, (uint32_t)video_height);
 
                                     SDL_RenderCopy (renderer.get (), bmpptr, nullptr, nullptr);
                                     draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
@@ -2165,6 +2170,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 float new_aspect_ratio;  // ASPECT (for comparing), W, & H OF WINDOW AFTER USER DONE RESIZING:
                 int new_video_width;     // WILL ADJUST ONE OF THESE TO RESTORE TO VIDEO'S PROPER ASPECT
                 int new_video_height;    // THEN RESIZE (RE-ASPECT) THE WINDOW TO KEEP ASPECT CONSTANT!
+                last_requested_width = video_width;
+                last_requested_height = video_height;
                 /* CALCULATE THE RESIZED WINDOW'S ASPECT RATIO */
                 new_aspect_ratio = resized_window_height
                     ? (float)resized_window_width / (float)resized_window_height : 1.0;
@@ -2229,9 +2236,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 {
                     SDL_RenderClear (renderer.get ());
                     SDL_RenderCopy (renderer.get (), bmpptr, nullptr, nullptr);
-                    if (! menubuttons_adjusted && menubuttons.len () > 0)
-                        menubuttons_adjusted = adjust_menubuttons ((uint32_t)video_width, (uint32_t)new_video_width, 
-                                (uint32_t)video_height, (uint32_t)new_video_height);
+                    menubuttons_adjusted = adjust_menubuttons (last_requested_width,
+                            (uint32_t) new_video_width, last_requested_height, (uint32_t) new_video_height);
 
                     draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
                 }
@@ -2487,6 +2493,7 @@ bool DVD::play (const char * name, VFSFile & file)
         {
             case DVDNAV_STILL_FRAME:
             {
+                AUDINFO ("DVDNAV_STILL_FRAME\n");
                 dvdnav_still_event_t *still_event = (dvdnav_still_event_t *)buf;
                 dvdnav_priv->still_length = still_event->length;
                 if (stop_playback) AUDINFO ("(STOP!) DVDNAV_STILL_FRAME len=%d\n", dvdnav_priv->still_length); else AUDINFO ("DVDNAV_STILL_FRAME len=%d\n", dvdnav_priv->still_length);
@@ -2591,7 +2598,8 @@ bool DVD::play (const char * name, VFSFile & file)
                      * and decoding pipeline just like any other data. */
                     // dvdnav_get_current_nav_dsi (dvdnav_priv->dvdnav);
 
-                    if (pci->hli.hl_gi.btn_ns > 0) 
+                    // if (pci->hli.hl_gi.btn_ns > 0)
+                    if (pci->hli.hl_gi.btn_ns > 1)
                     {
                         int32_t button;
 
@@ -2608,7 +2616,7 @@ bool DVD::play (const char * name, VFSFile & file)
                         }
                         havebuttons = true;
                         playing_a_menu = true;
-                        menubuttons_adjusted = false;
+                        // menubuttons_adjusted = false;
                         /* SOME DVDS DON'T HANDLE STREAM ARRANGEMENT CORRECTLY UNLESS YOU PLAY THRU THE MENU,
                            SO WE DEFER SELECTING THE DEFAULT BUTTON NOW UNTIL THE MENU HAS "PLAYED", THIS ALSO 
                            GETS THE USER THE BUMPER MUSIC THAT SOME VIDEO MENUS HAVE, AS A SIDE-EFFECT,
@@ -2644,6 +2652,7 @@ bool DVD::play (const char * name, VFSFile & file)
                 break;
             case DVDNAV_WAIT:
             {
+                AUDINFO ("DVDNAV_WAIT...\n");
                 if ((dvdnav_priv->state & NAV_FLAG_WAIT_SKIP) &&
                         !(dvdnav_priv->state & NAV_FLAG_WAIT))
                     dvdnav_wait_skip (dvdnav_priv->dvdnav);
