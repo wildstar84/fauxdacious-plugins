@@ -129,8 +129,8 @@ EXPORT FFaudio aud_plugin_instance;
 
 const char * const FFaudio::defaults[] = {
     "play_video", "TRUE",
-    "video_qsize", "8",
-    "video_windowtitle", "Fauxdacious Video",  // APPEND TO VIDEO WINDOW-TITLE
+    "video_qsize", "7",     // SET A PRETTY GOOD DEFAULT.
+    "video_windowtitle", "Fauxdacious Video",  // APPEND TO VIDEO WINDOW-TITLE.
     "video_xmove", "1",     // RESTORE WINDOW TO PREV. SAVED POSITION.
     "video_ysize", "-1",    // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
     "save_video", "FALSE",  // DUB VIDEO AS BEING PLAYED.
@@ -147,7 +147,8 @@ const PreferencesWidget FFaudio::widgets[] = {
     WidgetCheck (N_("Play video stream in popup window when video stream found"),
         WidgetBool ("ffaudio", "play_video")),
     WidgetSpin (N_("Video packet queue size"),
-        WidgetInt ("ffaudio", "video_qsize"), {0, 24, 1}),
+        /* ALLOW UP TO 96 - THERE'S SOME REALLY CRAPPY VIDEOS OUT THERE, YOU LISTENIN', brighteon.com?! */
+        WidgetInt ("ffaudio", "video_qsize"), {0, 96, 1}),
     WidgetCheck (N_("Record video to file"),
         WidgetBool ("ffaudio", "save_video")),
     WidgetEntry (N_("Record path/filename:"),
