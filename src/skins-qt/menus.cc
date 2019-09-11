@@ -247,6 +247,7 @@ static const audqt::MenuItem playlist_sort_items[] = {
 
 static const audqt::MenuItem playlist_context_items[] = {
     audqt::MenuCommand ({N_("Song Info ..."), "dialog-information", "Alt+I"}, pl_song_info),
+    /* JWT */ audqt::MenuCommand ({N_("_Refresh Selected"), "view-refresh", "F6"}, pl_refresh_sel),
     audqt::MenuCommand ({N_("Open Containing Folder"), "folder"}, pl_open_folder),
     audqt::MenuSep (),
     audqt::MenuCommand ({N_("Cut"), "edit-cut", "Ctrl+X"}, pl_cut),

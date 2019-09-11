@@ -229,6 +229,7 @@ static const AudguiMenuItem playlist_sort_items[] = {
 
 static const AudguiMenuItem playlist_context_items[] = {
     MenuCommand (N_("Song Info ..."), "dialog-information", 'i', ALT, pl_song_info),
+    /* JWT */ MenuCommand (N_("_Refresh Selected"), "view-refresh", GDK_KEY_F6, (GdkModifierType) 0, pl_refresh_sel),
     MenuCommand (N_("Open Containing Folder"), "folder", NO_KEY, pl_open_folder),
     MenuSep (),
     MenuCommand (N_("Cut"), "edit-cut", 'x', CTRL, pl_cut),
