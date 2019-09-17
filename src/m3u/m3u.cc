@@ -74,6 +74,7 @@ bool M3ULoader::load (const char * filename, VFSFile & file, String & title,
  Index<PlaylistAddItem> & items)
 {
     Extended_m3u = false;
+    bool HLS_firstentryonly = aud_get_bool ("m3u", "HLS_firstentryonly");
     tuple = Tuple ();
 
     Index<char> text = file.read_all ();
@@ -118,6 +119,8 @@ bool M3ULoader::load (const char * filename, VFSFile & file, String & title,
                     {
                         tuple.set_filename (s);
                         items.append (String (s), std::move (tuple));  // NOTE:NEVER SET TUPLE VALID (FORCE RESCAN)!
+                        if (HLS_firstentryonly && strstr_nocase (s, ".ts"))
+                            break;
                     }
                     else
                         items.append (String (s));
@@ -144,7 +147,7 @@ bool M3ULoader::load (const char * filename, VFSFile & file, String & title,
                             else
                                 tuple.set_int (Tuple::Length, tlen);
 
-                            // FIND THE TITLE AND MOVEPAST ANY LEADING SPACES IN IT:
+                            // FIND THE TITLE AND MOVE PAST ANY LEADING SPACES IN IT:
                             char * c = parse;
                             while (c < next && * c != ',')
                                 ++c;
@@ -207,6 +210,7 @@ bool M3ULoader::save (const char * filename, VFSFile & file, const char * title,
 const PreferencesWidget M3ULoader::widgets[] = {
     WidgetLabel(N_("<b>M3U Configuration</b>")),
     WidgetCheck(N_("Save in Extended M3U format?"), WidgetBool("m3u", "saveas_extended_m3u")),
+    WidgetCheck(N_("Only 1st ts entry for HLS streams?"), WidgetBool("m3u", "HLS_firstentryonly")),
 };
 
 const PluginPreferences M3ULoader::prefs = {{widgets}};
