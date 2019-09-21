@@ -147,8 +147,8 @@ const PreferencesWidget FFaudio::widgets[] = {
     WidgetCheck (N_("Play video stream in popup window when video stream found"),
         WidgetBool ("ffaudio", "play_video")),
     WidgetSpin (N_("Video packet queue size"),
-        /* ALLOW UP TO 96 - THERE'S SOME REALLY CRAPPY VIDEOS OUT THERE, YOU LISTENIN', brighteon.com?! */
-        WidgetInt ("ffaudio", "video_qsize"), {0, 96, 1}),
+        /* ALLOW UP TO 128 - THERE'S SOME REALLY CRAPPY VIDEOS OUT THERE, YOU LISTENIN', brighteon.com?! */
+        WidgetInt ("ffaudio", "video_qsize"), {0, 128, 1}),
     WidgetCheck (N_("Record video to file"),
         WidgetBool ("ffaudio", "save_video")),
     WidgetEntry (N_("Record path/filename:"),
@@ -1959,4 +1959,9 @@ const char * const FFaudio::exts[] = {
     nullptr
 };
 
-const char * const FFaudio::mimes[] = {"application/ogg", nullptr};
+const char * const FFaudio::mimes[] = {
+    "application/ogg",
+    "audio/mp4",
+    "video/mp4",
+    nullptr
+};
