@@ -30,6 +30,8 @@
 
 static const char * const m3u_exts[] = {"m3u", "m3u8", "txt", "ls"};  // JWT:ACCEPT .txt & "ls * |"
 
+enum extDataType {NA, ALB, ART, GENRE, INF};
+
 class M3ULoader : public PlaylistPlugin
 {
 public:
@@ -88,6 +90,7 @@ bool M3ULoader::load (const char * filename, VFSFile & file, String & title,
         parse += 3;
 
     bool firstline = true;
+    bool refreshTuple = true;
     while (parse)
     {
         char * next = split_line (parse);
@@ -121,47 +124,85 @@ bool M3ULoader::load (const char * filename, VFSFile & file, String & title,
                         items.append (String (s), std::move (tuple));  // NOTE:NEVER SET TUPLE VALID (FORCE RESCAN)!
                         if (HLS_firstentryonly && strstr_nocase (s, ".ts"))
                             break;
+
+                        refreshTuple = true;
                     }
                     else
                         items.append (String (s));
                 }
             }
-            else if (Extended_m3u && ! strncmp (parse, "#EXTINF", 7))  // WE'RE A TITLE LINE (EXTENDED M3U):
+            else if (Extended_m3u)
             {
-                tuple = Tuple ();
-                parse += 7;
-                if (parse < next && * parse == ':')
+                if (! strncmp (parse, "#EXT-X-", 7))  // WE'RE AN "HLS" STREAM, STAND DOWN & LET ffaudio PLUGIN HANDLE!:
                 {
-                    ++parse;
-                    while (parse < next && * parse == ' ')
-                        ++parse;
-
-                    if (* parse && parse < next)
+                    AUDINFO ("i:HLS STREAM(%s) - STOP PARSING & JUST ADD PLAYLIST AS SINGLE ENTRY!\n", filename);
+                    items.append (String (filename));
+                    break;
+                }
+                else if (! strncmp (parse, "#EXT", 4))  // WE'RE A DATA LINE (EXTENDED M3U):
+                {
+                    extDataType extData = NA;
+                    if (refreshTuple)
                     {
-                        Index<String> headerparts = str_list_to_index (parse, ",");
-                        if (headerparts.len () > 1)
-                        {
-                            int tlen = atoi (headerparts[0]) * 1000;
-                            if (tlen <= 0)
-                                tuple.unset (Tuple::Length);
-                            else
-                                tuple.set_int (Tuple::Length, tlen);
+                        tuple = Tuple ();
+                        refreshTuple = false;
+                    }
 
-                            // FIND THE TITLE AND MOVE PAST ANY LEADING SPACES IN IT:
-                            char * c = parse;
-                            while (c < next && * c != ',')
-                                ++c;
-                            if (c < next && * c)
-                                ++c;
-                            while (c < next && * c == ' ')
-                                ++c;
-                            if (* c)
-                                tuple.set_str (Tuple::Title, c);
-                        }
-                        else if (headerparts.len () > 0)
+                    if (! strncmp (parse, "#EXTINF", 7))        // SET [LENGTH,] TITLE
+                        extData = INF;
+                    else if (! strncmp (parse, "#EXTGENRE", 9)) // SET GENRE
+                    {
+                        parse += 2;
+                        extData = GENRE;
+                    }
+                    else if (! strncmp (parse, "#EXTALB", 7))   // SET ALBUM
+                        extData = ALB;
+                    else if (! strncmp (parse, "#EXTART", 7))   // SET ARTIST
+                        extData = ART;
+
+                    parse += 7;
+                    if (parse < next && * parse == ':')
+                    {
+                        ++parse;
+                        while (parse < next && * parse == ' ')
+                            ++parse;
+
+                        if (* parse && parse < next)
                         {
-                            tuple.unset (Tuple::Length);
-                            tuple.set_str (Tuple::Title, headerparts[0]);
+                            Index<String> headerparts = str_list_to_index (parse, ",");
+                            if (extData == INF && headerparts.len () > 1)
+                            {
+                                int tlen = atoi (headerparts[0]) * 1000;
+                                if (tlen <= 0)
+                                    tuple.unset (Tuple::Length);
+                                else
+                                    tuple.set_int (Tuple::Length, tlen);
+
+                                // FIND THE TITLE AND MOVE PAST ANY LEADING SPACES IN IT:
+                                char * c = parse;
+                                while (c < next && * c != ',')
+                                    ++c;
+                                if (c < next && * c)
+                                    ++c;
+                                while (c < next && * c == ' ')
+                                    ++c;
+                                if (*c && c < next)
+                                    tuple.set_str (Tuple::Title, c);
+                            }
+                            else if (headerparts.len () > 0)
+                            {
+                                if (extData == INF)
+                                {
+                                    tuple.unset (Tuple::Length);
+                                    tuple.set_str (Tuple::Title, headerparts[0]);
+                                }
+                                else if (extData == ART)
+                                    tuple.set_str (Tuple::Artist, headerparts[0]);
+                                else if (extData == ALB)
+                                    tuple.set_str (Tuple::Album, headerparts[0]);
+                                else if (extData == GENRE)
+                                    tuple.set_str (Tuple::Genre, headerparts[0]);
+                            }
                         }
                     }
                 }
@@ -192,12 +233,42 @@ bool M3ULoader::save (const char * filename, VFSFile & file, const char * title,
             int tuplen = item.tuple.get_int (Tuple::Length);
             if (tuplen >= 0)
                 tuplen /= 1000;
-            String tupstr = item.tuple.get_str (Tuple::Title);
-            if (!tupstr)
-                tupstr = String (filename_get_base (item.filename));
-            StringBuf line = str_printf ("#EXTINF:%d, %s\n", tuplen, (const char *) tupstr);
-            if (file.fwrite (line, 1, line.len ()) != line.len ())
-                return false;
+
+            {
+                String tupstr = item.tuple.get_str (Tuple::Title);
+                if (! tupstr)
+                    tupstr = String (filename_get_base (item.filename));
+                StringBuf line = str_printf ("#EXTINF:%d, %s\n", tuplen, (const char *) tupstr);
+                if (file.fwrite (line, 1, line.len ()) != line.len ())
+                    return false;
+            }
+            {
+                String tupstr = item.tuple.get_str (Tuple::Artist);
+                if (tupstr && tupstr[0])
+                {
+                    StringBuf line = str_printf ("#EXTART:%s\n", (const char *) tupstr);
+                    if (file.fwrite (line, 1, line.len ()) != line.len ())
+                        AUDERR ("m3u: could not write artist to extended m3u file?!\n");
+                }
+            }
+            {
+                String tupstr = item.tuple.get_str (Tuple::Album);
+                if (tupstr && tupstr[0])
+                {
+                    StringBuf line = str_printf ("#EXTALB:%s\n", (const char *) tupstr);
+                    if (file.fwrite (line, 1, line.len ()) != line.len ())
+                        AUDERR ("m3u: could not write album to extended m3u file?!\n");
+                }
+            }
+            {
+                String tupstr = item.tuple.get_str (Tuple::Genre);
+                if (tupstr && tupstr[0])
+                {
+                    StringBuf line = str_printf ("#EXTGENRE:%s\n", (const char *) tupstr);
+                    if (file.fwrite (line, 1, line.len ()) != line.len ())
+                        AUDERR ("m3u: could not write genre to extended m3u file?!\n");
+                }
+            }
         }
         StringBuf line = str_concat ({path, "\n"});
         if (file.fwrite (line, 1, line.len ()) != line.len ())
