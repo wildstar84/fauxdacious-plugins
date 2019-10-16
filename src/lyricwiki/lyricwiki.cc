@@ -272,6 +272,7 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
 
     update_lyrics_window (state.title, state.artist, lyrics, true);
 
+    /* JWT:IF SAVING LYRICS FROM STREAM URL (NO LOCAL FILE), PROVIDE A TEMP. FILE THAT USER CAN MANUALLY COPY/RENAME: */
     if (! state.local_filename || ! state.local_filename[0])
         state.local_filename = String (str_concat ({aud_get_path (AudPath::UserDir), "/_tmp_last_lyrics.lrc"}));
 
@@ -489,8 +490,6 @@ static void lyricwiki_playback_began ()
             lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir), "/",
                     (const char *) str_encode_percent (base, ln), ".lrc"}));
             found_lyricfile = ! (stat ((const char *) lyricStr, &statbuf));
-            if (! state.local_filename)
-                state.local_filename = lyricStr;
         }
     }
     if (! found_lyricfile)
@@ -510,7 +509,6 @@ static void lyricwiki_playback_began ()
                     lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir), "/",
                             (const char *) playingdiskid, "_tracks/track_", trackstr, ".lrc"}));
                     found_lyricfile = ! (stat ((const char *) lyricStr, &statbuf));
-                    state.local_filename = lyricStr;
                 }
             }
         }
@@ -554,7 +552,7 @@ static void lyricwiki_playback_began ()
             {
                 state.artist = String (str_copy (ttlstart, (ttloffset-ttlstart)));
                 ttloffset += 3;
-                const char * ttlend = strstr (ttloffset, " - ");
+                const char * ttlend = ttloffset ? strstr (ttloffset, " - ") : nullptr;
                 if (ttlend)
                     state.title = String (str_copy (ttloffset, ttlend-ttloffset));
                 else
