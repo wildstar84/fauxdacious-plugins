@@ -485,9 +485,8 @@ static void lyricwiki_playback_began ()
         int ln = (dot && ! strstr (dot, ".cue?")) ? (dot - base) : -1;  // SET TO FULL LENGTH(-1) IF NO EXTENSION OR NOT A CUESHEET.
         if (! strncmp ((const char *) state.filename, "file://", 7))
         {
-            path = filename_get_parent ((const char *) uri_to_filename (state.filename));
-            lyricStr = String (str_concat ({(const char *) path, "/",
-                    (const char *) str_encode_percent (base, ln), ".lrc"}));
+            path = filename_get_parent (uri_to_filename (state.filename));
+            lyricStr = String (str_concat ({path, "/", str_decode_percent (base, ln), ".lrc"}));
             found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
             state.local_filename = lyricStr;
         }
@@ -495,7 +494,7 @@ static void lyricwiki_playback_began ()
         if (! found_lyricfile)
         {
             lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir), "/lyrics/",
-                    (const char *) str_encode_percent (base, ln), ".lrc"}));
+                    str_decode_percent (base, ln), ".lrc"}));
             found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
         }
     }
