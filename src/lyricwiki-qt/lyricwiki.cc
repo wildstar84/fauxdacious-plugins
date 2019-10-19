@@ -264,7 +264,8 @@ static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t
                 {
                     // Convert normal lyrics link to edit page link
                     char * slash = strrchr (lyric, '/');
-                    if (slash && ! strstr (slash, "lyrics.fandom.com"))
+                    // if (slash && ! strstr (slash, "lyrics.wikia.com")) // JWT:FIXME?! - CHGD. TO MATCH GTK SIDE!:
+                    if (slash))
                         uri = String (str_printf ("https://lyrics.fandom.com/index.php?"
                          "action=edit&title=%s", slash + 1));
                     else
@@ -381,6 +382,19 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
 
     StringBuf nullterminated_buf = str_copy (buf.begin (), buf.len ());
     update_lyrics_window (state.title, state.artist, (const char *) nullterminated_buf);
+
+    /* JWT:ALLOW 'EM TO EDIT LYRICWIKI, EVEN IF LYRICS ARE LOCAL, IF THEY HAVE BOTH REQUIRED FIELDS: */
+    if (state.artist && state.title)
+    {
+        StringBuf title_buf = str_copy (state.title);
+        str_replace_char (title_buf, ' ', '_');
+        title_buf = str_encode_percent (title_buf, -1);
+        StringBuf artist_buf = str_copy (state.artist);
+        str_replace_char (artist_buf, ' ', '_');
+        artist_buf = str_encode_percent (artist_buf, -1);
+        state.uri = String (str_printf ("https://lyrics.fandom.com/index.php?action=edit&title=%s:%s",
+                (const char *) artist_buf, (const char *) title_buf));
+    }
 }
 
 static QTextEdit * textedit;
@@ -448,12 +462,14 @@ static void lyricwiki_playback_began ()
 {
     /* FIXME: cancel previous VFS requests (not possible with current API) */
 
-    state.filename = aud_drct_get_filename ();
     bool have_valid_filename = false;
     bool found_lyricfile = false;
     GStatBuf statbuf;
     String lyricStr = String ("");
     StringBuf path = StringBuf ();
+
+    state.filename = aud_drct_get_filename ();
+    state.uri = String ();
 
     /* JWT: EXTRACT JUST THE "NAME" PART TO USE TO NAME THE LYRICS FILE: */
     const char * slash = state.filename ? strrchr (state.filename, '/') : nullptr;
@@ -475,9 +491,9 @@ static void lyricwiki_playback_began ()
             found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
             state.local_filename = lyricStr;
         }
-        /* JWT:NOT A FILE, OR NOT FOUND, SO NOW CHECK THE GLOBAL CONFIG PATH FOR A LYRICS FILE: */
         if (! found_lyricfile)
         {
+            /* JWT:LOCAL LYRIC FILE NOT FOUND, SO CHECK THE GLOBAL CONFIG PATH FOR A MATCHING LYRICS FILE: */
             lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir), "/lyrics/",
                     str_decode_percent (base, ln), ".lrc"}));
             found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
@@ -521,7 +537,6 @@ static void lyricwiki_playback_began ()
     state.title = tuple.get_str (Tuple::Title);
     state.artist = tuple.get_str (Tuple::Artist);
     state.ok2save = false;
-    state.uri = String ();
 
     if (found_lyricfile)  // JWT:WE HAVE LYRICS STORED IN A LOCAL FILE MATCHING FILE NAME!:
     {
@@ -547,7 +562,7 @@ static void lyricwiki_playback_began ()
                     state.title = String (str_copy (ttloffset, ttlend-ttloffset));
                 else
                 {
-                    auto split = str_list_to_index (ttloffset, "|(/");
+                    auto split = str_list_to_index (ttloffset, "|/");
                     for (auto & str : split)
                     {
                         int ttllen_1 = strlen (str) - 1;  // "CHOMP" ANY TRAILING SPACES:
@@ -646,7 +661,7 @@ void TextEdit::contextMenuEvent (QContextMenuEvent * event)
 
     if (state.uri)
     {
-        QAction * edit = menu->addAction (_("Edit lyrics ..."));
+        QAction * edit = menu->addAction (_("Edit Lyricwiki"));
         QObject::connect (edit, & QAction::triggered, [] () {
             QDesktopServices::openUrl (QUrl ((const char *) state.uri));
         });
