@@ -49,6 +49,10 @@ PlaylistWidget::PlaylistWidget (QWidget * parent, int playlist) :
     auto header = new PlaylistHeader (this);
     setHeader (header);
 
+    /* this has to come after setHeader() to take effect */
+    header->setSectionsClickable (true);
+    header->setSortIndicatorShown (true);
+
     setAllColumnsShowFocus (true);
     setAlternatingRowColors (true);
     setAttribute (Qt::WA_MacShowFocusRect, false);

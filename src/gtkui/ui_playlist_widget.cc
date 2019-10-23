@@ -54,6 +54,8 @@ static const GType pw_col_types[PW_COLS] =
     G_TYPE_STRING   // comment
 };
 
+static GtkTreeViewColumn * s_sortedbycol = nullptr;
+
 static const int pw_col_min_widths[PW_COLS] = {
     7,   // entry number
     10,  // title
@@ -383,8 +385,16 @@ static void column_clicked_cb (GtkTreeViewColumn * column, PlaylistWidgetData * 
 {
     auto sort_type_ptr = g_object_get_data ((GObject *) column, "playlist-sort-type");
     auto sort_type = aud::from_ptr<Playlist::SortType> (sort_type_ptr);
+    //gint colindex = gtk_tree_view_column_get_sort_column_id (column);
 
     aud_playlist_sort_by_scheme (data->list, sort_type);
+    if (column == s_sortedbycol)
+    {
+    	   aud_playlist_reverse (data->list);
+    	   s_sortedbycol = nullptr;
+    }
+    else
+        s_sortedbycol = column;
 }
 
 GtkWidget * ui_playlist_widget_new (int playlist)

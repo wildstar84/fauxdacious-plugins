@@ -53,6 +53,8 @@ static const char * const s_col_keys[] = {
     "comment"
 };
 
+static int s_sortedbycol = -1;
+
 static const int s_default_widths[] = {
     25,   // now playing
     25,   // entry number
@@ -72,8 +74,28 @@ static const int s_default_widths[] = {
     275   // comment
 };
 
+static const Playlist::SortType s_sort_types[] = {
+    Playlist::n_sort_types,    // now playing
+    Playlist::n_sort_types,    // entry number
+    Playlist::Title,           // title
+    Playlist::Artist,          // artist
+    Playlist::Date,            // year
+    Playlist::Album,           // album
+    Playlist::AlbumArtist,     // album artist
+    Playlist::Track,           // track
+    Playlist::Genre,           // genre
+    Playlist::n_sort_types,    // queue position
+    Playlist::Length,          // length
+    Playlist::Path,            // path
+    Playlist::Filename,        // file name
+    Playlist::FormattedTitle,  // custom title
+    Playlist::n_sort_types,    // bitrate
+    Playlist::Comment          // comment
+};
+
 static_assert (aud::n_elems (s_col_keys) == PlaylistModel::n_cols, "update s_col_keys");
 static_assert (aud::n_elems (s_default_widths) == PlaylistModel::n_cols, "update s_default_widths");
+static_assert (aud::n_elems (s_sort_types) == PlaylistModel::n_cols, "update s_sort_types");
 
 static Index<int> s_cols;
 static int s_col_widths[PlaylistModel::n_cols];
@@ -134,6 +156,7 @@ PlaylistHeader::PlaylistHeader (PlaylistWidget * playlist) :
     setSectionsMovable (true);
     setStretchLastSection (true);
 
+    connect (this, & QHeaderView::sectionClicked, this, & PlaylistHeader::sectionClicked);
     connect (this, & QHeaderView::sectionResized, this, & PlaylistHeader::sectionResized);
     connect (this, & QHeaderView::sectionMoved, this, & PlaylistHeader::sectionMoved);
 }
@@ -248,6 +271,29 @@ void PlaylistHeader::updateColumns ()
 
     m_inUpdate = false;
     m_lastCol = last;
+}
+
+void PlaylistHeader::sectionClicked (int logicalIndex)
+{
+    int col = logicalIndex - 1;
+    if (col < 0 || col >= PlaylistModel::n_cols)
+        return;
+
+    if (s_sort_types[col] != Playlist::n_sort_types)
+    {
+        aud_playlist_sort_by_scheme (m_playlist->playlist (), s_sort_types[col]);
+        if (col == s_sortedbycol)
+        {
+            aud_playlist_reverse (m_playlist->playlist ());
+            s_sortedbycol = -1;
+            this->setSortIndicator(logicalIndex, Qt::AscendingOrder);
+        }
+        else
+        {
+            s_sortedbycol = col;
+            this->setSortIndicator(logicalIndex, Qt::DescendingOrder);
+        }
+    }
 }
 
 void PlaylistHeader::sectionMoved (int logicalIndex, int oldVisualIndex, int newVisualIndex)
