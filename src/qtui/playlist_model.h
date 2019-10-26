@@ -51,6 +51,7 @@ public:
     };
 
     static const char * const labels[];
+    static const char * const header_labels[];
 
     PlaylistModel (QObject * parent, int playlist);
 

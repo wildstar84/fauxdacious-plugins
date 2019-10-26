@@ -50,6 +50,25 @@ const char * const PlaylistModel::labels[] = {
     N_("Comment")
 };
 
+const char * const PlaylistModel::header_labels[] = {  // JWT:MAKE FIT IN DEFAULT COL. WIDTH!
+    N_("Now Playing"),
+    N_("#"),
+    N_("Title"),
+    N_("Artist"),
+    N_("Year"),
+    N_("Album"),
+    N_("Album artist"),
+    N_("Trk"),
+    N_("Genre"),
+    N_("Q#"),
+    N_("Length"),
+    N_("File path"),
+    N_("File name"),
+    N_("Custom title"),
+    N_("Bitrate"),
+    N_("Comment")
+};
+
 static const Tuple::Field s_fields[] = {
     Tuple::Invalid,
     Tuple::Invalid,
@@ -70,6 +89,7 @@ static const Tuple::Field s_fields[] = {
 };
 
 static_assert (aud::n_elems (PlaylistModel::labels) == PlaylistModel::n_cols, "update PlaylistModel::labels");
+static_assert (aud::n_elems (PlaylistModel::header_labels) == PlaylistModel::n_cols, "update PlaylistModel::header_labels");
 static_assert (aud::n_elems (s_fields) == PlaylistModel::n_cols, "update s_fields");
 
 static inline QPixmap get_icon (const char * name)
@@ -143,8 +163,8 @@ QVariant PlaylistModel::data (const QModelIndex &index, int role) const
             return queuePos (index.row ());
         case Length:
             return QString (str_format_time (val));
-        case Bitrate:
-            return QString ("%1 kbps").arg (val);
+//JWT        case Bitrate:
+//JWT            return QString ("%1 kbps").arg (val);
         default:
             return QString ("%1").arg (val);
         }
@@ -189,14 +209,13 @@ QVariant PlaylistModel::headerData (int section, Qt::Orientation orientation, in
     case Qt::DisplayRole:
         switch (col)
         {
-        case NowPlaying:
-        case EntryNumber:
-        case QueuePos:
-            return QVariant ();
+            case NowPlaying:
+                return QVariant ();
+            default:
+            return QString (_(header_labels[col])); // JWT:ABBREVIATED TO FIT
         }
-
-        return QString (_(labels[col]));
-
+    case Qt::ToolTipRole:
+        return QString (_(labels[col])); // JWT:SHOW FULL HEADER IN TOOLTIP!
     case Qt::TextAlignmentRole:
         return alignment (col);
 

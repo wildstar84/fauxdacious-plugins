@@ -63,7 +63,7 @@ static const int s_default_widths[] = {
     50,   // year
     175,  // album
     175,  // album artist
-    75,   // track
+    25,   // track
     100,  // genre
     25,   // queue position
     75,   // length
@@ -89,7 +89,7 @@ static const Playlist::SortType s_sort_types[] = {
     Playlist::Path,            // path
     Playlist::Filename,        // file name
     Playlist::FormattedTitle,  // custom title
-    Playlist::n_sort_types,    // bitrate
+    Playlist::Bitrate,         // bitrate
     Playlist::Comment          // comment
 };
 
@@ -276,7 +276,9 @@ void PlaylistHeader::updateColumns ()
 void PlaylistHeader::sectionClicked (int logicalIndex)
 {
     int col = logicalIndex - 1;
-    if (col < 0 || col >= PlaylistModel::n_cols)
+
+    this->setSortIndicatorShown ((col >= 2));
+    if (col < 2 || col >= PlaylistModel::n_cols)
         return;
 
     if (s_sort_types[col] != Playlist::n_sort_types)
@@ -286,12 +288,12 @@ void PlaylistHeader::sectionClicked (int logicalIndex)
         {
             aud_playlist_reverse (m_playlist->playlist ());
             s_sortedbycol = -1;
-            this->setSortIndicator(logicalIndex, Qt::AscendingOrder);
+            this->setSortIndicator (logicalIndex, Qt::AscendingOrder);
         }
         else
         {
             s_sortedbycol = col;
-            this->setSortIndicator(logicalIndex, Qt::DescendingOrder);
+            this->setSortIndicator (logicalIndex, Qt::DescendingOrder);
         }
     }
 }
