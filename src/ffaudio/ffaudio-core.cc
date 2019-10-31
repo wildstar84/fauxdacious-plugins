@@ -1104,7 +1104,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         AUDINFO ("---- playing from STDIN: get TUPLE stuff now (if at front of stream): IC is defined\n");
         tuple.set_filename (filename);
 
-        if ((int)ic->duration != 0)
+        if ((int) ic->duration != 0)
             tuple.set_int (Tuple::Length, ic->duration / 1000);
         else
             tuple.unset (Tuple::Length);
@@ -1257,8 +1257,8 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         }
         sdl_initialized = true;
         Uint32 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
-    	   if (aud_get_bool ("ffaudio", "allow_highdpi"))
-    	       flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+        if (aud_get_bool ("ffaudio", "allow_highdpi"))
+            flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 
         screen = SDL_CreateWindow ("Fauxdacious Video", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
             video_width, video_height, flags);
@@ -1367,13 +1367,13 @@ breakout1:
     */
     if (video_qsize < 1)
         video_qsize = (aud_get_int ("ffaudio", "video_qsize"))
-                ? aud_get_int ("ffaudio", "video_qsize") : 6;
+                ? aud_get_int ("ffaudio", "video_qsize") : 8;
     if (video_qsize < 1)
-        video_qsize = 6;
+        video_qsize = 8;
 
     /* TYPICALLY THERE'S TWICE AS MANY AUDIO PACKETS AS VIDEO, SO THIS IS COUNTER-INTUITIVE, BUT IT WORKS BEST! */
-    pktQ = createQueue (2 * video_qsize);
-    apktQ = createQueue (video_qsize);
+    pktQ = createQueue (3 * video_qsize); // ALLOW FOR A BUNCH OF VIDEO PACKETS (USUALLY AT STARTUP),
+    apktQ = createQueue (video_qsize);    // BUT, GENERALLY THE AUDIO QUEUE WILL FILL FIRST FORCING OUTPUT:
     returnok = true;
     AUDDBG ("i:video queue size %d\n", video_qsize);
 
@@ -1413,15 +1413,15 @@ breakout1:
                 while (apktQ->size > 0 || pktQ->size > 0)
                 {
                     AVPacket * pktRef;
-                    while (1)   // WE PREFER TO OUTPUT ORDERED AS AUDIO, VIDEO, AUDIO, ...
+                    while (1)  // WE PREFER TO OUTPUT ORDERED AS AUDIO, VIDEO, AUDIO, ...
                     {
-                        if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS NEXT AUDIO FRAME IN QUEUE:
-                        {
+                        if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))
+                        {   // PROCESS NEXT AUDIO FRAME IN QUEUE:
                             write_audioframe (& cinfo, pktRef, out_fmt, planar);
                             Dequeue (apktQ);
                         }
-                        if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS NEXT VIDEO FRAME IN QUEUE:
-                        {
+                        if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))
+                        {   // PROCESS NEXT VIDEO FRAME IN QUEUE:
 #if SDL == 2
                             write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
                                     video_width, video_height, last_resized, & windowIsStable);
@@ -1433,8 +1433,8 @@ breakout1:
                         }
                         else
                             break;
-                        if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
-                        {
+                        if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))
+                        {   // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
                             write_audioframe (& cinfo, pktRef, out_fmt, planar);
                             Dequeue (apktQ);
                         }
@@ -1526,24 +1526,36 @@ breakout1:
         else
             errcount = 0;
 
-        /* AFTER READING BUT BEFORE PROCESSING EACH PACKET, CHECK IF EITHER QUEUE IS FULL, IF SO, WRITE NEXT 
-           WAITING PACKETS UNTIL AT LEAST ONE QUEUE IS EMPTIED, ORDERING OUTPUT AS AUDIO, VIDEO, AUDIO, ... 
-           SINCE WE TYPICALLY HAVE TWICE AS MANY AUDIO PACKETS AS VIDEO.  THIS IS THE SECRET TO KEEPING 
-           OUTPUT SYNCED & SMOOTH! */
+        /* AFTER READING BUT BEFORE PROCESSING EACH PACKET, CHECK IF EITHER QUEUE IS FULL, IF SO, WRITE
+           QUEUED PACKETS UNTIL AT LEAST ONE QUEUE IS EMPTIED, ORDERING OUTPUT AS:  VIDEO, THEN
+           AUDIO, VIDEO, AUDIO, AUDIO, VIDEO, AUDIO... SINCE WE TYPICALLY HAVE TWICE AS MANY AUDIO PACKETS
+           AS VIDEO BUT, VIDEO USUALLY LAGS SLIGHTLY, SO WE ALWAYS TRY TO DO A VIDEO PACKET FIRST.
+           THIS IS THE SECRET TO KEEPING OUTPUT SYNCED & SMOOTH! */
         if (myplay_video)
         {
-            if (apktQ->size == apktQ->capacity || pktQ->size == pktQ->capacity)  // ONE OF THE PACKET QUEUES IS FULL:
-            {
+            if (apktQ->size == apktQ->capacity || pktQ->size == pktQ->capacity)
+            {   // ONE OF THE PACKET (USUALLY AUDIO) QUEUES IS FULL:
                 AVPacket * pktRef;
-                while (1)  // TRY TO PROCESS AT LEAST 1 AUDIO, 1 VIDEO, AND A 2ND AUDIO, BUT KEEP GOING UNTIL ONE QUEUE IS EMPTY:
+                if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))
+                {   // ALWAYS TRY TO PROCESS A VIDEO FRAME FIRST:
+#if SDL == 2
+                    write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef,
+                            video_width, video_height, last_resized, & windowIsStable);
+#else
+                    write_videoframe (sws_ctx, & vcinfo, bmp, pktRef,
+                            video_width, video_height, last_resized);
+#endif
+                    Dequeue (pktQ);
+                }
+                while (1)  // NOW TRY TO PROCESS AT LEAST 1 AUDIO, 1 VIDEO, AND A 2ND AUDIO, BUT KEEP GOING UNTIL ONE QUEUE IS EMPTY:
                 {          // (USUALLY, THERE ARE MORE AUDIOS THAN VIDEOS IN MOST STREAMS):
-                    if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS NEXT AUDIO FRAME IN QUEUE:
-                    {
+                    if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))
+                    {   // PROCESS NEXT AUDIO FRAME IN QUEUE:
                         write_audioframe (& cinfo, pktRef, out_fmt, planar);
                         Dequeue (apktQ);
                     }
-                    if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS NEXT VIDEO FRAME IN QUEUE:
-                    {
+                    if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))
+                    {   // PROCESS NEXT VIDEO FRAME IN QUEUE:
 #if SDL == 2
                         write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef,
                                 video_width, video_height, last_resized, & windowIsStable);
@@ -1552,14 +1564,14 @@ breakout1:
                                 video_width, video_height, last_resized);
 #endif
                         Dequeue (pktQ);
-                        if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
-                        {
+                        if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))
+                        {   // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
                             write_audioframe (& cinfo, pktRef, out_fmt, planar);
                             Dequeue (apktQ);
                         }
                         else
                         {
-                            if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))
+                            if ((pktRef = ((pktQ->size >= video_qsize) ? & pktQ->elements[pktQ->front] : nullptr)))
                             {   // PROCESS AN EXTRA VIDEO PKT WHEN AUDIO Q EMPTY & A BUNCH OF VIDEO PKTS REMAIN, IE. HD VIDEOS (MAKES 'EM SMOOTHER):
 #if SDL == 2
                                 write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef,
