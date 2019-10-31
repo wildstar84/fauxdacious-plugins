@@ -21,6 +21,7 @@
 #include "playlist_tabs.h"
 #include "menus.h"
 #include "search_bar.h"
+#include "settings.h"
 
 #include <QBoxLayout>
 #include <QKeyEvent>
@@ -169,7 +170,10 @@ void PlaylistTabs::updateIcons ()
 
     int tabs = count ();
     for (int i = 0; i < tabs; i ++)
-        setTabIcon (i, (i == playing) ? icon : QIcon ());
+    {
+        /* hide icon when editing so it doesn't get shown on the wrong side */
+        setTabIcon (i, (i == playing && ! getTabEdit (i)) ? icon : QIcon ());
+    }
 }
 
 void PlaylistTabs::currentChangedTrigger (int idx)
@@ -229,6 +233,7 @@ void PlaylistTabs::editTab (int idx, int playlist)
         });
 
         setupTab (idx, edit, & m_leftbtn);
+        updateIcons ();
     }
 
     edit->selectAll ();
@@ -272,6 +277,7 @@ bool PlaylistTabs::cancelRename ()
         setupTab (i, m_leftbtn, nullptr);
         m_leftbtn = nullptr;
         cancelled = true;
+        updateIcons ();
     }
 
     return cancelled;
@@ -350,7 +356,24 @@ void PlaylistTabBar::mouseDoubleClickEvent (QMouseEvent * e)
 void PlaylistTabBar::updateSettings ()
 {
 #if QT_VERSION >= 0x050400
-    setAutoHide (! aud_get_bool ("qtui", "playlist_tabs_visible"));
+    setAutoHide (false);
 #endif
+
+    switch (aud_get_int ("qtui", "playlist_tabs_visible"))
+    {
+#if QT_VERSION >= 0x050400
+    case PlaylistTabVisibility::AutoHide:
+        setAutoHide (true);
+        break;
+#endif
+    case PlaylistTabVisibility::Always:
+        show ();
+        break;
+
+    case PlaylistTabVisibility::Never:
+        hide ();
+        break;
+    }
+
     setTabsClosable (aud_get_bool ("qtui", "close_button_visible"));
 }
