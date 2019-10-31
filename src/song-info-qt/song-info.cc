@@ -23,6 +23,7 @@
 #include <libfauxdcore/playlist.h>
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/probe.h>
+#include <libfauxdcore/runtime.h>
 
 #include <libfauxdqt/libfauxdqt.h>
 #include <libfauxdqt/info-widget.h>
@@ -73,8 +74,13 @@ void SongInfo::update (void * unused, audqt::InfoWidget * widget)
 
     Tuple tuple = aud_playlist_entry_get_tuple (playlist, position);
     if (tuple.valid ())
-        widget->fillInfo (playlist, position, filename, tuple, decoder,
-                aud_file_can_write_tuple (filename, decoder));
+    {
+        bool can_write = aud_file_can_write_tuple (filename, decoder);
+        /* JWT:LET 'EM SAVE TO USER'S CONFIG FILE IF CAN'T SAVE TO FILE/STREAM: */
+        if (! can_write && aud_get_bool (nullptr, "user_tag_data"))
+            can_write = true;
+        widget->fillInfo (playlist, position, filename, tuple, decoder, can_write);
+    }
 }
 
 void SongInfo::clear (void * unused, audqt::InfoWidget * widget)
