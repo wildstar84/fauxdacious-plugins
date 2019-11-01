@@ -1173,14 +1173,15 @@ void DVD::reader_demuxer ()
 
         if (! SDL_WasInit (SDL_INIT_VIDEO) && ! sdl_initialized)
         {
-            AUDERR ("w:SDL2 NOT INITIALIZED IN (Audacious) main(), MAY SEGFAULT ON EXIT!\n");
             SDL_SetMainReady ();
-            if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0)
+            if (SDL_InitSubSystem (SDL_INIT_VIDEO))
             {
                 AUDERR ("e:Failed to init SDL (no video playing): %s.\n", SDL_GetError ());
                 play_video = false;
                 goto breakout1;
             }
+            else if (aud_get_mainloop_type () == MainloopType::GLib)
+                AUDERR ("w:SDL2 NOT INITIALIZED IN (Audacious) main(), MAY SEGFAULT ON EXIT!\n");
         }
         sdl_initialized = true;
         Uint32 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
