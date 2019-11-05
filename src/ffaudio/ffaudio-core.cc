@@ -1662,6 +1662,7 @@ const char * const FFaudio::exts[] = {
 const char * const FFaudio::mimes[] = {
     "application/ogg",
     "audio/mp4",
+    "audio/aacp",  /* FIXME: ADDED SINCE AAC v1.30-1 on BUSTER IS BROKEN AT THE MOMENT! */
     "video/mp4",
     nullptr
 };
