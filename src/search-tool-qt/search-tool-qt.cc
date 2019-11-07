@@ -1,6 +1,6 @@
 /*
  * search-tool-qt.cc
- * Copyright 2011-2018 John Lindgren and René J.V. Bertin
+ * Copyright 2011-2019 John Lindgren and René J.V. Bertin
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -892,7 +892,6 @@ bool SearchToolQt::init ()
 void * SearchToolQt::get_qt_widget ()
 {
     search_entry = new QLineEdit;
-    search_entry->setContentsMargins (audqt::margins.TwoPt);
     search_entry->setClearButtonEnabled (true);
     search_entry->setPlaceholderText (_("Search library"));
 
@@ -930,21 +929,24 @@ void * SearchToolQt::get_qt_widget ()
     button->setFlat (true);
     button->setFocusPolicy (Qt::NoFocus);
 
-    auto hbox = audqt::make_hbox (nullptr);
-    hbox->setContentsMargins (audqt::margins.TwoPt);
+    auto hbox1 = audqt::make_hbox (nullptr);
+    hbox1->setContentsMargins (audqt::margins.TwoPt);
+    hbox1->addWidget (search_entry);
 
-    hbox->addWidget (chooser);
-    hbox->addWidget (button);
+    auto hbox2 = audqt::make_hbox (nullptr);
+    hbox2->setContentsMargins (audqt::margins.TwoPt);
+    hbox2->addWidget (chooser);
+    hbox2->addWidget (button);
 
     auto widget = new QWidget;
     auto vbox = audqt::make_vbox (widget, 0);
 
-    vbox->addWidget (search_entry);
+    vbox->addLayout (hbox1);
     vbox->addWidget (help_label);
     vbox->addWidget (wait_label);
     vbox->addWidget (results_list);
     vbox->addWidget (stats_label);
-    vbox->addLayout (hbox);
+    vbox->addLayout (hbox2);
 
     audqt::file_entry_set_uri (chooser, get_uri ());
 
