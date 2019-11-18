@@ -117,6 +117,11 @@ const char * const NeonTransport::defaults[] = {
     "neon_buffersz", aud::numeric_string<NEON_NETBLKSIZE>::str,
     "neon_retries", aud::numeric_string<NEON_RETRY_COUNT>::str,
     "neon_timeoutsec", aud::numeric_string<NEON_TIMEOUTSEC>::str,
+#ifdef _WIN32
+    "ignore_ssl_certs", "TRUE",
+#else
+    "ignore_ssl_certs", "FALSE",
+#endif
     nullptr
 };
 
@@ -1167,6 +1172,8 @@ int64_t NeonFile::fsize ()
 
 const PreferencesWidget NeonTransport::widgets[] = {
     WidgetLabel(N_("<b>Neon Configuration</b>")),
+    WidgetCheck (N_("Ignore invalid SSL certificates"),
+        WidgetBool ("neon", "ignore_ssl_certs")),
     WidgetSpin (N_("Network Buffer (bytes):"),
         WidgetInt ("neon", "neon_buffersz"),
         {256, 32768, 512}),
