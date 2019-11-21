@@ -32,6 +32,7 @@
 
 #include <windows.h>
 #include <glib.h>
+#include <libfauxdcore/runtime.h>
 
 
 static void signal_child() {
@@ -51,8 +52,8 @@ static void execute_command(const char *cmd) {
     unsigned long flags = CREATE_UNICODE_ENVIRONMENT | CREATE_NO_WINDOW;
     BOOL executed = ::CreateProcessW(NULL, windows_cmd, NULL, NULL, TRUE, flags, NULL, NULL, &si, &pi);
 
-    if (!executed) {
-        AUDINFO("SongChange cannot run the command: %s\n", cmd);
+    if (! executed) {
+        AUDINFO ("SongChange cannot run the command: %s\n", cmd);
     }
     g_free(windows_cmd);
 }
