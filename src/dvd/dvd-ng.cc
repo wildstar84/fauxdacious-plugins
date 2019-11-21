@@ -132,7 +132,11 @@ public:
     static const PluginPreferences prefs;
 
     static constexpr PluginInfo info = {
+#ifdef _WIN32
+        N_("DVD Plugin (Experimental)"),
+#else
         N_("DVD Plugin"),
+#endif
         PACKAGE,
         about,
         & prefs
@@ -268,10 +272,11 @@ const char DVD::about[] =
 
 const char * const DVD::defaults[] = {
     "disc_speed", "2",            // DVD DISK READING SPEED
-    "maxopentries", "4",          // MAXIMUM TIMES TO TRY TO OPEN DISK WAITING FOR IT TO SPIN UP
 #ifdef _WIN32
+    "maxopentries", "9",          // MAXIMUM TIMES TO TRY TO OPEN DISK WAITING FOR IT TO SPIN UP
     "device", "D:",               // DVD DEVICE DRIVE LETTER
 #else
+    "maxopentries", "4",          // MAXIMUM TIMES TO TRY TO OPEN DISK WAITING FOR IT TO SPIN UP
     "device", "/dev/dvd",         // DVD DEVICE NODE
 #endif
     "video_qsize", "6",           // SIZE OF QUEUES FOR BUFFERING / SMOOTHING AUDIO/VIDEO PLAY.
@@ -286,6 +291,7 @@ const char * const DVD::defaults[] = {
     "video_xmove", "1",           // RESTORE WINDOW TO PREV. SAVED POSITION.
     "video_ysize", "-1",          // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
     "use_customtagfiles", "TRUE", // ALLOW USE OF CUSTOM TAG FILES.
+    "video_codec_flag_gray", "FALSE",  // PLAY DVD IN BLACK & WHITE (WINDOWS-ONLY, UNLESS FFMPEG COMPILED W/--enable-gray)!
     "skip_coverartlookup", "FALSE", // SKIP USING THE HELPER TO LOOK UP COVER-ART.
     nullptr
 };
@@ -320,7 +326,13 @@ const PreferencesWidget DVD::widgets[] = {  // GUI-BASED USER-SPECIFIABLE OPTION
     WidgetCheck (N_("Allow Custom Tag-files"),
         WidgetBool ("dvd", "use_customtagfiles")),
     WidgetCheck (N_("Skip cover art lookup"),
+#ifdef _WIN32
+        WidgetBool ("dvd", "skip_coverartlookup")),
+    WidgetCheck (N_("Show video in black & white (Experimental)"),  // WE HAVE ffmpeg COMPILED W/--enable-gray IN WINDOWS!
+        WidgetBool ("dvd", "video_codec_flag_gray"))
+#else
         WidgetBool ("dvd", "skip_coverartlookup"))
+#endif
 };
 
 const PluginPreferences DVD::prefs = {{widgets}};
@@ -1365,7 +1377,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
         pci_t * pci = dvdnav_get_current_nav_pci (dvdnav_priv->dvdnav);
         dvdnav_button_activate (dvdnav_priv->dvdnav, pci);
         //checkcodecs = true;
-        playing_a_menu = ! (dvdnav_is_domain_vts (dvdnav_priv->dvdnav));
+        //playing_a_menu = ! (dvdnav_is_domain_vts (dvdnav_priv->dvdnav));
         //dvdnav_get_current_nav_dsi (dvdnav_priv->dvdnav);
     }
 

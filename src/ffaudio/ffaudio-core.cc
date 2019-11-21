@@ -106,7 +106,8 @@ public:
 EXPORT FFaudio aud_plugin_instance;
 
 const char * const FFaudio::defaults[] = {
-    "play_video", "TRUE",
+    "play_video", "TRUE",   // TRUE: SHOW VIDEO, FALSE: PLAY AUDIO ONLY.
+    "video_codec_flag_gray", "FALSE",   // PLAY VIDEO IN BLACK & WHITE (WINDOWS-ONLY, UNLESS FFMPEG COMPILED W/--enable-gray)!
     "video_qsize", "7",     // SET A PRETTY GOOD DEFAULT.
     "video_windowtitle", "Fauxdacious Video",  // APPEND TO VIDEO WINDOW-TITLE.
     "video_xmove", "1",     // RESTORE WINDOW TO PREV. SAVED POSITION.
@@ -124,6 +125,10 @@ const PreferencesWidget FFaudio::widgets[] = {
     WidgetLabel (N_("<b>Advanced</b>")),
     WidgetCheck (N_("Play video stream in popup window when video stream found"),
         WidgetBool ("ffaudio", "play_video")),
+#ifdef _WIN32
+    WidgetCheck (N_("Show video in black & white"),  // WE HAVE ffmpeg COMPILED W/--enable-gray IN WINDOWS!
+        WidgetBool ("ffaudio", "video_codec_flag_gray")),
+#endif
     WidgetSpin (N_("Video packet queue size"),
         /* ALLOW UP TO 128 - THERE'S SOME REALLY CRAPPY VIDEOS OUT THERE, YOU LISTENIN', brighteon.com?! */
         WidgetInt ("ffaudio", "video_qsize"), {0, 128, 1}),
@@ -1662,7 +1667,7 @@ const char * const FFaudio::exts[] = {
 const char * const FFaudio::mimes[] = {
     "application/ogg",
     "audio/mp4",
-    "audio/aacp",  /* FIXME: ADDED SINCE AAC v1.30-1 on BUSTER IS BROKEN AT THE MOMENT! */
+    /* "audio/aacp",  ** FIXME: ADDED SINCE FAAD v2.8.8-3.2 on BUSTER IS BROKEN AT THE MOMENT! */
     "video/mp4",
     nullptr
 };
