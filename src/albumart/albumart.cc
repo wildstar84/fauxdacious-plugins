@@ -17,39 +17,133 @@
  * the use of this software.
  */
 
+#include <sys/stat.h>
+#include <libfauxdcore/preferences.h>
 #include <libfauxdcore/drct.h>
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/hook.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
 #include <libfauxdgui/libfauxdgui.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
 class AlbumArtPlugin : public GeneralPlugin
 {
 public:
+    static const char * const defaults[];
+    static const PreferencesWidget widgets[];
+    static const PluginPreferences prefs;
     static constexpr PluginInfo info = {
         N_("Album Art"),
         PACKAGE,
         nullptr, // about
-        nullptr, // prefs
+        & prefs,
         PluginGLibOnly
     };
 
     constexpr AlbumArtPlugin () : GeneralPlugin (info, false) {}
 
+    bool init ();
     void * get_gtk_widget ();
 };
 
 EXPORT AlbumArtPlugin aud_plugin_instance;
 
+const char * const AlbumArtPlugin::defaults[] = {
+    "internet_coverartlookup", "FALSE",
+    nullptr
+};
+
+bool AlbumArtPlugin::init ()
+{
+    aud_config_set_defaults ("albumart", defaults);
+    return true;
+}
+
 static void album_update (void *, GtkWidget * widget)
 {
-    AudguiPixbuf pixbuf = audgui_pixbuf_request_current ();
+    AudguiPixbuf pixbuf;
+    String cover_helper = aud_get_str ("audacious", "cover_helper");
+    if (cover_helper && cover_helper[0]
+            && aud_get_bool ("albumart", "internet_coverartlookup")) //JWT:WE HAVE A PERL HELPER TO LOOK UP COVER ART.
+    {
+        Tuple tuple = aud_drct_get_tuple ();
+        String Album = tuple.get_str (Tuple::Album);
+        const char * album = (const char *) Album;
+        if (album && ! strstr (album, "://"))  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
+        {
+            String Artist = tuple.get_str (Tuple::Artist);
+            if (aud_get_bool (nullptr, "split_titles"))
+            {
+                /* ALBUM MAY ALSO CONTAIN THE STREAM NAME (IE. "<ALBUM> - <STREAM NAME>"): STRIP THAT OFF: */
+                const char * throwaway = strstr (album, "  - ");  // YES, tuple.cc PUTS TWO SPACES BEFORE DASH!
+                int albumlen = throwaway ? throwaway - album : -1;
+                Album = String (str_copy (album, albumlen));
+            }
+            else
+            {
+                /* ARTIST MAY BE IN TITLE INSTEAD (IE. "<ARTIST> - <TITLE>"): IF SO, USE THAT FOR ARTIST: */
+                String Title = tuple.get_str (Tuple::Title);
+                const char * title = (const char *) Title;
+                if (title)
+                {
+                    const char * artistlen = strstr (title, " - ");  // BUT NOT HERE!
+                    if (artistlen)
+                        Artist = String (str_copy (title, artistlen - title));
+                }
+            }
+            String cover_helper = aud_get_str ("audacious", "cover_helper");
+            StringBuf album_buf = str_encode_percent (Album);
+            StringBuf artist_buf = str_encode_percent (Artist);
+            String coverart_file;
+            Index<String> extlist = str_list_to_index ("jpg,png,jpeg", ",");
+            if (Artist && Artist[0])
+                system ((const char *) str_concat ({cover_helper, " ALBUM '",
+                    (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '", (const char *) artist_buf, "'"}));
+            else
+                system ((const char *) str_concat ({cover_helper, " ALBUM ",
+                    album, " ", aud_get_path (AudPath::UserDir)}));
+            for (auto & ext : extlist)
+            {
+                coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
+                const char * filenamechar = coverart_file + 7;
+                struct stat statbuf;
+                if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
+                    coverart_file = String (_(""));
+                else
+                {
+                    coverart_file = String (filename_to_uri (filenamechar));
+                    break;
+                }
+            }
+            if (coverart_file && coverart_file[0])
+                pixbuf = audgui_pixbuf_request ((const char *) coverart_file);
+        }
+    }
+
+    if (! pixbuf)
+        pixbuf = audgui_pixbuf_request_current ();
 
     if (! pixbuf)
         pixbuf = audgui_pixbuf_fallback ();
 
     audgui_scaled_image_set (widget, pixbuf.get ());
+}
+
+static void album_init (void *, GtkWidget * widget)
+{
+    if (aud_get_bool ("albumart", "internet_coverartlookup"))
+        album_update (nullptr, widget);  // JWT:CHECK FILES & DISKS (TUPLE DOESN'T CHANGE IN THESE) ONCE NOW ON PLAY START!
+    else
+    {
+        AudguiPixbuf pixbuf = audgui_pixbuf_request_current ();
+
+        if (! pixbuf)
+            pixbuf = audgui_pixbuf_fallback ();
+
+        audgui_scaled_image_set (widget, pixbuf.get ());
+    }
 }
 
 static void album_clear (void *, GtkWidget * widget)
@@ -59,8 +153,9 @@ static void album_clear (void *, GtkWidget * widget)
 
 static void album_cleanup (GtkWidget * widget)
 {
-    hook_dissociate ("playback ready", (HookFunction) album_update, widget);
     hook_dissociate ("playback stop", (HookFunction) album_clear, widget);
+    hook_dissociate ("playback ready", (HookFunction) album_init, widget);
+    hook_dissociate ("tuple change", (HookFunction) album_update, widget);
 
     audgui_cleanup ();
 }
@@ -73,11 +168,20 @@ void * AlbumArtPlugin::get_gtk_widget ()
 
     g_signal_connect (widget, "destroy", (GCallback) album_cleanup, nullptr);
 
-    hook_associate ("playback ready", (HookFunction) album_update, widget);
+    hook_associate ("tuple change", (HookFunction) album_update, widget);
+    hook_associate ("playback ready", (HookFunction) album_init, widget);
     hook_associate ("playback stop", (HookFunction) album_clear, widget);
 
     if (aud_drct_get_ready ())
-        album_update (nullptr, widget);
+        album_init (nullptr, widget);
 
     return widget;
 }
+
+const PreferencesWidget AlbumArtPlugin::widgets[] = {
+    WidgetLabel(N_("<b>Albumart Configuration</b>")),
+    WidgetCheck (N_("Look for album art on Musicbrainz.com"),
+        WidgetBool ("albumart", "internet_coverartlookup")),
+};
+
+const PluginPreferences AlbumArtPlugin::prefs = {{widgets}};
