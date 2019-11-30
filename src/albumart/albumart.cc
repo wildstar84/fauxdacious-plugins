@@ -69,41 +69,52 @@ static void album_update (void *, GtkWidget * widget)
             && aud_get_bool ("albumart", "internet_coverartlookup")) //JWT:WE HAVE A PERL HELPER TO LOOK UP COVER ART.
     {
         Tuple tuple = aud_drct_get_tuple ();
+        String Title = tuple.get_str (Tuple::Title);
+        String Artist = tuple.get_str (Tuple::Artist);
         String Album = tuple.get_str (Tuple::Album);
         const char * album = (const char *) Album;
-        if (album && ! strstr (album, "://"))  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
+        if (Title && Title[0])
         {
-            String Artist = tuple.get_str (Tuple::Artist);
-            if (aud_get_bool (nullptr, "split_titles"))
+            if (album && ! strstr (album, "://"))  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
             {
-                /* ALBUM MAY ALSO CONTAIN THE STREAM NAME (IE. "<ALBUM> - <STREAM NAME>"): STRIP THAT OFF: */
-                const char * throwaway = strstr (album, "  - ");  // YES, tuple.cc PUTS TWO SPACES BEFORE DASH!
-                int albumlen = throwaway ? throwaway - album : -1;
-                Album = String (str_copy (album, albumlen));
+                if (aud_get_bool (nullptr, "split_titles"))
+                {
+                    /* ALBUM MAY ALSO CONTAIN THE STREAM NAME (IE. "<ALBUM> - <STREAM NAME>"): STRIP THAT OFF: */
+                    const char * throwaway = strstr (album, "  - ");  // YES, tuple.cc PUTS TWO SPACES BEFORE DASH!
+                    int albumlen = throwaway ? throwaway - album : -1;
+                    Album = String (str_copy (album, albumlen));
+                }
             }
             else
+                Album = String ("_");
+
+            if (! aud_get_bool (nullptr, "split_titles"))
             {
                 /* ARTIST MAY BE IN TITLE INSTEAD (IE. "<ARTIST> - <TITLE>"): IF SO, USE THAT FOR ARTIST: */
-                String Title = tuple.get_str (Tuple::Title);
                 const char * title = (const char *) Title;
                 if (title)
                 {
                     const char * artistlen = strstr (title, " - ");  // BUT NOT HERE!
                     if (artistlen)
+                    {
                         Artist = String (str_copy (title, artistlen - title));
+                        const char * titleoffset = artistlen+3;
+                        if (titleoffset)
+                            Title = String (str_copy (artistlen+3, -1));
+                    }
                 }
             }
+            if (!Artist || !Artist[0])
+                Artist = String ("_");
             String cover_helper = aud_get_str ("audacious", "cover_helper");
             StringBuf album_buf = str_encode_percent (Album);
             StringBuf artist_buf = str_encode_percent (Artist);
+            StringBuf title_buf = str_encode_percent (Title);
             String coverart_file;
-            Index<String> extlist = str_list_to_index ("jpg,png,jpeg", ",");
-            if (Artist && Artist[0])
-                system ((const char *) str_concat ({cover_helper, " ALBUM '",
-                    (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '", (const char *) artist_buf, "'"}));
-            else
-                system ((const char *) str_concat ({cover_helper, " ALBUM ",
-                    album, " ", aud_get_path (AudPath::UserDir)}));
+            Index<String> extlist = str_list_to_index ("jpg,png,jpeg,gif", ",");
+            system ((const char *) str_concat ({cover_helper, " ALBUM '",
+                    (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
+                    (const char *) artist_buf, "' '", (const char *) title_buf, "' "}));
             for (auto & ext : extlist)
             {
                 coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
