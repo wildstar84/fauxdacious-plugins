@@ -18,6 +18,9 @@
  */
 
 #include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <libfauxdcore/preferences.h>
 #include <libfauxdcore/drct.h>
 #include <libfauxdcore/i18n.h>
