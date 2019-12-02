@@ -83,7 +83,7 @@ static void album_update (void *, GtkWidget * widget)
                 if (aud_get_bool (nullptr, "split_titles"))
                 {
                     /* ALBUM MAY ALSO CONTAIN THE STREAM NAME (IE. "<ALBUM> - <STREAM NAME>"): STRIP THAT OFF: */
-                    const char * throwaway = strstr (album, "  - ");  // YES, tuple.cc PUTS TWO SPACES BEFORE DASH!
+                    const char * throwaway = strstr (album, " - ");
                     int albumlen = throwaway ? throwaway - album : -1;
                     Album = String (str_copy (album, albumlen));
                 }
@@ -97,7 +97,7 @@ static void album_update (void *, GtkWidget * widget)
                 const char * title = (const char *) Title;
                 if (title)
                 {
-                    const char * artistlen = strstr (title, " - ");  // BUT NOT HERE!
+                    const char * artistlen = strstr (title, " - ");
                     if (artistlen)
                     {
                         Artist = String (str_copy (title, artistlen - title));
