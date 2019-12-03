@@ -20,24 +20,36 @@
 #include <QLabel>
 #include <QPixmap>
 
+#include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <libfauxdcore/preferences.h>
 #include <libfauxdcore/drct.h>
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/hook.h>
+#include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/runtime.h>
 
 #include <libfauxdqt/libfauxdqt.h>
 
 class AlbumArtQt : public GeneralPlugin {
 public:
+    static const char * const defaults[];
+    static const PreferencesWidget widgets[];
+    static const PluginPreferences prefs;
     static constexpr PluginInfo info = {
         N_("Album Art"),
         PACKAGE,
         nullptr, // about
-        nullptr, // prefs
+        & prefs,
         PluginQtOnly
     };
 
     constexpr AlbumArtQt () : GeneralPlugin (info, false) {}
+
+    bool init ();
     void * get_qt_widget ();
 };
 
@@ -57,9 +69,94 @@ public:
 
     void update_art ()
     {
-        origPixmap = QPixmap (audqt::art_request_current (0, 0));
+        String cover_helper = aud_get_str ("audacious", "cover_helper");
+        origPixmap = QPixmap ();
+        if (cover_helper && cover_helper[0]
+                && aud_get_bool ("albumart", "internet_coverartlookup")) //JWT:WE HAVE A PERL HELPER TO LOOK UP COVER ART.
+        {
+            Tuple tuple = aud_drct_get_tuple ();
+            String Title = tuple.get_str (Tuple::Title);
+            String Artist = tuple.get_str (Tuple::Artist);
+            String Album = tuple.get_str (Tuple::Album);
+            const char * album = (const char *) Album;
+            if (Title && Title[0])
+            {
+                if (album && ! strstr (album, "://"))  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
+                {
+                    if (aud_get_bool (nullptr, "split_titles"))
+                    {
+                        /* ALBUM MAY ALSO CONTAIN THE STREAM NAME (IE. "<ALBUM> - <STREAM NAME>"): STRIP THAT OFF: */
+                        const char * throwaway = strstr (album, " - ");
+                        int albumlen = throwaway ? throwaway - album : -1;
+                        Album = String (str_copy (album, albumlen));
+                    }
+                }
+                else
+                    Album = String ("_");
+
+                if (! aud_get_bool (nullptr, "split_titles"))
+                {
+                    /* ARTIST MAY BE IN TITLE INSTEAD (IE. "<ARTIST> - <TITLE>"): IF SO, USE THAT FOR ARTIST: */
+                    const char * title = (const char *) Title;
+                    if (title)
+                    {
+                        const char * artistlen = strstr (title, " - ");
+                        if (artistlen)
+                        {
+                            Artist = String (str_copy (title, artistlen - title));
+                            const char * titleoffset = artistlen+3;
+                            if (titleoffset)
+                                Title = String (str_copy (artistlen+3, -1));
+                        }
+                    }
+                }
+                if (!Artist || !Artist[0])
+                    Artist = String ("_");
+                String cover_helper = aud_get_str ("audacious", "cover_helper");
+                StringBuf album_buf = str_encode_percent (Album);
+                StringBuf artist_buf = str_encode_percent (Artist);
+                StringBuf title_buf = str_encode_percent (Title);
+                String coverart_file;
+                Index<String> extlist = str_list_to_index ("jpg,png,jpeg,gif", ",");
+                system ((const char *) str_concat ({cover_helper, " ALBUM '",
+                        (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
+                        (const char *) artist_buf, "' '", (const char *) title_buf, "' "}));
+                for (auto & ext : extlist)
+                {
+                    coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
+                    const char * filenamechar = coverart_file + 7;
+                    struct stat statbuf;
+                    if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
+                        coverart_file = String (_(""));
+                    else
+                    {
+                        coverart_file = String (filename_to_uri (filenamechar));
+                        break;
+                    }
+                }
+                if (coverart_file && coverart_file[0])
+                    origPixmap = QPixmap (audqt::art_request ((const char *) coverart_file, 0, 0));
+            }
+        }
+
+        if (! origPixmap)
+            origPixmap = QPixmap (audqt::art_request_current (0, 0));
+
         origSize = origPixmap.size ();
         drawArt ();
+    }
+
+    void init_update_art ()
+    {
+        if (aud_get_bool ("albumart", "internet_coverartlookup"))
+            update_art ();  // JWT:CHECK FILES & DISKS (TUPLE DOESN'T CHANGE IN THESE) ONCE NOW ON PLAY START!
+        else
+        {
+            origPixmap = QPixmap (audqt::art_request_current (0, 0));
+
+            origSize = origPixmap.size ();
+            drawArt ();
+        }
     }
 
     void clear ()
@@ -110,6 +207,11 @@ private:
 
 #undef MARGIN
 
+static void init_update (void *, ArtLabel * widget)
+{
+    widget->init_update_art ();
+}
+
 static void update (void *, ArtLabel * widget)
 {
     widget->update_art ();
@@ -122,8 +224,10 @@ static void clear (void *, ArtLabel * widget)
 
 static void widget_cleanup (QObject * widget)
 {
-    hook_dissociate ("playback ready", (HookFunction) update, widget);
+    //x hook_dissociate ("playback ready", (HookFunction) update, widget);
     hook_dissociate ("playback stop", (HookFunction) clear, widget);
+    hook_dissociate ("playback ready", (HookFunction) init_update, widget);
+    hook_dissociate ("tuple change", (HookFunction) update, widget);
 }
 
 void * AlbumArtQt::get_qt_widget ()
@@ -132,7 +236,8 @@ void * AlbumArtQt::get_qt_widget ()
 
     QObject::connect (widget, &QObject::destroyed, widget_cleanup);
 
-    hook_associate ("playback ready", (HookFunction) update, widget);
+    hook_associate ("tuple change", (HookFunction) update, widget);
+    hook_associate ("playback ready", (HookFunction) init_update, widget);
     hook_associate ("playback stop", (HookFunction) clear, widget);
 
     if (aud_drct_get_ready ())
@@ -142,3 +247,22 @@ void * AlbumArtQt::get_qt_widget ()
 }
 
 EXPORT AlbumArtQt aud_plugin_instance;
+
+const char * const AlbumArtQt::defaults[] = {
+    "internet_coverartlookup", "FALSE",
+    nullptr
+};
+
+bool AlbumArtQt::init ()
+{
+    aud_config_set_defaults ("albumart", defaults);
+    return true;
+}
+
+const PreferencesWidget AlbumArtQt::widgets[] = {
+    WidgetLabel(N_("<b>Albumart Configuration</b>")),
+    WidgetCheck (N_("Look for album art on Musicbrainz.com"),
+        WidgetBool ("albumart", "internet_coverartlookup")),
+};
+
+const PluginPreferences AlbumArtQt::prefs = {{widgets}};
