@@ -222,6 +222,7 @@ void FileWriter::cleanup ()
         AUDDBG ("-----ACTUALLY CLOSING STDOUT!\n");
         plugin->close (output_file);
         convert_free ();
+        aud_set_str ("filewriter", "_record_fid", "");
 
         plugin = nullptr;
         output_file = VFSFile ();
@@ -248,7 +249,10 @@ static StringBuf get_file_path ()
 static VFSFile safe_create (const char * filename)
 {
     if (filename_mode == FILENAME_STDOUT || ! VFSFile::test_file (filename, VFS_EXISTS))
+    {
+        aud_set_str ("filewriter", "_record_fid", filename);
         return VFSFile (filename, "w");
+    }
 
     const char * extension = strrchr (filename, '.');
 
@@ -259,7 +263,10 @@ static VFSFile safe_create (const char * filename)
          str_printf ("%s-%d", filename, count);
 
         if (! VFSFile::test_file (scratch, VFS_EXISTS))
+        {
+            aud_set_str ("filewriter", "_record_fid", (const char *) scratch);
             return VFSFile (scratch, "w");
+        }
     }
 
     return VFSFile ();
@@ -410,6 +417,8 @@ bool FileWriter::open_audio (int fmt, int rate, int nch, String & error)
     {
         if (plugin->open (output_file, {out_fmt, rate, nch}, in_tuple))
             return true;
+        else
+            aud_set_str ("filewriter", "_record_fid", "");
     }
     else
     {
@@ -448,6 +457,7 @@ void FileWriter::close_audio ()
         {
             plugin->close (output_file);
             convert_free ();
+            aud_set_str ("filewriter", "_record_fid", "");
 
             plugin = nullptr;
             output_file = VFSFile ();
