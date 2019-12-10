@@ -20,6 +20,8 @@
 #include <QLabel>
 #include <QPixmap>
 
+#include <errno.h>
+#include <pthread.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +35,20 @@
 #include <libfauxdcore/runtime.h>
 
 #include <libfauxdqt/libfauxdqt.h>
+
+/* JWT:IT'S POSSIBLE FOR A 2ND INSTANCE OF THE HELPER THREAD TO BE SPAWNED AND COMPLETE AND SUCCEED
+    BEFORE THE FIRST ONE, IF THIS HAPPENS, DON'T LET THE FIRST ONE (FINISHING LATER) OVERWRITE THE
+    IMAGE RETURNED BY THE 2ND ONE, AS THE 1ST ONE IS LIKELY FOR THE STATION'S *PREVIOUS* SONG TUPLE!
+    * THE CASE THAT USUALLY CAUSES THIS IS WHEN THERE WAS NO IMAGE FOR THE PREV. SONG TUPLE (WHICH
+    REMAINS DISPLAYED UNTIL YOU RESTART PLAY ON THE STATION LATER), SINCE STARTING PLAY WILL FORCE A
+    FETCH FOR *THAT* TITLE (FOR WHICH THERE WAS NO IMAGE FOUND, INITIATING A FULL SEARCH (SLOW), AND,
+    WHILST SEARCHING, THE NEW TITLE TUPLE ARRIVES AND INITIATES A SEARCH (A 2ND THREAD) FOR THAT AND
+    IT HAPPENS TO ALREADY BE ON DISK (FAST), SO WE WANT TO KEEP THAT (GOOD) RESULT AND *NOT* LET THE
+    FIRST SEARCH (WHICH WILL LIKELY *STILL* FAIL AND RETURN LATER) TO THEN RESET THE IMAGE TO THE
+    DEFAULT!  NOTE:  IF WE DIDN'T INITIATE THE FIRST SEARCH (START OF PLAY) (album_init), BUT ONLY
+    ON TUPLE-CHANGE, WE WOULD NEVER GET ART FOR THE FIRST SONG STREAMING WHEN STARTING PLAY!
+    THIS VARIABLE SHOULD PREVENT THIS! (STARTING A NEW UPDATE RESETS IT): */
+static bool album_art_found;
 
 class AlbumArtQt : public GeneralPlugin {
 public:
@@ -69,81 +85,15 @@ public:
 
     void update_art ()
     {
-        String cover_helper = aud_get_str ("audacious", "cover_helper");
-        origPixmap = QPixmap ();
-        if (cover_helper && cover_helper[0]
-                && aud_get_bool ("albumart", "internet_coverartlookup")) //JWT:WE HAVE A PERL HELPER TO LOOK UP COVER ART.
+        pthread_t helper_thread;
+        album_art_found = false;
+        if (pthread_create (& helper_thread, nullptr, helper_thread_fn, this))
         {
-            Tuple tuple = aud_drct_get_tuple ();
-            String Title = tuple.get_str (Tuple::Title);
-            String Artist = tuple.get_str (Tuple::Artist);
-            String Album = tuple.get_str (Tuple::Album);
-            const char * album = (const char *) Album;
-            if (Title && Title[0])
-            {
-                if (album && ! strstr (album, "://"))  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
-                {
-                    if (aud_get_bool (nullptr, "split_titles"))
-                    {
-                        /* ALBUM MAY ALSO CONTAIN THE STREAM NAME (IE. "<ALBUM> - <STREAM NAME>"): STRIP THAT OFF: */
-                        const char * throwaway = strstr (album, " - ");
-                        int albumlen = throwaway ? throwaway - album : -1;
-                        Album = String (str_copy (album, albumlen));
-                    }
-                }
-                else
-                    Album = String ("_");
-
-                if (! aud_get_bool (nullptr, "split_titles"))
-                {
-                    /* ARTIST MAY BE IN TITLE INSTEAD (IE. "<ARTIST> - <TITLE>"): IF SO, USE THAT FOR ARTIST: */
-                    const char * title = (const char *) Title;
-                    if (title)
-                    {
-                        const char * artistlen = strstr (title, " - ");
-                        if (artistlen)
-                        {
-                            Artist = String (str_copy (title, artistlen - title));
-                            const char * titleoffset = artistlen+3;
-                            if (titleoffset)
-                                Title = String (str_copy (artistlen+3, -1));
-                        }
-                    }
-                }
-                if (!Artist || !Artist[0])
-                    Artist = String ("_");
-                String cover_helper = aud_get_str ("audacious", "cover_helper");
-                StringBuf album_buf = str_encode_percent (Album);
-                StringBuf artist_buf = str_encode_percent (Artist);
-                StringBuf title_buf = str_encode_percent (Title);
-                String coverart_file;
-                Index<String> extlist = str_list_to_index ("jpg,png,jpeg,gif", ",");
-                system ((const char *) str_concat ({cover_helper, " ALBUM '",
-                        (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
-                        (const char *) artist_buf, "' '", (const char *) title_buf, "' "}));
-                for (auto & ext : extlist)
-                {
-                    coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
-                    const char * filenamechar = coverart_file + 7;
-                    struct stat statbuf;
-                    if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
-                        coverart_file = String (_(""));
-                    else
-                    {
-                        coverart_file = String (filename_to_uri (filenamechar));
-                        break;
-                    }
-                }
-                if (coverart_file && coverart_file[0])
-                    origPixmap = QPixmap (audqt::art_request ((const char *) coverart_file, 0, 0));
-            }
+            AUDERR ("s:Error creating helper thread: %s - Expect Delay!...\n", strerror(errno));
+            helper_thread_fn (this);
         }
-
-        if (! origPixmap)
-            origPixmap = QPixmap (audqt::art_request_current (0, 0));
-
-        origSize = origPixmap.size ();
-        drawArt ();
+        else if (pthread_detach (helper_thread))
+            AUDERR ("s:Error detaching helper thread: %s!\n", strerror(errno));
     }
 
     void init_update_art ()
@@ -203,6 +153,95 @@ private:
 	    repaint();
 #endif
     }
+
+    static void * helper_thread_fn (void * data)
+    {
+        String cover_helper = aud_get_str ("audacious", "cover_helper");
+        ((ArtLabel *) data)->origPixmap = QPixmap ();
+        if (cover_helper && cover_helper[0]
+                && aud_get_bool ("albumart", "internet_coverartlookup")) //JWT:WE HAVE A PERL HELPER TO LOOK UP COVER ART.
+        {
+            Tuple tuple = aud_drct_get_tuple ();
+            String Title = tuple.get_str (Tuple::Title);
+            String Artist = tuple.get_str (Tuple::Artist);
+            String Album = tuple.get_str (Tuple::Album);
+            const char * album = (const char *) Album;
+            if (Title && Title[0])
+            {
+                if (album && ! strstr (album, "://"))  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
+                {
+                    if (aud_get_bool (nullptr, "split_titles"))
+                    {
+                        /* ALBUM MAY ALSO CONTAIN THE STREAM NAME (IE. "<ALBUM> - <STREAM NAME>"): STRIP THAT OFF: */
+                        const char * throwaway = strstr (album, " - ");
+                        int albumlen = throwaway ? throwaway - album : -1;
+                        Album = String (str_copy (album, albumlen));
+                    }
+                }
+                else
+                    Album = String ("_");
+
+                if (! aud_get_bool (nullptr, "split_titles"))
+                {
+                    /* ARTIST MAY BE IN TITLE INSTEAD (IE. "<ARTIST> - <TITLE>"): IF SO, USE THAT FOR ARTIST: */
+                    const char * title = (const char *) Title;
+                    if (title)
+                    {
+                        const char * artistlen = strstr (title, " - ");
+                        if (artistlen)
+                        {
+                            Artist = String (str_copy (title, artistlen - title));
+                            const char * titleoffset = artistlen+3;
+                            if (titleoffset)
+                                Title = String (str_copy (artistlen+3, -1));
+                        }
+                    }
+                }
+                if (!Artist || !Artist[0])
+                    Artist = String ("_");
+                String cover_helper = aud_get_str ("audacious", "cover_helper");
+                StringBuf album_buf = str_encode_percent (Album);
+                StringBuf artist_buf = str_encode_percent (Artist);
+                StringBuf title_buf = str_encode_percent (Title);
+                String coverart_file;
+                Index<String> extlist = str_list_to_index ("jpg,png,jpeg,gif", ",");
+                if (! album_art_found)  /* CAN BE SET BY ANOTHER THREAD-INSTANCE IN THE MEAN TIME! */
+                    system ((const char *) str_concat ({cover_helper, " ALBUM '",
+                            (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
+                            (const char *) artist_buf, "' '", (const char *) title_buf, "' "}));
+
+                if (! album_art_found)  /* CAN BE SET BY ANOTHER THREAD-INSTANCE IN THE MEAN TIME! */
+                {
+                    for (auto & ext : extlist)
+                    {
+                        coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
+                        const char * filenamechar = coverart_file + 7;
+                        struct stat statbuf;
+                        if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
+                            coverart_file = String (_(""));
+                        else
+                        {
+                            coverart_file = String (filename_to_uri (filenamechar));
+                            break;
+                        }
+                    }
+                    if (coverart_file && coverart_file[0])
+                        ((ArtLabel *) data)->origPixmap = QPixmap (audqt::art_request ((const char *) coverart_file, 0, 0));
+                }
+                else
+                    return nullptr;  /* DON'T OVERWRITE - WE ALREADY HAVE IT FROM ANOTHER THREAD-INSTANCE! */
+            }
+        }
+
+        if (! ((ArtLabel *) data)->origPixmap)
+            ((ArtLabel *) data)->origPixmap = QPixmap (audqt::art_request_current (0, 0));
+
+        ((ArtLabel *) data)->origSize = ((ArtLabel *) data)->origPixmap.size ();
+        ((ArtLabel *) data)->drawArt ();
+
+        return nullptr;
+    }
+
 };
 
 #undef MARGIN
