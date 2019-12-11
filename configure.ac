@@ -5,7 +5,7 @@ dnl ***
 dnl Initialize
 dnl ==========
 AC_PREREQ([2.59])
-AC_INIT([fauxdacious-plugins], [4.0-beta3])
+AC_INIT([fauxdacious-plugins], [4.0-beta4])
 AC_COPYRIGHT([Copyright (C) 2001-2019 Audacious developers and others])
 
 AC_DEFINE_UNQUOTED([PACKAGE], "$PACKAGE_NAME", [Name of package])
@@ -32,9 +32,9 @@ LIBS="$LIBS $LIBINTL"
 dnl Check for Fauxdacious
 dnl ===================
 
-PKG_CHECK_MODULES(AUDACIOUS, [fauxdacious >= 3.8],
+PKG_CHECK_MODULES(AUDACIOUS, [fauxdacious >= 4.0],
     [],
-    [AC_MSG_ERROR([Cannot find Fauxdacious 3.8; have you installed Fauxdacious yet?])]
+    [AC_MSG_ERROR([Cannot find Fauxdacious 4.0; have you installed Fauxdacious yet?])]
 )
 
 CPPFLAGS="$CPPFLAGS $AUDACIOUS_CFLAGS"
@@ -507,6 +507,13 @@ ENABLE_PLUGIN_WITH_DEP(qtaudio,
     QTMULTIMEDIA,
     Qt5Multimedia)
 
+ENABLE_PLUGIN_WITH_DEP(streamtuner,
+    Stream tuner,
+    auto,
+    GENERAL,
+    QTNETWORK,
+    Qt5Network)
+
 test_qtglspectrum () {
     PKG_CHECK_MODULES(QTOPENGL, Qt5OpenGL, [
         QTOPENGL_CFLAGS="$QTOPENGL_CFLAGS -fPIC"
@@ -849,6 +856,7 @@ if test "x$USE_QT" = "xyes" ; then
     echo "  Song Info:                              yes"
     echo "  Spectrum Analyzer (2D):                 yes"
     echo "  Status Icon:                            yes"
+    echo "  Stream Tuner:                           $have_streamtuner"
     echo "  VU Meter:                               yes"
     echo
 fi
