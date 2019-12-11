@@ -30,6 +30,7 @@
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/hook.h>
 #include <libfauxdcore/objects.h>
+#include <libfauxdqt/libfauxdqt.h>
 
 #include "skins_cfg.h"
 #include "skin.h"
@@ -251,7 +252,7 @@ void TextBox::set_font (const char * font)
 {
     if (font)
     {
-        m_font.capture (qfont_from_string (font));
+        m_font.capture (new QFont (audqt::qfont_from_string (font)));
         m_metrics.capture (new QFontMetrics (* m_font, this));
     }
     else
