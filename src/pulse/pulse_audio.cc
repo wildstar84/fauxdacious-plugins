@@ -27,6 +27,7 @@
 
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/plugin.h>
+#include <libfauxdcore/preferences.h>
 #include <libfauxdcore/i18n.h>
 
 using scoped_lock = std::unique_lock<std::mutex>;
@@ -35,11 +36,17 @@ class PulseOutput : public OutputPlugin
 {
 public:
     static const char about[];
+    static const PreferencesWidget widgets[];
+    static const PluginPreferences prefs;
+    static const char * const prefs_defaults[];
+    static const String default_context_name;
+    static const String default_stream_name;
 
     static constexpr PluginInfo info = {
         N_("PulseAudio Output"),
         PACKAGE,
-        about
+        about,
+        & prefs
     };
 
     constexpr PulseOutput () : OutputPlugin (info, 8) {}
@@ -64,6 +71,24 @@ public:
 };
 
 EXPORT PulseOutput aud_plugin_instance;
+
+const PreferencesWidget PulseOutput::widgets[] = {
+    WidgetEntry (N_("Context name:"),
+        WidgetString ("pulse", "context_name")),
+    WidgetEntry (N_("Stream name:"),
+        WidgetString ("pulse", "stream_name")),
+};
+
+const PluginPreferences PulseOutput::prefs = {{widgets}};
+
+const String PulseOutput::default_context_name = String ("Audacious");
+const String PulseOutput::default_stream_name = String ("Audacious");
+
+const char * const PulseOutput::prefs_defaults[] = {
+    "context_name", PulseOutput::default_context_name,
+    "stream_name", PulseOutput::default_stream_name,
+    nullptr
+};
 
 static std::mutex pulse_mutex;
 static std::condition_variable pulse_cond;
@@ -389,6 +414,16 @@ static void set_buffer_attr (pa_buffer_attr & buffer, const pa_sample_spec & ss)
     buffer.fragsize = buffer_size;
 }
 
+static String get_context_name ()
+{
+    String context_name = aud_get_str ("pulse", "context_name");
+    if (context_name == String (""))
+    {
+        return PulseOutput::default_context_name;
+    }
+    return context_name;
+}
+
 static bool create_context (scoped_lock & lock)
 {
     if (! (mainloop = pa_mainloop_new ()))
@@ -397,7 +432,7 @@ static bool create_context (scoped_lock & lock)
         return false;
     }
 
-    if (! (context = pa_context_new (pa_mainloop_get_api (mainloop), "Fauxdacious")))
+    if (! (context = pa_context_new (pa_mainloop_get_api (mainloop), get_context_name ())))
     {
         AUDERR ("Failed to allocate context\n");
         return false;
@@ -425,9 +460,19 @@ static bool create_context (scoped_lock & lock)
     return true;
 }
 
+static String get_stream_name ()
+{
+    String stream_name = aud_get_str ("pulse", "stream_name");
+    if (stream_name == String (""))
+    {
+        return PulseOutput::default_stream_name;
+    }
+    return stream_name;
+}
+
 static bool create_stream (scoped_lock & lock, const pa_sample_spec & ss)
 {
-    if (! (stream = pa_stream_new (context, "Fauxdacious", & ss, nullptr)))
+    if (! (stream = pa_stream_new (context, get_stream_name (), & ss, nullptr)))
     {
         REPORT ("pa_stream_new");
         return false;
@@ -508,6 +553,8 @@ bool PulseOutput::open_audio (int fmt, int rate, int nch, String & error)
 
 bool PulseOutput::init ()
 {
+    aud_config_set_defaults ("pulse", prefs_defaults);
+
     /* check for a running server and get initial volume */
     String error;
     if (! open_audio (FMT_S16_NE, 44100, 2, error))
