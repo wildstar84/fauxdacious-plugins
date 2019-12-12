@@ -21,9 +21,12 @@
 
 #include <errno.h>
 #include <pthread.h>
+
 #ifdef _WIN32
 #include <windows.h>
+#include <winbase.h>
 #endif
+
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
@@ -3215,8 +3218,15 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
                                 {
                                     AUDINFO ("----HELPER FOUND: WILL DO (%s)\n", (const char *)str_concat ({cover_helper, " DVD ", 
                                           (const char *)trackinfo[0].name, " ", aud_get_path (AudPath::UserDir)}));
+
+#ifdef _WIN32
+                                    WinExec ((const char *) str_concat ({cover_helper, " DVD ", 
+                                          (const char *)trackinfo[0].name, " ", aud_get_path (AudPath::UserDir)}),
+                                          SW_HIDE);
+#else
                                     system ((const char *) str_concat ({cover_helper, " DVD ", 
                                           (const char *)trackinfo[0].name, " ", aud_get_path (AudPath::UserDir)}));
+#endif
                                     for (auto & ext : extlist)
                                     {
                                         coverart_file = String (str_concat ({"file://", fid_buf, ".", (const char *)ext}));

@@ -26,6 +26,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef _WIN32
+#include <winbase.h>
+#endif
+
 #include <libfauxdcore/preferences.h>
 #include <libfauxdcore/drct.h>
 #include <libfauxdcore/i18n.h>
@@ -206,9 +211,16 @@ private:
                 String coverart_file;
                 Index<String> extlist = str_list_to_index ("jpg,png,jpeg,gif", ",");
                 if (! album_art_found)  /* CAN BE SET BY ANOTHER THREAD-INSTANCE IN THE MEAN TIME! */
+#ifdef _WIN32
+                    WinExec ((const char *) str_concat ({cover_helper, " ALBUM '",
+                            (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
+                            (const char *) artist_buf, "' '", (const char *) title_buf, "' "}),
+                            SW_HIDE);
+#else
                     system ((const char *) str_concat ({cover_helper, " ALBUM '",
                             (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
                             (const char *) artist_buf, "' '", (const char *) title_buf, "' "}));
+#endif
 
                 if (! album_art_found)  /* CAN BE SET BY ANOTHER THREAD-INSTANCE IN THE MEAN TIME! */
                 {

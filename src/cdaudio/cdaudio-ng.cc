@@ -22,6 +22,11 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef _WIN32
+#include <winbase.h>
+#endif
+
 extern "C" {
 #include <sys/stat.h>
 }
@@ -551,8 +556,14 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                     {
                         AUDINFO ("----HELPER FOUND: WILL DO (%s)\n", (const char *)str_concat ({cover_helper, cdt, 
                                 (const char *)trackinfo[0].discidstr, " ", aud_get_path (AudPath::UserDir)}));
+#ifdef _WIN32
+                        WinExec ((const char *) str_concat ({cover_helper, cdt, 
+                                (const char *)trackinfo[0].discidstr, " ", aud_get_path (AudPath::UserDir)}),
+                                SW_HIDE);
+#else
                         system ((const char *) str_concat ({cover_helper, cdt, 
                                 (const char *)trackinfo[0].discidstr, " ", aud_get_path (AudPath::UserDir)}));
+#endif
                         Index<String> extlist = str_list_to_index ("jpg,png,jpeg", ",");
                         String coverart_path = aud_get_str ("CDDA", "cover_art_path");
                         if (! coverart_path || ! coverart_path[0])
