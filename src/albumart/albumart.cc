@@ -71,26 +71,19 @@ bool AlbumArtPlugin::init ()
     return true;
 }
 
-/* JWT:IT'S POSSIBLE FOR A 2ND INSTANCE OF THE HELPER THREAD TO BE SPAWNED AND COMPLETE AND SUCCEED
-    BEFORE THE FIRST ONE, IF THIS HAPPENS, DON'T LET THE FIRST ONE (FINISHING LATER) OVERWRITE THE
-    IMAGE RETURNED BY THE 2ND ONE, AS THE 1ST ONE IS LIKELY FOR THE STATION'S *PREVIOUS* SONG TUPLE!
-    * THE CASE THAT USUALLY CAUSES THIS IS WHEN THERE WAS NO IMAGE FOR THE PREV. SONG TUPLE (WHICH
-    REMAINS DISPLAYED UNTIL YOU RESTART PLAY ON THE STATION LATER), SINCE STARTING PLAY WILL FORCE A
-    FETCH FOR *THAT* TITLE (FOR WHICH THERE WAS NO IMAGE FOUND, INITIATING A FULL SEARCH (SLOW), AND,
-    WHILST SEARCHING, THE NEW TITLE TUPLE ARRIVES AND INITIATES A SEARCH (A 2ND THREAD) FOR THAT AND
-    IT HAPPENS TO ALREADY BE ON DISK (FAST), SO WE WANT TO KEEP THAT (GOOD) RESULT AND *NOT* LET THE
-    FIRST SEARCH (WHICH WILL LIKELY *STILL* FAIL AND RETURN LATER) TO THEN RESET THE IMAGE TO THE
-    DEFAULT!  NOTE:  IF WE DIDN'T INITIATE THE FIRST SEARCH (START OF PLAY) (album_init), BUT ONLY
-    ON TUPLE-CHANGE, WE WOULD NEVER GET ART FOR THE FIRST SONG STREAMING WHEN STARTING PLAY!
-    THIS VARIABLE SHOULD PREVENT THIS! (STARTING A NEW UPDATE RESETS IT): */
-static bool album_art_found;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void * helper_thread_fn (void * data)
 {
     GtkWidget * widget = (GtkWidget *) data;
 
+    bool isLocked = false;
     AudguiPixbuf pixbuf;
     String cover_helper = aud_get_str ("audacious", "cover_helper");
+
+    pthread_mutex_lock (& mutex);
+    isLocked = true;
+
     if (cover_helper && cover_helper[0]
             && aud_get_bool ("albumart", "internet_coverartlookup")) //JWT:WE HAVE A PERL HELPER TO LOOK UP COVER ART.
     {
@@ -139,44 +132,46 @@ static void * helper_thread_fn (void * data)
             String coverart_file;
             Index<String> extlist = str_list_to_index ("jpg,png,jpeg,gif", ",");
 
-            if (! album_art_found)  /* CAN BE SET BY ANOTHER THREAD-INSTANCE IN THE MEAN TIME! */
 #ifdef _WIN32
-                WinExec ((const char *) str_concat ({cover_helper, " ALBUM '",
-                        (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
-                        (const char *) artist_buf, "' '", (const char *) title_buf, "' "}),
-                        SW_HIDE);
+            WinExec ((const char *) str_concat ({cover_helper, " ALBUM '",
+                    (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
+                    (const char *) artist_buf, "' '", (const char *) title_buf, "' "}),
+                    SW_HIDE);
 #else
-                system ((const char *) str_concat ({cover_helper, " ALBUM '",
-                        (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
-                        (const char *) artist_buf, "' '", (const char *) title_buf, "' "}));
+            system ((const char *) str_concat ({cover_helper, " ALBUM '",
+                    (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
+                    (const char *) artist_buf, "' '", (const char *) title_buf, "' "}));
 #endif
 
-            if (! album_art_found)  /* CAN BE SET BY ANOTHER THREAD-INSTANCE IN THE MEAN TIME! */
+            for (auto & ext : extlist)
             {
-                for (auto & ext : extlist)
+                coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
+                const char * filenamechar = coverart_file + 7;
+                struct stat statbuf;
+                if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
+                    coverart_file = String (_(""));
+                else
                 {
-                    coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
-                    const char * filenamechar = coverart_file + 7;
-                    struct stat statbuf;
-                    if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
-                        coverart_file = String (_(""));
-                    else
-                    {
-                        coverart_file = String (filename_to_uri (filenamechar));
-                        break;
-                    }
-                }
-                if (coverart_file && coverart_file[0])
-                {
-                    pixbuf = audgui_pixbuf_request ((const char *) coverart_file);
-                    if (pixbuf)
-                        album_art_found = true;
+                    coverart_file = String (filename_to_uri (filenamechar));
+                    break;
                 }
             }
-            else
-                return nullptr;  /* DON'T OVERWRITE - WE ALREADY HAVE IT FROM ANOTHER THREAD-INSTANCE! */
+            if (coverart_file && coverart_file[0])
+            {
+                pthread_mutex_unlock (& mutex);
+                isLocked = false;
+                pixbuf = audgui_pixbuf_request ((const char *) coverart_file);
+                if (pixbuf)
+                {
+                    audgui_scaled_image_set (widget, pixbuf.get ());
+                    return nullptr;
+                }
+            }
         }
     }
+
+    if (isLocked)
+        pthread_mutex_unlock (& mutex);
 
     if (! pixbuf)
         pixbuf = audgui_pixbuf_request_current ();
@@ -184,28 +179,26 @@ static void * helper_thread_fn (void * data)
     if (! pixbuf)
         pixbuf = audgui_pixbuf_fallback ();
 
-    audgui_scaled_image_set (widget, pixbuf.get ());
+    if (pixbuf)
+        audgui_scaled_image_set (widget, pixbuf.get ());
 
     return nullptr;
 }
 
 static void album_update (void *, GtkWidget * widget)
 {
-    pthread_t helper_thread;
-    album_art_found = false;
-    if (pthread_create (&helper_thread, nullptr, helper_thread_fn, widget))
+    if (aud_get_str ("audacious", "cover_helper"))
     {
-        AUDERR ("s:Error creating helper thread: %s - Expect Delay!...\n", strerror(errno));
-        helper_thread_fn (widget);
-    }
-    else if (pthread_detach (helper_thread))
-        AUDERR ("s:Error detaching helper thread: %s!\n", strerror(errno));
-}
+        pthread_t helper_thread;
 
-static void album_init (void *, GtkWidget * widget)
-{
-    if (aud_get_bool ("albumart", "internet_coverartlookup"))
-        album_update (nullptr, widget);  // JWT:CHECK FILES & DISKS (TUPLE DOESN'T CHANGE IN THESE) ONCE NOW ON PLAY START!
+        if (pthread_create (&helper_thread, nullptr, helper_thread_fn, widget))
+        {
+            AUDERR ("s:Error creating helper thread: %s - Expect Delay!...\n", strerror(errno));
+            helper_thread_fn (widget);
+        }
+        else if (pthread_detach (helper_thread))
+            AUDERR ("s:Error detaching helper thread: %s!\n", strerror(errno));
+    }
     else
     {
         AudguiPixbuf pixbuf = audgui_pixbuf_request_current ();
@@ -213,8 +206,23 @@ static void album_init (void *, GtkWidget * widget)
         if (! pixbuf)
             pixbuf = audgui_pixbuf_fallback ();
 
-        audgui_scaled_image_set (widget, pixbuf.get ());
+        if (pixbuf)
+            audgui_scaled_image_set (widget, pixbuf.get ());
     }
+}
+
+static void album_init (void *, GtkWidget * widget)
+{
+    AudguiPixbuf pixbuf = audgui_pixbuf_request_current ();
+
+    if (! pixbuf)
+        pixbuf = audgui_pixbuf_fallback ();
+
+    if (pixbuf)
+        audgui_scaled_image_set (widget, pixbuf.get ());
+
+    if (aud_get_bool ("albumart", "internet_coverartlookup"))
+        album_update (nullptr, widget);  // JWT:CHECK FILES & DISKS (TUPLE DOESN'T CHANGE IN THESE) ONCE NOW ON PLAY START!
 }
 
 static void album_clear (void *, GtkWidget * widget)
@@ -249,9 +257,18 @@ void * AlbumArtPlugin::get_gtk_widget ()
     return widget;
 }
 
+/* JWT:FIXME: THIS IS MARKED "EXPERIMENTAL" IN WINDOWS SINCE GUI-INTERACTION CAN
+    BECOME INVISIBLE AFTER A TIME UNTIL PLAY STOPPED & RESTARTED LEADING TO A BAD
+    USER-EXPERIENCE, AND I HAVEN'T BEEN ABLE TO FIGURE OUT WHY?!?!?!
+*/
+
 const PreferencesWidget AlbumArtPlugin::widgets[] = {
     WidgetLabel(N_("<b>Albumart Configuration</b>")),
+#ifdef _WIN32
+    WidgetCheck (N_("Look for album art on Musicbrainz.com (EXPERIMENTAL!)"),
+#else
     WidgetCheck (N_("Look for album art on Musicbrainz.com"),
+#endif
         WidgetBool ("albumart", "internet_coverartlookup")),
 };
 
