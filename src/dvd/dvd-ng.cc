@@ -135,11 +135,7 @@ public:
     static const PluginPreferences prefs;
 
     static constexpr PluginInfo info = {
-#ifdef _WIN32
-        N_("DVD Plugin (Experimental)"),
-#else
         N_("DVD Plugin"),
-#endif
         PACKAGE,
         about,
         & prefs
@@ -191,7 +187,7 @@ trackinfo_t;
 
 typedef struct {
     dvdnav_t *       dvdnav;              /* handle to libdvdnav stuff */
-    char *           filename;            /* path */
+    char *           filename;            /* path (device) */
     unsigned int     duration;            /* in milliseconds */
     int              title;               /* title NUMBER that's currently playing */
     int              track;               /* track NUMBER that's currently playing */
@@ -252,7 +248,8 @@ static Index<SDL_Rect> menubuttons; /* ARRAY OF MENUBUTTONS (EACH HAS 2 SETS OF 
 static bool havebuttons;            /* SIGNALS THAT WE HAVE FETCHED MENU-BUTTONS FOR THE CURRENT MENU */
 static String coverart_file;        /* JWT:PATH OF LAST GOOD COVER ART FILE (IF ANY) FOR CURRENTLY-PLAYING DVD. */
 static bool coverart_file_sought;   /* JWT:TRUE IF WE'VE ALREADY LOOKED FOR A COVER ART FILE FOR CURRENTLY-PLAYING DVD. */
-static bool custom_tagfile_sought; /* JWT:TRUE IF WE'VE ALREADY LOOKED FOR A CUSTOM TAG FILE FOR CURRENTLY-PLAYING CD. */
+static bool custom_tagfile_sought;  /* JWT:TRUE IF WE'VE ALREADY LOOKED FOR A CUSTOM TAG FILE FOR CURRENTLY-PLAYING CD. */
+static String argfilename;          /* path entered, ie. dvd://[?#] */
 
 /* lock mutex to read / set these variables */
 static int firsttrackno = -1;
@@ -678,6 +675,9 @@ static bool check_disk_status ()
     int disk;
     if ((disk = open (dvdnav_priv->filename, O_RDONLY | O_NONBLOCK)) < 0)
         return false;
+
+    if (strstr_nocase (dvdnav_priv->filename, ".iso")) // HANDLE DEVICE=file.iso!:
+        return true;
 
     int diskstatus = ioctl (disk, CDROM_DRIVE_STATUS);
     return (! diskstatus || diskstatus == CDS_DISC_OK);
@@ -2897,6 +2897,7 @@ void DVD::cleanup ()
         avformat_network_deinit ();
         initted = false;
     }
+    argfilename = String ();
 }
 
 // from mplayer.stream_dvdnav.c:
@@ -2976,11 +2977,13 @@ static bool open_dvd ()
         return true;
     }
 
-    String device = aud_get_str ("dvd", "device");
+    String device = strstr_nocase ((const char *) argfilename, ".iso") ? argfilename : String ();
+    if (! device || ! device[0])
+        device = aud_get_str ("dvd", "device");
     if (! device[0])
         device = String ("/dev/dvd");
 
-    AUDINFO ("i:Opening DVD drive: DEVICE =%s=\n", (const char *)device);
+    AUDINFO ("i:Opening DVD drive: DEVICE =%s=\n", (const char *) device);
 
     //MAY NEED SOMEWHERE:const char *dvdnav_err_to_string (dvdnav_priv->dvdnav)
 
@@ -3026,7 +3029,8 @@ static bool open_dvd ()
 /* from audacious:  thread safe */
 bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<char> * image)
 {
-    bool whole_disk = ! strcmp (filename, "dvd://");
+    const char * filepart = filename + 6;
+    bool whole_disk = ! strstr (filename, "?");
     if (whole_disk) AUDINFO ("-read_tag: WHOLE DISK\n"); else AUDINFO ("-read_tag: SINGLE TRACK\n");
     bool valid = false;
     bool title_track_only = aud_get_bool ("dvd", "title_track_only");
@@ -3034,6 +3038,15 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
     bool longest_track_only = aud_get_bool ("dvd", "longest_track_only");
 
     pthread_mutex_lock (& mutex);
+
+    if (! filepart)
+        argfilename = String ("");
+    else
+    {
+        const char * trackpart = strstr (filepart, "?");
+        argfilename = trackpart ? String (str_copy (filepart, trackpart-filepart))
+                : String (filepart);
+    }
 
     /* reset cached info when adding DVD to the playlist */
     if (whole_disk && ! playing)
@@ -3428,9 +3441,9 @@ static int calculate_track_length (uint32_t startlsn, uint32_t endlsn)
 static int find_trackno_from_filename (const char * filename)
 {
     int track;
-    AUDINFO ("find_trackno_from_filename: fid=%s=\n", filename);
-    if (strncmp (filename, "dvd://?", 7) || sscanf (filename + 7, "%d", &track) != 1)
-        return -1;
+    const char * queryposn = strstr (filename, "?");
 
-    return track;
+    AUDINFO ("find_trackno_from_filename: fid=%s=\n", filename);
+
+    return (queryposn && sscanf (queryposn + 1, "%d", &track) == 1) ? track : -1;
 }
