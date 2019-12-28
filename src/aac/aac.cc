@@ -386,7 +386,7 @@ bool AACDecoder::play (const char * filename, VFSFile & file)
             goto ERR_CLOSE_DECODER;
         }
         memmove (buf, buf + used, buflen);
-        buflen += file.fread (buf + buflen, 1, ((int) sizeof (buf)) - buflen);
+        buflen += file.fread (buf + buflen, 1, sizeof (buf) - buflen);
     }
 
     /* == START DECODING == */
@@ -400,7 +400,7 @@ bool AACDecoder::play (const char * filename, VFSFile & file)
             goto ERR_CLOSE_DECODER;
         }
         memmove (buf, buf + used, buflen);
-        buflen += file.fread (buf + buflen, 1, ((int) sizeof (buf)) - buflen);
+        buflen += file.fread (buf + buflen, 1, sizeof (buf) - buflen);
     }
 
     /* == CHECK FOR METADATA == */
