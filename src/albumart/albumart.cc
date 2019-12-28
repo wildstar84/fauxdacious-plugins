@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <glib.h>
 
 #ifdef _WIN32
 #include <winbase.h>
@@ -71,21 +72,35 @@ bool AlbumArtPlugin::init ()
     return true;
 }
 
+static bool frominit = false;  // TRUE WHEN THREAD STARTED BY SONG CHANGE (album_init()).
+static bool skipreset = false; // TRUE WHILE THREAD RUNNING AFTER STARTED BY SONG CHANGE (album_init()).
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/* JWT:SEPARATE THREAD TO CALL THE HELPER SO THAT THE "LONG" TIME IT TAKES DOESN'T FREEZE THE GUI
+   DISPLAY WHILE ATTEMPTING TO FIND AND FETCH THE ALBUM-ART.  THIS THREAD MUST *NOT* CALL THE
+   ART FUNCTIONS THOUGH - CAUSES GUI ISSUES!  WHEN STARTING A NEW SONG/STREAM, WE WAIT FOR 2
+   SECONDS BEFORE FETCHING IMAGE TO ALLOW THE TUPLE TO CHANGE (IE. RESTARTING A STREAMING STATION
+   LATER USUALLY MEANS A DIFFERENT SONG TITLE), OTHERWISE, WE'D CALL THE THREAD TWICE, ONE FOR THE
+   PREV. SONG TITLE STILL DISPLAYED, THEN AGAIN WHEN THE TUPLE CHANGES (USUALLY, ALMOST IMMEDIATELY)!
+*/
 static void * helper_thread_fn (void * data)
 {
-    GtkWidget * widget = (GtkWidget *) data;
+    if (frominit)
+    {
+        skipreset = true;
+        g_usleep (2000000);  // SLEEP 2" TO ALLOW FOR ANY TUPLE CHANGE TO OVERRIDE! */
+        if (! frominit)
+        {
+            skipreset = false;
+            pthread_exit (nullptr);
+            return nullptr;
+        }
+    }
+    pthread_mutex_lock (& mutex);
 
-    bool isLocked = false;
-    AudguiPixbuf pixbuf;
     String cover_helper = aud_get_str ("audacious", "cover_helper");
 
-    pthread_mutex_lock (& mutex);
-    isLocked = true;
-
-    if (cover_helper && cover_helper[0]
-            && aud_get_bool ("albumart", "internet_coverartlookup")) //JWT:WE HAVE A PERL HELPER TO LOOK UP COVER ART.
+    if (cover_helper && cover_helper[0]) //JWT:WE HAVE A PERL HELPER TO LOOK UP COVER ART.
     {
         Tuple tuple = aud_drct_get_tuple ();
         String Title = tuple.get_str (Tuple::Title);
@@ -125,12 +140,9 @@ static void * helper_thread_fn (void * data)
             }
             if (!Artist || !Artist[0])
                 Artist = String ("_");
-            String cover_helper = aud_get_str ("audacious", "cover_helper");
             StringBuf album_buf = str_encode_percent (Album);
             StringBuf artist_buf = str_encode_percent (Artist);
             StringBuf title_buf = str_encode_percent (Title);
-            String coverart_file;
-            Index<String> extlist = str_list_to_index ("jpg,png,jpeg,gif", ",");
 
 #ifdef _WIN32
             WinExec ((const char *) str_concat ({cover_helper, " ALBUM '",
@@ -143,61 +155,93 @@ static void * helper_thread_fn (void * data)
                     (const char *) artist_buf, "' '", (const char *) title_buf, "' "}));
 #endif
 
-            for (auto & ext : extlist)
-            {
-                coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
-                const char * filenamechar = coverart_file + 7;
-                struct stat statbuf;
-                if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
-                    coverart_file = String (_(""));
-                else
-                {
-                    coverart_file = String (filename_to_uri (filenamechar));
-                    break;
-                }
-            }
-            if (coverart_file && coverart_file[0])
-            {
-                pthread_mutex_unlock (& mutex);
-                isLocked = false;
-                pixbuf = audgui_pixbuf_request ((const char *) coverart_file);
-                if (pixbuf)
-                {
-                    audgui_scaled_image_set (widget, pixbuf.get ());
-                    return nullptr;
-                }
-            }
+            hook_call ("albumart ready", nullptr);
         }
     }
 
-    if (isLocked)
-        pthread_mutex_unlock (& mutex);
+    cover_helper = String ();
 
-    if (! pixbuf)
-        pixbuf = audgui_pixbuf_request_current ();
+    pthread_mutex_unlock (& mutex);
 
-    if (! pixbuf)
-        pixbuf = audgui_pixbuf_fallback ();
-
-    if (pixbuf)
-        audgui_scaled_image_set (widget, pixbuf.get ());
-
+    skipreset = false;
+    pthread_exit (nullptr);
     return nullptr;
 }
 
+/* JWT:CALLED BY ALBUMART FETCHING THREAD WHEN IT HAS FINISHED SEARCHING/FETCHING ALBUM-COVER IMAGE */
+static void albumart_ready (void *, GtkWidget * widget)
+{
+    AudguiPixbuf pixbuf;
+    String cover_helper = aud_get_str ("audacious", "cover_helper");
+    String coverart_file;
+    Index<String> extlist = str_list_to_index ("jpg,png,jpeg,gif", ",");
+
+    for (auto & ext : extlist)
+    {
+        coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
+        const char * filenamechar = coverart_file + 7;
+        struct stat statbuf;
+        if (stat (filenamechar, &statbuf) >= 0)  // ART IMAGE FILE EXISTS:
+        {
+            coverart_file = String (filename_to_uri (filenamechar));
+            pixbuf = audgui_pixbuf_request ((const char *) coverart_file);
+            if (pixbuf)
+                audgui_scaled_image_set (widget, pixbuf.get ());
+
+            return;
+        }
+    }
+    return;
+}
+
+/* JWT:UPDATE THE ALBUM-COVER IMAGE (CALL THREAD IF DYNAMIC ALBUM-ART OPTION IN EFFECT): */
 static void album_update (void *, GtkWidget * widget)
 {
-    if (aud_get_str ("audacious", "cover_helper"))
+    if (! skipreset)
     {
-        pthread_t helper_thread;
+        AudguiPixbuf pixbuf = audgui_pixbuf_request_current ();
 
-        if (pthread_create (&helper_thread, nullptr, helper_thread_fn, widget))
+        if (! pixbuf)
+            pixbuf = audgui_pixbuf_fallback ();
+
+        if (pixbuf)
+            audgui_scaled_image_set (widget, pixbuf.get ());
+    }
+
+    if (aud_get_str ("audacious", "cover_helper") && aud_get_bool ("albumart", "internet_coverartlookup"))
+    {
+        pthread_attr_t thread_attrs;
+        if (! pthread_attr_init (& thread_attrs))
         {
-            AUDERR ("s:Error creating helper thread: %s - Expect Delay!...\n", strerror(errno));
-            helper_thread_fn (widget);
+            if (! pthread_attr_setdetachstate (& thread_attrs, PTHREAD_CREATE_DETACHED)
+                    || ! pthread_attr_setscope (& thread_attrs, PTHREAD_SCOPE_PROCESS))
+            {
+                pthread_t helper_thread;
+
+                if (pthread_create (&helper_thread, nullptr, helper_thread_fn, widget))
+                {
+                    AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
+// DON'T DO IF CALLING pthread_exit!:                    helper_thread_fn (widget);
+                }
+            }
+            else
+                AUDERR ("s:Error detatching helper thread: %s!\n", strerror (errno));
+
+            if (pthread_attr_destroy (& thread_attrs))
+                AUDERR ("s:Error destroying helper thread attributes: %s!\n", strerror (errno));
         }
-        else if (pthread_detach (helper_thread))
-            AUDERR ("s:Error detaching helper thread: %s!\n", strerror(errno));
+        else
+            AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
+    }
+}
+
+/* JWT:CALLED WHEN SONG ENTRY CHANGES: */
+static void album_init (void *, GtkWidget * widget)
+{
+    if (aud_get_bool ("albumart", "internet_coverartlookup"))
+    {
+        frominit = true;
+        album_update (nullptr, widget);  // JWT:CHECK FILES & DISKS (TUPLE DOESN'T CHANGE IN THESE) ONCE NOW ON PLAY START!
     }
     else
     {
@@ -211,20 +255,14 @@ static void album_update (void *, GtkWidget * widget)
     }
 }
 
-static void album_init (void *, GtkWidget * widget)
+/* JWT:CALLED WHEN TITLE CHANGES WITHIN THE SAME SONG/STREAM ENTRY: */
+static void album_tuplechg (void *, GtkWidget * widget)
 {
-    AudguiPixbuf pixbuf = audgui_pixbuf_request_current ();
-
-    if (! pixbuf)
-        pixbuf = audgui_pixbuf_fallback ();
-
-    if (pixbuf)
-        audgui_scaled_image_set (widget, pixbuf.get ());
-
-    if (aud_get_bool ("albumart", "internet_coverartlookup"))
-        album_update (nullptr, widget);  // JWT:CHECK FILES & DISKS (TUPLE DOESN'T CHANGE IN THESE) ONCE NOW ON PLAY START!
+    frominit = false;
+    album_update (nullptr, widget);
 }
 
+/* JWT:CALLED WHEN PLAY IS STOPPED (BUT NOT WHEN JUMPING BETWEEN ENTRIES: */
 static void album_clear (void *, GtkWidget * widget)
 {
     audgui_scaled_image_set (widget, nullptr);
@@ -233,8 +271,9 @@ static void album_clear (void *, GtkWidget * widget)
 static void album_cleanup (GtkWidget * widget)
 {
     hook_dissociate ("playback stop", (HookFunction) album_clear, widget);
+    hook_dissociate ("albumart ready", (HookFunction) albumart_ready, widget);
+    hook_dissociate ("tuple change", (HookFunction) album_tuplechg, widget);
     hook_dissociate ("playback ready", (HookFunction) album_init, widget);
-    hook_dissociate ("tuple change", (HookFunction) album_update, widget);
 
     audgui_cleanup ();
 }
@@ -247,8 +286,9 @@ void * AlbumArtPlugin::get_gtk_widget ()
 
     g_signal_connect (widget, "destroy", (GCallback) album_cleanup, nullptr);
 
-    hook_associate ("tuple change", (HookFunction) album_update, widget);
     hook_associate ("playback ready", (HookFunction) album_init, widget);
+    hook_associate ("tuple change", (HookFunction) album_tuplechg, widget);
+    hook_associate ("albumart ready", (HookFunction) albumart_ready, widget);
     hook_associate ("playback stop", (HookFunction) album_clear, widget);
 
     if (aud_drct_get_ready ())
