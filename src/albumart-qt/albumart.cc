@@ -19,6 +19,7 @@
 
 #include <QLabel>
 #include <QPixmap>
+#include <QThread>
 
 #include <errno.h>
 #include <pthread.h>
@@ -41,19 +42,17 @@
 
 #include <libfauxdqt/libfauxdqt.h>
 
-/* JWT:IT'S POSSIBLE FOR A 2ND INSTANCE OF THE HELPER THREAD TO BE SPAWNED AND COMPLETE AND SUCCEED
-    BEFORE THE FIRST ONE, IF THIS HAPPENS, DON'T LET THE FIRST ONE (FINISHING LATER) OVERWRITE THE
-    IMAGE RETURNED BY THE 2ND ONE, AS THE 1ST ONE IS LIKELY FOR THE STATION'S *PREVIOUS* SONG TUPLE!
-    * THE CASE THAT USUALLY CAUSES THIS IS WHEN THERE WAS NO IMAGE FOR THE PREV. SONG TUPLE (WHICH
-    REMAINS DISPLAYED UNTIL YOU RESTART PLAY ON THE STATION LATER), SINCE STARTING PLAY WILL FORCE A
-    FETCH FOR *THAT* TITLE (FOR WHICH THERE WAS NO IMAGE FOUND, INITIATING A FULL SEARCH (SLOW), AND,
-    WHILST SEARCHING, THE NEW TITLE TUPLE ARRIVES AND INITIATES A SEARCH (A 2ND THREAD) FOR THAT AND
-    IT HAPPENS TO ALREADY BE ON DISK (FAST), SO WE WANT TO KEEP THAT (GOOD) RESULT AND *NOT* LET THE
-    FIRST SEARCH (WHICH WILL LIKELY *STILL* FAIL AND RETURN LATER) TO THEN RESET THE IMAGE TO THE
-    DEFAULT!  NOTE:  IF WE DIDN'T INITIATE THE FIRST SEARCH (START OF PLAY) (album_init), BUT ONLY
-    ON TUPLE-CHANGE, WE WOULD NEVER GET ART FOR THE FIRST SONG STREAMING WHEN STARTING PLAY!
-    THIS VARIABLE SHOULD PREVENT THIS! (STARTING A NEW UPDATE RESETS IT): */
-static bool album_art_found;
+static bool frominit = false;  // TRUE WHEN THREAD STARTED BY SONG CHANGE (album_init()).
+static bool skipreset = false; // TRUE WHILE THREAD RUNNING AFTER STARTED BY SONG CHANGE (album_init()).
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* JWT:SEPARATE THREAD TO CALL THE HELPER SO THAT THE "LONG" TIME IT TAKES DOESN'T FREEZE THE GUI
+   DISPLAY WHILE ATTEMPTING TO FIND AND FETCH THE ALBUM-ART.  THIS THREAD MUST *NOT* CALL THE
+   ART FUNCTIONS THOUGH - CAUSES GUI ISSUES!  WHEN STARTING A NEW SONG/STREAM, WE WAIT FOR 2
+   SECONDS BEFORE FETCHING IMAGE TO ALLOW THE TUPLE TO CHANGE (IE. RESTARTING A STREAMING STATION
+   LATER USUALLY MEANS A DIFFERENT SONG TITLE), OTHERWISE, WE'D CALL THE THREAD TWICE, ONE FOR THE
+   PREV. SONG TITLE STILL DISPLAYED, THEN AGAIN WHEN THE TUPLE CHANGES (USUALLY, ALMOST IMMEDIATELY)!
+*/
 
 class AlbumArtQt : public GeneralPlugin {
 public:
@@ -88,30 +87,70 @@ public:
         init ();
     }
 
+    /* JWT:CALLED BY ALBUMART FETCHING THREAD WHEN IT HAS FINISHED SEARCHING/FETCHING ALBUM-COVER IMAGE */
+    void ready_art ()
+    {
+        String cover_helper = aud_get_str ("audacious", "cover_helper");
+        String coverart_file;
+        Index<String> extlist = str_list_to_index ("jpg,png,jpeg,gif", ",");
+
+        for (auto & ext : extlist)
+        {
+            coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
+            const char * filenamechar = coverart_file + 7;
+            struct stat statbuf;
+            if (stat (filenamechar, &statbuf) >= 0)  // ART IMAGE FILE EXISTS:
+            {
+                coverart_file = String (filename_to_uri (filenamechar));
+                origPixmap = QPixmap (audqt::art_request ((const char *) coverart_file, 0, 0));
+                origSize = origPixmap.size ();
+                drawArt ();
+
+                return;
+            }
+        }
+        return;
+    }
+
+    /* JWT:UPDATE THE ALBUM-COVER IMAGE (CALL THREAD IF DYNAMIC ALBUM-ART OPTION IN EFFECT): */
     void update_art ()
     {
-        pthread_t helper_thread;
-        album_art_found = false;
-        if (pthread_create (& helper_thread, nullptr, helper_thread_fn, this))
+        if (! skipreset)
         {
-            AUDERR ("s:Error creating helper thread: %s - Expect Delay!...\n", strerror(errno));
-            helper_thread_fn (this);
+            origPixmap = QPixmap (audqt::art_request_current (0, 0));
+            origSize = origPixmap.size ();
+            drawArt ();
         }
-        else if (pthread_detach (helper_thread))
-            AUDERR ("s:Error detaching helper thread: %s!\n", strerror(errno));
+
+        if (aud_get_str ("audacious", "cover_helper") && aud_get_bool ("albumart", "internet_coverartlookup"))
+        {
+             pthread_attr_t thread_attrs;
+            if (! pthread_attr_init (& thread_attrs))
+            {
+                if (! pthread_attr_setdetachstate (& thread_attrs, PTHREAD_CREATE_DETACHED)
+                        || ! pthread_attr_setscope (& thread_attrs, PTHREAD_SCOPE_PROCESS))
+                {
+                    pthread_t helper_thread;
+
+                    if (pthread_create (&helper_thread, nullptr, helper_thread_fn, this))
+                        AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
+                }
+                else
+                    AUDERR ("s:Error detatching helper thread: %s!\n", strerror (errno));
+
+                if (pthread_attr_destroy (& thread_attrs))
+                    AUDERR ("s:Error destroying helper thread attributes: %s!\n", strerror (errno));
+            }
+            else
+                AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
+        }
     }
 
     void init_update_art ()
     {
-        if (aud_get_bool ("albumart", "internet_coverartlookup"))
-            update_art ();  // JWT:CHECK FILES & DISKS (TUPLE DOESN'T CHANGE IN THESE) ONCE NOW ON PLAY START!
-        else
-        {
-            origPixmap = QPixmap (audqt::art_request_current (0, 0));
-
-            origSize = origPixmap.size ();
-            drawArt ();
-        }
+        skipreset = false;
+        frominit = true;
+        update_art ();  // JWT:CHECK FILES & DISKS (TUPLE DOESN'T CHANGE IN THESE) ONCE NOW ON PLAY START!
     }
 
     void clear ()
@@ -161,10 +200,23 @@ private:
 
     static void * helper_thread_fn (void * data)
     {
+        if (frominit)
+        {
+            skipreset = true;
+            QThread::usleep (2000000);  // SLEEP 2" TO ALLOW FOR ANY TUPLE CHANGE TO OVERRIDE! */
+            if (! frominit)
+            {
+                skipreset = false;
+                pthread_exit (nullptr);
+                return nullptr;
+            }
+        }
+
+        pthread_mutex_lock (& mutex);
+
         String cover_helper = aud_get_str ("audacious", "cover_helper");
         ((ArtLabel *) data)->origPixmap = QPixmap ();
-        if (cover_helper && cover_helper[0]
-                && aud_get_bool ("albumart", "internet_coverartlookup")) //JWT:WE HAVE A PERL HELPER TO LOOK UP COVER ART.
+        if (cover_helper && cover_helper[0]) //JWT:WE HAVE A PERL HELPER TO LOOK UP COVER ART.
         {
             Tuple tuple = aud_drct_get_tuple ();
             String Title = tuple.get_str (Tuple::Title);
@@ -204,70 +256,55 @@ private:
                 }
                 if (!Artist || !Artist[0])
                     Artist = String ("_");
-                String cover_helper = aud_get_str ("audacious", "cover_helper");
                 StringBuf album_buf = str_encode_percent (Album);
                 StringBuf artist_buf = str_encode_percent (Artist);
                 StringBuf title_buf = str_encode_percent (Title);
-                String coverart_file;
-                Index<String> extlist = str_list_to_index ("jpg,png,jpeg,gif", ",");
-                if (! album_art_found)  /* CAN BE SET BY ANOTHER THREAD-INSTANCE IN THE MEAN TIME! */
 #ifdef _WIN32
-                    WinExec ((const char *) str_concat ({cover_helper, " ALBUM '",
-                            (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
-                            (const char *) artist_buf, "' '", (const char *) title_buf, "' "}),
-                            SW_HIDE);
+                WinExec ((const char *) str_concat ({cover_helper, " ALBUM '",
+                        (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
+                        (const char *) artist_buf, "' '", (const char *) title_buf, "' "}),
+                        SW_HIDE);
 #else
-                    system ((const char *) str_concat ({cover_helper, " ALBUM '",
-                            (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
-                            (const char *) artist_buf, "' '", (const char *) title_buf, "' "}));
+                system ((const char *) str_concat ({cover_helper, " ALBUM '",
+                        (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
+                        (const char *) artist_buf, "' '", (const char *) title_buf, "' "}));
 #endif
 
-                if (! album_art_found)  /* CAN BE SET BY ANOTHER THREAD-INSTANCE IN THE MEAN TIME! */
-                {
-                    for (auto & ext : extlist)
-                    {
-                        coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
-                        const char * filenamechar = coverart_file + 7;
-                        struct stat statbuf;
-                        if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
-                            coverart_file = String (_(""));
-                        else
-                        {
-                            coverart_file = String (filename_to_uri (filenamechar));
-                            break;
-                        }
-                    }
-                    if (coverart_file && coverart_file[0])
-                        ((ArtLabel *) data)->origPixmap = QPixmap (audqt::art_request ((const char *) coverart_file, 0, 0));
-                }
-                else
-                    return nullptr;  /* DON'T OVERWRITE - WE ALREADY HAVE IT FROM ANOTHER THREAD-INSTANCE! */
+                hook_call ("albumart ready", nullptr);
             }
         }
+        cover_helper = String ();
 
-        if (! ((ArtLabel *) data)->origPixmap)
-            ((ArtLabel *) data)->origPixmap = QPixmap (audqt::art_request_current (0, 0));
+        pthread_mutex_unlock (& mutex);
 
-        ((ArtLabel *) data)->origSize = ((ArtLabel *) data)->origPixmap.size ();
-        ((ArtLabel *) data)->drawArt ();
-
+        skipreset = false;
+        pthread_exit (nullptr);
         return nullptr;
     }
-
 };
 
 #undef MARGIN
 
+/* JWT:CALLED WHEN SONG ENTRY CHANGES: */
 static void init_update (void *, ArtLabel * widget)
 {
     widget->init_update_art ();
 }
 
-static void update (void *, ArtLabel * widget)
+/* JWT:CALLED WHEN TITLE CHANGES WITHIN THE SAME SONG/STREAM ENTRY: */
+static void albumart_ready (void *, ArtLabel * widget)
 {
+    frominit = false;
+    widget->ready_art ();
+}
+
+static void tuple_update (void *, ArtLabel * widget)
+{
+    frominit = false;
     widget->update_art ();
 }
 
+/* JWT:CALLED WHEN PLAY IS STOPPED (BUT NOT WHEN JUMPING BETWEEN ENTRIES: */
 static void clear (void *, ArtLabel * widget)
 {
     widget->clear ();
@@ -275,10 +312,10 @@ static void clear (void *, ArtLabel * widget)
 
 static void widget_cleanup (QObject * widget)
 {
-    //x hook_dissociate ("playback ready", (HookFunction) update, widget);
     hook_dissociate ("playback stop", (HookFunction) clear, widget);
+    hook_dissociate ("albumart ready", (HookFunction) albumart_ready, widget);
+    hook_dissociate ("tuple change", (HookFunction) tuple_update, widget);
     hook_dissociate ("playback ready", (HookFunction) init_update, widget);
-    hook_dissociate ("tuple change", (HookFunction) update, widget);
 }
 
 void * AlbumArtQt::get_qt_widget ()
@@ -287,8 +324,9 @@ void * AlbumArtQt::get_qt_widget ()
 
     QObject::connect (widget, &QObject::destroyed, widget_cleanup);
 
-    hook_associate ("tuple change", (HookFunction) update, widget);
     hook_associate ("playback ready", (HookFunction) init_update, widget);
+    hook_associate ("tuple change", (HookFunction) tuple_update, widget);
+    hook_associate ("albumart ready", (HookFunction) albumart_ready, widget);
     hook_associate ("playback stop", (HookFunction) clear, widget);
 
     if (aud_drct_get_ready ())
