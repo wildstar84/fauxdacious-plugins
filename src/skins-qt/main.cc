@@ -85,8 +85,6 @@ private:
     void draw (QPainter & cr);
     bool button_press (QMouseEvent * event);
     void enterEvent (QEvent * event);
-    int m_playlist = -1;
-    int m_popup_pos = -1;
     bool scroll (QWheelEvent * event);
 };
 
@@ -536,22 +534,19 @@ bool MainWindow::button_press (QMouseEvent * event)
 
 void MainWindow::enterEvent (QEvent * event)  // JWT:FUNCTION ADDED FOR POPUP SONG INFO-
 {                                             // WHEN HOVERING OVER SHADED MAIN WINDOW:
-    if (is_shaded ())
-    {
-        QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
-        int mousex = mouseEvent->y ();  // JWT:THIS SEEMS 2B BASSACKWARDS (x<->y)?!
-        if (mousex > 78 && mousex < 165)
-        {
-            if (aud_get_bool (nullptr, "show_filepopup_for_tuple"))
-        	   {
-        	   	   m_playlist = aud_playlist_get_active ();
-                m_popup_pos = aud_playlist_get_position (m_playlist);
-                //audqt::infopopup_hide ();
+    if (! is_shaded() || ! aud_get_bool (nullptr, "show_filepopup_for_tuple"))
+        return;
 
-                if (m_popup_pos >= 0)
-                    audqt::infopopup_show (m_playlist, m_popup_pos);
-            }
-        }
+    QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
+    int mousey = mouseEvent->y ();
+
+    if (mousey > 78 && mousey < 165)
+    {
+        int pl = aud_playlist_get_active ();
+        int pos = aud_playlist_get_position (pl);
+
+        if (pos >= 0)
+            audqt::infopopup_show (pl, pos);
     }
 }
 
