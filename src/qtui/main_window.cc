@@ -125,7 +125,8 @@ MainWindow::MainWindow () :
         ToolBarCustom (audqt::volume_button_new (this))
     };
 
-    addToolBar (Qt::TopToolBarArea, new ToolBar (this, items));
+    auto toolbar = new ToolBar(this, items);
+    addToolBar(Qt::TopToolBarArea, toolbar);
 
     if (m_search_tool)
         aud_plugin_add_watch (m_search_tool, plugin_watcher, this);
@@ -157,6 +158,14 @@ MainWindow::MainWindow () :
     read_settings ();
     update_visibility ();
 
+    /* Make sure UI elements are visible, in case restoreState() hid
+     * them. It's not clear exactly how they can get hidden in the first
+     * place, but user screenshots show that it somehow happens, and in
+     * that case we don't want them to be gone forever. */
+    toolbar->show();
+    for (auto w : m_dock_widgets)
+        w->show();
+
     /* set initial keyboard focus on the playlist */
     m_playlist_tabs->currentPlaylistWidget ()->setFocus (Qt::OtherFocusReason);
 }
@@ -180,9 +189,12 @@ void MainWindow::closeEvent (QCloseEvent * e)
     hook_call ("window close", & handled);
 
     if (! handled)
+    {
+        e->accept();
         aud_quit ();
-
-    e->ignore ();
+    }
+    else
+        e->ignore();
 }
 
 void MainWindow::keyPressEvent (QKeyEvent * event)
@@ -371,6 +383,8 @@ void MainWindow::add_dock_plugin_cb (PluginHandle * plugin)
 
     if (! restoreDockWidget (w))
         addDockWidget (Qt::LeftDockWidgetArea, w);
+
+    w->show(); /* in case restoreDockWidget() hid it */
 }
 
 void MainWindow::remove_dock_plugin_cb (PluginHandle * plugin)
