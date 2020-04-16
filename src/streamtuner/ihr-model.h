@@ -45,8 +45,10 @@ struct IHRMarketEntry {
 struct IHRStationEntry {
     QString title;
     QString description;
+    QString genre;
     QString call_letters;
     QString stream_uri;
+    QString logo;
 };
 
 class IHRMarketModel : public QAbstractListModel {
@@ -75,6 +77,7 @@ public:
     enum {
         CallLetters,
         Title,
+        Genre,
         Description,
         NColumns
     };

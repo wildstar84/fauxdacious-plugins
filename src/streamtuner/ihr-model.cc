@@ -158,6 +158,9 @@ QVariant IHRTunerModel::headerData (int section, Qt::Orientation orientation, in
     case Title:
         return QString (_("Title"));
 
+    case Genre:
+        return QString (_("Genre"));
+
     case Description:
         return QString (_("Description"));
     }
@@ -180,6 +183,9 @@ QVariant IHRTunerModel::data (const QModelIndex &index, int role) const
 
     case Title:
         return QString (entry.title);
+
+    case Genre:
+        return QString (entry.genre);
 
     case Description:
         return QString (entry.description);
@@ -219,9 +225,23 @@ void IHRTunerModel::fetch_stations (int market_id)
            entry.title = station["name"].toString ();
            entry.description = station["description"].toString ();
            entry.call_letters = station["callLetters"].toString ();
+           entry.logo = station["logo"].toString ();
 
            auto streams = station["streams"].toObject ();
+           auto genres = station["genres"].toArray ();
+           for (auto genre : genres)
+           {
+               auto genre0 = genre.toObject ();
+               entry.genre = genre0["name"].toString();
+               break;  /* ONLY GRAB 1ST ONE. */
+           }
            entry.stream_uri = streams["shoutcast_stream"].toString ();
+           if (entry.stream_uri.isNull() || entry.logo.isEmpty() || entry.logo.length () <= 0)
+               entry.stream_uri = streams["secure_shoutcast_stream"].toString ();
+           if (entry.stream_uri.isNull() || entry.logo.isEmpty() || entry.logo.length () <= 0)
+               entry.stream_uri = streams["hls_stream"].toString ();
+           if (entry.stream_uri.isNull() || entry.logo.isEmpty() || entry.logo.length () <= 0)
+               entry.stream_uri = streams["secure_hls_stream"].toString ();
 
            m_results.append (entry);
        }
