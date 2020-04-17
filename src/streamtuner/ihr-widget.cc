@@ -52,6 +52,9 @@ void IHRListingWidget::activate (const QModelIndex & index)
         return;
     }
 
+    /* JWT:MUST TURN OFF URL-HELPER FOR LOADING STREAMTUNER STREAMS!: */
+    aud_set_bool ("audacious", "_url_helper_denythistime", true);
+
     AUDINFO ("Play radio entry %s [%s].\n", (const char *) entry.title.toLocal8Bit (), (const char *) entry.stream_uri.toLocal8Bit ());
 
     int playlist = aud_playlist_get_active ();
