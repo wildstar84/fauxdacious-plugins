@@ -85,6 +85,14 @@ static void toggle_search_tool (bool enable)
         aud_plugin_enable (search_tool, enable);
 }
 
+/* JWT:FUNCTION TO TOGGLE RECORDING (SEE gtkui/ui-gtk.cc): */
+static void record_toggle ()
+{
+    bool supported = (bool) aud_drct_get_record_plugin ();
+    if (supported)
+        aud_drct_enable_record (! aud_drct_get_record_enabled ());
+}
+
 MainWindow::MainWindow () :
     m_config_name (get_config_name ()),
     m_dialogs (this),
@@ -113,7 +121,8 @@ MainWindow::MainWindow () :
             [] (bool on) { aud_set_bool (nullptr, "stop_after_current_song", on); }, & m_stop_after_action),
         ToolBarAction ("media-skip-forward", N_("Next"), N_("Next"), aud_drct_pl_next),
         ToolBarAction ("media-record", N_("Record Stream"), N_("Record Stream"),
-            [] (bool on) { aud_set_bool (nullptr, "record", on); }, & m_record_action),
+            /* JWT:ACTUALLY TOGGLE RECORDING!: [] (bool on) { aud_set_bool (nullptr, "record", on); }, & m_record_action), */
+            [] (bool on) { record_toggle (); }, & m_record_action),
         ToolBarSeparator (),
         ToolBarCustom (slider),
         ToolBarCustom (slider->label ()),
@@ -261,8 +270,10 @@ void MainWindow::update_toggles ()
     m_stop_after_action->setVisible (stop_after);
     m_stop_after_action->setChecked (stop_after);
 
-    m_record_action->setVisible (aud_drct_get_record_enabled ());
-    m_record_action->setChecked (aud_get_bool (nullptr, "record"));
+    /* JWT:ALWAYS SHOW & ALLOW TOGGLE!:  m_record_action->setVisible (aud_drct_get_record_enabled ()); */
+    m_record_action->setVisible (true);
+    /* JWT:ACTUALLY TOGGLE RECORDING!:  m_record_action->setChecked (aud_get_bool (nullptr, "record")); */
+    m_record_action->setChecked (aud_drct_get_record_enabled ());
 
     m_repeat_action->setChecked (aud_get_bool (nullptr, "repeat"));
     m_shuffle_action->setChecked (aud_get_bool (nullptr, "shuffle"));
