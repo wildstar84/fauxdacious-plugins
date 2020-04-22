@@ -661,6 +661,10 @@ static gboolean playlist_keypress_cb (GtkWidget *, GdkEventKey * event)
 
 static void update_toggles (void * = nullptr, void * = nullptr)
 {
+    gtk_widget_set_visible ((GtkWidget *) button_record, aud_drct_get_record_enabled ());
+
+    gtk_toggle_tool_button_set_active ((GtkToggleToolButton *) button_record,
+     aud_get_bool (nullptr, "record"));
     gtk_toggle_tool_button_set_active ((GtkToggleToolButton *) button_repeat,
      aud_get_bool (nullptr, "repeat"));
     gtk_toggle_tool_button_set_active ((GtkToggleToolButton *) button_shuffle,
@@ -679,22 +683,7 @@ static void toggle_shuffle (GtkToggleToolButton * button)
 
 static void toggle_record (GtkToggleToolButton * button)
 {
-    bool enable = gtk_toggle_tool_button_get_active (button);
-    if (enable != aud_drct_get_record_enabled ())
-        audgui_toggle_record ();
-
-    /* reset toggle state if necessary */
-    if (enable != aud_drct_get_record_enabled ())
-        gtk_toggle_tool_button_set_active (button, ! enable);
-}
-
-static void record_toggled (void * = nullptr, void * = nullptr)
-{
-    bool supported = (bool) aud_drct_get_record_plugin ();
-    bool enabled = aud_drct_get_record_enabled ();
-
-    gtk_widget_set_sensitive ((GtkWidget *) button_record, supported);
-    gtk_toggle_tool_button_set_active ((GtkToggleToolButton *) button_record, enabled);
+    aud_set_bool (nullptr, "record", gtk_toggle_tool_button_get_active (button));
 }
 
 static void toggle_search_tool (GtkToggleToolButton * button)
@@ -730,9 +719,10 @@ static void ui_hooks_associate ()
     hook_associate ("playlist activate", ui_playlist_notebook_activate, nullptr);
     hook_associate ("playlist set playing", ui_playlist_notebook_set_playing, nullptr);
     hook_associate ("playlist position", ui_playlist_notebook_position, nullptr);
+    hook_associate ("enable record", update_toggles, nullptr);
+    hook_associate ("set record", update_toggles, nullptr);
     hook_associate ("set shuffle", update_toggles, nullptr);
     hook_associate ("set repeat", update_toggles, nullptr);
-    hook_associate ("enable record", record_toggled, nullptr);
     hook_associate ("set step_size", (HookFunction) update_step_size, nullptr);
     hook_associate ("set volume_delta", (HookFunction) update_volume_delta, nullptr);
     hook_associate ("config save", (HookFunction) config_save, nullptr);
@@ -750,9 +740,10 @@ static void ui_hooks_disassociate ()
     hook_dissociate ("playlist activate", ui_playlist_notebook_activate);
     hook_dissociate ("playlist set playing", ui_playlist_notebook_set_playing);
     hook_dissociate ("playlist position", ui_playlist_notebook_position);
+    hook_dissociate ("enable record", update_toggles);
+    hook_dissociate ("set record", update_toggles);
     hook_dissociate ("set shuffle", update_toggles);
     hook_dissociate ("set repeat", update_toggles);
-    hook_dissociate ("enable record", record_toggled);
     hook_dissociate ("set step_size", (HookFunction) update_step_size);
     hook_dissociate ("set volume_delta", (HookFunction) update_volume_delta);
     hook_dissociate ("config save", (HookFunction) config_save);
@@ -853,7 +844,9 @@ bool GtkUI::init ()
     button_play = toolbar_button_add (toolbar, aud_drct_play_pause, "media-playback-start", _("Play"));
     button_stop = toolbar_button_add (toolbar, aud_drct_stop, "media-playback-stop", _("Stop"));
     toolbar_button_add (toolbar, aud_drct_pl_next, "media-skip-forward", _("Next"));
+
     button_record = toggle_button_new ("media-record", _("Record Stream"), toggle_record);
+    gtk_widget_set_no_show_all ((GtkWidget *) button_record, true);
     gtk_toolbar_insert ((GtkToolbar *) toolbar, button_record, -1);
 
     gtk_toolbar_insert ((GtkToolbar *) toolbar, gtk_separator_tool_item_new (), -1);
@@ -959,7 +952,6 @@ bool GtkUI::init ()
     title_change ();
 
     update_toggles ();
-    record_toggled ();
 
     gtk_widget_show_all (vbox_outer);
 
