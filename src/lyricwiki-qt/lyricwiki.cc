@@ -545,77 +545,83 @@ static void lyricwiki_playback_began ()
     }
     else  // NO LOCAL LYRICS FILE FOUND, SO CHECK FOR LYRIC FILE MATCHING TITLE:
     {
-        if (state.title)
+        String lyricsFromTuple = tuple.get_str (Tuple::Lyrics);
+        if (lyricsFromTuple && lyricsFromTuple[0])
+            update_lyrics_window (state.title, state.artist, (const char *) lyricsFromTuple);
+        else
         {
-            /* JWT:MANY STREAMS & SOME FILES FORMAT THE TITLE FIELD AS:
-               "<artist> - <title> [<other-stuff>?]".  IF SO, THEN PARSE OUT THE
-               ARTIST AND TITLE COMPONENTS FROM THE TITLE FOR SEARCHING LYRICWIKI:
-            */
-            const char * ttlstart = (const char *) state.title;
-            const char * ttloffset = ttlstart ? strstr (ttlstart, " - ") : nullptr;
-            if (ttloffset)
+            if (state.title)
             {
-                state.artist = String (str_copy (ttlstart, (ttloffset-ttlstart)));
-                ttloffset += 3;
-                const char * ttlend = ttloffset ? strstr (ttloffset, " - ") : nullptr;
-                if (ttlend)
-                    state.title = String (str_copy (ttloffset, ttlend-ttloffset));
-                else
+                /* JWT:MANY STREAMS & SOME FILES FORMAT THE TITLE FIELD AS:
+                   "<artist> - <title> [<other-stuff>?]".  IF SO, THEN PARSE OUT THE
+                   ARTIST AND TITLE COMPONENTS FROM THE TITLE FOR SEARCHING LYRICWIKI:
+                */
+                const char * ttlstart = (const char *) state.title;
+                const char * ttloffset = ttlstart ? strstr (ttlstart, " - ") : nullptr;
+                if (ttloffset)
                 {
-                    auto split = str_list_to_index (ttloffset, "|/");
-                    for (auto & str : split)
+                    state.artist = String (str_copy (ttlstart, (ttloffset-ttlstart)));
+                    ttloffset += 3;
+                    const char * ttlend = ttloffset ? strstr (ttloffset, " - ") : nullptr;
+                    if (ttlend)
+                        state.title = String (str_copy (ttloffset, ttlend-ttloffset));
+                    else
                     {
-                        int ttllen_1 = strlen (str) - 1;  // "CHOMP" ANY TRAILING SPACES:
-                        while (ttllen_1 >= 0 && str[ttllen_1] == ' ')
-                            ttllen_1--;
-
-                        if (ttllen_1 >= 0)
+                        auto split = str_list_to_index (ttloffset, "|/");
+                        for (auto & str : split)
                         {
-                            StringBuf titleBuf = str_copy (str);
-                            titleBuf.resize (ttllen_1+1);
-                            state.title = String (titleBuf);
+                            int ttllen_1 = strlen (str) - 1;  // "CHOMP" ANY TRAILING SPACES:
+                            while (ttllen_1 >= 0 && str[ttllen_1] == ' ')
+                                ttllen_1--;
+
+                            if (ttllen_1 >= 0)
+                            {
+                                StringBuf titleBuf = str_copy (str);
+                                titleBuf.resize (ttllen_1+1);
+                                state.title = String (titleBuf);
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
-            }
-            if (! state.local_filename || ! state.local_filename[0])
-            {
-                /* JWT:NO LOCAL LYRIC FILE, SO TRY SEARCH FOR LYRIC FILE BY TITLE: */
-                StringBuf titleBuf = str_copy (state.title);
-                /* DON'T %-ENCODE SPACES BY CONVERTING TO A "LEGAL" CHAR. NOT (LIKELY) IN FILE-NAMES/TITLES: */
-                str_replace_char (titleBuf, ' ', '~');
-                titleBuf = str_encode_percent ((const char *) titleBuf, -1);
-                str_replace_char (titleBuf, '~', ' ');  // (THEN CONVERT 'EM BACK TO SPACES)
-                if (path)
+                if (! state.local_filename || ! state.local_filename[0])
                 {
-                    /* ENTRY IS A LOCAL FILE, SO FIRST CHECK DIRECTORY THE FILE IS IN: */
-                    lyricStr = String (str_concat ({path, "/", titleBuf, ".lrc"}));
+                    /* JWT:NO LOCAL LYRIC FILE, SO TRY SEARCH FOR LYRIC FILE BY TITLE: */
+                    StringBuf titleBuf = str_copy (state.title);
+                    /* DON'T %-ENCODE SPACES BY CONVERTING TO A "LEGAL" CHAR. NOT (LIKELY) IN FILE-NAMES/TITLES: */
+                    str_replace_char (titleBuf, ' ', '~');
+                    titleBuf = str_encode_percent ((const char *) titleBuf, -1);
+                    str_replace_char (titleBuf, '~', ' ');  // (THEN CONVERT 'EM BACK TO SPACES)
+                    if (path)
+                    {
+                        /* ENTRY IS A LOCAL FILE, SO FIRST CHECK DIRECTORY THE FILE IS IN: */
+                        lyricStr = String (str_concat ({path, "/", titleBuf, ".lrc"}));
+                        found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
+                        state.local_filename = lyricStr;
+                        if (found_lyricfile)
+                        {
+                            AUDINFO ("i:Local lyric file found by title (%s).\n", (const char *) lyricStr);
+                            vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
+                            return;
+                        }
+                    }
+                    /* OTHERWISE (STREAM, ETC.), CHECK THE GLOBAL CONFIG PATH FOR LYRICS FILE MATCHING TITLE: */
+                    lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir),
+                            "/lyrics/", titleBuf, ".lrc"}));
                     found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
                     state.local_filename = lyricStr;
                     if (found_lyricfile)
                     {
-                        AUDINFO ("i:Local lyric file found by title (%s).\n", (const char *) lyricStr);
+                        AUDINFO ("i:Global lyric file found by title (%s).\n", (const char *) lyricStr);
                         vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
                         return;
                     }
                 }
-                /* OTHERWISE (STREAM, ETC.), CHECK THE GLOBAL CONFIG PATH FOR LYRICS FILE MATCHING TITLE: */
-                lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir),
-                        "/lyrics/", titleBuf, ".lrc"}));
-                found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
-                state.local_filename = lyricStr;
-                if (found_lyricfile)
-                {
-                    AUDINFO ("i:Global lyric file found by title (%s).\n", (const char *) lyricStr);
-                    vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
-                    return;
-                }
             }
+            /* IF HERE, NO LOCAL LYRICS FILE BY FILENAME OR TITLE, SEARCH LYRICWIKI: */
+            AUDINFO ("i:No Local lyric file found, try fetching from lyricwiki...\n");
+            get_lyrics_step_1 ();
         }
-        /* IF HERE, NO LOCAL LYRICS FILE BY FILENAME OR TITLE, SEARCH LYRICWIKI: */
-        AUDINFO ("i:No Local lyric file found, try fetching from lyricwiki...\n");
-        get_lyrics_step_1 ();
     }
     lyricStr = String ();
 }
