@@ -40,6 +40,7 @@
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/plugins.h>
+#include <libfauxdcore/probe.h>
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/hook.h>
 #include <libfauxdcore/vfs_async.h>
@@ -54,6 +55,7 @@ typedef struct {
     String local_filename; /* JWT:CALCULATED LOCAL FILENAME TO SAVE LYRICS TO */
     int startlyrics;       /* JWT:OFFSET IN LYRICS WINDOW WHERE LYRIC TEXT ACTUALLY STARTS */
     bool ok2save;          /* JWT:SET TO TRUE IF GOT LYRICS FROM LYRICWIKI (LOCAL FILE DOESN'T EXIST) */
+    bool ok2saveTag;       /* JWT:SET TO TRUE IF GOT LYRICS FROM LYRICWIKI && LOCAL MP3 FILE */
 } LyricsState;
 
 static LyricsState state;
@@ -317,6 +319,16 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
 
     update_lyrics_window (state.title, state.artist, lyrics);
     state.ok2save = true;
+    if (! strncmp ((const char *) state.filename, "file://", 7)
+            && str_has_suffix_nocase ((const char *) state.filename, ".mp3"))
+    {
+        String error;
+        VFSFile file (state.filename, "r");
+        PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
+        bool can_write = aud_file_can_write_tuple (state.filename, decoder);
+        if (can_write)
+            state.ok2saveTag = true;
+    }
 }
 
 static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void *)
@@ -437,6 +449,33 @@ static void save_lyrics_locally ()
     }
 }
 
+static void save_lyrics_in_id3tag ()
+{
+    QString lyrics = textedit->toPlainText ();
+    if (! lyrics.isNull() && ! lyrics.isEmpty())
+    {
+        if (state.startlyrics > 0)
+            lyrics.remove(0, state.startlyrics);
+
+        int sz = lyrics.length ();
+        if (sz > 0)
+        {
+            String error;
+            Tuple tuple = aud_drct_get_tuple ();
+            tuple.set_str (Tuple::Lyrics, String (str_copy (lyrics.toUtf8().constData(), sz)));
+            VFSFile file (state.filename, "r");
+            PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
+            bool success = aud_file_write_tuple (state.filename, decoder, tuple);
+            if (success)
+                AUDINFO ("i:Successfully saved %d bytes of lyrics to Id3 tag.\n", sz);
+            else
+                AUDERR ("e:Could not save lyrics to id3 tag.\n");
+
+            state.ok2saveTag = false;
+        }
+    }
+}
+
 static void update_lyrics_window (const char * title, const char * artist, const char * lyrics)
 {
     if (! textedit)
@@ -537,6 +576,7 @@ static void lyricwiki_playback_began ()
     state.title = tuple.get_str (Tuple::Title);
     state.artist = tuple.get_str (Tuple::Artist);
     state.ok2save = false;
+    state.ok2saveTag = false;
 
     if (found_lyricfile)  // JWT:WE HAVE LYRICS STORED IN A LOCAL FILE MATCHING FILE NAME!:
     {
@@ -547,7 +587,10 @@ static void lyricwiki_playback_began ()
     {
         String lyricsFromTuple = tuple.get_str (Tuple::Lyrics);
         if (lyricsFromTuple && lyricsFromTuple[0])
+        {
+            AUDDBG ("i:Lyrics found in ID3 tag.\n");
             update_lyrics_window (state.title, state.artist, (const char *) lyricsFromTuple);
+        }
         else
         {
             if (state.title)
@@ -677,6 +720,13 @@ void TextEdit::contextMenuEvent (QContextMenuEvent * event)
         QAction * save_button = menu->addAction (_("Save Locally"));
         QObject::connect (save_button, & QAction::triggered, [] () {
             save_lyrics_locally ();
+        });
+    }
+    if (state.ok2saveTag)
+    {
+        QAction * tuple_save_button = menu->addAction (_("Save ID3"));
+        QObject::connect (tuple_save_button, & QAction::triggered, [] () {
+            save_lyrics_in_id3tag ();
         });
     }
     menu->exec (event->globalPos ());

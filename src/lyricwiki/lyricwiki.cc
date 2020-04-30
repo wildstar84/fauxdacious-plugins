@@ -32,6 +32,7 @@
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/plugins.h>
+#include <libfauxdcore/probe.h>
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/hook.h>
@@ -247,6 +248,7 @@ static void update_lyrics_window (const char * title, const char * artist,
 
 static GtkWidget * edit_button;
 static GtkWidget * save_button;
+static GtkWidget * tuple_save_button;
 
 static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *)
 {
@@ -273,6 +275,16 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
 
     update_lyrics_window (state.title, state.artist, lyrics, true);
     gtk_widget_set_sensitive (save_button, true);
+    if (! strncmp ((const char *) state.filename, "file://", 7)
+            && str_has_suffix_nocase ((const char *) state.filename, ".mp3"))
+    {
+        String error;
+        VFSFile file (state.filename, "r");
+        PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
+        bool can_write = aud_file_can_write_tuple (state.filename, decoder);
+        if (can_write)
+            gtk_widget_set_sensitive (tuple_save_button, true);
+    }
 }
 
 static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void *)
@@ -399,6 +411,40 @@ static void save_lyrics_locally ()
     }
 }
 
+static void save_lyrics_in_id3tag ()
+{
+    if (textbuffer)
+    {
+        GtkTextIter start_iter;
+        GtkTextIter end_iter;
+        gtk_text_buffer_get_start_iter (textbuffer, & start_iter);
+        gtk_text_buffer_get_end_iter (textbuffer, & end_iter);
+        gint sz = gtk_text_iter_get_offset (& end_iter) - gtk_text_iter_get_offset (& start_iter);
+        sz -= state.startlyrics;
+        if (sz > 0)
+        {
+            gchar * lyrics = gtk_text_buffer_get_slice (textbuffer, & start_iter,
+                  & end_iter, false);
+            if (lyrics)
+            {
+                String error;
+                Tuple tuple = aud_drct_get_tuple ();
+                tuple.set_str (Tuple::Lyrics, String (str_copy (lyrics + state.startlyrics, sz)));
+                g_free (lyrics);
+                VFSFile file (state.filename, "r");
+                PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
+                bool success = aud_file_write_tuple (state.filename, decoder, tuple);
+                if (success)
+                    AUDINFO ("i:Successfully saved %d bytes of lyrics to Id3 tag.\n", sz);
+                else
+                    AUDERR ("e:Could not save lyrics to id3 tag.\n");
+
+                gtk_widget_set_sensitive (tuple_save_button, false);
+            }
+        }
+    }
+}
+
 static GtkWidget * build_widget ()
 {
     textview = (GtkTextView *) gtk_text_view_new ();
@@ -434,8 +480,13 @@ static GtkWidget * build_widget ()
     gtk_widget_set_sensitive (save_button, false);
     gtk_box_pack_end ((GtkBox *) hbox, save_button, false, false, 0);
 
+    tuple_save_button = gtk_button_new_with_mnemonic (_("Save ID3"));
+    gtk_widget_set_sensitive (tuple_save_button, false);
+    gtk_box_pack_end ((GtkBox *) hbox, tuple_save_button, false, false, 0);
+
     g_signal_connect (edit_button, "clicked", (GCallback) launch_edit_page, nullptr);
     g_signal_connect (save_button, "clicked", (GCallback) save_lyrics_locally, nullptr);
+    g_signal_connect (tuple_save_button, "clicked", (GCallback) save_lyrics_in_id3tag, nullptr);
 
     return vbox;
 }
@@ -552,6 +603,7 @@ static void lyricwiki_playback_began ()
     state.title = tuple.get_str (Tuple::Title);
     state.artist = tuple.get_str (Tuple::Artist);
     gtk_widget_set_sensitive (save_button, false);
+    gtk_widget_set_sensitive (tuple_save_button, false);
 
     if (found_lyricfile)  // JWT:WE HAVE LYRICS STORED IN A LOCAL FILE MATCHING FILE NAME!:
     {
@@ -562,7 +614,10 @@ static void lyricwiki_playback_began ()
     {
         String lyricsFromTuple = tuple.get_str (Tuple::Lyrics);
         if (lyricsFromTuple && lyricsFromTuple[0])
+        {
+            AUDDBG ("i:Lyrics found in ID3 tag.\n");
             update_lyrics_window (state.title, state.artist, (const char *) lyricsFromTuple, false);
+        }
         else
         {
             if (state.title)
@@ -655,6 +710,7 @@ static void destroy_cb ()
     textview = nullptr;
     textbuffer = nullptr;
     save_button = nullptr;
+    tuple_save_button = nullptr;
     edit_button = nullptr;
 }
 
