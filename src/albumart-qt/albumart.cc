@@ -115,16 +115,30 @@ public:
     /* JWT:UPDATE THE ALBUM-COVER IMAGE (CALL THREAD IF DYNAMIC ALBUM-ART OPTION IN EFFECT): */
     void update_art ()
     {
+        bool haveartalready = false;
+
         if (! skipreset)
         {
             origPixmap = QPixmap (audqt::art_request_current (0, 0));
+            if (origPixmap.isNull ())
+                origPixmap = QPixmap (audqt::art_request_fallback (0, 0));
+            else
+                haveartalready = true;
+
             origSize = origPixmap.size ();
             drawArt ();
         }
 
         if (aud_get_str ("audacious", "cover_helper") && aud_get_bool ("albumart", "internet_coverartlookup"))
         {
-             pthread_attr_t thread_attrs;
+            if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP INTERNET ART SEARCH! */
+            {
+                String filename = aud_drct_get_filename ();
+                if (! strncmp (filename, "file://", 7))
+                    return;
+            }
+
+            pthread_attr_t thread_attrs;
             if (! pthread_attr_init (& thread_attrs))
             {
                 if (! pthread_attr_setdetachstate (& thread_attrs, PTHREAD_CREATE_DETACHED)

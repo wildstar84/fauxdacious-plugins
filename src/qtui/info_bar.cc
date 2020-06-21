@@ -278,6 +278,8 @@ void InfoBar::update_title ()
 void InfoBar::update_album_art ()
 {
     sd[Cur].art = audqt::art_request_current (ps.IconSize, ps.IconSize);
+    if (sd[Cur].art.isNull ())
+        sd[Cur].art = audqt::art_request_fallback (ps.IconSize, ps.IconSize);
 }
 
 void InfoBar::next_song ()

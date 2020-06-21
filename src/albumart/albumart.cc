@@ -197,19 +197,32 @@ static void albumart_ready (void *, GtkWidget * widget)
 /* JWT:UPDATE THE ALBUM-COVER IMAGE (CALL THREAD IF DYNAMIC ALBUM-ART OPTION IN EFFECT): */
 static void album_update (void *, GtkWidget * widget)
 {
+    bool haveartalready = false;
+
     if (! skipreset)
     {
         AudguiPixbuf pixbuf = audgui_pixbuf_request_current ();
 
         if (! pixbuf)
             pixbuf = audgui_pixbuf_fallback ();
+        else
+            haveartalready = true;
 
         if (pixbuf)
             audgui_scaled_image_set (widget, pixbuf.get ());
+        else
+            haveartalready = false;
     }
 
     if (aud_get_str ("audacious", "cover_helper") && aud_get_bool ("albumart", "internet_coverartlookup"))
     {
+        if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP INTERNET ART SEARCH! */
+        {
+            String filename = aud_drct_get_filename ();
+            if (! strncmp (filename, "file://", 7))
+                return;
+        }
+
         pthread_attr_t thread_attrs;
         if (! pthread_attr_init (& thread_attrs))
         {
@@ -219,10 +232,7 @@ static void album_update (void *, GtkWidget * widget)
                 pthread_t helper_thread;
 
                 if (pthread_create (&helper_thread, nullptr, helper_thread_fn, widget))
-                {
                     AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
-// DON'T DO IF CALLING pthread_exit!:                    helper_thread_fn (widget);
-                }
             }
             else
                 AUDERR ("s:Error detatching helper thread: %s!\n", strerror (errno));
