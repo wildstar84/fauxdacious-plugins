@@ -20,12 +20,10 @@
 #include <libfauxdcore/drct.h>
 #include <libfauxdcore/hook.h>
 #include <libfauxdcore/i18n.h>
-#include <libfauxdcore/playlist.h>
 #include <libfauxdcore/plugin.h>
-#include <libfauxdcore/probe.h>
 #include <libfauxdcore/runtime.h>
+#include <libfauxdcore/playlist.h>
 
-#include <libfauxdqt/libfauxdqt.h>
 #include <libfauxdqt/info-widget.h>
 
 class SongInfo : public GeneralPlugin {
@@ -40,73 +38,37 @@ public:
 
     constexpr SongInfo () : GeneralPlugin (info, false) {}
     void * get_qt_widget ();
-
-private:
-    static void update (void * unused, audqt::InfoWidget * widget);
-    static void clear (void * unused, audqt::InfoWidget * widget);
-    static void widget_cleanup (QObject * widget);
 };
 
-void SongInfo::update (void * unused, audqt::InfoWidget * widget)
+class SongInfoWidget : public audqt::InfoWidget
 {
-    if (! aud_drct_get_playing ())
-        return;
+public:
+    SongInfoWidget() { update(); }
 
-    if (! widget)
-        return;
+private:
+    const HookReceiver<SongInfoWidget>
+        change_hook{"tuple change", this, &SongInfoWidget::update},
+        update_hook{"playback ready", this, &SongInfoWidget::update},
+        clear_hook{"playback stop", this, &SongInfoWidget::update};
 
-    int playlist = aud_playlist_get_playing ();
-
-    if (playlist == -1)
-        playlist = aud_playlist_get_active ();
-
-    int position = aud_playlist_get_position (playlist);
-    if (position == -1)
-        return;
-
-    String filename = aud_playlist_entry_get_filename (playlist, position);
-    if (! filename)
-        return;
-
-    PluginHandle * decoder = aud_playlist_entry_get_decoder (playlist, position);
-    if (! decoder)
-        return;
-
-    Tuple tuple = aud_playlist_entry_get_tuple (playlist, position);
-    if (tuple.valid ())
+    void update()
     {
-        bool can_write = aud_file_can_write_tuple (filename, decoder);
-        /* JWT:LET 'EM SAVE TO USER'S CONFIG FILE IF CAN'T SAVE TO FILE/STREAM: */
-        if (! can_write && aud_get_bool (nullptr, "user_tag_data"))
-            can_write = true;
-        widget->fillInfo (playlist, position, filename, tuple, decoder, can_write);
+        int playlist = aud_playlist_get_playing ();
+        int position;
+
+        if (playlist == -1)
+            playlist = aud_playlist_get_active ();
+
+        position = aud_playlist_get_position (playlist);
+
+        if (position >= 0)
+        fillInfo(playlist, position, aud_drct_get_filename(), aud_drct_get_tuple(), nullptr, false);
     }
-}
-
-void SongInfo::clear (void * unused, audqt::InfoWidget * widget)
-{
-    if (! widget)
-        return;
-}
-
-void SongInfo::widget_cleanup (QObject * widget)
-{
-    hook_dissociate ("playback begin", (HookFunction) update, widget);
-    hook_dissociate ("playback stop", (HookFunction) clear, widget);
-}
+};
 
 void * SongInfo::get_qt_widget ()
 {
-    audqt::InfoWidget * widget = new audqt::InfoWidget;
-
-    QObject::connect (widget, &QObject::destroyed, widget_cleanup);
-
-    hook_associate ("playback begin", (HookFunction) update, widget);
-    hook_associate ("playback stop", (HookFunction) clear, widget);
-
-    update(nullptr, widget);
-
-    return widget;
+    return new SongInfoWidget;
 }
 
 EXPORT SongInfo aud_plugin_instance;
