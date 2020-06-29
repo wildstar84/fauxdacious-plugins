@@ -59,6 +59,7 @@ static void show_playlist_manager () { hook_call ("qtui show playlist manager", 
 static void toggle_menubar () { hook_call ("qtui toggle menubar", nullptr); }
 static void toggle_infoarea () { hook_call ("qtui toggle infoarea", nullptr); }
 static void toggle_infoarea_vis () { hook_call ("qtui toggle infoarea_vis", nullptr); }
+static void toggle_infoarea_art () { hook_call("qtui toggle infoarea_art", nullptr); }
 static void toggle_statusbar () { hook_call ("qtui toggle statusbar", nullptr); }
 static void toggle_remaining_time () { hook_call ("qtui toggle remaining time", nullptr); }
 
@@ -66,10 +67,10 @@ QMenuBar * qtui_build_menubar (QWidget * parent)
 {
     static const audqt::MenuItem file_items[] = {
         audqt::MenuCommand ({N_("_Open Files ..."), "document-open", "Ctrl+O"}, open_files),
-        audqt::MenuCommand ({N_("_Open Folder ..."), "document-open"}, open_folder),
+        audqt::MenuCommand ({N_("_Open Folder ..."), "document-open", "Ctrl+K"}, open_folder),
         audqt::MenuCommand ({N_("Open _URL ..."), "folder-remote", "Ctrl+L"}, open_url),
         audqt::MenuCommand ({N_("_Add Files ..."), "list-add", "Ctrl+Shift+O"}, add_files),
-        audqt::MenuCommand ({N_("_Add Folder ..."), "list-add"}, add_folder),
+        audqt::MenuCommand ({N_("_Add Folder ..."), "list-add", "Ctrl+Shift+K"}, add_folder),
         audqt::MenuCommand ({N_("Add U_RL ..."), "folder-remote", "Ctrl+Shift+L"}, add_url),
         audqt::MenuSep (),
         audqt::MenuCommand ({N_("Search _Library"), "edit-find", "Ctrl+Y"}, show_search_tool),
@@ -95,7 +96,11 @@ QMenuBar * qtui_build_menubar (QWidget * parent)
         audqt::MenuToggle ({N_("N_o Playlist Advance"), nullptr, "Ctrl+N"}, {nullptr, "no_playlist_advance", "set no_playlist_advance"}),
         audqt::MenuToggle ({N_("Stop A_fter This Song"), nullptr, "Ctrl+M"}, {nullptr, "stop_after_current_song", "set stop_after_current_song"}),
         audqt::MenuSep (),
-        audqt::MenuCommand ({N_("Song _Info ..."), "dialog-information", "Ctrl+I"}, audqt::infowin_show_current)
+        audqt::MenuCommand ({N_("Song _Info ..."), "dialog-information", "Ctrl+I"}, audqt::infowin_show_current),
+        audqt::MenuSep(),
+        audqt::MenuCommand ({N_("Set Repeat Point _A"), nullptr, "Ctrl+1"}, set_ab_repeat_a),
+        audqt::MenuCommand ({N_("Set Repeat Point _B"), nullptr, "Ctrl+2"}, set_ab_repeat_b),
+        audqt::MenuCommand ({N_("_Clear Repeat Points"), nullptr, "Ctrl+3"}, clear_ab_repeat)
     };
 
     static const audqt::MenuItem dupe_items[] = {
@@ -177,6 +182,7 @@ QMenuBar * qtui_build_menubar (QWidget * parent)
         audqt::MenuToggle ({N_("Show _Menu Bar"), nullptr, "Shift+Ctrl+M"}, {"qtui", "menu_visible"}, toggle_menubar),
         audqt::MenuToggle ({N_("Show I_nfo Bar"), nullptr, "Shift+Ctrl+I"}, {"qtui", "infoarea_visible"}, toggle_infoarea),
         audqt::MenuToggle ({N_("Show Info Bar Vis_ualization")}, {"qtui", "infoarea_show_vis"}, toggle_infoarea_vis),
+        audqt::MenuToggle ({N_("Show Info Bar _Album Art")}, {"qtui", "infoarea_show_art"}, toggle_infoarea_art),
         audqt::MenuToggle ({N_("Show _Status Bar"), nullptr, "Shift+Ctrl+S"}, {"qtui", "statusbar_visible"}, toggle_statusbar),
         audqt::MenuSep (),
         audqt::MenuToggle ({N_("Show _Remaining Time"), nullptr, "Shift+Ctrl+R"}, {"qtui", "show_remaining_time", "qtui toggle remaining time"}, toggle_remaining_time),

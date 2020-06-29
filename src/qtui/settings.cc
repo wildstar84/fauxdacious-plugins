@@ -28,6 +28,7 @@
 
 const char * const qtui_defaults[] = {
     "infoarea_show_vis", "TRUE",
+    "infoarea_show_art", "TRUE",
     "infoarea_visible", "TRUE",
     "menu_visible", "TRUE",
     "playlist_tabs_visible", aud::numeric_string<PlaylistTabVisibility::AutoHide>::str,
