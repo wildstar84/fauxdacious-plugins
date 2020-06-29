@@ -50,6 +50,7 @@ private:
     QMenu * m_pl_menu;
     QWidget * m_leftbtn;
     PlaylistTabBar * m_tabbar;
+    bool m_in_update = false;
 
     QLineEdit * getTabEdit (int idx);
     void updateTabText (int idx);

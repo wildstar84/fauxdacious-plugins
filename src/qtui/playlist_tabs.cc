@@ -178,7 +178,8 @@ void PlaylistTabs::updateIcons ()
 
 void PlaylistTabs::currentChangedTrigger (int idx)
 {
-    aud_playlist_set_active (idx);
+    if (! m_in_update)
+        aud_playlist_set_active (idx);
 }
 
 QLineEdit * PlaylistTabs::getTabEdit (int idx)
@@ -285,12 +286,15 @@ bool PlaylistTabs::cancelRename ()
 
 void PlaylistTabs::playlist_activate_cb ()
 {
+    m_in_update = true;
     setCurrentIndex (aud_playlist_get_active ());
     cancelRename ();
+    m_in_update = false;
 }
 
 void PlaylistTabs::playlist_update_cb (Playlist::UpdateLevel global_level)
 {
+    m_in_update = true;
     if (global_level == Playlist::Structure)
         addRemovePlaylists ();
     if (global_level >= Playlist::Metadata)
@@ -300,6 +304,7 @@ void PlaylistTabs::playlist_update_cb (Playlist::UpdateLevel global_level)
         playlistWidget (i)->playlistUpdate ();
 
     setCurrentIndex (aud_playlist_get_active ());
+    m_in_update = false;
 }
 
 void PlaylistTabs::playlist_position_cb (int list)
