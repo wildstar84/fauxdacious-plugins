@@ -59,10 +59,7 @@ public:
     int columnCount (const QModelIndex & parent = QModelIndex ()) const;
     QVariant data (const QModelIndex & index, int role = Qt::DisplayRole) const;
     QVariant headerData (int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
-
-    Qt::DropActions supportedDropActions () const;
     Qt::ItemFlags flags (const QModelIndex & index) const;
-
     QStringList mimeTypes () const;
     QMimeData * mimeData (const QModelIndexList & indexes) const;
     bool dropMimeData (const QMimeData * data, Qt::DropAction action, int row,
@@ -71,11 +68,13 @@ public:
     void entriesAdded (int row, int count);
     void entriesRemoved (int row, int count);
     void entriesChanged (int row, int count);
+    void setFont (const QFont & font);
 
 private:
     int m_playlist;
     int m_rows;
 
+    QFont m_bold;
     QVariant alignment (int col) const;
     QString queuePos (int row) const;
 };

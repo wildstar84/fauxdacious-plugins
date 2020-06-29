@@ -53,8 +53,8 @@ constexpr ToolBarItem ToolBarAction (const char * icon_name, const char * name,
  const char * tooltip_text, void (* toggled) (bool), QAction * * action_ptr = nullptr)
     { return { icon_name, name, tooltip_text, nullptr, toggled, nullptr, false, action_ptr }; }
 
-constexpr ToolBarItem ToolBarCustom (QWidget * item)
-    { return { nullptr, nullptr, nullptr, nullptr, nullptr, item }; }
+constexpr ToolBarItem ToolBarCustom (QWidget * item, QAction ** action_ptr = nullptr)
+    { return { nullptr, nullptr, nullptr, nullptr, nullptr, item, false, action_ptr }; }
 
 constexpr ToolBarItem ToolBarSeparator ()
     { return { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, true }; }

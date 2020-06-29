@@ -36,9 +36,6 @@ extern int menu_tab_playlist_id;
 extern const PluginPreferences gtkui_prefs;
 
 /* ui_gtk.c */
-void set_ab_repeat_a ();
-void set_ab_repeat_b ();
-void clear_ab_repeat ();
 void show_hide_menu ();
 void show_hide_infoarea ();
 void show_hide_infoarea_vis ();
