@@ -626,6 +626,7 @@ static const struct {
     {Tuple::String, Tuple::Artist, {"author", "hor", "artist", nullptr}},
     {Tuple::String, Tuple::Title, {"title", "le", nullptr}},
     {Tuple::String, Tuple::Album, {"album", "WM/AlbumTitle", nullptr}},
+    {Tuple::String, Tuple::AlbumArtist, {"album_artist", nullptr}},
     {Tuple::String, Tuple::Performer, {"performer", nullptr}},
     {Tuple::String, Tuple::Copyright, {"copyright", nullptr}},
     {Tuple::String, Tuple::Genre, {"genre", "WM/Genre", nullptr}},
@@ -669,10 +670,9 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
 
         if ((int)ic->duration != 0)
             tuple.set_int (Tuple::Length, ic->duration / 1000);
-        else
-            tuple.unset (Tuple::Length);
 
         tuple.set_int (Tuple::Bitrate, ic->bit_rate / 1000);
+        tuple.set_int (Tuple::Channels, cinfo.context->channels);
 
         if (cinfo.codec->long_name)
             tuple.set_str (Tuple::Codec, cinfo.codec->long_name);
@@ -988,6 +988,8 @@ bool FFaudio::play (const char * filename, VFSFile & file)
             tuple.unset (Tuple::Length);
 
         tuple.set_int (Tuple::Bitrate, ic->bit_rate / 1000);
+        tuple.set_int (Tuple::Channels, cinfo.context->channels);
+
         if (cinfo.codec->long_name)
             tuple.set_str (Tuple::Codec, cinfo.codec->long_name);
         if (ic->metadata)
@@ -1588,6 +1590,28 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
 #else
         avcodec_close (cinfo.context);
 #endif
+    }
+
+    if (aud_get_bool ("ffaudio", "save_video"))
+    {
+        String save_video_file = aud_get_str ("ffaudio", "save_video_file");
+        if (! save_video_file[0])
+#ifdef _WIN32
+            save_video_file = String ("C:\\Temp\\lastvideo");
+#else
+            save_video_file = String ("/tmp/lastvideo");
+#endif
+        String save_video_uri = String (filename_to_uri (save_video_file));
+        String error;
+        VFSFile file (save_video_uri, "r");
+        int current_playlist = aud_playlist_get_active ();
+        Tuple tuple = aud_playlist_entry_get_tuple (current_playlist, aud_playlist_get_position (current_playlist));
+        //??? tuple.unset (Tuple::Length);
+        tuple.set_int (Tuple::Length, -1);
+        String song_title = tuple.get_str (Tuple::Title);
+        PluginHandle * out_plugin = aud_file_find_decoder (save_video_uri, true, file, & error);
+        if (! aud_file_write_tuple (save_video_uri, out_plugin, tuple))
+            AUDERR ("e:Could not save metadata to recorded video file or tag file.\n");
     }
 
     return returnok;
