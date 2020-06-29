@@ -115,7 +115,7 @@ bool M3ULoader::load (const char * filename, VFSFile & file, String & title,
 
                 if (s && s[0])
                 {
-                    if (! strncmp (s, "file://", 7) && strstr (parse, "cue?"))  // CUESHEET:
+                    if (! strncmp (s, "file://", 7) && strstr_nocase (parse, "cue?"))  // CUESHEET:
                         s = String (str_decode_percent (s));  // UNESCAPE THE "?" ESCAPED BY uri_construct ().
 
                     if (Extended_m3u)

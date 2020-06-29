@@ -244,7 +244,7 @@ bool CueLoader::save (const char * filename, VFSFile & file, const char * title,
         }
         else
         {
-            from_cuesheet = strstr ((const char *) item.filename, ".cue?") ? true : false;
+            from_cuesheet = strstr_nocase ((const char *) item.filename, ".cue?") ? true : false;
             /* FOR CUESHEET ENTRIES, SAVE ACTUAL AUDIO-FILE (NO CUESHEETS EMBEDDED IN CUE FILES)! */
             actual_filename = from_cuesheet ? item.tuple.get_str (Tuple::AudioFile) : item.filename;
             if (! actual_filename || ! actual_filename[0])
