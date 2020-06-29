@@ -5,7 +5,7 @@ dnl ***
 dnl Initialize
 dnl ==========
 AC_PREREQ([2.59])
-AC_INIT([fauxdacious-plugins], [4.1-beta1])
+AC_INIT([fauxdacious-plugins], [4.1-beta2])
 AC_COPYRIGHT([Copyright (C) 2001-2020 Audacious developers and others])
 
 AC_DEFINE_UNQUOTED([PACKAGE], "$PACKAGE_NAME", [Name of package])
@@ -103,7 +103,7 @@ check_allowed () {
                 AC_MSG_ERROR([--enable-$1 cannot be used without --enable-gtk])
             fi
             ;;
-        ampache|qtaudio|qtglspectrum)
+        ampache|qtaudio|qtglspectrum|streamtuner)
             plugin_allowed=$USE_QT
             if test $plugin_allowed = no -a $2 = yes ; then
                 AC_MSG_ERROR([--enable-$1 cannot be used without --enable-qt])
