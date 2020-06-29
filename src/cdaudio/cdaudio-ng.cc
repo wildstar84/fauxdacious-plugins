@@ -416,8 +416,10 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
             trackinfo[trackno].tag_read = false;
             custom_tagfile_sought = false;
         }
-        tuple.set_int (Tuple::Length, calculate_track_length
-             (trackinfo[trackno].startlsn, trackinfo[trackno].endlsn));
+        tuple.set_int (Tuple::Length, 
+                calculate_track_length (trackinfo[trackno].startlsn, trackinfo[trackno].endlsn));
+        tuple.set_int (Tuple::Channels, cdio_get_track_channels (pcdrom_drive->p_cdio, trackno));
+
         if (! trackinfo[trackno].tag_read)  /* JWT:ONLY NEED TO FETCH TRACK INFO ONCE! */
         {
             if (!cdda_track_audiop (pcdrom_drive, trackno))

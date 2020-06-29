@@ -234,10 +234,10 @@ bool WavpackPlugin::read_tag (const char * filename, VFSFile & file, Tuple & tup
     AUDDBG("starting probe of %s\n", file.filename ());
 
     tuple.set_int (Tuple::Length,
-        ((uint64_t) WavpackGetNumSamples(ctx) * 1000) / (uint64_t) WavpackGetSampleRate(ctx));
+            ((uint64_t) WavpackGetNumSamples(ctx) * 1000) / (uint64_t) WavpackGetSampleRate(ctx));
     tuple.set_str (Tuple::Codec, "WavPack");
-
     tuple.set_str (Tuple::Quality, wv_get_quality (ctx));
+    tuple.set_int (Tuple::Channels,  WavpackGetNumChannels (ctx));
 
     WavpackCloseFile(ctx);
 

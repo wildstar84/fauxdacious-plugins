@@ -182,6 +182,7 @@ bool AudAdPlugXMMS::read_tag (const char * filename, VFSFile & file, Tuple & tup
   tuple.set_str (Tuple::Codec, p->gettype().c_str());
   tuple.set_str (Tuple::Quality, _("sequenced"));
   tuple.set_int (Tuple::Length, p->songlength (plr.subsong));
+  tuple.set_int (Tuple::Channels, 2);
   delete p;
 
   return true;
