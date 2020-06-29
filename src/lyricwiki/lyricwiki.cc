@@ -549,7 +549,7 @@ static void lyricwiki_playback_began ()
     {
         /* JWT:IF WE'RE A "FILE", FIRST CHECK LOCAL DIRECTORY FOR A LYRICS FILE MATCHING FILE-NAME: */
         const char * dot = strrchr (base, '.');
-        int ln = (dot && ! strstr (dot, ".cue?")) ? (dot - base) : -1;  // SET TO FULL LENGTH(-1) IF NO EXTENSION OR NOT A CUESHEET.
+        int ln = (dot && ! strstr_nocase (dot, ".cue?")) ? (dot - base) : -1;  // SET TO FULL LENGTH(-1) IF NO EXTENSION OR NOT A CUESHEET.
         if (! strncmp ((const char *) state.filename, "file://", 7))
         {
             path = filename_get_parent (uri_to_filename (state.filename));
