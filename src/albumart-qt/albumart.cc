@@ -77,12 +77,20 @@ public:
 
 class ArtLabel : public QLabel {
 public:
-    ArtLabel (QWidget * parent = 0, Qt::WindowFlags f = 0) : QLabel(parent, f)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
+    ArtLabel (QWidget * parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags ()) : QLabel (parent, f)
+#else
+    ArtLabel (QWidget * parent = nullptr, Qt::WindowFlags f = 0) : QLabel (parent, f)
+#endif
     {
         init ();
     }
 
-    ArtLabel (const QString & text, QWidget * parent = 0, Qt::WindowFlags f = 0) : QLabel (text, parent, f)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
+    ArtLabel (const QString & text, QWidget * parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags ()) : QLabel (text, parent, f)
+#else
+    ArtLabel (const QString & text, QWidget * parent = nullptr, Qt::WindowFlags f = 0) : QLabel (text, parent, f)
+#endif
     {
         init ();
     }
@@ -177,13 +185,22 @@ protected:
     virtual void resizeEvent (QResizeEvent * event)
     {
         QLabel::resizeEvent (event);
-        const QPixmap * pm = pixmap ();
 
-        if ( ! origPixmap.isNull () && pm && ! pm->isNull () &&
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+        QPixmap pm = pixmap (Qt::ReturnByValue);
+        if (! origPixmap.isNull () && ! pm.isNull () &&
+                (size ().width () <= origSize.width () + MARGIN ||
+                 size ().height () <= origSize.height () + MARGIN ||
+                 pm.size ().width () != origSize.width () ||
+                 pm.size ().height () != origSize.height ()))
+#else
+        const QPixmap * pm = pixmap ();
+        if (! origPixmap.isNull () && pm && ! pm->isNull () &&
                 (size ().width () <= origSize.width () + MARGIN ||
                  size ().height () <= origSize.height () + MARGIN ||
                  pm->size ().width () != origSize.width () ||
                  pm->size ().height () != origSize.height ()))
+#endif
             drawArt ();
     }
 
@@ -201,14 +218,14 @@ private:
     void drawArt ()
     {
         if (origSize.width () <= size ().width () - MARGIN &&
-            origSize.height () <= size ().height() - MARGIN)
+            origSize.height () <= size ().height () - MARGIN)
             setPixmap (origPixmap);
         else
             setPixmap (origPixmap.scaled (size ().width () - MARGIN, size ().height () - MARGIN,
                         Qt::KeepAspectRatio, Qt::SmoothTransformation));
 
 #ifdef Q_OS_MAC
-	    repaint();
+        repaint ();
 #endif
     }
 

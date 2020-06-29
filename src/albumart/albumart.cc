@@ -203,10 +203,10 @@ static void album_update (void *, GtkWidget * widget)
     {
         AudguiPixbuf pixbuf = audgui_pixbuf_request_current ();
 
-        if (! pixbuf)
-            pixbuf = audgui_pixbuf_fallback ();
-        else
+        if (pixbuf)
             haveartalready = true;
+        else
+            pixbuf = audgui_pixbuf_fallback ();
 
         if (pixbuf)
             audgui_scaled_image_set (widget, pixbuf.get ());
