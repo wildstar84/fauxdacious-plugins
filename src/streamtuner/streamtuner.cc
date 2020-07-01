@@ -68,7 +68,7 @@ StreamTunerWidget::StreamTunerWidget(QWidget *parent) :
 class StreamTunerPlugin : public GeneralPlugin {
 public:
     static constexpr PluginInfo info = {
-        N_("Stream Tuner"),
+        N_("Stream Tuner (Experimental)"),
         PACKAGE,
         nullptr,
         nullptr,
