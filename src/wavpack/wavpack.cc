@@ -242,7 +242,7 @@ bool WavpackPlugin::read_tag (const char * filename, VFSFile & file, Tuple & tup
     WavpackCloseFile(ctx);
 
     if (! file.fseek (0, VFS_SEEK_SET))
-        audtag::read_tag (file, tuple, nullptr);
+        audtag::read_tag (file, tuple, image);
 
     AUDDBG("returning tuple for file %s\n", file.filename ());
     return true;
