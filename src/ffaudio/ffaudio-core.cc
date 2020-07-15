@@ -1673,7 +1673,7 @@ const char * const FFaudio::exts[] = {
 
     /* AVI  // JWT:ADDED */
     /* NOTE:  .mov CAN NOT BE PLAYED OVER STDIN (FFPLAY WON'T EVEN PLAY IT THAT WAY!) */
-    "avi", "flv", "swf", "mov",
+    "avi", "flv", "swf", "mov", "mpd",
 
     /* 3rd Generation Partnership Videos  // JWT:ADDED */
     "3gp",
