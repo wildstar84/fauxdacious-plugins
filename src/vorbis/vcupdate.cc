@@ -22,11 +22,14 @@
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
 
+#include <glib.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+#define AUD_GLIB_INTEGRATION
+#define WANT_AUD_BSWAP
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/multihash.h>
@@ -85,6 +88,59 @@ static void insert_int_tuple_field_to_dictionary (const Tuple & tuple,
         dict.remove (String (key));
 }
 
+/* JWT:  EMULATE: $>kid3-cli -c 'set picture:"<imagefid>" "front cover"' <songfile.ogg>
+   SEE:  https://xiph.org/flac/format.html#metadata_block_picture
+*/
+static bool write_artimage_item (const Index<char> & data, const char * fileext,
+ const char * key, Dictionary & dict)
+{
+    uint32_t int4bites;
+    Index<char> buf;
+
+    int4bites = TO_BE32 (3);  // JWT:"COVER FRONT"
+    buf.insert ((const char *) & int4bites, 0, 4);
+
+    if (strcmp_nocase (fileext, "jpg"))
+    {
+        int4bites = TO_BE32 (6 + strlen (fileext));
+        buf.insert ((const char *) & int4bites, -1, 4);
+        buf.insert ("image/", -1, 6);
+        buf.insert (fileext, -1, strlen (fileext));
+    }
+    else
+    {
+        int4bites = TO_BE32 (10);
+        buf.insert ((const char *) & int4bites, -1, 4);
+        buf.insert ("image/jpeg", -1, 10);
+    }
+
+    int4bites = TO_BE32 (11);
+    buf.insert ((const char *) & int4bites, -1, 4);
+    buf.insert ("front cover", -1, 11);
+
+    int4bites = TO_BE32 (32);  // JWT:WIDTH - DOESN'T SEEM TO BE USED BY US OR VLC AT LEAST (SO MADE UP)!
+    buf.insert ((const char *) & int4bites, -1, 4);
+
+    int4bites = TO_BE32 (32);  // JWT:HEIGHT - DOESN'T SEEM TO BE USED BY US OR VLC AT LEAST (SO MADE UP)!
+    buf.insert ((const char *) & int4bites, -1, 4);
+
+    int4bites = TO_BE32 (16);  // JWT:COLOR DEPTH - DOESN'T SEEM TO BE USED BY US OR VLC AT LEAST (SO SANE DEFAULT)!
+    buf.insert ((const char *) & int4bites, -1, 4);
+
+    int4bites = 0;
+    buf.insert ((const char *) & int4bites, -1, 4);
+
+    int4bites = TO_BE32 (data.len ());
+    buf.insert ((const char *) & int4bites, -1, 4);
+
+    buf.insert (data.begin (), -1, data.len ());
+    AUDDBG ("Write: (len=%d) %s = %s.\n", buf.len (), key, buf.begin ());
+
+    dict.add (String (key), String (g_base64_encode ((const guchar *) buf.begin (), buf.len ())));
+
+    return true;
+}
+
 bool VorbisPlugin::write_tuple (const char * filename, VFSFile & file, const Tuple & tuple)
 {
     VCEdit edit;
@@ -97,11 +153,31 @@ bool VorbisPlugin::write_tuple (const char * filename, VFSFile & file, const Tup
     insert_str_tuple_field_to_dictionary (tuple, Tuple::Artist, dict, "ARTIST");
     insert_str_tuple_field_to_dictionary (tuple, Tuple::Album, dict, "ALBUM");
     insert_str_tuple_field_to_dictionary (tuple, Tuple::AlbumArtist, dict, "ALBUMARTIST");
-    insert_str_tuple_field_to_dictionary (tuple, Tuple::Comment, dict, "COMMENT");
+//    insert_str_tuple_field_to_dictionary (tuple, Tuple::Comment, dict, "COMMENT");
     insert_str_tuple_field_to_dictionary (tuple, Tuple::Genre, dict, "GENRE");
 
     insert_int_tuple_field_to_dictionary (tuple, Tuple::Year, dict, "DATE");
     insert_int_tuple_field_to_dictionary (tuple, Tuple::Track, dict, "TRACKNUMBER");
+
+    String comment = tuple.get_str (Tuple::Comment);
+    bool wrote_art = false;
+    if (comment && comment[0] && ! strncmp ((const char *) comment, "file://", 7))
+    {
+        VFSFile file (comment, "r");  /* JWT:ASSUME COMMENT IS AN IMAGE FILE FROM SONG-INFO EDITS!: */
+        if (file)
+        {
+            Index<char> data = file.read_all ();
+            if (data.len () > 499)  /* JWT:SANITY-CHECK: ANY VALID ART IMAGE SHOULD BE BIGGER THAN THIS! */
+            {
+                wrote_art = write_artimage_item (data, uri_get_extension (comment),
+                        "METADATA_BLOCK_PICTURE", dict);
+                if (wrote_art)
+                    aud_set_bool (nullptr, "_user_tag_skipthistime", true);  /* JWT:SKIP DUP. TO user_tag_data. */
+            }
+        }
+    }
+    if (! wrote_art)
+        insert_str_tuple_field_to_dictionary (tuple, Tuple::Comment, dict, "COMMENT");
 
     dictionary_to_vorbis_comment (& edit.vc, dict);
 
