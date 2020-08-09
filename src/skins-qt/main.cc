@@ -1069,9 +1069,18 @@ static void mainwin_create_widgets ()
     mainwin->put_widget (true, mainwin_shaded_menubtn, 6, 3);
     mainwin_shaded_menubtn->on_release ((ButtonCB) mainwin_menubtn_cb);
 
-    mainwin_shaded_minimize = new Button (9, 9, 9, 0, 9, 9, SKIN_TITLEBAR, SKIN_TITLEBAR);
-    mainwin->put_widget (true, mainwin_shaded_minimize, 244, 3);
-    mainwin_shaded_minimize->on_release ((ButtonCB) mainwin_minimize_cb);
+    if (aud_get_bool ("skins", "afterstep"))  /* JWT:THIS RICKITY OL' WINDOWMANAGER DON'T SEEM TO HANDLE iconify(): */
+    {   /* SO LET'S DO THE NEXT MOST USEFUL THING:  TOGGLE THE PLAYLIST! (I USE AS & *WANT* THIS!): */
+        mainwin_shaded_minimize = new Button (9, 9, 9, 0, 9, 0, 9, 0, 9, 0, SKIN_TITLEBAR, SKIN_TITLEBAR);
+        mainwin->put_widget (true, mainwin_shaded_minimize, 244, 3);
+        mainwin_shaded_minimize->on_release ((ButtonCB) mainwin_pl_cb);
+    }
+    else
+    {
+        mainwin_shaded_minimize = new Button (9, 9, 9, 0, 9, 9, SKIN_TITLEBAR, SKIN_TITLEBAR);
+        mainwin->put_widget (true, mainwin_shaded_minimize, 244, 3);
+        mainwin_shaded_minimize->on_release ((ButtonCB) mainwin_minimize_cb);
+    }
 
     mainwin_shaded_shade = new Button (9, 9, 0, 27, 9, 27, SKIN_TITLEBAR, SKIN_TITLEBAR);
     mainwin->put_widget (true, mainwin_shaded_shade, 254, 3);
