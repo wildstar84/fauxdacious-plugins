@@ -68,7 +68,7 @@ INPUT_PLUGINS="aud_adplug metronom psf tonegen vtx xsf"
 OUTPUT_PLUGINS=""
 EFFECT_PLUGINS="compressor crossfade crystalizer mixer silence-removal stereo_plugin voice_removal echo_plugin"
 GENERAL_PLUGINS=""
-VISUALIZATION_PLUGINS=""
+VISUALIZATION_PLUGINS="video_display"
 CONTAINER_PLUGINS="asx asx3 audpl m3u pls xspf"
 TRANSPORT_PLUGINS="gio"
 
@@ -605,6 +605,13 @@ ENABLE_PLUGIN_WITH_DEP(sdlout,
     SDL,
     sdl2 >= 2.0)
 
+ENABLE_PLUGIN_WITH_DEP(video_display,
+    Video Display,
+    auto,
+    VISUALIZATION,
+    SDL,
+    sdl2 >= 2.0)
+
 dnl Check for at least one output plugin (not including filewriter)
 dnl ===============================================================
 
@@ -821,6 +828,7 @@ echo "  Linux Infrared Remote Control (LIRC):   $have_lirc"
 echo "  MPRIS 2 Server:                         $have_mpris2"
 echo "  Scrobbler 2.0:                          $have_scrobbler2"
 echo "  Song Change:                            $have_songchange"
+echo "  Video Display (requires SDL2):          $have_video_display"
 echo
 
 if test "x$USE_GTK" = "xyes" ; then
