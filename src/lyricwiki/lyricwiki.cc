@@ -322,15 +322,68 @@ static void get_lyrics_step_1 ()
         return;
     }
 
-    StringBuf title_buf = str_encode_percent (state.title);
-    StringBuf artist_buf = str_encode_percent (state.artist);
+    String lyric_helper = aud_get_str ("audacious", "lyric_helper");
+    if (lyric_helper[0])  //JWT:WE HAVE A PERL HELPER, LESSEE IF IT CAN FIND/DOWNLOAD LYRICS FOR US:
+    {
+        bool lyrics_found = false;
+        GStatBuf statbuf;
+        AUDINFO ("----HELPER FOUND: WILL DO (%s)\n", (const char *) str_concat ({lyric_helper, " \"",
+                (const char *) state.artist, "\" \"",
+                (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir)}));
+#ifdef _WIN32
+        WinExec ((const char *) str_concat ({lyric_helper, " \"", (const char *) state.artist, "\" \"",
+                (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir)}),
+                SW_HIDE);
+#else
+        system ((const char *) str_concat ({lyric_helper, " \"", (const char *) state.artist, "\" \"",
+                (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir)}));
+#endif
+        String lyric_fid = String (str_concat ({aud_get_path (AudPath::UserDir), "/_tmp_lyrics.txt"}));
+        if (g_stat ((const char *) lyric_fid, & statbuf) == 0)
+        {
+            VFSFile lyrics_file ((const char *) lyric_fid, "r");
+            if (lyrics_file)
+            {
+                Index<char> lyrics = lyrics_file.read_all ();
+                if (lyrics.len () > 1)
+                {
+                    lyrics_found = true;
+                    update_lyrics_window (state.title, state.artist, (const char *) lyrics.begin (), false);
+                    gtk_widget_set_sensitive (save_button, true);
+                    if (! strncmp ((const char *) state.filename, "file://", 7)
+                            && str_has_suffix_nocase ((const char *) state.filename, ".mp3"))
+                    {
+                        String error;
+                        VFSFile file (state.filename, "r");
+                        PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
+                        bool can_write = aud_file_can_write_tuple (state.filename, decoder);
+                        if (can_write)
+                            gtk_widget_set_sensitive (tuple_save_button, true);
+                    }
+                }
+            }
+        }
+        if (! lyrics_found)
+        {
+            update_lyrics_window (_("No lyrics Found"),
+                    (const char *) str_concat ({"Title: ", (const char *) state.title, "\nArtist: ",
+                    (const char *) state.artist}),
+                    str_printf (_("Unable to fetch lyrics.")), false);
+            return;
+        }
+    }
+    else  /* OLD "C" WAY: */
+    {
+        StringBuf title_buf = str_encode_percent (state.title);
+        StringBuf artist_buf = str_encode_percent (state.artist);
 
-    state.uri = String (str_printf ("https://lyrics.fandom.com/api.php?"
-     "action=lyrics&artist=%s&song=%s&fmt=xml", (const char *) artist_buf,
-     (const char *) title_buf));
+        state.uri = String (str_printf ("https://lyrics.fandom.com/api.php?"
+                "action=lyrics&artist=%s&song=%s&fmt=xml", (const char *) artist_buf,
+                (const char *) title_buf));
 
-    update_lyrics_window (state.title, state.artist, _("Connecting to lyrics.fandom.com ..."), false);
-    vfs_async_file_get_contents (state.uri, get_lyrics_step_2, nullptr);
+        update_lyrics_window (state.title, state.artist, _("Connecting to lyrics.fandom.com ..."), false);
+        vfs_async_file_get_contents (state.uri, get_lyrics_step_2, nullptr);
+    }
 }
 
 static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *)
