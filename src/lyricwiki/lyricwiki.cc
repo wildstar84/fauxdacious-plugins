@@ -37,15 +37,19 @@
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/hook.h>
 #include <libfauxdcore/vfs_async.h>
+#include <libfauxdcore/preferences.h>
 
 class LyricWiki : public GeneralPlugin
 {
 public:
+    static const PreferencesWidget widgets[];
+    static const PluginPreferences prefs;
+
     static constexpr PluginInfo info = {
         N_("LyricWiki Plugin"),
         PACKAGE,
         nullptr, // about
-        nullptr, // prefs
+        & prefs, // prefs
         PluginGLibOnly
     };
 
@@ -55,6 +59,15 @@ public:
 };
 
 EXPORT LyricWiki aud_plugin_instance;
+
+const PreferencesWidget LyricWiki::widgets[] = {
+    WidgetCheck (N_("Cache (save) lyrics to disk?"),
+        WidgetBool ("lyricwiki", "cache_lyrics")),
+    WidgetEntry (N_("Helper:"),
+        WidgetString ("audacious", "lyric_helper"))
+};
+
+const PluginPreferences LyricWiki::prefs = {{widgets}};
 
 typedef struct {
     String filename; /* of song file */
@@ -80,7 +93,7 @@ static CharPtr scrape_lyrics_from_lyricwiki_edit_page (const char * buf, int64_t
     CharPtr ret;
 
     /*
-     * temporarily set our error-handling functor to our suppression function,
+     * temporarily set our error-handling function to our suppression function,
      * but we have to set it back because other components of Audacious depend
      * on libxml and we don't want to step on their code paths.
      *
@@ -127,9 +140,9 @@ give_up:
                 GRegex * reg;
 
                 reg = g_regex_new
-                 ("<(lyrics?)>[[:space:]]*(.*?)[[:space:]]*</\\1>",
-                 (GRegexCompileFlags) (G_REGEX_MULTILINE | G_REGEX_DOTALL),
-                 (GRegexMatchFlags) 0, nullptr);
+                        ("<(lyrics?)>[[:space:]]*(.*?)[[:space:]]*</\\1>",
+                        (GRegexCompileFlags) (G_REGEX_MULTILINE | G_REGEX_DOTALL),
+                        (GRegexMatchFlags) 0, nullptr);
                 g_regex_match (reg, (char *) lyric, G_REGEX_MATCH_NEWLINE_ANY, & match_info);
 
                 ret.capture (g_match_info_fetch (match_info, 2));
@@ -160,8 +173,8 @@ static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t
     GRegex * reg;
 
     reg = g_regex_new ("<(lyrics?)>.*</\\1>", (GRegexCompileFlags)
-     (G_REGEX_MULTILINE | G_REGEX_DOTALL | G_REGEX_UNGREEDY),
-     (GRegexMatchFlags) 0, nullptr);
+            (G_REGEX_MULTILINE | G_REGEX_DOTALL | G_REGEX_UNGREEDY),
+            (GRegexMatchFlags) 0, nullptr);
     CharPtr newbuf (g_regex_replace_literal (reg, buf, len, 0, "", G_REGEX_MATCH_NEWLINE_ANY, nullptr));
     g_regex_unref (reg);
 
@@ -221,8 +234,8 @@ static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t
                     }
 
                     uri = String (str_printf ("https://lyrics.fandom.com/index.php?"
-                     "action=edit&title=%s", (const char *) str_encode_percent
-                     (index_to_str_list (strings, ":"))));
+                            "action=edit&title=%s", (const char *) str_encode_percent
+                            (index_to_str_list (strings, ":"))));
                 }
                 else
                 {
@@ -230,7 +243,7 @@ static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t
                     char * slash = strrchr (lyric, '/');
                     if (slash)
                         uri = String (str_printf ("https://lyrics.fandom.com/index.php?"
-                         "action=edit&title=%s", slash + 1));
+                                "action=edit&title=%s", slash + 1));
                 }
 
                 xmlFree ((xmlChar *) lyric);
@@ -250,15 +263,18 @@ static GtkWidget * edit_button;
 static GtkWidget * save_button;
 static GtkWidget * tuple_save_button;
 
+static void save_lyrics_locally ();
+
 static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *)
 {
+    /* JWT:WE'RE ONLY HERE IF *NOT* USING THE PERL HELPER (THE OLD-SCHOOL WAY)! */
     if (! state.uri || strcmp (state.uri, uri))
         return;
 
     if (! buf.len ())
     {
         update_lyrics_window (_("Error"), nullptr,
-         str_printf (_("Unable to fetch %s"), uri), true);
+                str_printf (_("Unable to fetch %s"), uri), true);
         return;
     }
 
@@ -274,7 +290,13 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
     }
 
     update_lyrics_window (state.title, state.artist, lyrics, true);
-    gtk_widget_set_sensitive (save_button, true);
+    AUDINFO ("i:Lyrics came from old LyricWiki site!\n");
+    if (aud_get_bool ("lyricwiki", "cache_lyrics"))
+        save_lyrics_locally ();
+    else
+        gtk_widget_set_sensitive (save_button, true);
+
+    /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
     if (! strncmp ((const char *) state.filename, "file://", 7)
             && str_has_suffix_nocase ((const char *) state.filename, ".mp3"))
     {
@@ -295,7 +317,7 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
     if (! buf.len ())
     {
         update_lyrics_window (_("Error"), nullptr,
-         str_printf (_("Unable to fetch %s"), uri1), false);
+                str_printf (_("Unable to fetch %s"), uri1), false);
         return;
     }
 
@@ -304,7 +326,7 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
     if (! uri)
     {
         update_lyrics_window (_("Error"), nullptr,
-         str_printf (_("Unable to parse(2) %s"), uri1), false);
+                str_printf (_("Unable to parse(2) %s"), uri1), false);
         return;
     }
 
@@ -314,6 +336,7 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
     vfs_async_file_get_contents (uri, get_lyrics_step_3, nullptr);
 }
 
+/* HANDLE FETCHING LYRICS FROM WEB VIA HELPER (1-STEP) OR fandom.com? (STEP 1 OF 3): */
 static void get_lyrics_step_1 ()
 {
     if (! state.artist || ! state.title)
@@ -327,7 +350,7 @@ static void get_lyrics_step_1 ()
     {
         bool lyrics_found = false;
         GStatBuf statbuf;
-        AUDINFO ("----HELPER FOUND: WILL DO (%s)\n", (const char *) str_concat ({lyric_helper, " \"",
+        AUDINFO ("i:HELPER FOUND: WILL DO (%s)\n", (const char *) str_concat ({lyric_helper, " \"",
                 (const char *) state.artist, "\" \"",
                 (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir)}));
 #ifdef _WIN32
@@ -339,6 +362,8 @@ static void get_lyrics_step_1 ()
                 (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir)}));
 #endif
         String lyric_fid = String (str_concat ({aud_get_path (AudPath::UserDir), "/_tmp_lyrics.txt"}));
+
+        gtk_widget_set_sensitive (edit_button, false);  /* NO EDITING LYRICS ON HELPER-SERVED SITES! */
         if (g_stat ((const char *) lyric_fid, & statbuf) == 0)
         {
             VFSFile lyrics_file ((const char *) lyric_fid, "r");
@@ -349,7 +374,13 @@ static void get_lyrics_step_1 ()
                 {
                     lyrics_found = true;
                     update_lyrics_window (state.title, state.artist, (const char *) lyrics.begin (), false);
-                    gtk_widget_set_sensitive (save_button, true);
+                    if (aud_get_bool ("lyricwiki", "cache_lyrics"))
+                        save_lyrics_locally ();
+                    else
+                        gtk_widget_set_sensitive (save_button, true);
+
+                    AUDINFO ("i:Lyrics came from HELPER!\n");
+                    /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
                     if (! strncmp ((const char *) state.filename, "file://", 7)
                             && str_has_suffix_nocase ((const char *) state.filename, ".mp3"))
                     {
@@ -372,7 +403,7 @@ static void get_lyrics_step_1 ()
             return;
         }
     }
-    else  /* OLD "C" WAY: */
+    else /* NO HELPER, TRY THE OLD SCHOOL "3-STEP C" WAY: (MAYBE fandom.com CAME BACK OR AUDACIOUS FIXED?) */
     {
         StringBuf title_buf = str_encode_percent (state.title);
         StringBuf artist_buf = str_encode_percent (state.artist);
@@ -386,12 +417,13 @@ static void get_lyrics_step_1 ()
     }
 }
 
+/* JWT:HANDLE LYRICS FROM LOCAL LYRICS FILES: */
 static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *)
 {
     if (! buf.len ())
     {
         update_lyrics_window (_("Error"), nullptr,
-         str_printf (_("Unable to fetch file %s"), uri), true);
+                str_printf (_("Unable to fetch file %s"), uri), false);
         return;
     }
 
@@ -399,7 +431,9 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
     update_lyrics_window (state.title, state.artist, (const char *) nullterminated_buf, false);
 
     /* JWT:ALLOW 'EM TO EDIT LYRICWIKI, EVEN IF LYRICS ARE LOCAL, IF THEY HAVE BOTH REQUIRED FIELDS: */
-    if (state.artist && state.title)
+    /* BUT ONLY IF USING OLD SITE (*NOT* USING THE PERL "HELPER")! */
+    String lyric_helper = aud_get_str ("audacious", "lyric_helper");
+    if (! lyric_helper[0] && state.artist && state.title)
     {
         StringBuf title_buf = str_copy (state.title);
         str_replace_char (title_buf, ' ', '_');
@@ -410,6 +444,21 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
         state.uri = String (str_printf ("https://lyrics.fandom.com/index.php?action=edit&title=%s:%s",
                 (const char *) artist_buf, (const char *) title_buf));
         gtk_widget_set_sensitive (edit_button, true);
+    }
+    else
+        gtk_widget_set_sensitive (edit_button, false);
+
+    AUDINFO("i:Lyrics came from local file: (%s)!\n", (const char *) state.local_filename);
+    /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE, EVEN IF LYRICS ARE FROM LOCAL FILE. */
+    if (! strncmp ((const char *) state.filename, "file://", 7)
+            && str_has_suffix_nocase ((const char *) state.filename, ".mp3"))
+    {
+        String error;
+        VFSFile file (state.filename, "r");
+        PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
+        bool can_write = aud_file_can_write_tuple (state.filename, decoder);
+        if (can_write)
+            gtk_widget_set_sensitive (tuple_save_button, true);
     }
 }
 
@@ -669,7 +718,10 @@ static void lyricwiki_playback_began ()
         if (lyricsFromTuple && lyricsFromTuple[0])
         {
             AUDDBG ("i:Lyrics found in ID3 tag.\n");
-            update_lyrics_window (state.title, state.artist, (const char *) lyricsFromTuple, false);
+            update_lyrics_window (state.title, state.artist, (const char *) lyricsFromTuple,
+                    false);
+            gtk_widget_set_sensitive (save_button, true);
+            AUDINFO ("i:Lyrics came from id3 tag!\n");
         }
         else
         {
@@ -707,7 +759,7 @@ static void lyricwiki_playback_began ()
                         }
                     }
                 }
-                if (! state.local_filename || ! state.local_filename[0])
+                if (! found_lyricfile)
                 {
                     /* JWT:NO LOCAL LYRIC FILE, SO TRY SEARCH FOR LYRIC FILE BY TITLE: */
                     StringBuf titleBuf = str_copy (state.title);
@@ -725,6 +777,7 @@ static void lyricwiki_playback_began ()
                         {
                             AUDINFO ("i:Local lyric file found by title (%s).\n", (const char *) lyricStr);
                             vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
+                            lyricStr = String ();
                             return;
                         }
                     }
@@ -737,6 +790,7 @@ static void lyricwiki_playback_began ()
                     {
                         AUDINFO ("i:Global lyric file found by title (%s).\n", (const char *) lyricStr);
                         vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
+                        lyricStr = String ();
                         return;
                     }
                 }
