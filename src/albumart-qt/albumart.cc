@@ -45,6 +45,8 @@
 static bool frominit = false;  // TRUE WHEN THREAD STARTED BY SONG CHANGE (album_init()).
 static bool skipreset = false; // TRUE WHILE THREAD RUNNING AFTER STARTED BY SONG CHANGE (album_init()).
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool hide_dup_art_icon;   /* JWT:TOGGLE TO TRUE TO HIDE (DUPLICATE) ART ICON IN INFOBAR IF A WEB IMAGE FETCHED. */
+static bool last_image_from_web; /* JWT:TRUE IF LAST IMAGE CAME FROM WEB ("LOOK FOR ALBUM ART ON musicbrainz" OPTION). */
 
 /* JWT:SEPARATE THREAD TO CALL THE HELPER SO THAT THE "LONG" TIME IT TAKES DOESN'T FREEZE THE GUI
    DISPLAY WHILE ATTEMPTING TO FIND AND FETCH THE ALBUM-ART.  THIS THREAD MUST *NOT* CALL THE
@@ -114,6 +116,15 @@ public:
                 origSize = origPixmap.size ();
                 drawArt ();
 
+                if (aud_get_bool ("albumart", "hide_dup_art_icon")
+                        && ! aud_get_bool ("qtui", "infoarea_show_art"))
+                {
+                    /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
+                    aud_set_bool ("qtui", "infoarea_show_art", true);
+                    hook_call ("qtui toggle infoarea_art", nullptr);
+                    aud_set_bool ("qtui", "infoarea_show_art", true);
+                }
+                last_image_from_web = true;
                 return;
             }
         }
@@ -137,6 +148,16 @@ public:
             drawArt ();
         }
 
+        if (aud_get_bool ("albumart", "hide_dup_art_icon")
+                && aud_get_bool ("qtui", "infoarea_show_art"))
+        {
+            /* JWT:HIDE INFOBAR ART ICON (DUP?) IF DISPLAYING THE IMAGE IN THE ALBUMART BOX! */
+            /* BUT WE'LL RESHOW IT IF WE FETCH A CUSTOM ALBUM COVER FROM THE WEB (NOT A DUP!) */
+            aud_set_bool ("qtui", "infoarea_show_art", false);
+            hook_call ("qtui toggle infoarea_art", nullptr);
+            aud_set_bool ("qtui", "infoarea_show_art", false);
+        }
+        last_image_from_web = false;
         if (aud_get_str ("audacious", "cover_helper") && aud_get_bool ("albumart", "internet_coverartlookup"))
         {
             if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP INTERNET ART SEARCH! */
@@ -341,8 +362,48 @@ static void clear (void *, ArtLabel * widget)
     widget->clear ();
 }
 
+/* JWT:CALLED WHEN USER TOOGLES THE hide_dup_art_icon CHECKBOX: */
+/* IF ON, WE HIDE THE "DUPLICATE" IMG. IN INFOBAR, UNLESS WE FETCHED AN IMG. FROM THE WEB! */
+/* (THIS OPTION HAS NO EFFECT UNLESS BOTH THE "VIEW - SHOW INFOBAR ALBUM ART" -AND THE - */
+/* THE PLUGIN'S "LOOK FOR ALBUM ART ON musicbrainz" OPTIONS ARE BOTH ON)! */
+static void hide_dup_art_icon_toggle_fn ()
+{
+    bool infoarea_show_art = aud_get_bool ("qtui", "infoarea_show_art");
+
+    aud_set_bool ("albumart", "hide_dup_art_icon", hide_dup_art_icon);
+    if (hide_dup_art_icon)
+    {
+        aud_set_bool ("albumart", "_infoarea_show_art_saved", infoarea_show_art);
+        if (infoarea_show_art && ! last_image_from_web)
+        {
+            aud_set_bool ("qtui", "infoarea_show_art", false);
+            hook_call ("qtui toggle infoarea_art", nullptr);
+            aud_set_bool ("qtui", "infoarea_show_art", false);
+        }
+    }
+    else
+    {
+        bool infoarea_show_art_saved = aud_get_bool ("albumart", "_infoarea_show_art_saved");
+        if (infoarea_show_art_saved && ! infoarea_show_art)  /* WAS ON, NOT NOW */
+        {
+            aud_set_bool ("qtui", "infoarea_show_art", true);
+            hook_call ("qtui toggle infoarea_art", nullptr);
+            aud_set_bool ("qtui", "infoarea_show_art", true);
+        }
+    }
+}
+
 static void widget_cleanup (QObject * widget)
 {
+    if (aud_get_bool ("albumart", "hide_dup_art_icon")
+            && ! aud_get_bool ("qtui", "infoarea_show_art"))
+    {
+        /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
+        aud_set_bool ("qtui", "infoarea_show_art", true);
+        hook_call ("qtui toggle infoarea_art", nullptr);
+        aud_set_bool ("qtui", "infoarea_show_art", true);
+    }
+
     hook_dissociate ("playback stop", (HookFunction) clear, widget);
     hook_dissociate ("albumart ready", (HookFunction) albumart_ready, widget);
     hook_dissociate ("tuple change", (HookFunction) tuple_update, widget);
@@ -376,6 +437,7 @@ const char * const AlbumArtQt::defaults[] = {
 bool AlbumArtQt::init ()
 {
     aud_config_set_defaults ("albumart", defaults);
+    hide_dup_art_icon = aud_get_bool ("albumart", "hide_dup_art_icon");
     return true;
 }
 
@@ -383,6 +445,8 @@ const PreferencesWidget AlbumArtQt::widgets[] = {
     WidgetLabel(N_("<b>Albumart Configuration</b>")),
     WidgetCheck (N_("Look for album art on Musicbrainz.com"),
         WidgetBool ("albumart", "internet_coverartlookup")),
+    WidgetCheck (N_("Hide info bar art icon unless separate album cover fetched"),
+        WidgetBool (hide_dup_art_icon, hide_dup_art_icon_toggle_fn)),
 };
 
 const PluginPreferences AlbumArtQt::prefs = {{widgets}};

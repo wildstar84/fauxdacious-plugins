@@ -59,7 +59,14 @@ static void show_playlist_manager () { hook_call ("qtui show playlist manager", 
 static void toggle_menubar () { hook_call ("qtui toggle menubar", nullptr); }
 static void toggle_infoarea () { hook_call ("qtui toggle infoarea", nullptr); }
 static void toggle_infoarea_vis () { hook_call ("qtui toggle infoarea_vis", nullptr); }
-static void toggle_infoarea_art () { hook_call("qtui toggle infoarea_art", nullptr); }
+static void toggle_infoarea_art ()
+{
+    hook_call ("qtui toggle infoarea_art", nullptr);
+    if (aud_get_bool ("albumart", "_infoarea_show_art_saved"))
+        aud_set_bool ("albumart", "_infoarea_show_art_saved", false);
+    else
+        aud_set_bool ("albumart", "_infoarea_show_art_saved", true);
+}
 static void toggle_statusbar () { hook_call ("qtui toggle statusbar", nullptr); }
 static void toggle_remaining_time () { hook_call ("qtui toggle remaining time", nullptr); }
 
