@@ -68,7 +68,7 @@ INPUT_PLUGINS="aud_adplug metronom psf tonegen vtx xsf"
 OUTPUT_PLUGINS=""
 EFFECT_PLUGINS="compressor crossfade crystalizer mixer silence-removal stereo_plugin voice_removal echo_plugin"
 GENERAL_PLUGINS=""
-VISUALIZATION_PLUGINS="video_display"
+VISUALIZATION_PLUGINS=""
 CONTAINER_PLUGINS="asx asx3 audpl m3u pls xspf"
 TRANSPORT_PLUGINS="gio"
 
