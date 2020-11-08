@@ -22,6 +22,11 @@
 #include <glib/gstdio.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <winbase.h>
+#endif
+
 #include <QApplication>
 #include <QContextMenuEvent>
 #include <QDesktopServices>

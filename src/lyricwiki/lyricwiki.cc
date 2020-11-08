@@ -27,6 +27,11 @@
 #include <libxml/HTMLparser.h>
 #include <libxml/xpath.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <winbase.h>
+#endif
+
 #define AUD_GLIB_INTEGRATION
 #include <libfauxdcore/drct.h>
 #include <libfauxdcore/i18n.h>
