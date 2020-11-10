@@ -83,6 +83,8 @@ static const AudguiMenuItem output_items[] = {
 static const AudguiMenuItem main_items[] = {
     MenuCommand (N_("Open Files ..."), "document-open", 'l', NO_MOD, action_play_file),
     MenuCommand (N_("Open URL ..."), "folder-remote", 'l', CTRL, action_play_location),
+    MenuCommand (N_("Add Files ..."), "list-add", 'f', NO_MOD, action_playlist_add_files),
+    MenuCommand (N_("Add URL ..."), "folder-remote", 'u', NO_MOD, action_playlist_add_url),
     MenuCommand (N_("Search Library"), "edit-find", 'y', NO_MOD, action_search_tool),
     MenuSep (),
     MenuSub (N_("Playback"), nullptr, get_menu_playback),
