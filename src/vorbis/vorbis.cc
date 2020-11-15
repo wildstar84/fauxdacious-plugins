@@ -265,7 +265,7 @@ bool VorbisPlugin::play (const char * filename, VFSFile & file)
 
     set_stream_bitrate (br);
 
-    if (update_tuple (& vf, tuple))
+    if (stream && update_tuple (& vf, tuple))
         set_playback_tuple (tuple.ref ());
 
     if (update_replay_gain (& vf, & rg_info))
@@ -301,7 +301,7 @@ bool VorbisPlugin::play (const char * filename, VFSFile & file)
 
         bytes = vorbis_interleave_buffer (pcm, bytes, channels, pcmout);
 
-        if (update_tuple (& vf, tuple))
+        if (stream && update_tuple (& vf, tuple))
             set_playback_tuple (tuple.ref ());
 
         if (current_section != last_section)
