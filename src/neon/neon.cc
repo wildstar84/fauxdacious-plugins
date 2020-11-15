@@ -528,6 +528,12 @@ int NeonFile::open_request (int64_t startbyte, String * error)
             ne_end_request (m_request);
             ret = ne_begin_request (m_request);
             break;
+        case 416:
+            /* JWT:Server claims it can accept range, but doesn't, retry w/startbyte=0 */
+            AUDERR ("w:Got 416 Requested Range Not Satisfiable, try again starting at beginning...\n");
+            ne_end_request (m_request);
+            ret = ne_begin_request (m_request);
+            break;
         }
     }
 
@@ -542,6 +548,17 @@ int NeonFile::open_request (int64_t startbyte, String * error)
             m_pos = startbyte;
             handle_headers ();
             return 0;
+        }
+        else if (status->code == 416)
+        {
+            /* JWT:Server claims it can accept range, but doesn't, retry w/startbyte=0 */
+            AUDDBG ("<%p> 416:Server claims it can accept range, but doesn't, retry at beginning.\n", this);
+            m_content_start = 0;
+            m_pos = 0;
+            ne_request_destroy (m_request);
+            m_request = nullptr;
+            m_redircount += 1;
+            return 2;
         }
 
         break;
@@ -677,8 +694,11 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
             m_session = nullptr;
             return -1;
         }
+        else if (ret == 2)
+            startbyte = 0;
+        else
+            AUDDBG ("<%p> Following redirect...\n", this);
 
-        AUDDBG ("<%p> Following redirect...\n", this);
         ne_session_destroy (m_session);
         m_session = nullptr;
     }
