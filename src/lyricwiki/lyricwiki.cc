@@ -409,6 +409,8 @@ static void get_lyrics_step_1 ()
                 Index<char> lyrics = lyrics_file.read_all ();
                 if (lyrics.len () > 1)
                 {
+                    lyrics.resize (lyrics.len ()+1);
+                    lyrics[lyrics.len ()-1] = '\0';
                     lyrics_found = true;
                     update_lyrics_window (state.title, state.artist, (const char *) lyrics.begin (), false);
                     if (aud_get_bool ("lyricwiki", "cache_lyrics"))
