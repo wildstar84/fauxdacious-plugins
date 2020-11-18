@@ -103,7 +103,8 @@ typedef struct
     String genre;
     int startlsn;
     int endlsn;
-    bool tag_read;   /* JWT:TRUE IF WE'VE ALREADY READ THE TAG DATA FOR THIS TRACK. */
+    bool tag_read;    /* JWT:TRUE IF WE'VE ALREADY READ THE TAG DATA FOR THIS TRACK.  */
+    int tag_source;   /* JWT:0=NO TAGS(YET?), 1=FROM CDD[A|B], 2=FROM tmp_tag_data, 3=FROM CUSTOM TAG FILE */
     String discidstr; /* JWT:SAVE THAT DISK-ID FOR COVER-ART STUFF. */
 }
 trackinfo_t;
@@ -248,7 +249,7 @@ bool CDAudio::init ()
 /* thread safe (mutex may be locked) */
 bool CDAudio::is_our_file (const char * filename, VFSFile & file)
 {
-    return !strncmp (filename, "cdda://", 7);
+    return ! strncmp (filename, "cdda://", 7);
 }
 
 /* play thread only */
@@ -280,7 +281,6 @@ bool CDAudio::play (const char * name, VFSFile & file)
         return false;
     }
 
-    aud_set_str (nullptr, "playingdiskid", trackinfo[0].discidstr);
     set_stream_bitrate (1411200);
     open_audio (FMT_S16_LE, 44100, 2);
 
@@ -410,8 +410,8 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
             goto DONE;
         }
 
-        bool disktagrefresh = aud_get_bool (nullptr, "_disktagrefresh");
-        if (disktagrefresh)
+        int disktagrefresh = aud_get_int (nullptr, "_disktagrefresh");
+        if (disktagrefresh == trackno)  /* JWT:FORCE REFRESH ON TRACK# WITH UPDATED SONG INFO! */
         {
             trackinfo[trackno].tag_read = false;
             custom_tagfile_sought = false;
@@ -441,7 +441,8 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                 tuple.set_str (Tuple::AlbumArtist, trackinfo[0].performer);
             if (trackinfo[trackno].genre)
                 tuple.set_str (Tuple::Genre, trackinfo[trackno].genre);
-            if (! custom_tagfile_sought && aud_get_bool ("CDDA", "use_customtagfiles") && trackinfo[0].discidstr)
+            if (! custom_tagfile_sought && aud_get_bool ("CDDA", "use_customtagfiles")
+                    && trackinfo[0].discidstr && trackinfo[0].discidstr[0])
             {
                 AUDINFO ("--DISKID=%s= TRYING CUSTOM\n", (const char *)trackinfo[0].discidstr);
                 String tag_file = String (str_concat ({(const char *)trackinfo[0].discidstr, ".tag"}));
@@ -451,40 +452,50 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                 AUDDBG ("--TAG FID=%s= TRACK=%d= PREC=%d=\n", (const char *)tag_file, trackno, precedence);
                 if (precedence)
                 {
+                    if (disktagrefresh == trackno)
+                        precedence = 2;  // FORCE OVERWRITE IF USER CHGD. SONG INFO!:
+                    trackinfo[trackno].tag_source = 3;  // WE FETCHED FROM CUSTOM FILE.
                     AUDINFO ("--CUSTOM TAG(%d) FILE(%s) PRECEDENCE=%d\n", trackno, (const char *)tag_file, precedence);
                     const char * tfld = (const char *) user_tuple.get_str (Tuple::Title);
-                    if (tfld && (precedence < 2 || ! trackinfo[trackno].name))
+                    if (tfld && (precedence > 1 || ! trackinfo[trackno].name))
                     {
                         tuple.set_str (Tuple::Title, tfld);
                         trackinfo[trackno].name = String (tfld);
                     }
                     tfld = (const char *) user_tuple.get_str (Tuple::Artist);
-                    if (tfld && (precedence < 2 || ! trackinfo[trackno].performer))
+                    if (tfld && (precedence > 1 || ! trackinfo[trackno].performer))
                     {
                         tuple.set_str (Tuple::Artist, tfld);
                         trackinfo[trackno].performer = String (tfld);
                     }
                     tfld = (const char *) user_tuple.get_str (Tuple::Album);
-                    if (tfld && (precedence < 2 || ! trackinfo[0].name))
+                    if (tfld && (precedence > 1 || ! trackinfo[0].name))
                     {
                         tuple.set_str (Tuple::Album, tfld);
-                        trackinfo[0].name = String (tfld);
+                        if (! trackinfo[0].name)
+                            trackinfo[0].name = String (tfld);
                     }
                     tfld = (const char *) user_tuple.get_str (Tuple::AlbumArtist);
-                    if (tfld && (precedence < 2 || ! trackinfo[trackno].performer))
+                    if (tfld && (precedence > 1 || ! trackinfo[trackno].performer))
                     {
                         tuple.set_str (Tuple::AlbumArtist, tfld);
                         if (! trackinfo[trackno].performer)
                             trackinfo[trackno].performer = String (tfld);
                     }
+                    else if (tfld)
+                    {
+                        const char * aafld = (const char *) tuple.get_str (Tuple::AlbumArtist);
+                        if (! aafld)
+                            tuple.set_str (Tuple::AlbumArtist, tfld);
+                    }
                     tfld = (const char *) user_tuple.get_str (Tuple::Genre);
-                    if (tfld && (precedence < 2 || ! trackinfo[trackno].genre))
+                    if (tfld && (precedence > 1 || ! trackinfo[trackno].genre))
                     {
                         tuple.set_str (Tuple::Genre, tfld);
-                        trackinfo[trackno].performer = String (tfld);
+                        trackinfo[trackno].genre = String (tfld);
                     }
                     tfld = (const char *) user_tuple.get_str (Tuple::Comment);
-                    if (tfld && (precedence < 2 || ! coverart_file))
+                    if (tfld && (precedence > 1 || ! coverart_file))
                         tuple.set_str (Tuple::Comment, tfld);
                     int ifld = user_tuple.get_int (Tuple::Year);
                     if (ifld && ifld > 1000)
@@ -519,7 +530,9 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                         }
                     }
                 }
-                if ((! coverart_file || ! coverart_file[0]) && trackinfo[0].discidstr)
+                //IF NO COVER-ART FILE NAMED AFTER THE TITLE, SEE IF ONE NAMED AFTER THE DISK-ID:
+                if ((! coverart_file || ! coverart_file[0])
+                        && trackinfo[0].discidstr && trackinfo[0].discidstr[0])
                 {
                     Index<String> extlist = str_list_to_index ("jpg,png,jpeg", ",");
                     AUDINFO ("--NO COVER ART FILE FOR TITLE, TRY DISK-ID:\n");
@@ -542,8 +555,7 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
             }
             if (aud_get_bool (nullptr, "user_tag_data"))  /* JWT:SEE IF WE HAVE A CUSTOM TAGFILE FOR THIS CD: */
             {
-                //IF NO COVER-ART FILE NAMED AFTER THE TITLE, SEE IF ONE NAMED AFTER THE DISK-ID:
-                if (! custom_helper_sought && trackinfo[0].discidstr 
+                if (! custom_helper_sought && trackinfo[0].discidstr && trackinfo[0].discidstr[0]
                         && (! coverart_file || ! coverart_file[0] || ! trackinfo[0].name || ! trackinfo[trackno].name))
                 {
                     /* NOTE: NOT ALL CDS HAVE TRACK TITLE INFO OR WORK W/CDDB, SO IF NOT, WE FETCH THAT TOO!: */
@@ -595,9 +607,10 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                 {
                     AUDINFO ("--NO TITLE SET FOR TRACK(%d), WILL TRY TO FETCH!\n", trackno);
                     Tuple user_tuple = Tuple ();
-                    if (aud_read_tag_from_tagfile ((const char *)str_printf ("%s%d", "cdda://?", trackno), 
+                    if (aud_read_tag_from_tagfile ((const char *) str_printf ("%s%d", "cdda://?", trackno),
                             "tmp_tag_data", user_tuple))
                     {
+                        trackinfo[trackno].tag_source = 2; // WE FETCHED FROM tmp_tag_data.
                         const char * tfld = (const char *) user_tuple.get_str (Tuple::Title);
                         if (tfld)
                         {
@@ -617,6 +630,12 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                             if (tfld)
                                 tuple.set_str (Tuple::Album, tfld);
                         }
+                        if (! tuple.get_str (Tuple::AlbumArtist))
+                        {
+                            const char * tfld = (const char *) user_tuple.get_str (Tuple::AlbumArtist);
+                            if (tfld)
+                                tuple.set_str (Tuple::AlbumArtist, tfld);
+                        }
                     }
                 }
             }
@@ -627,14 +646,24 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                 if (! tfld)
                     tuple.set_str (Tuple::Comment, coverart_file);
             }
-            aud_write_tag_to_tagfile (filename, tuple, "tmp_tag_data");
+            if (trackinfo[trackno].tag_source > 0) // WE GOT SOME TAG DATA FROM SOMEWHERE!:
+            {
+                if (trackinfo[trackno].tag_source < 3 // 3=WE FETCHED FROM CUSTOM TAG FILE: NO NEED TO OVERWRITE!
+                        && aud_get_bool ("CDDA", "use_customtagfiles")
+                        && trackinfo[0].discidstr && trackinfo[0].discidstr[0])
+                {
+                    String tag_file = String (str_concat ({(const char *) trackinfo[0].discidstr, ".tag"}));
+                    aud_write_tag_to_tagfile (filename, tuple, (const char *) tag_file);
+                }
+                if (trackinfo[trackno].tag_source != 2) // 2=WE FETCHED FROM EXISTING tmp_tag_data: NO NEED TO OVERWRITE!
+                    aud_write_tag_to_tagfile (filename, tuple, "tmp_tag_data");
+            }
+            else if (coverart_file)  // NO TAG DATA - JUST WRITE OUT A tmp_tag_data W/"Comment=<cover-art-fid> FOR EACH TRACK:
+                    aud_write_tag_to_tagfile (filename, tuple, "tmp_tag_data");
         }
         if (disktagrefresh)
-        {
-            pthread_mutex_unlock (& mutex);
-            aud_set_bool (nullptr, "_disktagrefresh", false);
-            return false;  // JWT:FORCE REFRESH OF PLAYLIST ENTRY.
-        }
+            aud_set_int (nullptr, "_disktagrefresh", 0);
+
         valid = true;
     }
 
@@ -743,6 +772,7 @@ static bool scan_cd ()
     trackinfo[0].startlsn = cdda_track_firstsector (pcdrom_drive, 0);
     trackinfo[0].endlsn = cdda_track_lastsector (pcdrom_drive, lasttrackno);
     trackinfo[0].tag_read = false;
+    trackinfo[0].tag_source = 0;
 
     n_audio_tracks = 0;
 
@@ -751,6 +781,7 @@ static bool scan_cd ()
         trackinfo[trackno].startlsn = cdda_track_firstsector (pcdrom_drive, trackno);
         trackinfo[trackno].endlsn = cdda_track_lastsector (pcdrom_drive, trackno);
         trackinfo[trackno].tag_read = false;
+        trackinfo[trackno].tag_source = 0;
 
         if (trackinfo[trackno].startlsn == CDIO_INVALID_LSN
             || trackinfo[trackno].endlsn == CDIO_INVALID_LSN)
@@ -776,9 +807,7 @@ static bool scan_cd ()
         pcdtext = cdio_get_cdtext (pcdrom_drive->p_cdio, 0);
         if (pcdtext == nullptr || pcdtext->field[CDTEXT_TITLE] == nullptr)
 #endif
-        {
             AUDDBG ("no cd-text available for disc\n");
-        }
         else
         {
 #if LIBCDIO_VERSION_NUM >= 90
@@ -790,6 +819,7 @@ static bool scan_cd ()
             trackinfo[0].name = String (pcdtext->field[CDTEXT_TITLE]);
             trackinfo[0].genre = String (pcdtext->field[CDTEXT_GENRE]);
 #endif
+            trackinfo[0].tag_source = 1; // WE FETCHED FROM CDD[A|B].
         }
     }
 
@@ -821,6 +851,7 @@ static bool scan_cd ()
             trackinfo[trackno].name = String (pcdtext->field[CDTEXT_TITLE]);
             trackinfo[trackno].genre = String (pcdtext->field[CDTEXT_GENRE]);
 #endif
+            trackinfo[trackno].tag_source = 1; // WE FETCHED FROM CDD[A|B].
             cdtext_was_available = true;
         }
     }
@@ -851,8 +882,15 @@ static bool scan_cd ()
         cddb_disc_calc_discid (pcddb_disc);
 
         unsigned discid = cddb_disc_get_discid (pcddb_disc);
-        trackinfo[0].discidstr = String (str_printf("%x", discid));
         AUDINFO ("CDDB2 disc id = %x\n", discid);
+        trackinfo[0].discidstr = String (str_printf("%x", discid));
+        if (trackinfo[0].discidstr && trackinfo[0].discidstr[0])
+            aud_set_str (nullptr, "playingdiskid", trackinfo[0].discidstr);
+        else
+        {
+            AUDINFO ("w:no Disc ID available (no custom tag file possible & edits saved to tmp_tag_data)!\n");
+            aud_set_str (nullptr, "playingdiskid", "tmp_tag_data");
+        }
     }
 
     if (!cdtext_was_available)
@@ -865,7 +903,7 @@ static bool scan_cd ()
         bool use_cddb = aud_get_bool ("CDDA", "use_cddb");
         if (use_cddb && aud_get_bool ("CDDA", "use_customtagfiles"))  // JWT:DON'T WASTE TIME W/CDDB IF WE HAVE CUSTOM TAG FILE!:
         {
-            if (trackinfo[0].discidstr)
+            if (trackinfo[0].discidstr && trackinfo[0].discidstr[0])
             {
                 StringBuf fid_buf = str_concat ({aud_get_path (AudPath::UserDir), 
                         "/", (const char *)trackinfo[0].discidstr, ".tag"});
@@ -983,6 +1021,7 @@ static bool scan_cd ()
                             trackinfo[0].performer = String (cddb_disc_get_artist (pcddb_disc));
                             trackinfo[0].name = String (cddb_disc_get_title (pcddb_disc));
                             trackinfo[0].genre = String (cddb_disc_get_genre (pcddb_disc));
+                            trackinfo[0].tag_source = 1; // WE FETCHED FROM CDD[A|B].
 
                             int trackno;
                             for (trackno = firsttrackno; trackno <= lasttrackno;
@@ -995,6 +1034,7 @@ static bool scan_cd ()
                                 trackinfo[trackno].performer = String (cddb_track_get_artist (pcddb_track));
                                 trackinfo[trackno].name = String (cddb_track_get_title (pcddb_track));
                                 trackinfo[trackno].genre = String (cddb_disc_get_genre (pcddb_disc));
+                                trackinfo[trackno].tag_source = 1; // WE FETCHED FROM CDD[A|B].
                             }
                         }
                     }
