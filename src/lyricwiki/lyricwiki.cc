@@ -92,9 +92,9 @@ const PreferencesWidget LyricWiki::widgets[] = {
 const PluginPreferences LyricWiki::prefs = {{widgets}};
 
 typedef struct {
-    String filename; /* of song file */
+    String filename;       /* of song file */
     String title, artist;
-    String uri; /* URI we are trying to retrieve */
+    String uri;            /* URI we are trying to retrieve */
     String local_filename; /* JWT:CALCULATED LOCAL FILENAME TO SAVE LYRICS TO */
     gint startlyrics;      /* JWT:OFFSET IN LYRICS WINDOW WHERE LYRIC TEXT ACTUALLY STARTS */
 } LyricsState;
@@ -127,7 +127,7 @@ static CharPtr scrape_lyrics_from_lyricwiki_edit_page (const char * buf, int64_t
      * on libxml and we don't want to step on their code paths.
      *
      * unfortunately, libxml is anti-social and provides us with no way to get
-     * the previous error functor, so we just have to set it back to default after
+     * the previous error function, so we just have to set it back to default after
      * parsing and hope for the best.
      */
     xmlSetGenericErrorFunc (nullptr, libxml_error_handler);
@@ -208,12 +208,12 @@ static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t
     g_regex_unref (reg);
 
     /*
-     * temporarily set our error-handling functor to our suppression function,
+     * temporarily set our error-handling function to our suppression function,
      * but we have to set it back because other components of Audacious depend
      * on libxml and we don't want to step on their code paths.
      *
      * unfortunately, libxml is anti-social and provides us with no way to get
-     * the previous error functor, so we just have to set it back to default after
+     * the previous error function, so we just have to set it back to default after
      * parsing and hope for the best.
      */
     xmlSetGenericErrorFunc (nullptr, libxml_error_handler);
@@ -273,6 +273,8 @@ static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t
                     if (slash)
                         uri = String (str_printf ("https://lyrics.fandom.com/index.php?"
                                 "action=edit&title=%s", slash + 1));
+                    else
+                        uri = String ("N/A");
                 }
 
                 xmlFree ((xmlChar *) lyric);
@@ -320,10 +322,9 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
 
     update_lyrics_window (state.title, state.artist, lyrics, true);
     AUDINFO ("i:Lyrics came from old LyricWiki site!\n");
+    gtk_widget_set_sensitive (save_button, true);
     if (aud_get_bool ("lyricwiki", "cache_lyrics"))
         save_lyrics_locally ();
-    else
-        
 
     /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
     if (! strncmp ((const char *) state.filename, "file://", 7)
@@ -358,6 +359,11 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
                 str_printf (_("Unable to parse(2) %s"), uri1), false);
         return;
     }
+    else if (uri == String ("N/A"))
+    {
+        update_lyrics_window (state.title, state.artist, _("No lyrics available"), false);
+        return;
+    }
 
     state.uri = uri;
 
@@ -375,10 +381,11 @@ static void get_lyrics_step_1 ()
     }
     if (! aud_get_bool ("lyricwiki", "search_internet"))
     {
-        update_lyrics_window (_("No lyrics Found"),
+        update_lyrics_window (_("No lyrics Found locally"),
                 (const char *) str_concat ({"Title: ", (const char *) state.title, "\nArtist: ",
                 (const char *) state.artist}),
-                str_printf (_("Unable to fetch lyrics.")), false);
+                str_printf (_("Unable to fetch lyrics (Fetch lyrics from internet option not enabled).")),
+                false);
         return;
     }
 
@@ -413,10 +420,9 @@ static void get_lyrics_step_1 ()
                     lyrics[lyrics.len ()-1] = '\0';
                     lyrics_found = true;
                     update_lyrics_window (state.title, state.artist, (const char *) lyrics.begin (), false);
+                    gtk_widget_set_sensitive (save_button, true);
                     if (aud_get_bool ("lyricwiki", "cache_lyrics"))
                         save_lyrics_locally ();
-                    else
-                        gtk_widget_set_sensitive (save_button, true);
 
                     AUDINFO ("i:Lyrics came from HELPER!\n");
                     /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
@@ -487,7 +493,7 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
     else
         gtk_widget_set_sensitive (edit_button, false);
 
-    AUDINFO("i:Lyrics came from local file: (%s)!\n", (const char *) state.local_filename);
+    AUDINFO ("i:Lyrics came from local file: (%s)!\n", (const char *) state.local_filename);
     /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE, EVEN IF LYRICS ARE FROM LOCAL FILE. */
     if (! strncmp ((const char *) state.filename, "file://", 7)
             && str_has_suffix_nocase ((const char *) state.filename, ".mp3"))
@@ -512,8 +518,9 @@ static void launch_edit_page ()
 
 static void save_lyrics_locally ()
 {
-    if (state.local_filename && textbuffer)
+    if (state.local_filename && state.local_filename[0] && textbuffer)
     {
+        AUDINFO ("i:Saving lyrics locally to (%s)!\n", (const char *) state.local_filename);
         GtkTextIter start_iter;
         GtkTextIter end_iter;
         gtk_text_buffer_get_start_iter (textbuffer, & start_iter);
@@ -532,7 +539,6 @@ static void save_lyrics_locally ()
                     /* WE'RE STORING IN GLOBAL LYRICS CACHE, CREATE DIRECTORIES AS NEEDED: */
                     StringBuf artist_path = filename_get_parent (state.local_filename);
                     if (g_mkdir_with_parents (artist_path, DIRMODE) < 0)
-
                     {
                         AUDERR ("e:Could not create missing lyrics directory (%s): %s!\n", (const char *) artist_path, strerror (errno));
                         return;
@@ -673,7 +679,6 @@ static void lyricwiki_playback_began ()
 {
     /* FIXME: cancel previous VFS requests (not possible with current API) */
 
-    bool have_valid_filename = false;
     bool found_lyricfile = false;
     GStatBuf statbuf;
     String lyricStr = String ("");
@@ -681,70 +686,67 @@ static void lyricwiki_playback_began ()
 
     state.filename = aud_drct_get_filename ();
     state.uri = String ();
-
-    /* JWT: EXTRACT JUST THE "NAME" PART TO USE TO NAME THE LYRICS FILE: */
-    const char * slash = state.filename ? strrchr (state.filename, '/') : nullptr;
-    const char * base = slash ? slash + 1 : nullptr;
-
-    if (base && base[0] != '\0' && strncmp (base, "-.", 2))  // NOT AN EMPTY "NAME" OR stdin!
-        have_valid_filename = true;
-
     state.local_filename = String ("");
-    if (have_valid_filename)  // WE KNOW THAT base IS NOT NULL, IF TRUE!
-    {
-        /* JWT:IF WE'RE A "FILE", FIRST CHECK LOCAL DIRECTORY FOR A LYRICS FILE MATCHING FILE-NAME: */
-        const char * dot = strrchr (base, '.');
-        int ln = (dot && ! strstr_nocase (dot, ".cue?")) ? (dot - base) : -1;  // SET TO FULL LENGTH(-1) IF NO EXTENSION OR NOT A CUESHEET.
-        if (! strncmp ((const char *) state.filename, "file://", 7))
-        {
-            /* WE ARE A VALID LOCAL SONG FILE NAME! */
-            path = filename_get_parent (uri_to_filename (state.filename));
-            lyricStr = String (str_concat ({path, "/", str_decode_percent (base, ln), ".lrc"}));
-            found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
-            state.local_filename = lyricStr;
-        }
-        else
-            have_valid_filename = false;
 
-        if (! found_lyricfile)
-        {
-            /* JWT:LOCAL LYRIC FILE NOT FOUND, SO CHECK THE GLOBAL CONFIG PATH FOR A MATCHING LYRICS FILE: */
-            lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir), "/lyrics/",
-                    str_decode_percent (base, ln), ".lrc"}));
-            found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
-            /* NOTE: REGARDLESS OF WHETHER OR NOT WE FIND LYRICS IN THE GLOBAL DIR, WE KEEP state.local_filename==LOCAL FILENAME.lrc! */
-        }
-    }
-    if (! found_lyricfile)
+    if (! strncmp (state.filename, "cdda://?", 8))  // FOR CDs, LOOK FOR DIRECTORY WITH TRACK LYRIC FILES:
     {
-        /* JWT:NO LYRICS FILE: IF WE'RE PLAYING A DISK, CHECK FOR LYRIC FILE BY DISK-ID / DVD TITLE: */
-        if (! strncmp (state.filename, "cdda://?", 8))  // FOR CDs, LOOK FOR DIRECTORY WITH TRACK LYRIC FILES:
-        {
-            /* FIRST LOOK FOR SEPARATE CD TRACK LYRIC FILE (~/.config/fauxdacious[_?]/<CD-ID>_tracks/track_#.lrc): */
-            int track;
-            const char * trackstr = state.filename + 8;
+        /* FIRST LOOK FOR SEPARATE CD TRACK LYRIC FILE (~/.config/fauxdacious[_?]/<CD-ID>_tracks/track_#.lrc): */
+        int track;
+        const char * trackstr = state.filename + 8;
 
-            if (sscanf (trackstr, "%d", & track) == 1)
-            {
-                String playingdiskid = aud_get_str (nullptr, "playingdiskid");
-                if (playingdiskid[0])
-                {
-                    lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir), "/lyrics/",
-                            (const char *) playingdiskid, "/track_", trackstr, ".lrc"}));
-                    found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
-                }
-            }
-        }
-        if (! found_lyricfile && (! strncmp (state.filename, "cdda://", 7) || ! strncmp (state.filename, "dvd://", 6)))
+        if (sscanf (trackstr, "%d", & track) == 1)
         {
-            /* NOW LOOK FOR CD/DVD COMBINED LYRIC FILE (~/.config/fauxdacious[_?]/<CD-ID|DVD-TITLE>.lrc):
-               (IF DVD OR NO INDIVIDUAL CD TRACK LYRIC FILE FOUND) */
             String playingdiskid = aud_get_str (nullptr, "playingdiskid");
             if (playingdiskid[0])
             {
                 lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir), "/lyrics/",
-                        (const char *) playingdiskid, ".lrc"}));
+                        (const char *) playingdiskid, "/track_", trackstr, ".lrc"}));
                 found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
+                state.local_filename = lyricStr;
+            }
+        }
+    }
+    if (! found_lyricfile && (! strncmp (state.filename, "cdda://", 7) || ! strncmp (state.filename, "dvd://", 6)))
+    {
+        /* NOW LOOK FOR CD/DVD COMBINED LYRIC FILE (~/.config/fauxdacious[_?]/<CD-ID|DVD-TITLE>.lrc):
+           (IF DVD OR NO INDIVIDUAL CD TRACK LYRIC FILE FOUND) */
+        String playingdiskid = aud_get_str (nullptr, "playingdiskid");
+        if (playingdiskid[0])
+        {
+            lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir), "/lyrics/",
+                    (const char *) playingdiskid, ".lrc"}));
+            found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
+            if (found_lyricfile || (! state.local_filename || ! state.local_filename[0]))
+                state.local_filename = lyricStr;  // SET FOUND CD-WIDE LYRICS FOUND OR NO TRACK FILE SET (DVD).
+        }
+    }
+    if (! found_lyricfile)
+    {
+        /* JWT: EXTRACT JUST THE "NAME" PART TO USE TO NAME THE LYRICS FILE: */
+        const char * slash = state.filename ? strrchr (state.filename, '/') : nullptr;
+        const char * base = slash ? slash + 1 : nullptr;
+
+        if (base && base[0] != '\0' && base[0] != '?' && strncmp (base, "-.", 2))  // WE KNOW THAT base IS NOT NULL, IF TRUE!
+        {
+            /* JWT:IF WE'RE A "FILE", FIRST CHECK LOCAL DIRECTORY FOR A LYRICS FILE MATCHING FILE-NAME: */
+            const char * dot = strrchr (base, '.');
+            int ln = (dot && ! strstr_nocase (dot, ".cue?")) ? (dot - base) : -1;  // SET TO FULL LENGTH(-1) IF NO EXTENSION OR NOT A CUESHEET.
+            if (! strncmp ((const char *) state.filename, "file://", 7))
+            {
+                /* WE ARE A VALID LOCAL SONG FILE NAME! */
+                path = filename_get_parent (uri_to_filename (state.filename));
+                lyricStr = String (str_concat ({path, "/", str_decode_percent (base, ln), ".lrc"}));
+                found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
+                state.local_filename = lyricStr;
+            }
+            if (! found_lyricfile)
+            {
+                /* JWT:LOCAL LYRIC FILE NOT FOUND, SO CHECK THE GLOBAL CONFIG PATH FOR A MATCHING LYRICS FILE: */
+                lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir), "/lyrics/",
+                        str_decode_percent (base, ln), ".lrc"}));
+                found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
+                /* NOTE: REGARDLESS OF WHETHER OR NOT WE FIND LYRICS IN THE GLOBAL DIR, WE KEEP state.local_filename==LOCAL FILENAME.lrc! */
+                /* (WE'LL OVERRIDE IT LATER (ARTIST NAME/TITLE) IF WE HAVE BOTH, UNLESS save_by_songfile(name) IS SET). */
             }
         }
     }
@@ -764,6 +766,7 @@ static void lyricwiki_playback_began ()
     {
         bool need_lyrics = true;
         String lyricsFromTuple = tuple.get_str (Tuple::Lyrics);
+
         if (lyricsFromTuple && lyricsFromTuple[0])
         {
             AUDDBG ("i:Lyrics found in ID3 tag.\n");
@@ -817,15 +820,17 @@ static void lyricwiki_playback_began ()
                 StringBuf artist_path = filename_build ({base_path, state.artist});
                 lyricStr = String (str_concat({filename_build({artist_path, state.title}), ".lrc"}));
                 found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
+
+                /* local_filename := (GLOBAL) ARTIST NAME/TITLE, IF NOT ALREADY SET *OR* save_by_songfile NOT SET. */
                 if (! state.local_filename || ! state.local_filename[0] || ! save_by_songfile)
-                    state.local_filename = lyricStr;
+                    state.local_filename = lyricStr;  /* THE FILE NAME WE'LL CACHE OR "SAVE LOCALLY" TO. */
 
                 if (need_lyrics && found_lyricfile)
                 {
                     AUDINFO ("i:Global lyric file found by artist/title (%s).\n", (const char *) lyricStr);
                     vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
                     lyricStr = String ();
-                    if (save_by_songfile && have_valid_filename)
+                    if (save_by_songfile)
                         gtk_widget_set_sensitive (save_button, true);
 
                     return;
