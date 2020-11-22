@@ -50,7 +50,6 @@ static const char * const skins_defaults[] = {
     "show_remaining_time", "FALSE",
     "twoway_scroll", "FALSE",
     "use_random_skins", "FALSE",
-    "afterstep", "FALSE",  /* JWT - FOR USE W/THE Afterstep Windowmanager */
 
     /* visualizer */
     "analyzer_falloff", aud::numeric_string<FALLOFF_FAST>::str,

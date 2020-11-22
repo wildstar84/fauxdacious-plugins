@@ -1016,7 +1016,7 @@ static void showhide_about_window_cb (Button * button, GdkEventButton * event)
 
 static void mainwin_create_widgets ()
 {
-    gboolean afterstep = aud_get_bool ("skins", "afterstep");  /* JWT:HANDLE OUR RICKITY OL' WINDOWMANAGER (ie. TO NOT UNSTICK WINDOW ON FOCUS, ETC. */
+    gboolean afterstep = aud_get_bool ("audacious", "afterstep");  /* JWT:HANDLE OUR RICKITY OL' WINDOWMANAGER (ie. TO NOT UNSTICK WINDOW ON FOCUS, ETC. */
 
     mainwin_menubtn = new Button (9, 9, 0, 0, 0, 9, SKIN_TITLEBAR, SKIN_TITLEBAR);
     mainwin->put_widget (false, mainwin_menubtn, 6, 3);
@@ -1249,7 +1249,7 @@ static void mainwin_create_window ()
     drag_dest_set (w);
 
     g_signal_connect (w, "drag-data-received", (GCallback) mainwin_drag_data_received, nullptr);
-    gboolean afterstep = aud_get_bool ("skins", "afterstep");  /* JWT:HANDLE OUR RICKITY OL' WINDOWMANAGER (ie. TO NOT UNSTICK WINDOW ON FOCUS, ETC. */
+    gboolean afterstep = aud_get_bool ("audacious", "afterstep");  /* JWT:HANDLE OUR RICKITY OL' WINDOWMANAGER (ie. TO NOT UNSTICK WINDOW ON FOCUS, ETC. */
     if (! afterstep)   /* Afterstep seems to be broken handling window events */
         g_signal_connect (w, "window-state-event", (GCallback) state_cb, nullptr);
 
