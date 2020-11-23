@@ -23,8 +23,6 @@
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
-#define SDL_MAIN_HANDLED
-#include <SDL.h>
 
 #undef FFAUDIO_DOUBLECHECK  /* Doublecheck probing result for debugging purposes */
 #undef FFAUDIO_NO_BLACKLIST /* Don't blacklist any recognized codecs/formats */
@@ -33,6 +31,8 @@
 
 #include <pthread.h>
 
+#define  USE_SDL2 1
+#include <libfauxdcore/sdl_window.h>
 #include <fauxdacious/audtag.h>
 #include <libfauxdcore/audstrings.h>
 #ifdef _WIN32
@@ -44,6 +44,7 @@
 #include <libfauxdcore/playlist.h>
 #include <libfauxdcore/preferences.h>
 #include <libfauxdcore/probe.h>
+#include <libfauxdcore/plugins.h>
 
 // #define SDL_AUDIO_BUFFER_SIZE 4096
 // #define MAX_AUDIO_FRAME_SIZE 192000
@@ -859,16 +860,16 @@ void FFaudio::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
 #endif
 }
 
-static SDL_Renderer * createSDL2Renderer (SDL_Window * screen, bool myplay_video)
+static SDL_Renderer * createSDL2Renderer (SDL_Window * sdl_window, bool myplay_video)
 {
     SDL_Renderer * renderer = nullptr;
-    if (screen && myplay_video)
-        renderer = SDL_CreateRenderer (screen, -1, 0);
+    if (sdl_window && myplay_video)
+        renderer = SDL_CreateRenderer (sdl_window, -1, 0);
 
     return renderer;
 }
 
-static SDL_Texture * createSDL2Texture (SDL_Window * screen, SDL_Renderer * renderer, bool myplay_video, int width, int height)
+static SDL_Texture * createSDL2Texture (SDL_Window * sdl_window, SDL_Renderer * renderer, bool myplay_video, int width, int height)
 {
     SDL_Texture * texture = nullptr;
     if (myplay_video && renderer)
@@ -879,9 +880,11 @@ static SDL_Texture * createSDL2Texture (SDL_Window * screen, SDL_Renderer * rend
         else
         {
             SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-//            SDL_RenderClear (renderer);
             SDL_RenderPresent (renderer);
-            SDL_ShowWindow (screen);
+            if (aud_get_bool ("audacious", "video_display"))
+                SDL_ShowWindow (sdl_window);  // ONLY SHOW WINDOW IF video_display VISUALIZATION PLUGIN ON!
+                /* NOTIFY video_display VISUALIZATION PLUGIN WE'RE NOW DEMUXING VIDEO. */
+            aud_set_bool ("audacious", "_video_playing", true);
         }
     }
 
@@ -889,15 +892,15 @@ static SDL_Texture * createSDL2Texture (SDL_Window * screen, SDL_Renderer * rend
 }
 
 /* WHEN EXITING PLAY, WE SAVE THE WINDOW-POSITION & SIZE SO WINDOW CAN POP UP IN SAME POSITION NEXT TIME! */
-void save_window_xy (SDL_Window * screen, int video_fudge_x, int video_fudge_y)
+void save_window_xy (SDL_Window * sdl_window, int video_fudge_x, int video_fudge_y)
 {
     int x, y, w, h;
 
-    SDL_GetWindowSize (screen, &w, &h);
+    SDL_GetWindowSize (sdl_window, &w, &h);
     if (w < 1 || h < 1 || w > 9999 || h > 9999)  /* SDL RETURNED BAD WINDOW INFO, DON'T SAVE! */
         return;
 
-    SDL_GetWindowPosition (screen, &x, &y);
+    SDL_GetWindowPosition (sdl_window, &x, &y);
     x += video_fudge_x;  /* APPLY CALCULATED FUDGE-FACTOR */
     if (x < 0 || x > 9999)
         x = 1;
@@ -947,15 +950,14 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     bool returnok = false;
     bool eof = false;
     bool last_resized = true;      // TRUE IF VIDEO-WINDOW HAS BEEN RE-ASPECTED SINCE LAST RESIZE EVENT (HAS CORRECT ASPECT RATIO).
-    bool sdl_initialized = false;  // TRUE IF SDL (VIDEO) IS SUCCESSFULLY INITIALIZED.
     pktQueue *pktQ = nullptr;      // QUEUE FOR VIDEO-PACKET QUEUEING.
     pktQueue *apktQ = nullptr;     // QUEUE FOR AUDIO-PACKET QUEUEING.
     SDL_Event       event;         // SDL EVENTS, IE. RESIZE, KILL WINDOW, ETC.
     int video_fudge_x = 0; int video_fudge_y = 0;  // FUDGE-FACTOR TO MAINTAIN VIDEO SCREEN LOCN. BETWEEN RUNS.
-    bool needWinSzFudge = true;     // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
-    SDL_Window * screen = nullptr;  /* JWT: MUST DECLARE VIDEO SCREEN-WINDOW HERE */
+    bool needWinSzFudge = true;    // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
+    SDL_Window * sdl_window = nullptr;  /* JWT: MUST DECLARE VIDEO SCREEN-WINDOW HERE */
 #ifdef _WIN32
-    SDL_Texture * bmp = nullptr;    // CAN'T USE SMARTPTR HERE IN WINDOWS - renderer.get() FAILS IF VIDEO PLAY NOT TURNED ON?!
+    SDL_Texture * bmp = nullptr;   // CAN'T USE SMARTPTR HERE IN WINDOWS - renderer.get() FAILS IF VIDEO PLAY NOT TURNED ON?!
 #endif
 
 /* STUFF THAT GETS FREED MUST BE DECLARED AND INITIALIZED AFTER HERE B/C BEFORE HERE, WE RETURN, 
@@ -1113,36 +1115,14 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         video_aspect_ratio = video_height
             ? (float)video_width / (float)video_height : 1.0;   /* Fall thru to square to avoid possibliity of "/0"! */
 
-        /* NOW "RESIZE" screen to user's wXh, if user set something: */
-        if (! SDL_WasInit (SDL_INIT_VIDEO) && ! sdl_initialized)
-        {
-            SDL_SetMainReady ();
-            if (SDL_InitSubSystem (SDL_INIT_VIDEO))
-            {
-                AUDERR ("e:Failed to init SDL (no video playing): %s.\n", SDL_GetError ());
-                myplay_video = false;
-                goto breakout1;
-            }
-            else if (aud_get_mainloop_type () == MainloopType::GLib)
-                AUDERR ("w:SDL2 NOT INITIALIZED IN (Fauxdacious) main(), MAY SEGFAULT ON EXIT!\n");
-        }
-        sdl_initialized = true;
-        Uint32 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
-        if (aud_get_bool ("ffaudio", "allow_highdpi"))
-            flags |= SDL_WINDOW_ALLOW_HIGHDPI;
-
-        screen = SDL_CreateWindow ("Fauxdacious Video", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
-            video_width, video_height, flags);
-        if (! screen)
+        /* NOW "RESIZE" sdl_window to user's wXh, if user set something: */
+        sdl_window = fauxd_get_sdl_window ();
+        if (! sdl_window)
         {
             AUDERR ("Failed to create SDL window (no video playing): %s.\n", SDL_GetError ());
             myplay_video = false;
             goto breakout1;
         }
-#if SDL_COMPILEDVERSION >= 2004
-        else
-            SDL_SetHint (SDL_HINT_VIDEO_X11_NET_WM_PING, "0");
-#endif
         video_windowtitle = aud_get_str ("ffaudio", "video_windowtitle");
         StringBuf titleBuf = (video_windowtitle && video_windowtitle[0])
                 ? str_printf ("%s - %s", (const char *) song_title, (const char *) video_windowtitle)
@@ -1150,16 +1130,15 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         song_title = String ();
         video_windowtitle = String ();
         str_replace_char (titleBuf, '_', ' ');
-        SDL_SetWindowSize (screen, video_width, video_height);
+        SDL_SetWindowSize (sdl_window, video_width, video_height);
 
         if (video_xmove > 0)  // (1 or 2)
-            SDL_SetWindowPosition (screen, video_window_x, video_window_y);
+            SDL_SetWindowPosition (sdl_window, video_window_x, video_window_y);
         if (aud_get_str ("ffaudio", "video_render_scale"))
             SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, aud_get_str ("ffaudio", "video_render_scale"));
         else
             SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "1");
-        SDL_SetWindowTitle (screen, (const char *) titleBuf);
-        //SDL_ShowWindow (screen);
+        SDL_SetWindowTitle (sdl_window, (const char *) titleBuf);
     }
 
 breakout1:
@@ -1191,7 +1170,7 @@ breakout1:
     {   // SUBSCOPE FOR DECLARING SDL2 TEXTURE AS SCOPED SMARTPOINTER:
     bool windowIsStable = false;    // JWT:SAVING AND RECREATING WINDOW CAUSES POSN. TO DIFFER BY THE WINDOW DECORATION SIZES, SO WE HAVE TO FUDGE FOR THAT!
     bool windowNowExposed = false;  // JWT:NEEDED TO PREVENT RESIZING WINDOW BEFORE EXPOSING ON MS-WINDOWS?!
-    SmartPtr<SDL_Renderer, SDL_DestroyRenderer> renderer (createSDL2Renderer (screen, myplay_video));
+    SmartPtr<SDL_Renderer, SDL_DestroyRenderer> renderer (createSDL2Renderer (sdl_window, myplay_video));
     if (! renderer)
     {
         if (myplay_video)
@@ -1201,10 +1180,10 @@ breakout1:
 #ifdef _WIN32
 #define bmpptr bmp
     else  // CAN'T SMARTPTR THIS IN WINBLOWS SINCE FATAL ERROR (ON renderer.get IF NO RENDERER) IF VIDEO-PLAY TURNED OFF (COMPILER DIFFERENCE)!
-        bmp = createSDL2Texture (screen, renderer.get (), myplay_video, vcinfo.context->width, vcinfo.context->height);
+        bmp = createSDL2Texture (sdl_window, renderer.get (), myplay_video, vcinfo.context->width, vcinfo.context->height);
 #else
 #define bmpptr bmp.get ()
-    SmartPtr<SDL_Texture, SDL_DestroyTexture> bmp (createSDL2Texture (screen, renderer.get (), myplay_video, vcinfo.context->width, vcinfo.context->height));
+    SmartPtr<SDL_Texture, SDL_DestroyTexture> bmp (createSDL2Texture (sdl_window, renderer.get (), myplay_video, vcinfo.context->width, vcinfo.context->height));
 #endif
     if (! bmp)
         myplay_video = false;
@@ -1390,51 +1369,24 @@ breakout1:
         while (SDL_PollEvent (&event))
         {
             switch (event.type) {
-                case SDL_QUIT:  /* USER CLICKED THE "X" IN UPPER-RIGHT CORNER, KILL VIDEO WINDOW BUT KEEP PLAYING AUDIO! */
-                    AUDDBG ("i:SDL_QUIT (User killed video window for this play)!\n");
-                    if (myplay_video)
-                    {
-                        myplay_video = false;
-                        QFlush (pktQ);  // FLUSH ANY VIDEO PACKETS IN QUEUE SINCE WE CAN'T WRITE 'EM AFTER CLOSING.
-                        if (bmp)  // SMARTPTR OR NOT, WE GOTTA FREE THIS BEFORE CLOBBERING WINDOW!
-                            SDL_DestroyTexture (bmpptr);
-                        if (renderer)
-                            SDL_DestroyRenderer (renderer.get ());
-                        if (screen)
-                        {
-                            save_window_xy (screen, video_fudge_x, video_fudge_y);
-                            SDL_DestroyWindow (screen);           
-                            screen = nullptr;
-                        }
-                    }
-                    break;
                 case SDL_WINDOWEVENT:
                     switch (event.window.event)
                     {
                         case SDL_WINDOWEVENT_CLOSE:  /* USER CLICKED THE "X" IN UPPER-RIGHT CORNER, KILL VIDEO WINDOW BUT KEEP PLAYING AUDIO! */
                             AUDDBG ("i:SDL_CLOSE (User killed video window for this play)!\n");
-                            if (myplay_video)
+                            if (myplay_video && sdl_window)
                             {
-                                myplay_video = false;
-                                QFlush (pktQ);  // FLUSH ANY VIDEO PACKETS IN QUEUE SINCE WE CAN'T WRITE 'EM AFTER CLOSING.
-                                if (bmp)  // SMARTPTR OR NOT, WE GOTTA FREE THIS BEFORE CLOBBERING WINDOW!
-                                    SDL_DestroyTexture (bmpptr);
-                                if (renderer)
-                                    SDL_DestroyRenderer (renderer.get ());
-                                if (screen)
-                                {
-                                    save_window_xy (screen, video_fudge_x, video_fudge_y);
-                                    SDL_DestroyWindow (screen);           
-                                    screen = nullptr;
-                                }
-                                //if (sdl_initialized)
-                                //    SDL_QuitSubSystem (SDL_INIT_VIDEO);
+                                /* DISABLE "video_display" VISUALIZATION PLUGIN (WHICH WILL HIDE THE VIDEO WINDOW! */
+                                /* (THIS IS HOW ALL OTHER VISUALIZATION PLUGINS WORK) */
+                                save_window_xy (sdl_window, video_fudge_x, video_fudge_y);
+                                PluginHandle * visHandle = aud_plugin_lookup_basename ("video_display");
+                                aud_plugin_enable (visHandle, false);  // DISABLE VIDEO VISUALIZATION PLUGIN!
                             }
                             break;
                         case SDL_WINDOWEVENT_RESIZED:  /* WINDOW CHANGED SIZE EITHER BY US OR BY USER DRAGGING WINDOW CORNER (WE DON'T KNOW WHICH HERE) */
                             if (! windowNowExposed)
                                 break;
-                            /* Resize the screen. */
+                            /* Resize the sdl_window. */
                             resized_window_width = event.window.data1;  // window's reported new size
                             resized_window_height = event.window.data2;
                             AUDDBG ("i:SDL_RESIZE!!!!!! rvw=%d h=%d\n", resized_window_width, resized_window_height);
@@ -1518,7 +1470,7 @@ breakout1:
                 video_width = new_video_width;
                 video_height = new_video_height;
                 /* NOW MANUALLY RESIZE (RE-ASPECT) WINDOW BASED ON VIDEO'S ORIGINALLY-CALCULATED ASPECT RATIO: */
-                SDL_SetWindowSize (screen, video_width, video_height);
+                SDL_SetWindowSize (sdl_window, video_width, video_height);
                 SDL_Delay (50);
                 last_resized = true;  // WE'VE RE-ASPECTED, SO ALLOW BLITTING TO RESUME!
             }
@@ -1541,7 +1493,7 @@ breakout1:
         if (needWinSzFudge && windowIsStable)
         {
             int x, y;
-            SDL_GetWindowPosition (screen, &x, &y);
+            SDL_GetWindowPosition (sdl_window, &x, &y);
             video_fudge_x = video_window_x - x;
             video_fudge_y = video_window_y - y;
             AUDDBG ("FUDGE SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x,y,video_window_x,video_window_y,video_fudge_x,video_fudge_y);
@@ -1561,16 +1513,13 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
     if (myplay_video)  /* WE WERE PLAYING VIDEO && FINISHED WITH VIDEO-WINDOW STILL INTACT (NOT CLOSED BY USER PRESSING WINDOW'S CORNER [X]) */
     {
         AUDDBG ("i:ffaudio: QUITTING VIDEO!\n");
-        if (screen)  // bmp ALREADY FREED & NOW OUT OF SCOPE BUT MAKE SURE VIDEO WINDOW IS FREED & GONE!
+        if (sdl_window)  // bmp ALREADY FREED & NOW OUT OF SCOPE BUT MAKE SURE VIDEO WINDOW IS FREED & GONE!
         {
-            save_window_xy (screen, video_fudge_x, video_fudge_y);
-            SDL_DestroyWindow (screen);
-            screen = nullptr;
+            save_window_xy (sdl_window, video_fudge_x, video_fudge_y);
+            SDL_HideWindow (sdl_window);
+            /* NOTIFY video_display VISUALIZATION PLUGIN WE'RE NOT DEMUXING VIDEO. */
+            aud_set_bool ("audacious", "_video_playing", false);
         }
-#ifdef _WIN32
-        if (sdl_initialized)
-            SDL_QuitSubSystem (SDL_INIT_VIDEO);
-#endif
     }
 
     if (vcodec_opened)

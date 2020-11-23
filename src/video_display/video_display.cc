@@ -3,8 +3,8 @@
  *  Copyright (C) 2020 Jim Turner
  *
  *  Simply allow toggling of the ffaudio:play_video flag here
- *  NOTE:  User must restart currently-playing video in order for this
- #  flag change to take effect!
+ *  NOTE:  User no longer needs to restart currently-playing video in 
+ *  order for this flag change to take effect!
  *
  *  Based on XMMS:
  *  Copyright (C) 1998-2003  XMMS development team.
@@ -27,6 +27,8 @@
 #include <math.h>
 #include <string.h>
 
+#define  USE_SDL2 1
+#include <libfauxdcore/sdl_window.h>
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/plugin.h>
@@ -35,9 +37,9 @@
 static const char vid_about[] =
  N_("Video Display visualization plugin for Fauxdacious\n"
     "Copyright 2020 Jim Turner\n\n"
-    "Toggles video display for the FFmpeg & DVD plugins:\n"
-    "NOTE:  User must restart any currently-playing video\n"
-    "or DVD in order for this change to take effect!");
+    "Toggles video display for the FFmpeg & DVD plugins,\n"
+    "provided the [Play video stream in popup window] flag\n"
+    "is set in the respective plugins that can play video.");
 
 class VidDisplay : public VisPlugin
 {
@@ -61,8 +63,26 @@ EXPORT VidDisplay aud_plugin_instance;
 
 bool VidDisplay::init ()
 {
-    aud_set_bool ("ffaudio", "play_video", true);
-    aud_set_bool ("dvd", "play_video", true);
+    aud_set_bool ("audacious", "video_display", true);
+    if (aud_get_bool ("audacious", "_video_playing"))
+    {
+        SDL_Window * sdl_window = fauxd_get_sdl_window ();
+        if (sdl_window)
+        {
+            SDL_ShowWindow (sdl_window);
+            /* JWT:DON'T KNOW WHY WE NEED THIS STUFF BELOW, BUT WON'T SHOW W/O IT? */
+            /* (WILL ONLY SHOW EVERY *OTHER* TOGGLE OFF&ON)! */
+            /* (SEEMS TO BE AN AFTERSTEP THANG)! :/ */
+            if (aud_get_bool ("audacious", "afterstep"))
+            {
+                SDL_Delay (10);
+                SDL_HideWindow (sdl_window);
+                SDL_Delay (10);
+                SDL_ShowWindow (sdl_window);
+            }
+        }
+    }
+
     AUDDBG ("i:Video Display Plugin turned ON!\n");
 
     return true;
@@ -74,7 +94,10 @@ void VidDisplay::clear ()  /* REQUIRED FOR VISUALIZATION PLUGINS. */
 
 void VidDisplay::cleanup ()
 {
-    aud_set_bool ("ffaudio", "play_video", false);
-    aud_set_bool ("dvd", "play_video", false);
+    SDL_Window * sdl_window = fauxd_get_sdl_window ();
+    if (sdl_window)
+        SDL_HideWindow (sdl_window);
+
+    aud_set_bool ("audacious", "video_display", false);
     AUDDBG ("i:Video Display Plugin turned off!\n");
 }

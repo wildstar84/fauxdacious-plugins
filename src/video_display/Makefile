@@ -9,5 +9,5 @@ plugindir := ${plugindir}/${VISUALIZATION_PLUGIN_DIR}
 
 LD = ${CXX}
 CFLAGS += ${PLUGIN_CFLAGS}
-CPPFLAGS += ${PLUGIN_CPPFLAGS} -I../..
-LIBS += -lm
+CPPFLAGS += ${PLUGIN_CPPFLAGS} ${SDL_CFLAGS} -I../..
+LIBS += ${SDL_LIBS} -lm
