@@ -883,7 +883,8 @@ static SDL_Texture * createSDL2Texture (SDL_Window * sdl_window, SDL_Renderer * 
             SDL_RenderPresent (renderer);
             if (aud_get_bool ("audacious", "video_display"))
                 SDL_ShowWindow (sdl_window);  // ONLY SHOW WINDOW IF video_display VISUALIZATION PLUGIN ON!
-                /* NOTIFY video_display VISUALIZATION PLUGIN WE'RE NOW DEMUXING VIDEO. */
+
+            /* NOTIFY video_display VISUALIZATION PLUGIN WE'RE NOW DEMUXING VIDEO. */
             aud_set_bool ("audacious", "_video_playing", true);
         }
     }
@@ -892,7 +893,8 @@ static SDL_Texture * createSDL2Texture (SDL_Window * sdl_window, SDL_Renderer * 
 }
 
 /* WHEN EXITING PLAY, WE SAVE THE WINDOW-POSITION & SIZE SO WINDOW CAN POP UP IN SAME POSITION NEXT TIME! */
-void save_window_xy (SDL_Window * sdl_window, int video_fudge_x, int video_fudge_y)
+void save_window_xy (SDL_Window * sdl_window, int video_window_x, int video_window_y,
+        int video_fudge_x, int video_fudge_y, bool video_display_at_startup)
 {
     int x, y, w, h;
 
@@ -901,6 +903,14 @@ void save_window_xy (SDL_Window * sdl_window, int video_fudge_x, int video_fudge
         return;
 
     SDL_GetWindowPosition (sdl_window, &x, &y);
+    if (! video_display_at_startup && aud_get_bool ("audacious", "video_display"))
+    {
+        /* JWT:MUST RECALCULATE FUDGE HERE IFF WINDOW STARTED PLAY HIDDEN (UNDECORATED), */
+        /* BUT FINISNED SHOWN (DECORATED?) (WE ACTIVATED VIDEO VISUALIZATION DURING PLAY)!: */
+        video_fudge_x = video_window_x - x;
+        video_fudge_y = video_window_y - y;
+        AUDDBG ("FUDGE RE-SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x, video_window_y, video_fudge_x, video_fudge_y);
+    }
     x += video_fudge_x;  /* APPLY CALCULATED FUDGE-FACTOR */
     if (x < 0 || x > 9999)
         x = 1;
@@ -911,6 +921,7 @@ void save_window_xy (SDL_Window * sdl_window, int video_fudge_x, int video_fudge
     aud_set_int ("ffaudio", "video_window_y", y);
     aud_set_int ("ffaudio", "video_window_w", w);
     aud_set_int ("ffaudio", "video_window_h", h);
+    AUDDBG ("--save_window_xy(%d, %d)\n", x, y);
 }
 
 bool FFaudio::play (const char * filename, VFSFile & file)
@@ -956,6 +967,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     int video_fudge_x = 0; int video_fudge_y = 0;  // FUDGE-FACTOR TO MAINTAIN VIDEO SCREEN LOCN. BETWEEN RUNS.
     bool needWinSzFudge = true;    // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
     SDL_Window * sdl_window = nullptr;  /* JWT: MUST DECLARE VIDEO SCREEN-WINDOW HERE */
+    bool video_display_at_startup = aud_get_bool ("audacious", "video_display"); // TRUE IF VIDIO VISUALIZATION ON AT PLAY START.
 #ifdef _WIN32
     SDL_Texture * bmp = nullptr;   // CAN'T USE SMARTPTR HERE IN WINDOWS - renderer.get() FAILS IF VIDEO PLAY NOT TURNED ON?!
 #endif
@@ -1378,7 +1390,8 @@ breakout1:
                             {
                                 /* DISABLE "video_display" VISUALIZATION PLUGIN (WHICH WILL HIDE THE VIDEO WINDOW! */
                                 /* (THIS IS HOW ALL OTHER VISUALIZATION PLUGINS WORK) */
-                                save_window_xy (sdl_window, video_fudge_x, video_fudge_y);
+                                save_window_xy (sdl_window, video_window_x, video_window_y,
+                                        video_fudge_x, video_fudge_y, video_display_at_startup);
                                 PluginHandle * visHandle = aud_plugin_lookup_basename ("video_display");
                                 aud_plugin_enable (visHandle, false);  // DISABLE VIDEO VISUALIZATION PLUGIN!
                             }
@@ -1399,6 +1412,15 @@ breakout1:
                                 SDL_RenderPresent (renderer.get ());  // only blit a single frame at startup will get refreshed!
                                 windowNowExposed = true;
                             }
+                            break;
+                        case SDL_WINDOWEVENT_HIDDEN:
+                            /* SOME WMS SEEM TO SEND A "SHOW" EVENT IMMEDIATELY AFTER SOME "HIDE" EVENTS?! */
+                            break;
+                        case SDL_WINDOWEVENT_SHOWN:
+                            /* UNDO IMMEDIATE (RE)SHOW-ON-HIDE CAUSED BY SOME WMS! */
+                            if (! aud_get_bool ("audacious", "video_display"))
+                                SDL_HideWindow (sdl_window);
+                            break;
                     }
             }
         }
@@ -1496,7 +1518,7 @@ breakout1:
             SDL_GetWindowPosition (sdl_window, &x, &y);
             video_fudge_x = video_window_x - x;
             video_fudge_y = video_window_y - y;
-            AUDDBG ("FUDGE SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x,y,video_window_x,video_window_y,video_fudge_x,video_fudge_y);
+            AUDDBG ("FUDGE SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x, video_window_y, video_fudge_x, video_fudge_y);
             needWinSzFudge = false;
         }
     }  // END PACKET-PROCESSING LOOP.
@@ -1510,16 +1532,15 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
         destroyQueue (pktQ);
     if (apktQ)
         destroyQueue (apktQ);
-    if (myplay_video)  /* WE WERE PLAYING VIDEO && FINISHED WITH VIDEO-WINDOW STILL INTACT (NOT CLOSED BY USER PRESSING WINDOW'S CORNER [X]) */
+
+    if (myplay_video && sdl_window)
     {
         AUDDBG ("i:ffaudio: QUITTING VIDEO!\n");
-        if (sdl_window)  // bmp ALREADY FREED & NOW OUT OF SCOPE BUT MAKE SURE VIDEO WINDOW IS FREED & GONE!
-        {
-            save_window_xy (sdl_window, video_fudge_x, video_fudge_y);
-            SDL_HideWindow (sdl_window);
-            /* NOTIFY video_display VISUALIZATION PLUGIN WE'RE NOT DEMUXING VIDEO. */
-            aud_set_bool ("audacious", "_video_playing", false);
-        }
+        save_window_xy (sdl_window, video_window_x, video_window_y, video_fudge_x, video_fudge_y,
+                video_display_at_startup);
+        SDL_HideWindow (sdl_window);
+        /* NOTIFY video_display VISUALIZATION PLUGIN WE'RE NOT DEMUXING VIDEO. */
+        aud_set_bool ("audacious", "_video_playing", false);
     }
 
     if (vcodec_opened)

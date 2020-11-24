@@ -68,19 +68,7 @@ bool VidDisplay::init ()
     {
         SDL_Window * sdl_window = fauxd_get_sdl_window ();
         if (sdl_window)
-        {
             SDL_ShowWindow (sdl_window);
-            /* JWT:DON'T KNOW WHY WE NEED THIS STUFF BELOW, BUT WON'T SHOW W/O IT? */
-            /* (WILL ONLY SHOW EVERY *OTHER* TOGGLE OFF&ON)! */
-            /* (SEEMS TO BE AN AFTERSTEP THANG)! :/ */
-            if (aud_get_bool ("audacious", "afterstep"))
-            {
-                SDL_Delay (10);
-                SDL_HideWindow (sdl_window);
-                SDL_Delay (10);
-                SDL_ShowWindow (sdl_window);
-            }
-        }
     }
 
     AUDDBG ("i:Video Display Plugin turned ON!\n");
@@ -95,9 +83,9 @@ void VidDisplay::clear ()  /* REQUIRED FOR VISUALIZATION PLUGINS. */
 void VidDisplay::cleanup ()
 {
     SDL_Window * sdl_window = fauxd_get_sdl_window ();
+    aud_set_bool ("audacious", "video_display", false);
     if (sdl_window)
         SDL_HideWindow (sdl_window);
 
-    aud_set_bool ("audacious", "video_display", false);
     AUDDBG ("i:Video Display Plugin turned off!\n");
 }
