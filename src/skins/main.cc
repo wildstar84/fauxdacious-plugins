@@ -934,7 +934,7 @@ void mainwin_mr_change (MenuRowItem i)
                 mainwin_lock_info_text (_("Enable 'Always On Top'"));
             break;
         case MENUROW_FILEINFOBOX:
-            mainwin_lock_info_text (_("File Info Box"));
+            mainwin_lock_info_text (_("Song Info Box"));
             break;
         case MENUROW_SCALE:
             mainwin_lock_info_text (_("Double Size"));
