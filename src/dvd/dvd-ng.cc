@@ -2296,6 +2296,13 @@ AUDDBG("---INPUT PIPE OPENED!\n");
             video_fudge_x = video_window_x - x;
             video_fudge_y = video_window_y - y;
             AUDDBG ("FUDGE SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x, video_window_y, video_fudge_x, video_fudge_y);
+            if ((video_fudge_x || video_fudge_y) && ! aud_get_bool ("audacious", "afterstep"))
+            {
+                /* JWT:FOR SOME REASON AFTERSTEP DOESN'T SEEM TO NEED NOR WORK WITH THIS!: */
+                SDL_SetWindowPosition (sdl_window, x+video_fudge_x, y+video_fudge_y);
+                video_fudge_x = video_fudge_y = 0;
+                AUDDBG ("WINDOW MOVED BY FUDGE AND FUDGE RESET TO 0,0 (WERE NOT RUNNING AFTERSTEP)!\n");
+            }
             needWinSzFudge = false;
         }
         if (codec_opened && check_stop ())  //check_stop NO WORKEE IF WE'RE A VIDEO-ONLY STREAM!
