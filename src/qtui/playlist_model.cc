@@ -227,6 +227,11 @@ QVariant PlaylistModel::headerData (int section, Qt::Orientation orientation, in
         return QString (_(labels[col])); // JWT:SHOW FULL HEADER IN TOOLTIP!
     case Qt::TextAlignmentRole:
         return alignment (col);
+    case Qt::DecorationRole:
+        if (col == NowPlaying)
+            return audqt::get_icon("media-playback-start");
+
+        return QVariant();
 
     default:
         return QVariant ();
