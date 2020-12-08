@@ -24,8 +24,8 @@ plugindir := ${plugindir}/${GENERAL_PLUGIN_DIR}
 LD = ${CXX}
 
 CFLAGS += ${PLUGIN_CFLAGS}
-CPPFLAGS += ${PLUGIN_CPPFLAGS} -I../.. ${QT_CFLAGS}
-LIBS += ${QT_LIBS} -lfauxdqt
+CPPFLAGS += ${PLUGIN_CPPFLAGS} ${GLIB_CFLAGS} -I../.. ${QT_CFLAGS}
+LIBS += ${GLIB_LIBS} ${QT_LIBS} -lfauxdqt
 
 %.moc: %.h
 	moc $< -o $@
