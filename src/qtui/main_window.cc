@@ -225,6 +225,8 @@ MainWindow::MainWindow () :
 
     /* set initial keyboard focus on the playlist */
     m_playlist_tabs->currentPlaylistWidget ()->setFocus (Qt::OtherFocusReason);
+    this->setFocusProxy (m_playlist_tabs->currentPlaylistWidget ());
+    this->setFocusPolicy (Qt::StrongFocus);
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
     /* JWT:PREVENT WINDOW FROM "WALKING" UP BY THE HEIGHT OF THE WINDOW DECORATION!: */
@@ -433,7 +435,7 @@ void MainWindow::show_dock_plugin (PluginHandle * plugin)
     aud_plugin_enable (plugin, true);
 
     auto item = audqt::DockItem::find_by_plugin (plugin);
-    if (item)
+    if (item && ! aud_get_bool ("qtui", "_nofocusgrab"))
         item->grab_focus ();
 }
 

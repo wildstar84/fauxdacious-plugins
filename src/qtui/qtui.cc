@@ -166,6 +166,7 @@ public:
                         (GKeyFileFlags)(G_KEY_FILE_KEEP_COMMENTS), nullptr))
                 {
                     const char * flag;
+                    aud_set_bool ("qtui", "_nofocusgrab", TRUE);  // JWT:DON'T GRAB FOCUS WHEN RESTARTING UP (MAIN WINDOW WON'T GET IT BACK - aud_get_bool ("qtui", "_nofocusgrab")Qt SUX AT THIS)!\n"
                     for (PluginHandle * plugin : aud_plugin_list (PluginType::General))
                     {
                         flag = g_key_file_get_string (rcfile, "Restore Floating Dockapps",
@@ -194,10 +195,12 @@ public:
                         audqt::queue_manager_show ();
                         aud_set_bool("audqt", "queue_manager_visible", true);
                     }
+                    aud_set_bool ("qtui", "_nofocusgrab", FALSE);  // JWT:DON'T GRAB FOCUS WHEN RESTARTING UP (MAIN WINDOW WON'T GET IT BACK - aud_get_bool ("qtui", "_nofocusgrab")Qt SUX AT THIS)!\n"
                 }
             }
             window->activateWindow ();
             window->raise ();
+            window->setFocus (Qt::OtherFocusReason);
         }
     }
 
