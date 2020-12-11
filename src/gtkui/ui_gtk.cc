@@ -45,6 +45,7 @@
 #include "../ui-common/menu-ops.h"
 
 static const char * const gtkui_defaults[] = {
+    "infoarea_show_art", "TRUE",
     "infoarea_show_vis", "TRUE",
     "infoarea_visible", "TRUE",
     "menu_visible", "TRUE",
@@ -1046,6 +1047,7 @@ void show_hide_infoarea ()
         gtk_box_pack_end ((GtkBox *) vbox, infoarea, false, false, 0);
         gtk_widget_show_all (infoarea);
 
+        show_hide_infoarea_art ();
         show_hide_infoarea_vis ();
     }
 
@@ -1054,6 +1056,13 @@ void show_hide_infoarea ()
         gtk_widget_destroy (infoarea);
         infoarea = nullptr;
     }
+}
+
+void show_hide_infoarea_art ()
+{
+    bool show = aud_get_bool ("gtkui", "infoarea_show_art");
+    ui_infoarea_show_art (show);
+    aud_set_bool ("albumart", "_infoarea_show_art_saved", show);
 }
 
 void show_hide_infoarea_vis ()

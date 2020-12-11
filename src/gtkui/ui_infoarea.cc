@@ -25,6 +25,7 @@
 #include <libfauxdcore/drct.h>
 #include <libfauxdcore/hook.h>
 #include <libfauxdcore/interface.h>
+#include <libfauxdcore/runtime.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "ui_infoarea.h"
@@ -57,6 +58,7 @@ typedef struct {
     AudguiPixbuf pb, last_pb;
     float alpha, last_alpha;
 
+    bool show_art;
     bool stopped;
 } UIInfoArea;
 
@@ -308,7 +310,9 @@ static void draw_title (cairo_t * cr)
     GtkAllocation alloc;
     gtk_widget_get_allocation (area->main, & alloc);
 
-    int x = HEIGHT;
+    int x = area->show_art ? HEIGHT : SPACING;
+    int y_offset1 = ICON_SIZE / 2;
+    int y_offset2 = ICON_SIZE * 3 / 4;
     int width = alloc.width - x;
 
     if (area->title)
@@ -318,16 +322,16 @@ static void draw_title (cairo_t * cr)
         draw_text (area->main, cr, x, SPACING, width, 1, 1, 1, area->last_alpha,
          "18", area->last_title);
     if (area->artist)
-        draw_text (area->main, cr, x, SPACING + ICON_SIZE / 2, width, 1, 1, 1,
+        draw_text (area->main, cr, x, SPACING + y_offset1, width, 1, 1, 1,
          area->alpha, "9", area->artist);
     if (area->last_artist)
-        draw_text (area->main, cr, x, SPACING + ICON_SIZE / 2, width, 1, 1, 1,
+        draw_text (area->main, cr, x, SPACING + y_offset1, width, 1, 1, 1,
          area->last_alpha, "9", area->last_artist);
     if (area->album)
-        draw_text (area->main, cr, x, SPACING + ICON_SIZE * 3 / 4, width, 0.7,
+        draw_text (area->main, cr, x, SPACING + y_offset2, width, 0.7,
          0.7, 0.7, area->alpha, "9", area->album);
     if (area->last_album)
-        draw_text (area->main, cr, x, SPACING + ICON_SIZE * 3 / 4, width, 0.7,
+        draw_text (area->main, cr, x, SPACING + y_offset2, width, 0.7,
          0.7, 0.7, area->last_alpha, "9", area->last_album);
 }
 
@@ -391,8 +395,13 @@ static void set_album_art ()
 {
     g_return_if_fail (area);
 
-    area->pb = audgui_pixbuf_request_current ();
+    if (! area->show_art)
+    {
+        area->pb = AudguiPixbuf ();
+        return;
+    }
 
+    area->pb = audgui_pixbuf_request_current ();
     if (area->pb)
         audgui_pixbuf_scale_within (area->pb, ICON_SIZE);
     else
@@ -420,6 +429,7 @@ static void ui_infoarea_playback_start ()
 
     if (! area->stopped) /* moved to the next song without stopping? */
         infoarea_next ();
+
     area->stopped = false;
 
     ui_infoarea_set_title ();
@@ -442,6 +452,27 @@ static void realize_cb (GtkWidget * widget)
 {
     /* using a native window avoids redrawing parent widgets */
     gdk_window_ensure_native (gtk_widget_get_window (widget));
+}
+
+void ui_infoarea_show_art (bool show)
+{
+    if (! area)
+        return;
+
+    area->show_art = show;
+    set_album_art ();
+    gtk_widget_queue_draw (area->main);
+}
+
+void ui_infoarea_toggle_art ()
+{
+    if (! area)
+        return;
+
+    bool show = aud_get_bool ("gtkui", "infoarea_show_art");
+    area->show_art = show;
+    set_album_art ();
+    gtk_widget_queue_draw (area->main);
 }
 
 void ui_infoarea_show_vis (bool show)
@@ -487,9 +518,10 @@ static void destroy_cb (GtkWidget * widget)
 
     ui_infoarea_show_vis (false);
 
-    hook_dissociate ("tuple change", (HookFunction) ui_infoarea_set_title);
-    hook_dissociate ("playback ready", (HookFunction) ui_infoarea_playback_start);
+    hook_dissociate ("gtkui toggle infoarea_art", (HookFunction) ui_infoarea_toggle_art, nullptr);
     hook_dissociate ("playback stop", (HookFunction) ui_infoarea_playback_stop);
+    hook_dissociate ("playback ready", (HookFunction) ui_infoarea_playback_start);
+    hook_dissociate ("tuple change", (HookFunction) ui_infoarea_set_title);
 
     timer_remove (TimerRate::Hz30, ui_infoarea_do_fade);
 
@@ -515,6 +547,7 @@ GtkWidget * ui_infoarea_new ()
     hook_associate ("tuple change", (HookFunction) ui_infoarea_set_title, nullptr);
     hook_associate ("playback ready", (HookFunction) ui_infoarea_playback_start, nullptr);
     hook_associate ("playback stop", (HookFunction) ui_infoarea_playback_stop, nullptr);
+    hook_associate ("gtkui toggle infoarea_art", (HookFunction) ui_infoarea_toggle_art, nullptr);
 
     g_signal_connect (area->box, "destroy", (GCallback) destroy_cb, nullptr);
 
