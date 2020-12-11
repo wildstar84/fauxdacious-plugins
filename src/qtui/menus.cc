@@ -58,15 +58,20 @@ static void show_search_tool () { hook_call ("qtui show search tool", nullptr); 
 static void show_playlist_manager () { hook_call ("qtui show playlist manager", nullptr); }
 static void toggle_menubar () { hook_call ("qtui toggle menubar", nullptr); }
 static void toggle_infoarea () { hook_call ("qtui toggle infoarea", nullptr); }
-static void toggle_infoarea_vis () { hook_call ("qtui toggle infoarea_vis", nullptr); }
 static void toggle_infoarea_art ()
 {
+    /* JWT:NOTE: infoarea_show_art SEEMS TO ALWAYS RETURN FALSE *INSIDE* THIS FUNCTION! */
+    /* TOGGLING THE SAVED FIELD ALWAYS SEEMS TO WORK B/C THIS FUNCTION ONLY CALLED IF TOGGLING -
+       NEVER ON STARTUP/SHUTDOWN, AND IF SAVED IS UNDEF, THEN IT'S AN INSTANCE'S 1ST RUN AND
+       THE DEFAULT FOR infoarea_show_art IS TRUE!
+    */
     hook_call ("qtui toggle infoarea_art", nullptr);
     if (aud_get_bool ("albumart", "_infoarea_show_art_saved"))
         aud_set_bool ("albumart", "_infoarea_show_art_saved", false);
     else
         aud_set_bool ("albumart", "_infoarea_show_art_saved", true);
 }
+static void toggle_infoarea_vis () { hook_call ("qtui toggle infoarea_vis", nullptr); }
 static void toggle_statusbar () { hook_call ("qtui toggle statusbar", nullptr); }
 static void toggle_remaining_time () { hook_call ("qtui toggle remaining time", nullptr); }
 
