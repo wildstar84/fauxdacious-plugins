@@ -145,6 +145,7 @@ MainWindow::MainWindow () :
     m_playlist_manager (aud_plugin_lookup_basename ("playlist-manager-qt"))
 {
     auto slider = new TimeSlider (this);
+    bool qt_mainwindow_walks = aud_get_bool ("audqt", "qt_mainwindow_walks");
 
     const ToolBarItem items[] = {
         ToolBarCustom (create_menu_button (this, m_menubar), & m_menu_action),
@@ -212,34 +213,45 @@ MainWindow::MainWindow () :
      * place, but user screenshots show that it somehow happens, and in
      * that case we don't want them to be gone forever. */
     toolbar->show ();
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
     int dock_count = 0;
-#endif
     for (auto w : findChildren<DockWidget *> ())
     {
         w->show ();
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
         ++dock_count;
-#endif
     }
-
+    if (dock_count && qt_mainwindow_walks)
+    {
+        /* JWT:THESE "NICE" PLUGINS DO NOT CAUSE WINDOW TO WALK! */
+        Index<String> nice_list = str_list_to_index ("albumart-qt,search-tool-qt", ",");
+        for (auto & plugin_name : nice_list)
+        {
+            PluginHandle * plugin = aud_plugin_lookup_basename (plugin_name);
+            if (aud_plugin_get_enabled (plugin))
+                dock_count--;
+        }
+    }
     /* set initial keyboard focus on the playlist */
     m_playlist_tabs->currentPlaylistWidget ()->setFocus (Qt::OtherFocusReason);
     this->setFocusProxy (m_playlist_tabs->currentPlaylistWidget ());
     this->setFocusPolicy (Qt::StrongFocus);
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-    /* JWT:PREVENT WINDOW FROM "WALKING" UP BY THE HEIGHT OF THE WINDOW DECORATION!: */
-    /* (THE QSettings SYSTEM APPARENTLY DOESN'T HANDLE DECORATED WINDOWS PROPERLY?!  */
-    /* -- SEE ALSO: ffaudio-core.cc "FUDGE FACTOR" COMMENTS FOR RELATED ISSUE!)      */
-    int x = aud_get_int ("qtui", "player_x");
-    int y = aud_get_int ("qtui", "player_y");
-    if (y <= 0)
-        y = 25; /* JWT:MAKE SURE THE WINDOW TITLEBAR (WHICH USUALLY ALLOWS abUSER TO MOVE) ISN'T OFF THE SCREEN!: */
+    if (qt_mainwindow_walks)
+    {
+        /* JWT:PREVENT WINDOW FROM "WALKING" UP BY THE HEIGHT OF THE WINDOW DECORATION!:
+           (THE (OLDER) QSettings SYSTEM APPARENTLY DOESN'T HANDLE DECORATED WINDOWS PROPERLY?!)
+           -- SEE ALSO: ffaudio-core.cc "FUDGE FACTOR" COMMENTS FOR RELATED ISSUE!)
+        */
+        int x = aud_get_int ("qtui", "player_x");
+        int y = aud_get_int ("qtui", "player_y");
+        if (y <= 0)
+            y = 25; /* JWT:MAKE SURE THE WINDOW TITLEBAR (WHICH USUALLY ALLOWS abUSER TO MOVE) ISN'T OFF THE SCREEN!: */
 
-    if (dock_count > 0)
-        this->move (x, y);
-#endif
+        /* JWT:IF WE HAD ANY DOCKED PLUGINS ACTIVE (EXCEPT THE "NICE" ONES), WE MUST CORRECT THE WINDOW PLACEMENT!:
+           OTHERWISE THE WINDOW WILL "WALK" UP BY THE HEIGHT OF THE DECORATION (AT LEAST THRU Qt 5.7.1)!
+        */
+        if (dock_count > 0)
+            this->move (x, y);
+    }
 }
 
 MainWindow::~MainWindow ()
@@ -248,11 +260,12 @@ MainWindow::~MainWindow ()
     settings.setValue ("geometry", saveGeometry ());
     settings.setValue ("windowState", saveState ());
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-    /* JWT:PREVENT WINDOW FROM "WALKING" UP BY THE HEIGHT OF THE WINDOW DECORATION!: */
-    aud_set_int ("qtui", "player_x", this->geometry().x());
-    aud_set_int ("qtui", "player_y", this->geometry().y());
-#endif
+    if (aud_get_bool ("audqt", "qt_mainwindow_walks"))
+    {
+        /* JWT:PREVENT WINDOW FROM "WALKING" UP BY THE HEIGHT OF THE WINDOW DECORATION!: */
+        aud_set_int ("qtui", "player_x", this->geometry().x());
+        aud_set_int ("qtui", "player_y", this->geometry().y());
+    }
 
     audqt::unregister_dock_host();
 
