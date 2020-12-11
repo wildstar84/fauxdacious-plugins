@@ -39,6 +39,12 @@
 #include <libfauxdgui/libfauxdgui.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
+static bool frominit = false;  // TRUE WHEN THREAD STARTED BY SONG CHANGE (album_init()).
+static bool skipreset = false; // TRUE WHILE THREAD RUNNING AFTER STARTED BY SONG CHANGE (album_init()).
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool hide_dup_art_icon;   /* JWT:TOGGLE TO TRUE TO HIDE (DUPLICATE) ART ICON IN INFOBAR IF A WEB IMAGE FETCHED. */
+static bool last_image_from_web; /* JWT:TRUE IF LAST IMAGE CAME FROM WEB ("LOOK FOR ALBUM ART ON musicbrainz" OPTION). */
+
 class AlbumArtPlugin : public GeneralPlugin
 {
 public:
@@ -69,12 +75,9 @@ const char * const AlbumArtPlugin::defaults[] = {
 bool AlbumArtPlugin::init ()
 {
     aud_config_set_defaults ("albumart", defaults);
+    hide_dup_art_icon = aud_get_bool ("albumart", "hide_dup_art_icon");
     return true;
 }
-
-static bool frominit = false;  // TRUE WHEN THREAD STARTED BY SONG CHANGE (album_init()).
-static bool skipreset = false; // TRUE WHILE THREAD RUNNING AFTER STARTED BY SONG CHANGE (album_init()).
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* JWT:SEPARATE THREAD TO CALL THE HELPER SO THAT THE "LONG" TIME IT TAKES DOESN'T FREEZE THE GUI
    DISPLAY WHILE ATTEMPTING TO FIND AND FETCH THE ALBUM-ART.  THIS THREAD MUST *NOT* CALL THE
@@ -140,6 +143,7 @@ static void * helper_thread_fn (void * data)
             }
             if (!Artist || !Artist[0])
                 Artist = String ("_");
+
             StringBuf album_buf = str_encode_percent (Album);
             StringBuf artist_buf = str_encode_percent (Artist);
             StringBuf title_buf = str_encode_percent (Title);
@@ -186,7 +190,18 @@ static void albumart_ready (void *, GtkWidget * widget)
             coverart_file = String (filename_to_uri (filenamechar));
             pixbuf = audgui_pixbuf_request ((const char *) coverart_file);
             if (pixbuf)
+            {
                 audgui_scaled_image_set (widget, pixbuf.get ());
+                if (aud_get_bool ("albumart", "hide_dup_art_icon")
+                        && ! aud_get_bool ("gtkui", "infoarea_show_art")
+                        && aud_get_bool ("albumart", "_infoarea_show_art_saved"))
+                {
+                    /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
+                    aud_set_bool ("gtkui", "infoarea_show_art", true);
+                    hook_call ("gtkui toggle infoarea_art", nullptr);
+                }
+                last_image_from_web = true;
+            }
 
             return;
         }
@@ -199,6 +214,15 @@ static void album_update (void *, GtkWidget * widget)
 {
     bool haveartalready = false;
 
+    if (aud_get_bool ("albumart", "hide_dup_art_icon")
+            && aud_get_bool ("gtkui", "infoarea_show_art"))
+    {
+        /* JWT:HIDE INFOBAR ART ICON (DUP?) IF DISPLAYING THE IMAGE IN THE ALBUMART BOX! */
+        /* BUT WE'LL RESHOW IT IF WE FETCH A CUSTOM ALBUM COVER FROM THE WEB (NOT A DUP!) */
+        aud_set_bool ("gtkui", "infoarea_show_art", false);
+        hook_call ("gtkui toggle infoarea_art", nullptr);
+    }
+    last_image_from_web = false;
     if (! skipreset)
     {
         AudguiPixbuf pixbuf = audgui_pixbuf_request_current ();
@@ -278,8 +302,45 @@ static void album_clear (void *, GtkWidget * widget)
     audgui_scaled_image_set (widget, nullptr);
 }
 
+/* JWT:CALLED WHEN USER TOOGLES THE hide_dup_art_icon CHECKBOX: */
+/* IF ON, WE HIDE THE "DUPLICATE" IMG. IN INFOBAR, UNLESS WE FETCHED AN IMG. FROM THE WEB! */
+/* (THIS OPTION HAS NO EFFECT UNLESS BOTH THE "VIEW - SHOW INFOBAR ALBUM ART" -AND THE - */
+/* THE PLUGIN'S "LOOK FOR ALBUM ART ON musicbrainz" OPTIONS ARE BOTH ON)! */
+static void hide_dup_art_icon_toggle_fn ()
+{
+    bool infoarea_show_art = aud_get_bool ("gtkui", "infoarea_show_art");
+
+    aud_set_bool ("albumart", "hide_dup_art_icon", hide_dup_art_icon);
+    if (hide_dup_art_icon)
+    {
+        if (infoarea_show_art && ! last_image_from_web)
+        {
+            aud_set_bool ("gtkui", "infoarea_show_art", false);
+            hook_call ("gtkui toggle infoarea_art", nullptr);
+        }
+    }
+    else
+    {
+        bool infoarea_show_art_saved = aud_get_bool ("albumart", "_infoarea_show_art_saved");
+        if (infoarea_show_art_saved)  /* WAS ON, NOT NOW, SO TURN BACK ON (SHOW) */
+        {
+            aud_set_bool ("gtkui", "infoarea_show_art", true);
+            hook_call ("gtkui toggle infoarea_art", nullptr);
+        }
+    }
+}
+
 static void album_cleanup (GtkWidget * widget)
 {
+    if (aud_get_bool ("albumart", "hide_dup_art_icon")
+            && ! aud_get_bool ("gtkui", "infoarea_show_art")
+            && aud_get_bool ("albumart", "_infoarea_show_art_saved"))
+    {
+        /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
+        aud_set_bool ("gtkui", "infoarea_show_art", true);
+        hook_call ("gtkui toggle infoarea_art", nullptr);
+    }
+
     hook_dissociate ("playback stop", (HookFunction) album_clear, widget);
     hook_dissociate ("albumart ready", (HookFunction) albumart_ready, widget);
     hook_dissociate ("tuple change", (HookFunction) album_tuplechg, widget);
@@ -320,6 +381,8 @@ const PreferencesWidget AlbumArtPlugin::widgets[] = {
     WidgetCheck (N_("Look for album art on Musicbrainz.com"),
 #endif
         WidgetBool ("albumart", "internet_coverartlookup")),
+    WidgetCheck (N_("Hide info bar art icon unless separate album cover fetched"),
+        WidgetBool (hide_dup_art_icon, hide_dup_art_icon_toggle_fn)),
 };
 
 const PluginPreferences AlbumArtPlugin::prefs = {{widgets}};

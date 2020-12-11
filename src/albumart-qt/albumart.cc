@@ -117,12 +117,13 @@ public:
                 drawArt ();
 
                 if (aud_get_bool ("albumart", "hide_dup_art_icon")
-                        && ! aud_get_bool ("qtui", "infoarea_show_art"))
+                        && ! aud_get_bool ("qtui", "infoarea_show_art")
+                        && aud_get_bool ("albumart", "_infoarea_show_art_saved"))
                 {
                     /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
                     aud_set_bool ("qtui", "infoarea_show_art", true);
                     hook_call ("qtui toggle infoarea_art", nullptr);
-                    aud_set_bool ("qtui", "infoarea_show_art", true);
+                    aud_set_bool ("qtui", "infoarea_show_art", true);  // JWT:DUPING THESE SEEMS TO BE NECESSARY (GETS TOGGLED IN HOOK)!
                 }
                 last_image_from_web = true;
                 return;
@@ -373,7 +374,6 @@ static void hide_dup_art_icon_toggle_fn ()
     aud_set_bool ("albumart", "hide_dup_art_icon", hide_dup_art_icon);
     if (hide_dup_art_icon)
     {
-        aud_set_bool ("albumart", "_infoarea_show_art_saved", infoarea_show_art);
         if (infoarea_show_art && ! last_image_from_web)
         {
             aud_set_bool ("qtui", "infoarea_show_art", false);
@@ -384,7 +384,7 @@ static void hide_dup_art_icon_toggle_fn ()
     else
     {
         bool infoarea_show_art_saved = aud_get_bool ("albumart", "_infoarea_show_art_saved");
-        if (infoarea_show_art_saved && ! infoarea_show_art)  /* WAS ON, NOT NOW */
+        if (infoarea_show_art_saved && ! infoarea_show_art)  /* WAS ON, NOT NOW, SO TURN BACK ON (SHOW) */
         {
             aud_set_bool ("qtui", "infoarea_show_art", true);
             hook_call ("qtui toggle infoarea_art", nullptr);
@@ -396,7 +396,8 @@ static void hide_dup_art_icon_toggle_fn ()
 static void widget_cleanup (QObject * widget)
 {
     if (aud_get_bool ("albumart", "hide_dup_art_icon")
-            && ! aud_get_bool ("qtui", "infoarea_show_art"))
+            && ! aud_get_bool ("qtui", "infoarea_show_art")
+            && aud_get_bool ("albumart", "_infoarea_show_art_saved"))
     {
         /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
         aud_set_bool ("qtui", "infoarea_show_art", true);
