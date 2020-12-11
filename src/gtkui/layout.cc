@@ -472,7 +472,7 @@ static void size_changed_cb (GtkWidget * widget, GdkRectangle * rect, Item * ite
     }
 }
 
-void layout_add (PluginHandle * plugin, GtkWidget * widget)
+void layout_add (PluginHandle * plugin, GtkWidget * widget, GtkWidget * window)
 {
     g_return_if_fail (layout && center && plugin && widget);
 
@@ -500,6 +500,7 @@ void layout_add (PluginHandle * plugin, GtkWidget * widget)
     g_signal_connect (item->vbox, "size-allocate", (GCallback) size_changed_cb, item);
 
     item_add (item);
+    gtk_window_set_transient_for ((GtkWindow *) item->window, (GtkWindow *) window);
 }
 
 static void layout_move (GtkWidget * widget, int dock)

@@ -727,7 +727,7 @@ static void add_dock_plugin (PluginHandle * plugin, void *)
 {
     GtkWidget * widget = (GtkWidget *) aud_plugin_get_gtk_widget (plugin);
     if (widget)
-        layout_add (plugin, widget);
+        layout_add (plugin, widget, window);
 }
 
 static void remove_dock_plugin (PluginHandle * plugin, void *)
