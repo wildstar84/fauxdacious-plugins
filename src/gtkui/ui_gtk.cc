@@ -1027,6 +1027,7 @@ void show_hide_menu ()
         {
             menu_button = gtk_toggle_tool_button_new ();
             gtk_tool_button_set_icon_name ((GtkToolButton *) menu_button, "fauxdacious");
+            gtk_tool_item_set_tooltip_text (menu_button, _("Menu"));
             g_signal_connect (menu_button, "destroy", (GCallback)
              gtk_widget_destroyed, & menu_button);
             gtk_widget_show ((GtkWidget *) menu_button);
