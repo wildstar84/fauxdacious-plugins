@@ -93,7 +93,7 @@ const PluginPreferences LyricWiki::prefs = {{widgets}};
 
 typedef struct {
     String filename;       /* of song file */
-    String title, artist;
+    String title, artist, album;
     String uri;            /* URI we are trying to retrieve */
     String local_filename; /* JWT:CALCULATED LOCAL FILENAME TO SAVE LYRICS TO */
     gint startlyrics;      /* JWT:OFFSET IN LYRICS WINDOW WHERE LYRIC TEXT ACTUALLY STARTS */
@@ -396,14 +396,17 @@ static void get_lyrics_step_1 ()
         GStatBuf statbuf;
         AUDINFO ("i:HELPER FOUND: WILL DO (%s)\n", (const char *) str_concat ({lyric_helper, " \"",
                 (const char *) state.artist, "\" \"",
-                (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir)}));
+                (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir),
+                " \"", (const char *) state.album, "\" "}));
 #ifdef _WIN32
         WinExec ((const char *) str_concat ({lyric_helper, " \"", (const char *) state.artist, "\" \"",
-                (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir)}),
+                (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir),
+                " \"", (const char *) state.album, "\" "}),
                 SW_HIDE);
 #else
         system ((const char *) str_concat ({lyric_helper, " \"", (const char *) state.artist, "\" \"",
-                (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir)}));
+                (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir),
+                " \"", (const char *) state.album, "\" "}));
 #endif
         String lyric_fid = String (str_concat ({aud_get_path (AudPath::UserDir), "/_tmp_lyrics.txt"}));
 
@@ -754,6 +757,7 @@ static void lyricwiki_playback_began ()
     Tuple tuple = aud_drct_get_tuple ();
     state.title = tuple.get_str (Tuple::Title);
     state.artist = tuple.get_str (Tuple::Artist);
+    state.album = tuple.get_str (Tuple::Album);
     gtk_widget_set_sensitive (save_button, false);
     gtk_widget_set_sensitive (tuple_save_button, false);
 
