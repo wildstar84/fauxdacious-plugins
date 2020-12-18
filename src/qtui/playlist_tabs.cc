@@ -77,7 +77,6 @@ PlaylistTabs::PlaylistTabs (QWidget * parent) :
 
     // set up tab bar
     m_tabbar->setFocusPolicy (Qt::NoFocus);
-    m_tabbar->setProperty ("padding", "1px");
     int tabHeight = aud_get_int ("qtui", "tabheight");
     if (tabHeight > 0)
     {
@@ -118,7 +117,7 @@ void PlaylistTabs::addRemovePlaylists ()
     for (int i = 0; i < tabs; i++)
     {
         auto w = (LayoutWidget *) widget (i);
-        int list_idx = w->playlistWidget ()->playlist ();
+        int list_idx = aud_playlist_by_unique_id (w->playlistWidget ()->playlist ());
 
         if (list_idx < 0)
         {
@@ -134,7 +133,7 @@ void PlaylistTabs::addRemovePlaylists ()
             for (int j = i + 1; j < tabs; j++)
             {
                 w = (LayoutWidget *) widget (j);
-                list_idx = w->playlistWidget ()->playlist ();
+                list_idx = aud_playlist_by_unique_id (w->playlistWidget ()->playlist ());
 
                 if (list_idx == i)
                 {
@@ -158,6 +157,8 @@ void PlaylistTabs::addRemovePlaylists ()
         addTab (new LayoutWidget (this, tabs, m_pl_menu), QString ());
         tabs++;
     }
+    /* JWT:ONLY ALLOW TABS TO FOCUS IFF WE HAVE MULTIPLE TABS!: */
+    setFocusPolicy (((tabs > 1) ? Qt::TabFocus : Qt::NoFocus));
 }
 
 void PlaylistTabs::currentChangedTrigger (int idx)
@@ -208,6 +209,7 @@ void PlaylistTabs::playlist_update_cb(Playlist::UpdateLevel global_level)
     for (int i = 0; i < count(); i++)
         playlistWidget(i)->playlistUpdate();
 
+    m_tabbar->updateIcons();  // JWT:NEED THIS TO KEEP TAB ICONS SET?! (AUDACIOUS DOESN'T)
     setCurrentIndex (aud_playlist_get_active ());
     m_in_update = false;
 }
@@ -256,7 +258,7 @@ void PlaylistTabBar::updateIcons()
 
 void PlaylistTabBar::startRename(int playlist)
 {
-    int idx = currentIndex ();
+    int idx = playlist;
     QLineEdit * edit = getTabEdit(idx);
 
     if (!edit)
@@ -369,12 +371,6 @@ void PlaylistTabBar::updateTabText(int idx)
 
         // escape ampersands for setTabText ()
         title = QString(aud_playlist_get_title (playlist)).replace("&", "&&");
-        if (title.isNull())  // JWT:NULL TITLE INDICATES DELETED BY USER, BUT MUST REMOVE HERE!:
-        {
-            removeTab (idx);
-
-            return;
-        }
 
         if (aud_get_bool("qtui", "entry_count_visible"))
             title += QString(" (%1)").arg(aud_playlist_entry_count (idx));
