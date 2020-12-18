@@ -439,6 +439,9 @@ static void get_lyrics_step_1 ()
     {
         bool lyrics_found = false;
         GStatBuf statbuf;
+        if (! state.album)
+            state.album = String ("_");
+
         AUDINFO ("i:HELPER FOUND: WILL DO (%s)\n", (const char *) str_concat ({lyric_helper, " \"",
                 (const char *) state.artist, "\" \"",
                 (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir),
