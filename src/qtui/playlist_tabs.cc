@@ -338,20 +338,41 @@ void PlaylistTabBar::contextMenuEvent(QContextMenuEvent * e)
     auto remove_act = new QAction(audqt::get_icon("edit-delete"),
                                   audqt::translate_str(N_("Remo_ve")), menu);
 
-    QObject::connect(play_act, &QAction::triggered,
-                     [playlist]() { aud_playlist_play (playlist); });
+    auto import_act = new QAction(audqt::get_icon("document-open"),
+                                audqt::translate_str(N_("_Import")), menu);
+
+    auto addfiles_act = new QAction(audqt::get_icon("list-add"),
+                                audqt::translate_str(N_("_Add Files")), menu);
+
+    QObject::connect(play_act, &QAction::triggered, [playlist] ()
+    {
+        aud_playlist_play (playlist);
+    });
     QObject::connect(rename_act, &QAction::triggered, [this, playlist]() {
         if (playlist >= 0)
             startRename(playlist);
     });
-    QObject::connect(remove_act, &QAction::triggered, [playlist]() {
+    QObject::connect(remove_act, &QAction::triggered, [playlist] ()
+    {
         if (playlist >= 0)
             audqt::playlist_confirm_delete(playlist);
+    });
+    QObject::connect(import_act, &QAction::triggered, [this, playlist] ()
+    {
+        setCurrentIndex(playlist);
+        audqt::fileopener_show (audqt::FileMode::ImportPlaylist);
+    });
+    QObject::connect(addfiles_act, &QAction::triggered, [this, playlist] ()
+    {
+        setCurrentIndex(playlist);
+        audqt::fileopener_show (audqt::FileMode::Add);
     });
 
     menu->addAction(play_act);
     menu->addAction(rename_act);
     menu->addAction(remove_act);
+    menu->addAction(import_act);
+    menu->addAction(addfiles_act);
     menu->setAttribute(Qt::WA_DeleteOnClose);
     menu->popup(e->globalPos());
 }

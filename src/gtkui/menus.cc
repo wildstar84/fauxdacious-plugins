@@ -80,6 +80,26 @@ static void pl_tab_close ()
         audgui_confirm_playlist_delete (playlist);
 }
 
+static void pl_tab_import ()
+{
+    int playlist = aud_playlist_by_unique_id (menu_tab_playlist_id);
+    if (playlist >= 0)
+    {
+        aud_playlist_set_active (playlist);
+        audgui_import_playlist ();
+    }
+}
+
+static void pl_tab_addfiles ()
+{
+    int playlist = aud_playlist_by_unique_id (menu_tab_playlist_id);
+    if (playlist >= 0)
+    {
+        aud_playlist_set_active (playlist);
+        audgui_run_filebrowser (false);
+    }
+}
+
 static GtkWidget * get_services_main () { return audgui_get_plugin_menu (AudMenuID::Main); }
 static GtkWidget * get_services_pl () { return audgui_get_plugin_menu (AudMenuID::Playlist); }
 
@@ -231,7 +251,9 @@ static const AudguiMenuItem rclick_items[] = {
 static const AudguiMenuItem tab_items[] = {
     MenuCommand (N_("_Play"), "media-playback-start", NONE, pl_tab_play),
     MenuCommand (N_("_Rename ..."), "insert-text", NONE, pl_tab_rename),
-    MenuCommand (N_("Remo_ve"), "edit-delete", NONE, pl_tab_close)
+    MenuCommand (N_("Remo_ve"), "edit-delete", NONE, pl_tab_close),
+    MenuCommand (N_("_Import ..."), "document-open", NONE, pl_tab_import),
+    MenuCommand (N_("_Add Files ..."), "list-add", 'o', SHIFT_CTRL, pl_tab_addfiles)
 };
 
 GtkWidget * make_menu_bar (GtkAccelGroup * accel)
