@@ -152,6 +152,7 @@ PlaylistHeader::PlaylistHeader (PlaylistWidget * playlist) :
     m_playlist (playlist)
 {
     loadConfig ();
+    updateStyle ();
 
     setSectionsMovable (true);
     setStretchLastSection (true);
@@ -271,6 +272,14 @@ void PlaylistHeader::updateColumns ()
 
     m_inUpdate = false;
     m_lastCol = last;
+}
+
+void PlaylistHeader::updateStyle()
+{
+    if (aud_get_bool("qtui", "playlist_headers_bold"))
+        setStyleSheet("QHeaderView { font-weight: bold; }");
+    else
+        setStyleSheet(nullptr);
 }
 
 void PlaylistHeader::sectionClicked (int logicalIndex)
