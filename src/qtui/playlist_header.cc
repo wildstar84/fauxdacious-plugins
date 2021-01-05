@@ -54,6 +54,8 @@ static const char * const s_col_keys[] = {
 };
 
 static int s_sortedbycol = -1;
+static int s_lastsortcol = -1;
+static Qt::SortOrder s_lastsortorder = Qt::AscendingOrder;
 
 static const int s_default_widths[] = {
     25,   // now playing
@@ -274,19 +276,22 @@ void PlaylistHeader::updateColumns ()
     m_lastCol = last;
 }
 
-void PlaylistHeader::updateStyle()
+void PlaylistHeader::updateStyle ()
 {
     if (aud_get_bool("qtui", "playlist_headers_bold"))
         setStyleSheet("QHeaderView { font-weight: bold; }");
     else
         setStyleSheet(nullptr);
+
+    this->setSortIndicator (s_lastsortcol, s_lastsortorder);
 }
 
 void PlaylistHeader::sectionClicked (int logicalIndex)
 {
     int col = logicalIndex - 1;
+    s_lastsortcol = -1;
+    this->setSortIndicator (-1, Qt::AscendingOrder);
 
-    this->setSortIndicatorShown ((col >= 2));
     if (col < 2 || col >= PlaylistModel::n_cols)
         return;
 
@@ -297,13 +302,20 @@ void PlaylistHeader::sectionClicked (int logicalIndex)
         {
             aud_playlist_reverse (m_playlist->playlist ());
             s_sortedbycol = -1;
-            this->setSortIndicator (logicalIndex, Qt::AscendingOrder);
+            s_lastsortorder = Qt::AscendingOrder;
         }
         else
         {
             s_sortedbycol = col;
-            this->setSortIndicator (logicalIndex, Qt::DescendingOrder);
+            s_lastsortorder = Qt::DescendingOrder;
         }
+        /* FIXME:ONLY SHOW SORT-INDICATOR IFF WE HAVE A *SINGLE* PLAYLIST TAB - SINCE WE ONLY HAVE A
+           SINGLE "HEADER" OBJECT, SHARED BY ALL TABS, THE SORT INDICATOR WILL BE BOGUS FOR OTHER TABS!
+           (SETTING TO -1 REMOVES ANY SORT-INDICATOR):
+        */
+        int show_sort_col = (aud_playlist_count () == 1) ? logicalIndex : -1;
+        this->setSortIndicator (show_sort_col, s_lastsortorder);
+        s_lastsortcol = show_sort_col;
     }
 }
 
