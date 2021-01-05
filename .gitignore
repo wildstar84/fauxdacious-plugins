@@ -13,6 +13,7 @@ src/mpris2/object-player.c
 src/mpris2/object-player.h
 .deps
 *.a
+*.dep
 *.dll
 *.exe
 *.mo

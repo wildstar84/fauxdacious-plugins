@@ -16,3 +16,7 @@ extra.mk
 *~
 *.patch
 *.diff
+*.dep
+*.dbg
+*.lng
+*.EXPERIMENTAL
