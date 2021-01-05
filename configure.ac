@@ -5,8 +5,8 @@ dnl ***
 dnl Initialize
 dnl ==========
 AC_PREREQ([2.59])
-AC_INIT([fauxdacious-plugins], [4.1.1-beta2])
-AC_COPYRIGHT([Copyright (C) 2001-2020 Audacious developers and others])
+AC_INIT([fauxdacious-plugins], [4.1.1-beta3])
+AC_COPYRIGHT([Copyright (C) 2001-2021 Audacious developers and others])
 
 AC_DEFINE_UNQUOTED([PACKAGE], "$PACKAGE_NAME", [Name of package])
 AC_DEFINE_UNQUOTED([VERSION], "$PACKAGE_VERSION", [Version number of package])
@@ -50,8 +50,8 @@ if test $HAVE_DARWIN = yes ; then
      [with_system_libxml2=yes])
 
     if test $with_system_libxml2 = yes ; then
-        XML_LIBS="-lxml2"
-        XML_CFLAGS="-I/usr/include/libxml2"
+        XML_LIBS=$(xml2-config --libs)
+        XML_CFLAGS=$(xml2-config --cflags)
         AC_SUBST(XML_LIBS)
         AC_SUBST(XML_CFLAGS)
     else
@@ -103,7 +103,7 @@ check_allowed () {
                 AC_MSG_ERROR([--enable-$1 cannot be used without --enable-gtk])
             fi
             ;;
-        ampache|qtaudio|qtglspectrum|streamtuner|qthotkey)
+        ampache|qtaudio|qtglspectrum|qthotkey|streamtuner)
             plugin_allowed=$USE_QT
             if test $plugin_allowed = no -a $2 = yes ; then
                 AC_MSG_ERROR([--enable-$1 cannot be used without --enable-qt])
@@ -188,6 +188,16 @@ ENABLE_PLUGIN_WITH_DEP(adplug,
     INPUT,
     ADLIB,
     adplug)
+
+if test $have_adplug = yes ; then
+    AC_LANG_PUSH([C++])
+    CPPFLAGS_adplug_backup="${CPPFLAGS}"
+    CPPFLAGS="${CPPFLAGS} ${ADLIB_CFLAGS}"
+    AC_CHECK_HEADERS([adplug/nemuopl.h adplug/wemuopl.h adplug/kemuopl.h], [],
+        [], [#include <adplug/adplug.h>])
+    CPPFLAGS="${CPPFLAGS_adplug_backup}"
+    AC_LANG_POP([C++])
+fi
 
 ENABLE_PLUGIN_WITH_DEP(cdaudio,
     audio CD support,
@@ -426,8 +436,12 @@ ENABLE_PLUGIN_WITH_TEST(lirc,
     GENERAL)
 
 test_mpris2 () {
-    unset have_mpris2
-    AC_CHECK_PROG(have_mpris2, gdbus-codegen, yes, no)
+    if test $HAVE_MSWINDOWS = yes ; then
+        have_mpris2=no
+    else
+        unset have_mpris2
+        AC_CHECK_PROG(have_mpris2, gdbus-codegen, yes, no)
+    fi
 }
 
 ENABLE_PLUGIN_WITH_TEST(mpris2,
@@ -508,14 +522,14 @@ ENABLE_PLUGIN_WITH_DEP(qtaudio,
     Qt5Multimedia)
 
 ENABLE_PLUGIN_WITH_DEP(streamtuner,
-    Stream tuner,
-    auto,
+    Stream tuner (Experimental),
+    no,
     GENERAL,
     QTNETWORK,
     Qt5Network)
 
 test_qtglspectrum () {
-    PKG_CHECK_MODULES(QTOPENGL, Qt5OpenGL, [
+    PKG_CHECK_MODULES(QTOPENGL, Qt5OpenGL >= 5.4, [
         QTOPENGL_CFLAGS="$QTOPENGL_CFLAGS -fPIC"
         if test $have_glspectrum = yes ; then
             have_qtglspectrum=yes
@@ -871,7 +885,7 @@ if test "x$USE_QT" = "xyes" ; then
     echo "  Song Info:                              yes"
     echo "  Spectrum Analyzer (2D):                 yes"
     echo "  Status Icon:                            yes"
-    echo "  Stream Tuner:                           $have_streamtuner"
+    echo "  Stream Tuner (Experimental):            $have_streamtuner"
     echo "  VU Meter:                               yes"
     echo "  X11 Global Hotkeys:                     $have_qthotkey"
     echo
