@@ -134,15 +134,6 @@ private:
     void update (Playlist::UpdateLevel level);
     void update_sel ();
 
-    void activate (const QModelIndex & index) override
-    {
-        if (index.isValid ())
-        {
-            aud_playlist_set_active (index.row ());
-            aud_playlist_play (index.row ());
-        }
-    }
-
     const HookReceiver<PlaylistsView, Playlist::UpdateLevel>
      update_hook {"playlist update", this, & PlaylistsView::update};
     const HookReceiver<PlaylistsView>
@@ -270,6 +261,15 @@ PlaylistsView::PlaylistsView ()
     setDragDropMode (InternalMove);
     setFrameShape (QFrame::NoFrame);
     setIndentation (0);
+
+    /* JWT:THIS CALLED WHEN USER DOUBLE-CLICKS A PLAYLIST IN THE PLAYLIST-MANAGER WIDGET (INDEX=PLAYLIST#)!: */
+    connect (this, & QTreeView::activated, [] (const QModelIndex & index) {
+        if (index.isValid ())
+        {
+            aud_playlist_set_active (index.row ());
+            aud_playlist_play (index.row ());
+        }
+    });
 }
 
 void PlaylistsView::currentChanged (const QModelIndex & current, const QModelIndex & previous)

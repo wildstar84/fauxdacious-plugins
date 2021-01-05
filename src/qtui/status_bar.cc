@@ -76,17 +76,6 @@ static TinyLock message_lock;
 static int current_message_level = -1;
 static unsigned current_message_serial = 0;
 
-static void one_second_cb (void * serial)
-{
-    tiny_lock (& message_lock);
-
-    /* allow new messages after one second */
-    if (aud::from_ptr<unsigned> (serial) == current_message_serial)
-        current_message_level = -1;
-
-    tiny_unlock (& message_lock);
-}
-
 void StatusBar::log_handler (audlog::Level level, const char * file, int line,
  const char * func, const char * text)
 {
@@ -102,7 +91,16 @@ void StatusBar::log_handler (audlog::Level level, const char * file, int line,
     current_message_level = level;
     current_message_serial ++;
 
-    message_func.queue (1000, one_second_cb, aud::to_ptr (current_message_serial));
+    unsigned serial = current_message_serial;
+    message_func.queue (1000, [serial]() {
+        tiny_lock (& message_lock);
+
+        /* allow new messages after one second */
+        if (current_message_serial == serial)
+            current_message_level = -1;
+
+        tiny_unlock (& message_lock);
+    });
 
     tiny_unlock (& message_lock);
 

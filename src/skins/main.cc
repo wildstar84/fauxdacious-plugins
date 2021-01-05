@@ -85,12 +85,12 @@ public:
 private:
     void draw (cairo_t * cr);
     bool button_press (GdkEventButton * event);
-    bool motion (GdkEventMotion * event);  // JWT:ADDED NEXT 5 FOR POPUP SONG INFO:
-    bool leave ();
-    int m_playlist = -1;
-    int m_popup_pos = -1;
-    QueuedFunc m_popup_timer;
     bool scroll (GdkEventScroll * event);
+    bool motion (GdkEventMotion * event);
+    bool leave ();
+
+    QueuedFunc m_popup_timer;
+    bool m_popup_shown = false;
 };
 
 Window * mainwin;
@@ -106,10 +106,10 @@ SmallVis * mainwin_svis;
 
 static int last_skin = -1;
 static bool skip_toggle = true;  //JWT:NEEDED SINCE mainwin_playback_begin SEEMS TO GET CALLED *TWICE* EACH TIME?!
-static bool infopopup_on = false;
 static bool seeking = false;
 static int seek_start, seek_time;
 static int volume_delta = 5;
+static int step_size = 1;
 
 static TextBox * locked_textbox = nullptr;
 static String locked_old_text;
@@ -206,7 +206,7 @@ static void mainwin_lock_info_text (const char * text)
     locked_textbox->set_text (text);
 }
 
-static void mainwin_release_info_text (void * = nullptr)
+static void mainwin_release_info_text ()
 {
     if (locked_textbox)
     {
@@ -230,7 +230,7 @@ static void set_info_text (TextBox * textbox, const char * text)
 void mainwin_show_status_message (const char * message)
 {
     mainwin_lock_info_text (message);
-    status_message_timeout.queue (1000, mainwin_release_info_text, nullptr);
+    status_message_timeout.queue (3000, mainwin_release_info_text);
 }
 
 static void mainwin_set_song_title (const char * title)
@@ -336,8 +336,13 @@ void mainwin_refresh_hints ()
 
     mainwin_vis->set_colors ();
     volume_delta = aud_get_int ("skins", "scroll_volume_steps");
-    if (volume_delta < 1 || volume_delta > 50)
-	    volume_delta = aud_get_int (0, "volume_delta");
+    if (volume_delta < 0 || volume_delta > 50)
+	    volume_delta = aud_get_int (nullptr, "volume_delta");
+	if (volume_delta < 0 || volume_delta > 50)
+	    volume_delta = 5;
+	step_size = aud_get_int (nullptr, "step_size");
+	if (step_size < 0)
+	    step_size = 1;
 }
 
 /* note that the song info is not translated since it is displayed using
@@ -489,9 +494,12 @@ static void mainwin_playback_stop ()
 static void record_toggled ()
 {
     if (aud_drct_get_record_enabled ())
-        mainwin_show_status_message (_("Recording on"));
-    else
-        mainwin_show_status_message (_("Recording off"));
+    {
+        if (aud_get_bool (nullptr, "record"))
+            mainwin_show_status_message (_("Recording on"));
+        else
+            mainwin_show_status_message (_("Recording off"));
+    }
 }
 
 static void repeat_toggled ()
@@ -529,10 +537,10 @@ bool MainWindow::scroll (GdkEventScroll * event)
             mainwin_set_volume_diff (-1 * volume_delta);
             break;
         case GDK_SCROLL_LEFT:
-            aud_drct_seek (aud_drct_get_time () - aud_get_int (0, "step_size") * 1000);
+            aud_drct_seek (aud_drct_get_time () - step_size * 1000);
             break;
         case GDK_SCROLL_RIGHT:
-            aud_drct_seek (aud_drct_get_time () + aud_get_int (0, "step_size") * 1000);
+            aud_drct_seek (aud_drct_get_time () + step_size * 1000);
             break;
         default:
             break;
@@ -561,53 +569,40 @@ bool MainWindow::button_press (GdkEventButton * event)
     return Window::button_press (event);
 }
 
-/* JWT:ADDED NEXT TWO FOR POPUP SONG INFO: */
 bool MainWindow::motion (GdkEventMotion * event)
 {
-    int mousex = event->x;
-    if (is_shaded ())
+    if (is_shaded () &&
+        event->x >= 78 * config.scale &&
+        event->x <= 164 * config.scale &&
+        aud_get_bool (nullptr, "show_filepopup_for_tuple"))
     {
-        if (mousex > 62 && mousex < 164)
+        if (! m_popup_shown)
         {
-            if (aud_get_bool (nullptr, "show_filepopup_for_tuple"))
-            {
-                m_playlist = aud_playlist_get_active ();
-                m_popup_pos = aud_playlist_get_position (m_playlist);
-                audgui_infopopup_hide ();
-
-                if (m_popup_pos >= 0)
-                {
-                    auto show_cb = [] (void * me_) {
-                        auto me = (MainWindow *) me_;
-                        audgui_infopopup_show (me->m_playlist, me->m_popup_pos);
-                    };
-                    m_popup_timer.queue (aud_get_int (nullptr, "filepopup_delay") * 100, show_cb, this);
-                    infopopup_on = true;
-                }
-            }
-        }
-        else if (infopopup_on)
-        {
-            m_popup_pos = -1;
-            m_popup_timer.stop ();
-            audgui_infopopup_hide ();
-            infopopup_on = false;
+            m_popup_timer.queue (aud_get_int (nullptr, "filepopup_delay") * 100,
+                    audgui_infopopup_show_current);
+            m_popup_shown = true;
         }
     }
+    else if (m_popup_shown)
+    {
+        audgui_infopopup_hide ();
+        m_popup_timer.stop ();
+        m_popup_shown = false;
+    }
+
     return Window::motion (event);
 }
 
 bool MainWindow::leave ()
 {
-    if (infopopup_on)
+    if (m_popup_shown)
     {
-        m_popup_pos = -1;
-        m_popup_timer.stop ();
         audgui_infopopup_hide ();
-        infopopup_on = false;
+        m_popup_timer.stop ();
+        m_popup_shown = false;
     }
 
-    return true;
+    return Window::leave ();
 }
 
 static void mainwin_playback_rpress (Button * button, GdkEventButton * event)
@@ -626,12 +621,12 @@ bool Window::keypress (GdkEventKey * event)
         case GDK_KEY_Left:
         case GDK_KEY_KP_Left:
         case GDK_KEY_KP_7:
-            aud_drct_seek (aud_drct_get_time () - aud_get_int (0, "step_size") * 1000);
+            aud_drct_seek (aud_drct_get_time () - step_size * 1000);
             break;
         case GDK_KEY_Right:
         case GDK_KEY_KP_Right:
         case GDK_KEY_KP_9:
-            aud_drct_seek (aud_drct_get_time () + aud_get_int (0, "step_size") * 1000);
+            aud_drct_seek (aud_drct_get_time () + step_size * 1000);
             break;
         case GDK_KEY_KP_4:
             aud_drct_pl_prev ();
@@ -916,8 +911,7 @@ void mainwin_set_volume_diff (int diff)
     mainwin_set_volume_slider (vol);
     equalizerwin_set_volume_slider (vol);
 
-    mainwin_volume_release_timeout.queue (700,
-     [] (void *) { mainwin_volume_release_cb (); }, nullptr);
+    mainwin_volume_release_timeout.queue (700, mainwin_volume_release_cb);
 }
 
 void mainwin_mr_change (MenuRowItem i)
@@ -1261,7 +1255,7 @@ static void mainwin_create_window ()
     hook_associate ("playback unpause", (HookFunction) playback_unpause, nullptr);
     hook_associate ("title change", (HookFunction) title_change, nullptr);
     hook_associate ("info change", (HookFunction) info_change, nullptr);
-    hook_associate ("enable record", (HookFunction) record_toggled, nullptr);
+    hook_associate ("set record", (HookFunction) record_toggled, nullptr);
     hook_associate ("set repeat", (HookFunction) repeat_toggled, nullptr);
     hook_associate ("set shuffle", (HookFunction) shuffle_toggled, nullptr);
     hook_associate ("set no_playlist_advance", (HookFunction) no_advance_toggled, nullptr);
@@ -1284,7 +1278,7 @@ void mainwin_unhook ()
     hook_dissociate ("playback unpause", (HookFunction) playback_unpause);
     hook_dissociate ("title change", (HookFunction) title_change);
     hook_dissociate ("info change", (HookFunction) info_change);
-    hook_dissociate ("enable record", (HookFunction) record_toggled);
+    hook_dissociate ("set record", (HookFunction) record_toggled);
     hook_dissociate ("set repeat", (HookFunction) repeat_toggled);
     hook_dissociate ("set shuffle", (HookFunction) shuffle_toggled);
     hook_dissociate ("set no_playlist_advance", (HookFunction) no_advance_toggled);

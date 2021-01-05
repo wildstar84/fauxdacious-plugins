@@ -17,11 +17,13 @@
  * the use of this software.
  */
 
+#define AUD_GLIB_INTEGRATION
 #include "main_window.h"
 
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/drct.h>
 #include <libfauxdcore/i18n.h>
+#include <libfauxdcore/plugin.h>
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/plugins.h>
 
@@ -267,6 +269,83 @@ MainWindow::~MainWindow ()
         aud_set_int ("qtui", "player_y", this->geometry().y());
     }
 
+    /* JWT: Qt'S restoreState() DOESN'T PLAY NICE W/WINDOW-MANAGERS SINCE IT RESTORES ALL THE DOCK
+       WINDOWS (SLAVES) *BEFORE* RESTORING THE MAIN (MASTER) WINDOW, WHICH MESSES UP THE "TAB-ORDER"
+       IN MOST WINDOW-MANAGERS, *AND* PREVENTS "HonorGroupHints" AND PROPER "Layer" PLACEMENT IN
+       AfterStep, AND PERHAPS OTHER (OLDER?) WINDOW-MANAGERS, SO WE OFFER THIS OPTION (DEFAULT: TRUE)
+       TO WORK AROUND THIS BY DEACTIVATING ALL CURRENTLY "FLOATING" (INDEPENDENT WINDOW) DOCK WINDOW
+       PLUGINS ON EXIT HERE, THEN MANUALLY RESTORING THEM *AFTER* SHOWING (MAPPING) THE MAIN WINDOW!:
+    */
+    if (aud_get_bool ("audqt", "restore_floating_dockapps_late"))
+    {
+        GKeyFile * rcfile = g_key_file_new ();
+        int flag;
+        for (PluginHandle * plugin : aud_plugin_list (PluginType::General))
+        {
+            flag = 0;
+            if (aud_plugin_get_enabled (plugin))
+            {
+                auto item = audqt::DockItem::find_by_plugin (plugin);
+                if (item)
+                {
+                    auto w = (QDockWidget *) item->host_data ();
+                    if (w && w->isFloating ())
+                    {
+                        aud_plugin_enable (plugin, false);
+                        flag = 1;
+                    }
+                }
+            }
+            g_key_file_set_double (rcfile, "Restore Floating Dockapps",
+                    aud_plugin_get_basename (plugin), flag);
+        }
+        for (PluginHandle * plugin : aud_plugin_list (PluginType::Vis))
+        {
+            flag = 0;
+            if (aud_plugin_get_enabled (plugin))
+            {
+                auto item = audqt::DockItem::find_by_plugin (plugin);
+                if (item)
+                {
+                    auto w = (QDockWidget *) item->host_data ();
+                    if (w && w->isFloating ())
+                    {
+                        aud_plugin_enable (plugin, false);
+                        flag = 1;
+                    }
+                }
+            }
+            g_key_file_set_double (rcfile, "Restore Floating Dockapps",
+                    aud_plugin_get_basename (plugin), flag);
+        }
+        flag = aud_get_bool("audqt", "equalizer_visible") ? 1 : 0;
+        if (flag)
+        {
+            audqt::equalizer_hide ();
+            aud_set_bool("audqt", "equalizer_visible", false);
+        }
+        g_key_file_set_double (rcfile, "Restore Floating Dockapps",
+                "equalizer", flag);
+        flag = aud_get_bool("audqt", "queue_manager_visible") ? 1 : 0;
+        if (flag)
+        {
+            audqt::queue_manager_hide ();
+            aud_set_bool("audqt", "queue_manager_visible", false);
+        }
+        g_key_file_set_double (rcfile, "Restore Floating Dockapps",
+                "queue_manager", flag);
+
+        size_t len;
+        CharPtr data (g_key_file_to_data (rcfile, & len, nullptr));
+
+        String late_restore_fid = String (str_concat ({aud_get_path (AudPath::UserDir), "/_restore_floating_dockapps.txt"}));
+        VFSFile file (late_restore_fid, "w");
+        if (! file || (file.fwrite (data, 1, len) != (int64_t) len))
+            AUDERR ("e:Could not save floating dock plugin status!\n");
+
+        g_key_file_free (rcfile);
+    }
+
     audqt::unregister_dock_host();
 
     if (m_search_tool)
@@ -412,12 +491,7 @@ void MainWindow::playback_begin_cb ()
 
     m_last_playing = playing;
 
-    m_buffering_timer.queue (250, aud::obj_member<MainWindow, & MainWindow::buffering_cb>, this);
-}
-
-void MainWindow::buffering_cb ()
-{
-    set_title (_("Buffering ..."));
+    m_buffering_timer.queue(250, [this] () { set_title (_("Buffering ...")); });
 }
 
 void MainWindow::pause_cb ()

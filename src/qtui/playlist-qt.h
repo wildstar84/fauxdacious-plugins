@@ -71,7 +71,6 @@ private:
      QItemSelection & selected, QItemSelection & deselected);
     void updateSelection (int rowsBefore, int rowsAfter);
 
-    void activate (const QModelIndex & index);
     void changeEvent (QEvent * event);
     void contextMenuEvent (QContextMenuEvent * event);
     void keyPressEvent (QKeyEvent * event);

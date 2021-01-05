@@ -796,8 +796,8 @@ void PlaylistWidget::popup_trigger (int pos)
     audgui_infopopup_hide ();
 
     m_popup_pos = pos;
-    m_popup_timer.queue (aud_get_int (nullptr, "filepopup_delay") * 100,
-     aud::obj_member<PlaylistWidget, & PlaylistWidget::popup_show>, this);
+    m_popup_timer.queue (aud_get_int (nullptr,"filepopup_delay") * 100,
+            [this] () { popup_show(); });
 }
 
 void PlaylistWidget::popup_show ()

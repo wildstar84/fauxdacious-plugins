@@ -71,6 +71,14 @@ PlaylistWidget::PlaylistWidget (QWidget * parent, int playlist) :
     inUpdate = true;
     updateSelection (0, 0);
     inUpdate = false;
+
+    connect (this, &QTreeView::activated, [this] (const QModelIndex & index) {
+        if (index.isValid ())
+        {
+            aud_playlist_set_active (index.row ());
+            aud_playlist_play (index.row ());
+        }
+    });
 }
 
 PlaylistWidget::~PlaylistWidget ()
@@ -118,15 +126,6 @@ QModelIndex PlaylistWidget::visibleIndexNear (int row)
     }
 
     return index;
-}
-
-void PlaylistWidget::activate (const QModelIndex & index)
-{
-    if (index.isValid ())
-    {
-        aud_playlist_set_active (index.row ());
-        aud_playlist_play (index.row ());
-    }
 }
 
 void PlaylistWidget::changeEvent (QEvent * event)
@@ -546,8 +545,8 @@ void PlaylistWidget::triggerPopup (int pos)
     audqt::infopopup_hide ();
 
     m_popup_pos = pos;
-    m_popup_timer.queue (aud_get_int (nullptr, "filepopup_delay") * 100,
-            aud::obj_member<PlaylistWidget, & PlaylistWidget::showPopup>, this);
+    m_popup_timer.queue(aud_get_int(nullptr, "filepopup_delay") * 100,
+                        [this]() { showPopup(); });
 }
 
 void PlaylistWidget::hidePopup ()

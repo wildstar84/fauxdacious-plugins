@@ -84,8 +84,8 @@ private:
 
     void draw (QPainter & cr);
     bool button_press (QMouseEvent * event);
-    void enterEvent (QEvent * event);
     bool scroll (QWheelEvent * event);
+    void enterEvent (QEvent * event);
 };
 
 Window * mainwin;
@@ -101,6 +101,8 @@ static int last_skin = -1;
 static bool skip_toggle = true;   // JWT:NEEDED SINCE mainwin_playback_begin SEEMS TO GET CALLED *TWICE* EACH TIME?!
 static bool seeking = false;
 static int seek_start, seek_time;
+static int volume_delta = 5;
+static int step_size = 1;
 
 static TextBox * locked_textbox = nullptr;
 static String locked_old_text;
@@ -197,7 +199,7 @@ static void mainwin_lock_info_text (const char * text)
     locked_textbox->set_text (text);
 }
 
-static void mainwin_release_info_text (void * = nullptr)
+static void mainwin_release_info_text ()
 {
     if (locked_textbox)
     {
@@ -221,7 +223,7 @@ static void set_info_text (TextBox * textbox, const char * text)
 void mainwin_show_status_message (const char * message)
 {
     mainwin_lock_info_text (message);
-    status_message_timeout.queue (1000, mainwin_release_info_text, nullptr);
+    status_message_timeout.queue (3000, mainwin_release_info_text);
 }
 
 static void mainwin_set_song_title (const char * title)
@@ -233,10 +235,6 @@ static void mainwin_set_song_title (const char * title)
     else
         buf = str_copy (_("Fauxdacious"));
 
-/* JWT:DON'T DO THIS:    int instance = aud_get_instance ();
-    if (instance != 1)
-        str_append_printf (buf, " (%d)", instance);
-*/
     String instancename = aud_get_instancename ();
     if (instancename != String ("fauxdacious"))
         str_append_printf (buf, " (%s)", (const char *) instancename);
@@ -307,6 +305,14 @@ void mainwin_refresh_hints ()
         mainwin->resize (p->mainwin_width, p->mainwin_height);
 
     mainwin_vis->set_colors ();
+    volume_delta = aud_get_int ("skins", "scroll_volume_steps");
+    if (volume_delta < 0 || volume_delta > 50)
+	    volume_delta = aud_get_int (nullptr, "volume_delta");
+	if (volume_delta < 0 || volume_delta > 50)
+	    volume_delta = 5;
+	step_size = aud_get_int (nullptr, "step_size");
+	if (step_size < 0)
+	    step_size = 1;
 }
 
 /* note that the song info is not translated since it is displayed using
@@ -458,9 +464,12 @@ static void mainwin_playback_stop ()
 static void record_toggled ()
 {
     if (aud_drct_get_record_enabled ())
-        mainwin_show_status_message (_("Recording on"));
-    else
-        mainwin_show_status_message (_("Recording off"));
+    {
+        if (aud_get_bool (nullptr, "record"))
+            mainwin_show_status_message (_("Recording on"));
+        else
+            mainwin_show_status_message (_("Recording off"));
+    }
 }
 
 static void repeat_toggled ()
@@ -499,14 +508,18 @@ bool MainWindow::scroll (QWheelEvent * event)
     if (steps_x != 0)
     {
         m_scroll_delta_x -= 120 * steps_x;
-        int step_size = aud_get_int (0, "step_size");
+        int step_size = aud_get_int (nullptr, "step_size");
+        if (step_size < 1)
+            step_size = 1;
         aud_drct_seek (aud_drct_get_time () - steps_x * step_size * 1000);
     }
 
     if (steps_y != 0)
     {
         m_scroll_delta_y -= 120 * steps_y;
-        int volume_delta = aud_get_int (0, "volume_delta");
+        int volume_delta = aud_get_int (nullptr, "volume_delta");
+        if (volume_delta < 1)
+            volume_delta = 1;
         aud_drct_set_volume_main (aud_drct_get_volume_main () + steps_y * volume_delta);
     }
 
@@ -537,16 +550,11 @@ void MainWindow::enterEvent (QEvent * event)  // JWT:FUNCTION ADDED FOR POPUP SO
     if (! is_shaded() || ! aud_get_bool (nullptr, "show_filepopup_for_tuple"))
         return;
 
-    QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
-    int mousey = mouseEvent->y ();
-
-    if (mousey > 78 && mousey < 165)
+    auto enterEvent = static_cast<QEnterEvent *> (event);
+    if (enterEvent->x () > 77 * config.scale &&
+        enterEvent->x () < 165 * config.scale)
     {
-        int pl = aud_playlist_get_active ();
-        int pos = aud_playlist_get_position (pl);
-
-        if (pos >= 0)
-            audqt::infopopup_show (pl, pos);
+        audqt::infopopup_show_current ();
     }
 }
 
@@ -563,10 +571,16 @@ bool Window::keypress (QKeyEvent * event)
     switch (event->key ())
     {
         case Qt::Key_Left:
-            aud_drct_seek (aud_drct_get_time () - 5000);
+            aud_drct_seek (aud_drct_get_time () - step_size * 1000);
             break;
         case Qt::Key_Right:
-            aud_drct_seek (aud_drct_get_time () + 5000);
+            aud_drct_seek (aud_drct_get_time () + step_size * 1000);
+            break;
+        case Qt::Key_Up:    /* JWT:PLAYLIST GRABS THIS EVEN WHEN HIDDEN. */
+            aud_drct_set_volume_main (aud_drct_get_volume_main () + volume_delta);
+            break;
+        case Qt::Key_Down:  /* JWT:PLAYLIST GRABS THIS EVEN WHEN HIDDEN. */
+            aud_drct_set_volume_main (aud_drct_get_volume_main () - volume_delta);
             break;
         case Qt::Key_Space:
             aud_drct_pause ();
@@ -834,8 +848,7 @@ void mainwin_set_volume_diff (int diff)
     mainwin_set_volume_slider (vol);
     equalizerwin_set_volume_slider (vol);
 
-    mainwin_volume_release_timeout.queue (700,
-     [] (void *) { mainwin_volume_release_cb (); }, nullptr);
+    mainwin_volume_release_timeout.queue (700, mainwin_volume_release_cb);
 }
 
 void mainwin_mr_change (MenuRowItem i)
@@ -1175,7 +1188,7 @@ static void mainwin_create_window ()
     hook_associate ("playback unpause", (HookFunction) playback_unpause, nullptr);
     hook_associate ("title change", (HookFunction) title_change, nullptr);
     hook_associate ("info change", (HookFunction) info_change, nullptr);
-    hook_associate ("enable record", (HookFunction) record_toggled, nullptr);
+    hook_associate ("set record", (HookFunction) record_toggled, nullptr);
     hook_associate ("set repeat", (HookFunction) repeat_toggled, nullptr);
     hook_associate ("set shuffle", (HookFunction) shuffle_toggled, nullptr);
     hook_associate ("set no_playlist_advance", (HookFunction) no_advance_toggled, nullptr);
@@ -1198,7 +1211,7 @@ void mainwin_unhook ()
     hook_dissociate ("playback unpause", (HookFunction) playback_unpause);
     hook_dissociate ("title change", (HookFunction) title_change);
     hook_dissociate ("info change", (HookFunction) info_change);
-    hook_dissociate ("enable record", (HookFunction) record_toggled);
+    hook_dissociate ("set record", (HookFunction) record_toggled);
     hook_dissociate ("set repeat", (HookFunction) repeat_toggled);
     hook_dissociate ("set shuffle", (HookFunction) shuffle_toggled);
     hook_dissociate ("set no_playlist_advance", (HookFunction) no_advance_toggled);

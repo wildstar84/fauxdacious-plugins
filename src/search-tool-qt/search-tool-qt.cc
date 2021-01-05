@@ -605,7 +605,7 @@ static void search_timeout (void * = nullptr)
 
 static void trigger_search ()
 {
-    search_timer.queue (SEARCH_DELAY, search_timeout, nullptr);
+    search_timer.queue (SEARCH_DELAY, [] () { search_timeout (); });
     search_pending = true;
 }
 

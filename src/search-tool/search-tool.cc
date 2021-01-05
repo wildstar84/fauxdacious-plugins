@@ -421,7 +421,7 @@ static void show_hide_widgets ()
     }
 }
 
-static void search_timeout (void * = nullptr)
+static void search_timeout ()
 {
     do_search ();
 
@@ -444,7 +444,7 @@ static void search_timeout (void * = nullptr)
 
 static void trigger_search ()
 {
-    search_timer.queue (SEARCH_DELAY, search_timeout, nullptr);
+    search_timer.queue (SEARCH_DELAY, search_timeout);
     search_pending = true;
 }
 
@@ -758,7 +758,7 @@ static void entry_cb (GtkEntry * entry, void * unused)
 {
     const char * text = gtk_entry_get_text ((GtkEntry *) entry);
     search_terms = str_list_to_index (str_tolower_utf8 (text), " ");
-    search_timer.queue (SEARCH_DELAY, search_timeout, nullptr);
+    search_timer.queue (SEARCH_DELAY, search_timeout);
     search_pending = true;
 }
 
