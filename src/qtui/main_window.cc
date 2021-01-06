@@ -262,6 +262,8 @@ MainWindow::~MainWindow ()
     settings.setValue ("geometry", saveGeometry ());
     settings.setValue ("windowState", saveState ());
 
+    aud_set_int ("qtui", "player_width", audqt::to_portable_dpi (width ()));
+    aud_set_int ("qtui", "player_height", audqt::to_portable_dpi (height ()));
     if (aud_get_bool ("audqt", "qt_mainwindow_walks"))
     {
         /* JWT:PREVENT WINDOW FROM "WALKING" UP BY THE HEIGHT OF THE WINDOW DECORATION!: */
@@ -407,7 +409,13 @@ void MainWindow::read_settings ()
     QSettings settings (m_config_name, "QtUi");
 
     if (! restoreGeometry (settings.value ("geometry").toByteArray ()))
-        resize (audqt::to_native_dpi (768), audqt::to_native_dpi (480));
+    {
+        // QWidget::restoreGeometry() can sometimes fail, e.g. due to
+        // https://bugreports.qt.io/browse/QTBUG-86087. Try to at least
+        // restore the correct player size in that case.
+        resize (audqt::to_native_dpi( aud_get_int("qtui", "player_width")),
+               audqt::to_native_dpi (aud_get_int("qtui", "player_height")));
+    }
 
     restoreState (settings.value ("windowState").toByteArray ());
 }
