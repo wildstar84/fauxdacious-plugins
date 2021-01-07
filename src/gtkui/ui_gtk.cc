@@ -1026,7 +1026,15 @@ void show_hide_menu ()
         if (! menu_button)
         {
             menu_button = gtk_toggle_tool_button_new ();
+#ifdef _WIN32
+            /* JWT:FIXME:(I CAN'T GET PNG ICON TO WORK?!) */
+            StringBuf logo_path = filename_build ({aud_get_path (AudPath::DataDir), "images",
+                    "fauxdacious24.png"});
+            GtkWidget * image = gtk_image_new_from_file (logo_path);
+            gtk_tool_button_set_icon_widget ((GtkToolButton *) menu_button, image);
+#else
             gtk_tool_button_set_icon_name ((GtkToolButton *) menu_button, "fauxdacious");
+#endif
             gtk_tool_item_set_tooltip_text (menu_button, _("Menu"));
             g_signal_connect (menu_button, "destroy", (GCallback)
              gtk_widget_destroyed, & menu_button);
