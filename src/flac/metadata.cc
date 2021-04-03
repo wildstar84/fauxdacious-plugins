@@ -143,8 +143,17 @@ bool FLACng::write_tuple(const char *filename, VFSFile &file, const Tuple &tuple
 
     chain = FLAC__metadata_chain_new();
 
-    if (!FLAC__metadata_chain_read_with_callbacks(chain, &file, io_callbacks))
-        goto ERR;
+    String mime = file.get_metadata ("content-type");
+    if (FLAC_API_SUPPORTS_OGG_FLAC && mime && strstr (mime, "ogg"))
+    {
+        AUDERR("Tags in OGG/FLAC streams are currently readonly!");
+        goto ERR_RETURN;
+    }
+    else
+    {
+        if (! FLAC__metadata_chain_read_with_callbacks(chain, &file, io_callbacks))
+            goto ERR;
+    }
 
     iter = FLAC__metadata_iterator_new();
 
@@ -167,6 +176,8 @@ bool FLACng::write_tuple(const char *filename, VFSFile &file, const Tuple &tuple
     insert_str_tuple_to_vc(vc_block, tuple, Tuple::AlbumArtist, "ALBUMARTIST");
     insert_str_tuple_to_vc(vc_block, tuple, Tuple::Genre, "GENRE");
     insert_str_tuple_to_vc(vc_block, tuple, Tuple::Comment, "COMMENT");
+    insert_str_tuple_to_vc(vc_block, tuple, Tuple::Description, "DESCRIPTION");
+    insert_str_tuple_to_vc(vc_block, tuple, Tuple::MusicBrainzID, "musicbrainz_trackid");
 
     insert_int_tuple_to_vc(vc_block, tuple, Tuple::Year, "DATE");
     insert_int_tuple_to_vc(vc_block, tuple, Tuple::Track, "TRACKNUMBER");
@@ -228,7 +239,9 @@ static void parse_comment (Tuple & tuple, const char * key, const char * value)
         {"ALBUMARTIST", Tuple::AlbumArtist},
         {"TITLE", Tuple::Title},
         {"COMMENT", Tuple::Comment},
-        {"GENRE", Tuple::Genre}
+        {"GENRE", Tuple::Genre},
+        {"DESCRIPTION", Tuple::Description},
+        {"musicbrainz_trackid", Tuple::MusicBrainzID},
     };
 
     for (auto & tfield : tfields)
@@ -271,8 +284,17 @@ bool FLACng::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Ind
 
     chain = FLAC__metadata_chain_new();
 
-    if (!FLAC__metadata_chain_read_with_callbacks(chain, &file, io_callbacks))
-        goto ERR;
+    String mime = file.get_metadata ("content-type");
+    if (FLAC_API_SUPPORTS_OGG_FLAC && mime && strstr (mime, "ogg"))
+    {
+        if (! FLAC__metadata_chain_read_ogg_with_callbacks(chain, &file, io_callbacks))
+            goto ERR;
+    }
+    else
+    {
+        if (! FLAC__metadata_chain_read_with_callbacks(chain, &file, io_callbacks))
+            goto ERR;
+    }
 
     iter = FLAC__metadata_iterator_new();
 
