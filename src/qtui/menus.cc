@@ -71,6 +71,14 @@ static void toggle_infoarea_art ()
     else
         aud_set_bool ("albumart", "_infoarea_show_art_saved", true);
 }
+static void toggle_infoarea_fallbackart ()
+{
+    hook_call ("qtui toggle infoarea_fallback", nullptr);
+    if (aud_get_bool ("albumart", "_infoarea_hide_fallback_art_saved"))
+        aud_set_bool ("albumart", "_infoarea_hide_fallback_art_saved", false);
+    else
+        aud_set_bool ("albumart", "_infoarea_hide_fallback_art_saved", true);
+}
 static void toggle_infoarea_vis () { hook_call ("qtui toggle infoarea_vis", nullptr); }
 static void toggle_statusbar () { hook_call ("qtui toggle statusbar", nullptr); }
 static void toggle_remaining_time () { hook_call ("qtui toggle remaining time", nullptr); }
@@ -195,6 +203,7 @@ QMenuBar * qtui_build_menubar (QWidget * parent)
         audqt::MenuToggle ({N_("Show I_nfo Bar"), nullptr, "Shift+Ctrl+I"}, {"qtui", "infoarea_visible"}, toggle_infoarea),
         audqt::MenuToggle ({N_("Show Info Bar Vis_ualization")}, {"qtui", "infoarea_show_vis"}, toggle_infoarea_vis),
         audqt::MenuToggle ({N_("Show Info Bar _Album Art")}, {"qtui", "infoarea_show_art"}, toggle_infoarea_art),
+        audqt::MenuToggle ({N_("Hide Info Bar Fallback Art")}, {"qtui", "infoarea_hide_fallback_art"}, toggle_infoarea_fallbackart),
         audqt::MenuToggle ({N_("Show _Status Bar"), nullptr, "Shift+Ctrl+S"}, {"qtui", "statusbar_visible"}, toggle_statusbar),
         audqt::MenuSep (),
         audqt::MenuToggle ({N_("Show _Remaining Time"), nullptr, "Shift+Ctrl+R"}, {"qtui", "show_remaining_time", "qtui toggle remaining time"}, toggle_remaining_time),

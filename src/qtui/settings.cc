@@ -26,6 +26,9 @@
 const char * const qtui_defaults[] = {
     "infoarea_show_vis", "TRUE",
     "infoarea_show_art", "TRUE",
+    "_infoarea_show_art_saved", "TRUE",
+    "infoarea_hide_fallback_art", "FALSE",
+    "_infoarea_hide_fallback_art_saved", "FALSE",
     "infoarea_visible", "TRUE",
     "menu_visible", "TRUE",
     "player_width", "768",
@@ -34,7 +37,7 @@ const char * const qtui_defaults[] = {
     "statusbar_visible", "TRUE",
     "entry_count_visible", "FALSE",
     "close_button_visible", "TRUE",
-
+    "tabheight", "20",
     "autoscroll", "TRUE",
     "playlist_columns", DEFAULT_COLUMNS,
     "playlist_headers", "TRUE",

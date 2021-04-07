@@ -197,6 +197,7 @@ InfoBar::InfoBar (QWidget * parent) :
     setFixedHeight (ps.Height);
 
     m_art_enabled = aud_get_bool ("qtui", "infoarea_show_art");
+    m_fbart_hidden = aud_get_bool ("qtui", "infoarea_hide_fallback_art");
 
     for (SongData & d : sd)
     {
@@ -227,8 +228,10 @@ void InfoBar::paintEvent (QPaintEvent *)
 {
     QPainter p (this);
 
+    int show_art = m_art_enabled
+            && (! m_fbart_hidden || ! aud_get_bool ("albumart", "_last_art_was_fallback"));
     int viswidth = m_vis->isVisible () ? ps.VisWidth : 0;
-    int offset = m_art_enabled ? ps.Height : ps.Spacing;
+    int offset = show_art ? ps.Height : ps.Spacing;
 
     p.fillRect(0, 0, width () - viswidth, ps.Height, m_vis->gradient ());
 
@@ -236,7 +239,7 @@ void InfoBar::paintEvent (QPaintEvent *)
     {
         p.setOpacity ((qreal) d.alpha / FadeSteps);
 
-        if (m_art_enabled && ! d.art.isNull ())
+        if (show_art && ! d.art.isNull ())
         {
             auto sz = d.art.size () / d.art.devicePixelRatio ();
             int left = ps.Spacing + (ps.IconSize - sz.width ()) / 2;
@@ -284,7 +287,13 @@ void InfoBar::update_album_art ()
 {
     sd[Cur].art = audqt::art_request_current (ps.IconSize, ps.IconSize);
     if (sd[Cur].art.isNull ())
+    {
         sd[Cur].art = audqt::art_request_fallback (ps.IconSize, ps.IconSize);
+        aud_set_bool ("albumart", "_last_art_was_fallback", true);
+    }
+    else
+        aud_set_bool ("albumart", "_last_art_was_fallback", false);
+        
 }
 
 void InfoBar::next_song ()
@@ -356,5 +365,6 @@ void InfoBar::update_art ()
 {
     reellipsize_title ();
     m_art_enabled = aud_get_bool ("qtui", "infoarea_show_art");
+    m_fbart_hidden = aud_get_bool ("qtui", "infoarea_hide_fallback_art");
     update ();
 }
