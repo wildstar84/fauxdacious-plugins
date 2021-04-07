@@ -403,9 +403,21 @@ static void set_album_art ()
 
     area->pb = audgui_pixbuf_request_current ();
     if (area->pb)
+    {
         audgui_pixbuf_scale_within (area->pb, ICON_SIZE);
+        aud_set_bool ("albumart", "_last_art_was_fallback", false);
+    }
     else
+    {
         area->pb = audgui_pixbuf_fallback ();
+        aud_set_bool ("albumart", "_last_art_was_fallback", true);
+        /* JWT:USER DOESN'T WANT TO SEE THE FALLBACK IMAGE! */
+        if (aud_get_bool ("gtkui", "infoarea_hide_fallback_art"))
+        {
+            area->pb = AudguiPixbuf ();
+            area->show_art = false;
+        }
+    }
 }
 
 static void infoarea_next ()
@@ -431,6 +443,7 @@ static void ui_infoarea_playback_start ()
         infoarea_next ();
 
     area->stopped = false;
+    area->show_art = aud_get_bool ("gtkui", "infoarea_show_art");
 
     ui_infoarea_set_title ();
     set_album_art ();
@@ -469,8 +482,7 @@ void ui_infoarea_toggle_art ()
     if (! area)
         return;
 
-    bool show = aud_get_bool ("gtkui", "infoarea_show_art");
-    area->show_art = show;
+    area->show_art = aud_get_bool ("gtkui", "infoarea_show_art");
     set_album_art ();
     gtk_widget_queue_draw (area->main);
 }

@@ -46,6 +46,7 @@
 
 static const char * const gtkui_defaults[] = {
     "infoarea_show_art", "TRUE",
+    "infoarea_hide_fallback_art", "FALSE",
     "infoarea_show_vis", "TRUE",
     "infoarea_visible", "TRUE",
     "menu_visible", "TRUE",
@@ -1070,6 +1071,7 @@ void show_hide_infoarea ()
 void show_hide_infoarea_art ()
 {
     bool show = aud_get_bool ("gtkui", "infoarea_show_art");
+
     ui_infoarea_show_art (show);
     aud_set_bool ("albumart", "_infoarea_show_art_saved", show);
 }
@@ -1077,8 +1079,8 @@ void show_hide_infoarea_art ()
 void show_hide_infoarea_vis ()
 {
     /* only turn on visualization if interface is shown */
-    ui_infoarea_show_vis (gtk_widget_get_visible (window) && aud_get_bool
-     ("gtkui", "infoarea_show_vis"));
+    ui_infoarea_show_vis (gtk_widget_get_visible (window)
+            && aud_get_bool ("gtkui", "infoarea_show_vis"));
 }
 
 void show_hide_statusbar ()
