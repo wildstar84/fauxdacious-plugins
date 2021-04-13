@@ -132,16 +132,50 @@ set_tuple_str(Tuple &tuple, Tuple::Field field,
     tuple.set_str (field, vorbis_comment_query (comment, key, 0));
 }
 
-static void read_comment (vorbis_comment * comment, Tuple & tuple)
+static void read_comment (vorbis_comment * comment, Tuple & tuple, bool isastream)
 {
     const char * tmps;
 
     set_tuple_str (tuple, Tuple::Title, comment, "TITLE");
-    set_tuple_str (tuple, Tuple::Artist, comment, "ARTIST");
     set_tuple_str (tuple, Tuple::Album, comment, "ALBUM");
+    const char * artist = vorbis_comment_query (comment, "ARTIST", 0);
+    /* STREAMS OFTEN HAVE:  TITLE: "artist - title" AND ARTIST -OR- ALBUM: "stream-name"! */
+    if (isastream && aud_get_bool (nullptr, "split_titles"))
+    {
+        const char * title = vorbis_comment_query (comment, "TITLE", 0);
+        if (title)
+        {
+            const char * album = vorbis_comment_query (comment, "ALBUM", 0);
+            if (artist)  // WE ALSO HAVE A SEPARATE "ARTIST" FIELD VALUE (USUALLY A STREAM/ALBUM NAME):
+            {
+                if (album)  // WE ALSO HAVE AN ALBUM FIELD, SO PREPEND THE STREAM/ALBUM NAME TO THAT:
+                    tuple.set_str (tuple.Album, str_printf ("%s - %s", artist, album));
+                else   // NO ALBUM FIELD, SO COPY/MOVE THE STREAM/ALBUM NAME THERE:
+                    tuple.set_str (tuple.Album, artist);
+            }
+            else if (album)  // NO ARTIST, SO COPY THE ALBUM/STREAM NAME THERE:
+                tuple.set_str (tuple.Artist, album);
+
+            const char * ttloffset = strstr (title, " - ");
+            if (ttloffset && ttloffset > title)  // TITLE IS "artist - title", SPLIT 'EM!:
+            {
+                tuple.set_str (tuple.Artist, str_printf ("%.*s", (int)(ttloffset-title), title));
+                tuple.set_str (tuple.Title, ttloffset+3);
+            }
+            else if (artist)  // TITLE IS JUST "title", SO JUST SET THE ARTIST FILE TO WHAT'S THERE:
+                tuple.set_str (Tuple::Artist, artist);
+        }
+    }
+    else if (artist)  // JUST ARTIST, SO SET IT:
+        tuple.set_str (Tuple::Artist, artist);
+    else if (isastream)  // NO TITLE OR ARTIST, BUT NEED TO BLANK THE ARTIST, CASE USER TOGGLED SPLIT TITLE TO OFF!:
+        tuple.set_str (Tuple::Artist, "");
+
     set_tuple_str (tuple, Tuple::AlbumArtist, comment, "ALBUMARTIST");
     set_tuple_str (tuple, Tuple::Genre, comment, "GENRE");
     set_tuple_str (tuple, Tuple::Comment, comment, "COMMENT");
+    set_tuple_str (tuple, Tuple::Description, comment, "DESCRIPTION");
+    set_tuple_str (tuple, Tuple::MusicBrainzID, comment, "musicbrainz_trackid");
 
     if ((tmps = vorbis_comment_query (comment, "TRACKNUMBER", 0)))
         tuple.set_int (Tuple::Track, atoi (tmps));
@@ -150,19 +184,18 @@ static void read_comment (vorbis_comment * comment, Tuple & tuple)
 }
 
 /* try to detect when metadata has changed */
-static bool update_tuple (OggVorbis_File * vf, Tuple & tuple)
+static bool update_tuple (OggVorbis_File * vf, Tuple & tuple, bool isastream)
 {
     vorbis_comment * comment = ov_comment (vf, -1);
     if (! comment)
         return false;
 
-    String old_title = tuple.get_str (Tuple::Title);
-    const char * new_title = vorbis_comment_query (comment, "TITLE", 0);
-
-    if (! new_title || (old_title && ! strcmp (old_title, new_title)))
+    String new_title = String (vorbis_comment_query (comment, "TITLE", 0));
+    if (fauxd_is_prevmeta (1, new_title))
         return false;
 
-    read_comment (comment, tuple);
+    fauxd_set_prevmeta (1, new_title);
+    read_comment (comment, tuple, isastream);
     return true;
 }
 
@@ -265,7 +298,7 @@ bool VorbisPlugin::play (const char * filename, VFSFile & file)
 
     set_stream_bitrate (br);
 
-    if (stream && update_tuple (& vf, tuple))
+    if (stream && update_tuple (& vf, tuple, stream))
         set_playback_tuple (tuple.ref ());
 
     if (update_replay_gain (& vf, & rg_info))
@@ -301,7 +334,7 @@ bool VorbisPlugin::play (const char * filename, VFSFile & file)
 
         bytes = vorbis_interleave_buffer (pcm, bytes, channels, pcmout);
 
-        if (stream && update_tuple (& vf, tuple))
+        if (stream && update_tuple (& vf, tuple, stream))
             set_playback_tuple (tuple.ref ());
 
         if (current_section != last_section)
@@ -365,7 +398,7 @@ bool VorbisPlugin::read_tag (const char * filename, VFSFile & file,
         tuple.set_int (Tuple::Length, ov_time_total (& vfile, -1) * 1000);
 
     if (comment)
-        read_comment (comment, tuple);
+        read_comment (comment, tuple, stream);
 
     if (image && comment)
         * image = read_image_from_comment (filename, comment);
