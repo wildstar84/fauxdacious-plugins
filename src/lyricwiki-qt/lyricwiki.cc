@@ -21,6 +21,7 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <string.h>
+#include <pthread.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -34,6 +35,8 @@
 #include <QTextCursor>
 #include <QTextDocument>
 #include <QTextEdit>
+#include <QThread>
+#include <QEventLoop>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -62,21 +65,51 @@
 
 typedef struct {
     String filename;       /* of song file */
-    String title, artist, album;
+    String title, artist, album; /* INPUT PARAMETERS, PASSED BETWEEN FUNCTIONS */
     String uri;            /* URI we are trying to retrieve */
     String local_filename; /* JWT:CALCULATED LOCAL FILENAME TO SAVE LYRICS TO */
     int startlyrics;       /* JWT:OFFSET IN LYRICS WINDOW WHERE LYRIC TEXT ACTUALLY STARTS */
     bool ok2save;          /* JWT:SET TO TRUE IF GOT LYRICS FROM LYRICWIKI (LOCAL FILE DOESN'T EXIST) */
     bool ok2saveTag;       /* JWT:SET TO TRUE IF GOT LYRICS FROM LYRICWIKI && LOCAL MP3 FILE */
     bool ok2edit;          /* JWT:SET TO TRUE IF USER CAN EDIT LYRICS */
+    String shotitle;       /* JWT:NEXT 3 FOR THREAD TO SAVE LYRIC DATA UNTIL MAIN THREAD CAN DISPLAY IT: */
+    String shoartist;
+    String sholyrics;
 } LyricsState;
 
-static LyricsState state;
+static bool frominit = false;  // JWT:TRUE WHEN THREAD STARTED BY SONG CHANGE (album_init()).
+static bool skipreset = false; // JWT:TRUE WHILE THREAD RUNNING AFTER STARTED BY SONG CHANGE (album_init()).
+static bool skiplyricsupdate = false; // JWT:IF TRUE, THREAD YIELDED TO A LATER ONE, SO DON'T UPDATE LYRICS (YET)!
+static QEventLoop q_eventloop; // JWT:LOCAL EVENT LOOP TO WAIT FOR THREAD (SINCE Qt WON'T ALLOW THREAD TO UPDATE WIDGET?!
+static LyricsState state;      // GLOBAL VARIABLE STRUCT. */
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 class TextEdit : public QTextEdit
 {
 public:
     TextEdit (QWidget * parent = nullptr) : QTextEdit (parent) {}
+
+    void show_lyrics ()
+    {
+        document ()->clear ();
+        if (! state.shotitle)  return;
+
+        QTextCursor cursor (document ());
+        QString lyrichtml = QString ("<big><b>") + QString (state.shotitle) + QString ("</b></big>");
+
+        if (state.shoartist)
+            lyrichtml.append (QString ("<br><i>") + QString (state.shoartist) + QString ("</i>"));
+
+        lyrichtml.append (QString ("<br><br>"));
+        cursor.insertHtml (lyrichtml);
+        QString prelyrics = toPlainText ();
+
+        state.startlyrics = prelyrics.length ();
+        if (state.sholyrics)
+            cursor.insertText (QString (state.sholyrics));
+
+        state.ok2save = false;
+    }
 
 protected:
     void contextMenuEvent (QContextMenuEvent * event);
@@ -123,6 +156,8 @@ const PreferencesWidget LyricWikiQt::widgets[] = {
 
 const PluginPreferences LyricWikiQt::prefs = {{widgets}};
 
+static TextEdit * textedit;
+
 bool LyricWikiQt::init ()
 {
     aud_config_set_defaults ("lyricwiki", defaults);
@@ -131,13 +166,14 @@ bool LyricWikiQt::init ()
 }
 
 /*
- * Suppress libxml warnings, because lyricwiki does not generate anything near
+ * DEPRECIATED: Suppress libxml warnings, because lyricwiki does not generate anything near
  * valid HTML.
  */
 static void libxml_error_handler (void * ctx, const char * msg, ...)
 {
 }
 
+/* DEPRECIATED: CALLED FOR FETCHING LYRICS THE OLD-SCHOOL AUDACIOUS WAY (NO PERL HELPER): */
 static CharPtr scrape_lyrics_from_lyricwiki_edit_page (const char * buf, int64_t len)
 {
     xmlDocPtr doc;
@@ -230,6 +266,7 @@ give_up:
     return ret;
 }
 
+/* DEPRECIATED: CALLED FOR FETCHING LYRICS THE OLD-SCHOOL AUDACIOUS WAY (NO PERL HELPER): */
 static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t len)
 {
     xmlDocPtr doc;
@@ -328,12 +365,11 @@ static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t
     return uri;
 }
 
-static void update_lyrics_window (const char * title, const char * artist, const char * lyrics);
+static void update_lyrics (const char * title, const char * artist, const char * lyrics);
 
-static void save_lyrics_locally ();
+static void save_lyrics_locally (bool haveonscreen);
 
-static void get_lyrics_step_1 ();
-
+/* DEPRECIATED: STEP 3 OF 3 (FOR FETCHING LYRICS THE OLD-SCHOOL AUDACIOUS WAY (NO HELPER)): */
 static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *)
 {
     /* JWT:WE'RE ONLY HERE IF *NOT* USING THE PERL HELPER (THE OLD-SCHOOL WAY)! */
@@ -342,8 +378,9 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
 
     if (! buf.len ())
     {
-        update_lyrics_window (_("Error"), nullptr,
+        update_lyrics (_("Error"), nullptr,
                 str_printf (_("Unable to fetch %s"), uri));
+        textedit->show_lyrics ();
         state.ok2edit = true;
         return;
     }
@@ -352,20 +389,22 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
 
     if (! lyrics)
     {
-        update_lyrics_window (_("No lyrics Found"),
+        update_lyrics (_("No lyrics Found"),
                 (const char *) str_concat ({"Title: ", (const char *) state.title, "\nArtist: ",
                         (const char *) state.artist}),
                 str_printf (_("Unable to parse(3) %s"), uri));
+        textedit->show_lyrics ();
         state.ok2edit = true;
         return;
     }
 
-    update_lyrics_window (state.title, state.artist, lyrics);
+    update_lyrics (state.title, state.artist, lyrics);
+    textedit->show_lyrics ();
     AUDINFO ("i:Lyrics came from old LyricWiki site!\n");
     state.ok2edit = true;
     state.ok2save = true;
     if (aud_get_bool ("lyricwiki", "cache_lyrics"))
-        save_lyrics_locally ();
+        save_lyrics_locally (true);
 
     /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
     if (! strncmp ((const char *) state.filename, "file://", 7)
@@ -380,6 +419,7 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
     }
 }
 
+/* DEPRECIATED: STEP 2 OF 3 (FOR FETCHING LYRICS THE OLD-SCHOOL AUDACIOUS WAY (NO HELPER)): */
 static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void *)
 {
     if (! state.uri || strcmp (state.uri, uri1))
@@ -387,8 +427,9 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
 
     if (! buf.len ())
     {
-        update_lyrics_window (_("Error"), nullptr,
+        update_lyrics (_("Error"), nullptr,
                 str_printf (_("Unable to fetch %s"), uri1));
+        textedit->show_lyrics ();
         state.ok2edit = false;
         return;
     }
@@ -397,44 +438,48 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
 
     if (! uri)
     {
-        update_lyrics_window (_("Error"), nullptr,
+        update_lyrics (_("Error"), nullptr,
                 str_printf (_("Unable to parse(2) %s"), uri1));
+        textedit->show_lyrics ();
         state.ok2edit = false;
         return;
     }
     else if (uri == String ("N/A"))
     {
-        update_lyrics_window (state.title, state.artist, _("No lyrics available"));
+        update_lyrics (state.title, state.artist, _("No lyrics available"));
+        textedit->show_lyrics ();
         state.ok2edit = false;
         return;
     }
 
     state.uri = uri;
 
-    update_lyrics_window (state.title, state.artist, _("Looking for lyrics ..."));
+    update_lyrics (state.title, state.artist, _("Looking for lyrics ..."));
+    textedit->show_lyrics ();
     state.ok2edit = true;
     vfs_async_file_get_contents (uri, get_lyrics_step_3, nullptr);
 }
 
-/* HANDLE FETCHING LYRICS FROM WEB VIA HELPER (1-STEP) OR fandom.com? (STEP 1 OF 3): */
-static void get_lyrics_step_1 ()
+/* (SEPARATE THREAD) HANDLE FETCHING LYRICS FROM WEB VIA HELPER (1-STEP) OR fandom.com? (STEP 1 OF 3): */
+static void * helper_thread_fn (void * data)
 {
-    if (! state.artist || ! state.title)
+    if (frominit)  // TRUE IF SONG-START, FALSE ON TUPLE-CHANGE!
     {
-        update_lyrics_window (_("Error"), nullptr, _("Missing title and/or artist"));
-        state.ok2edit = false;
-        return;
-    }
-    if (! aud_get_bool ("lyricwiki", "search_internet"))
-    {
-        update_lyrics_window (_("No lyrics Found locally"),
-                (const char *) str_concat ({"Title: ", (const char *) state.title, "\nArtist: ",
-                (const char *) state.artist}),
-                str_printf (_("Unable to fetch lyrics (Fetch lyrics from internet option not enabled).")));
-        return;
+        skipreset = true;
+        QThread::usleep (2000000);  // SLEEP 2" TO ALLOW FOR ANY TUPLE CHANGE TO OVERRIDE! */
+        if (! frominit)
+        {
+            skipreset = false;
+            skiplyricsupdate = true;
+            pthread_exit (nullptr);
+            return nullptr;
+        }
     }
 
+    pthread_mutex_lock (& mutex);
+
     String lyric_helper = aud_get_str ("audacious", "lyric_helper");
+
     if (lyric_helper[0])  //JWT:WE HAVE A PERL HELPER, LESSEE IF IT CAN FIND/DOWNLOAD LYRICS FOR US:
     {
         bool lyrics_found = false;
@@ -470,10 +515,10 @@ static void get_lyrics_step_1 ()
                     lyrics.resize (lyrics.len ()+1);
                     lyrics[lyrics.len ()-1] = '\0';
                     lyrics_found = true;
-                    update_lyrics_window (state.title, state.artist, (const char *) lyrics.begin ());
+                    update_lyrics (state.title, state.artist, (const char *) lyrics.begin ());
                     state.ok2save = true;
                     if (aud_get_bool ("lyricwiki", "cache_lyrics"))
-                        save_lyrics_locally ();
+                        save_lyrics_locally (false);
 
                     AUDINFO ("i:Lyrics came from HELPER!\n");
                     /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
@@ -492,11 +537,13 @@ static void get_lyrics_step_1 ()
         }
         if (! lyrics_found)
         {
-            update_lyrics_window (_("No lyrics Found"),
+            update_lyrics (_("No lyrics Found"),
                     (const char *) str_concat ({"Title: ", (const char *) state.title, "\nArtist: ",
                     (const char *) state.artist}),
                     str_printf (_("Unable to fetch lyrics.")));
-            return;
+
+            pthread_mutex_unlock (& mutex);
+            goto THREAD_EXIT;
         }
     }
     else /* NO HELPER, TRY THE OLD SCHOOL "3-STEP C" WAY: (MAYBE fandom.com CAME BACK OR AUDACIOUS FIXED?) */
@@ -508,10 +555,19 @@ static void get_lyrics_step_1 ()
                 "action=lyrics&artist=%s&song=%s&fmt=xml", (const char *) artist_buf,
                 (const char *) title_buf));
 
-        update_lyrics_window (state.title, state.artist, _("Connecting to lyrics.fandom.com ..."));
+        update_lyrics (state.title, state.artist, _("Connecting to lyrics.fandom.com ..."));
         state.ok2edit = false;
         vfs_async_file_get_contents (state.uri, get_lyrics_step_2, nullptr);
     }
+
+    pthread_mutex_unlock (& mutex);
+
+THREAD_EXIT:
+    skiplyricsupdate = false;
+    skipreset = false;
+    q_eventloop.exit ();
+    pthread_exit (nullptr);
+    return nullptr;
 }
 
 /* JWT:HANDLE LYRICS FROM LOCAL LYRICS FILES: */
@@ -519,14 +575,16 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
 {
     if (! buf.len ())
     {
-        update_lyrics_window (_("Error"), nullptr,
+        update_lyrics (_("Error"), nullptr,
                 str_printf (_("Unable to fetch file %s"), uri));
+        textedit->show_lyrics ();
         state.ok2edit = false;
         return;
     }
 
     StringBuf nullterminated_buf = str_copy (buf.begin (), buf.len ());
-    update_lyrics_window (state.title, state.artist, (const char *) nullterminated_buf);
+    update_lyrics (state.title, state.artist, (const char *) nullterminated_buf);
+    textedit->show_lyrics ();
 
     /* JWT:ALLOW 'EM TO EDIT LYRICWIKI, EVEN IF LYRICS ARE LOCAL, IF THEY HAVE BOTH REQUIRED FIELDS: */
     /* BUT ONLY IF USING OLD SITE (*NOT* USING THE PERL "HELPER")! */
@@ -560,14 +618,14 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
     }
 }
 
-static QTextEdit * textedit;
-
-static void save_lyrics_locally ()
+/* CALLED WHEN USER SELECTS "SAVE LOCALLY" FROM MENU: */
+static void save_lyrics_locally (bool haveonscreen)
 {
+    // haveonscreen = false MEANS CACHING FROM THREAD (*BEFORE* LYRICS COPIED TO SCREEN WIDGET)!
     if (state.local_filename && state.local_filename[0])
     {
         AUDINFO ("i:Saving lyrics locally to (%s)!\n", (const char *) state.local_filename);
-        QString lyrics = textedit->toPlainText ();
+        QString lyrics = haveonscreen ? textedit->toPlainText () : QString (state.sholyrics);
         if (! lyrics.isNull() && ! lyrics.isEmpty())
         {
             if (state.startlyrics > 0)
@@ -604,6 +662,7 @@ static void save_lyrics_locally ()
     }
 }
 
+/* CALLED WHEN USER SELECTS "SAVE IN ID3 TAG" FROM MENU (LOCAL SONG FILES ONLY): */
 static void save_lyrics_in_id3tag ()
 {
     QString lyrics = textedit->toPlainText ();
@@ -631,28 +690,16 @@ static void save_lyrics_in_id3tag ()
     }
 }
 
-static void update_lyrics_window (const char * title, const char * artist, const char * lyrics)
+/* CALLED BY BOTH MAIN AND THREAD TO UPDATE LYRICS (FOR LATER DISPLAYING IN THE WIDGET): */
+static void update_lyrics (const char * title, const char * artist, const char * lyrics)
 {
-    if (! textedit)
-        return;
-
-    textedit->document ()->clear ();
-
-    QTextCursor cursor (textedit->document ());
-    cursor.insertHtml (QString ("<big><b>") + QString (title) + QString ("</b></big>"));
-
-    if (artist)
-    {
-        cursor.insertHtml (QString ("<br><i>") + QString (artist) + QString ("</i>"));
-    }
-
-    cursor.insertHtml ("<br><br>");
-    QString prelyrics = textedit->toPlainText ();
-    state.startlyrics = prelyrics.length ();
-    cursor.insertText (lyrics);
+    state.shotitle = title ? String (title) : String ("");
+    state.shoartist = artist ? String (artist) : String ("");
+    state.sholyrics = lyrics ? String (lyrics) : String ("");
 }
 
-static void lyricwiki_playback_began ()
+/* CALLED ON PLAYBACK START OR TUPLE-CHANGE (WHEN WE NEED LYRICS): */
+static void lyricwiki_playback ()
 {
     /* FIXME: cancel previous VFS requests (not possible with current API) */
 
@@ -749,7 +796,8 @@ static void lyricwiki_playback_began ()
         if (lyricsFromTuple && lyricsFromTuple[0])
         {
             AUDDBG ("i:Lyrics found in ID3 tag.\n");
-            update_lyrics_window (state.title, state.artist, (const char *) lyricsFromTuple);
+            update_lyrics (state.title, state.artist, (const char *) lyricsFromTuple);
+            textedit->show_lyrics ();
             state.ok2edit = false;
             state.ok2save = true;
             AUDINFO ("i:Lyrics came from id3 tag!\n");
@@ -820,12 +868,90 @@ static void lyricwiki_playback_began ()
         if (need_lyrics)
         {
             AUDINFO ("i:No Local lyric file found, try fetching from lyricwiki...\n");
-            get_lyrics_step_1 ();
+            update_lyrics ("Searching web for lyrics...", nullptr, nullptr);
+            textedit->show_lyrics ();
+            if (! state.artist || ! state.title)
+            {
+                update_lyrics (_("Error"), nullptr, _("Missing title and/or artist"));
+                textedit->show_lyrics ();
+                state.ok2edit = false;
+                return;
+            }
+            if (! aud_get_bool ("lyricwiki", "search_internet"))
+            {
+                update_lyrics (_("No lyrics Found locally"),
+                        (const char *) str_concat ({"Title: ", (const char *) state.title, "\nArtist: ",
+                        (const char *) state.artist}),
+                        str_printf (_("Unable to fetch lyrics (Fetch lyrics from internet option not enabled).")));
+                textedit->show_lyrics ();
+                return;
+            }
+
+            if (! skipreset)
+                textedit->show_lyrics ();
+
+            pthread_attr_t thread_attrs;
+            if (! pthread_attr_init (& thread_attrs))
+            {
+                if (! pthread_attr_setdetachstate (& thread_attrs, PTHREAD_CREATE_DETACHED)
+                        || ! pthread_attr_setscope (& thread_attrs, PTHREAD_SCOPE_SYSTEM))
+                {
+                    pthread_t helper_thread;
+
+                    if (pthread_create (&helper_thread, nullptr, helper_thread_fn, nullptr))
+                        AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
+                    else  // THREAD STARTED!...
+                    {
+                        if (! q_eventloop.isRunning ())
+                            q_eventloop.exec ();   // WAIT HERE UNTIL THREAD IS DONE, BUT KEEP GUI WORKING!
+
+                        if (! skiplyricsupdate)
+                            textedit->show_lyrics ();
+                    }
+                }
+                else
+                    AUDERR ("s:Error detatching helper thread: %s!\n", strerror (errno));
+
+                if (pthread_attr_destroy (& thread_attrs))
+                    AUDERR ("s:Error destroying helper thread attributes: %s!\n", strerror (errno));
+            }
+            else
+                AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
         }
     }
     lyricStr = String ();
 }
 
+/* CALLED WHEN PLAYBACK STARTS: */
+static void lyricwiki_playback_began ()
+{
+    skipreset = false;
+    frominit = true;
+    lyricwiki_playback ();
+}
+
+/* CALLED WHEN TUPLE CHANGES (STREAMS CHANGE TITLE, ETC. WHILE PLAYING:  */
+static void lyricwiki_playback_changed ()
+{
+    frominit = false;
+    lyricwiki_playback ();
+}
+
+/* CALLED WHEN PLAYBACK IS STOPPED, MAKE SURE NO THREADS HAVE THE LOCAL EVENT LOOP RUNNING!: */
+static void kill_thread_eventloop ()
+{
+    skipreset = false;
+    if (q_eventloop.isRunning ())
+        q_eventloop.exit ();
+}
+
+/* CALLED WHEN USER CHANGES LYRICS TEXT IN WIDGET, MAKE [SAVE] OPTION VISIBLE: */
+static void allow_usersave ()
+{
+    state.ok2save = true;
+}
+
+/* CALLED ON SHUTDOWN TO CLEAN UP: */
 static void lw_cleanup (QObject * object = nullptr)
 {
     state.filename = String ();
@@ -834,32 +960,37 @@ static void lw_cleanup (QObject * object = nullptr)
     state.uri = String ();
     state.local_filename = String ();
 
-    hook_dissociate ("tuple change", (HookFunction) lyricwiki_playback_began);
     hook_dissociate ("playback ready", (HookFunction) lyricwiki_playback_began);
+    hook_dissociate ("tuple change", (HookFunction) lyricwiki_playback_changed);
+    hook_dissociate ("playback stop", (HookFunction) kill_thread_eventloop);
 
     textedit = nullptr;
 }
 
+/* CALLED ON STARTUP (WIDGET CREATION): */
 void * LyricWikiQt::get_qt_widget ()
 {
     textedit = new TextEdit;
-    textedit->setReadOnly (true);
+    textedit->setReadOnly (false);
 
 #ifdef Q_OS_MAC  // Mac-specific font tweaks
     textedit->document ()->setDefaultFont (QApplication::font ("QTipLabel"));
 #endif
 
-    hook_associate ("tuple change", (HookFunction) lyricwiki_playback_began, nullptr);
+    hook_associate ("playback stop", (HookFunction) kill_thread_eventloop, nullptr);
+    hook_associate ("tuple change", (HookFunction) lyricwiki_playback_changed, nullptr);
     hook_associate ("playback ready", (HookFunction) lyricwiki_playback_began, nullptr);
 
     if (aud_drct_get_ready ())
         lyricwiki_playback_began ();
 
     QObject::connect (textedit, & QObject::destroyed, lw_cleanup);
+    QObject::connect (textedit, & QTextEdit::textChanged, allow_usersave);
 
     return textedit;
 }
 
+/* CALLED ON RIGHT-CLICK IN WIDGET TO POPUP MENU: */
 void TextEdit::contextMenuEvent (QContextMenuEvent * event)
 {
     QMenu * menu = createStandardContextMenu ();
@@ -876,7 +1007,7 @@ void TextEdit::contextMenuEvent (QContextMenuEvent * event)
     {
         QAction * save_button = menu->addAction (_("Save Locally"));
         QObject::connect (save_button, & QAction::triggered, [] () {
-            save_lyrics_locally ();
+            save_lyrics_locally (true);
         });
     }
     if (state.ok2saveTag)
