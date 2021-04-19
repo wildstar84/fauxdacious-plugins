@@ -71,16 +71,17 @@ typedef struct {
     int startlyrics;       /* JWT:OFFSET IN LYRICS WINDOW WHERE LYRIC TEXT ACTUALLY STARTS */
     bool ok2save;          /* JWT:SET TO TRUE IF GOT LYRICS FROM LYRICWIKI (LOCAL FILE DOESN'T EXIST) */
     bool ok2saveTag;       /* JWT:SET TO TRUE IF GOT LYRICS FROM LYRICWIKI && LOCAL MP3 FILE */
-    bool ok2edit;          /* JWT:SET TO TRUE IF USER CAN EDIT LYRICS */
+    bool ok2edit;          /* JWT:DEPRECIATED:  SET TO TRUE IF USER CAN EDIT LYRICS (SITE) */
     String shotitle;       /* JWT:NEXT 3 FOR THREAD TO SAVE LYRIC DATA UNTIL MAIN THREAD CAN DISPLAY IT: */
     String shoartist;
     String sholyrics;
 } LyricsState;
 
-static bool frominit = false;  // JWT:TRUE WHEN THREAD STARTED BY SONG CHANGE (album_init()).
-static bool skipreset = false; // JWT:TRUE WHILE THREAD RUNNING AFTER STARTED BY SONG CHANGE (album_init()).
+static bool frominit = true;  // JWT:TRUE WHEN PLUGIN STARTED UP (IE. DURING SONG PLAY).
+static bool fromsongstartup = false;  // JWT:TRUE WHEN THREAD STARTED BY SONG CHANGE.
+static bool skipreset = false; // JWT:TRUE WHILE THREAD RUNNING AFTER STARTED BY SONG CHANGE.
 static bool skiplyricsupdate = false; // JWT:IF TRUE, THREAD YIELDED TO A LATER ONE, SO DON'T UPDATE LYRICS (YET)!
-static QEventLoop q_eventloop; // JWT:LOCAL EVENT LOOP TO WAIT FOR THREAD (SINCE Qt WON'T ALLOW THREAD TO UPDATE WIDGET?!
+static QEventLoop * q_eventloop; // JWT:LOCAL EVENT LOOP TO WAIT FOR THREAD (SINCE Qt WON'T ALLOW THREAD TO UPDATE WIDGET?!)
 static LyricsState state;      // GLOBAL VARIABLE STRUCT. */
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -91,6 +92,7 @@ public:
 
     void show_lyrics ()
     {
+        bool ok2save_was = state.ok2save;  // OK2SAVE GETS SET TO TRUE BY allow_usersave() CALLBACK IN HERE!:
         document ()->clear ();
         if (! state.shotitle)  return;
 
@@ -106,9 +108,13 @@ public:
 
         state.startlyrics = prelyrics.length ();
         if (state.sholyrics)
-            cursor.insertText (QString (state.sholyrics));
-
-        state.ok2save = false;
+        {
+            QString Q_Lyrics = QString (state.sholyrics);
+            (Q_Lyrics.contains ('<') && Q_Lyrics.contains ('>'))
+                    ? cursor.insertHtml (Q_Lyrics)
+                    : cursor.insertText (Q_Lyrics);
+        }
+        state.ok2save = ok2save_was;
     }
 
 protected:
@@ -461,18 +467,31 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
 }
 
 /* (SEPARATE THREAD) HANDLE FETCHING LYRICS FROM WEB VIA HELPER (1-STEP) OR fandom.com? (STEP 1 OF 3): */
+/* NOTE:  WHEN STARTING PLAY, WE WAIT 2 SEC. B/C NORMALLY, A STREAM STILL HAS IT'S LAST-PLAYED
+   TITLE-TUPLE AND, QUICKLY AFTER STARTING PLAY, A TUPLE-CHANGE WILL OCCUR BEFORE THE FIRST THREAD CAN
+   LOOK UP THE "OLD" LYRICS (IF NOT CACHED), IF SO WE WANT TO ABORT THE FIRST THREAD SO THAT ONLY THE
+   NEW THREAD WILL LOOK UP THE CURRENT LYRICS FOR THE NOW-CHANGED TUPLE (TITLE)!  WE STILL HAVE TO
+   INITIATE A LOOKUP ON PLAY-START SINCE OTHERWISE FILES (WHICH HAVE NO TUPLE-CHANGES) WOULD NEVER
+   HAVE THEIR LYRICS LOOKED UP!
+*/
 static void * helper_thread_fn (void * data)
 {
-    if (frominit)  // TRUE IF SONG-START, FALSE ON TUPLE-CHANGE!
+    if (! frominit)  // JWT:CAN'T RUN AS THREAD IF FROMINIT=TRUE (WIDGET ISN'T FINISHED BEING CREATED YET)!:
     {
-        skipreset = true;
-        QThread::usleep (2000000);  // SLEEP 2" TO ALLOW FOR ANY TUPLE CHANGE TO OVERRIDE! */
-        if (! frominit)
+        if (fromsongstartup)  // TRUE IF SONG-START, FALSE ON TUPLE-CHANGE!
         {
-            skipreset = false;
-            skiplyricsupdate = true;
-            pthread_exit (nullptr);
-            return nullptr;
+            skipreset = true; // WE'VE ALREADY CLEARED OLD LYRICS, SO NO NEED FOR TUPLE-CHG. THREAD TO REPEAT.
+            QThread::usleep (2000000);  // SLEEP 2" TO ALLOW FOR ANY IMMEDIATE TUPLE CHANGE TO OVERRIDE!
+            if (! fromsongstartup)  // CHGD. BY ANOTHER THREAD WHILST WE WERE SLEEPING!
+            {
+                /* ANOTHER THREAD HAS BEEN STARTED BY TUPLE-CHANGE, WHILE WE SLEPT, SO ABORT THIS
+                   THREAD AND LET THE LATTER (TUPLE-CHANGE) THREAD UPDATE THE LYRICS!
+                */
+                skipreset = false;
+                skiplyricsupdate = true;
+                pthread_exit (nullptr);
+                return nullptr;
+            }
         }
     }
 
@@ -546,7 +565,7 @@ static void * helper_thread_fn (void * data)
             goto THREAD_EXIT;
         }
     }
-    else /* NO HELPER, TRY THE OLD SCHOOL "3-STEP C" WAY: (MAYBE fandom.com CAME BACK OR AUDACIOUS FIXED?) */
+    else /* DEPRECIATED:NO HELPER, TRY THE OLD SCHOOL "3-STEP C" WAY: (MAYBE fandom.com CAME BACK OR AUDACIOUS FIXED?) */
     {
         StringBuf title_buf = str_encode_percent (state.title);
         StringBuf artist_buf = str_encode_percent (state.artist);
@@ -565,8 +584,13 @@ static void * helper_thread_fn (void * data)
 THREAD_EXIT:
     skiplyricsupdate = false;
     skipreset = false;
-    q_eventloop.exit ();
-    pthread_exit (nullptr);
+    if (! frominit)
+    {
+        if (q_eventloop->isRunning ())
+            q_eventloop->exit ();
+
+        pthread_exit (nullptr);
+    }
     return nullptr;
 }
 
@@ -586,8 +610,8 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
     update_lyrics (state.title, state.artist, (const char *) nullterminated_buf);
     textedit->show_lyrics ();
 
-    /* JWT:ALLOW 'EM TO EDIT LYRICWIKI, EVEN IF LYRICS ARE LOCAL, IF THEY HAVE BOTH REQUIRED FIELDS: */
-    /* BUT ONLY IF USING OLD SITE (*NOT* USING THE PERL "HELPER")! */
+    /* JWT:(DEPRECIATED):  ALLOW 'EM TO EDIT LYRICWIKI, EVEN IF LYRICS ARE LOCAL, IF THEY HAVE */
+    /* BOTH REQUIRED FIELDS:BUT ONLY IF USING OLD SITE (*NOT* USING THE PERL "HELPER")! */
     String lyric_helper = aud_get_str ("audacious", "lyric_helper");
     if (! lyric_helper[0] && state.artist && state.title)
     {
@@ -698,7 +722,7 @@ static void update_lyrics (const char * title, const char * artist, const char *
     state.sholyrics = lyrics ? String (lyrics) : String ("");
 }
 
-/* CALLED ON PLAYBACK START OR TUPLE-CHANGE (WHEN WE NEED LYRICS): */
+/* CALLED WHENEVER WE NEED LYRICS: */
 static void lyricwiki_playback ()
 {
     /* FIXME: cancel previous VFS requests (not possible with current API) */
@@ -712,6 +736,9 @@ static void lyricwiki_playback ()
     state.uri = String ();
     state.ok2edit = false;
     state.local_filename = String ("");
+
+    if (! q_eventloop)
+        q_eventloop = new QEventLoop;
 
     if (! strncmp (state.filename, "cdda://?", 8))  // FOR CDs, LOOK FOR DIRECTORY WITH TRACK LYRIC FILES:
     {
@@ -787,6 +814,7 @@ static void lyricwiki_playback ()
     {
         AUDINFO ("i:Local lyric file found (%s).\n", (const char *) lyricStr);
         vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
+        fromsongstartup = false;  // TELL ANY THREADS STILL RUNNING TO ABORT!
     }
     else  // NO LOCAL LYRICS FILE FOUND, SO CHECK FOR ID3 LYRICS TAGS, THEN GLOBAL LYRIC FILE MATCHING ARTIST/TITLE:
     {
@@ -855,6 +883,7 @@ static void lyricwiki_playback ()
                 if (need_lyrics && found_lyricfile)
                 {
                     AUDINFO ("i:Global lyric file found by artist/title (%s).\n", (const char *) lyricStr);
+                    fromsongstartup = false;  // TELL ANY THREADS STILL RUNNING TO ABORT!
                     vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
                     lyricStr = String ();
                     if (save_by_songfile)
@@ -890,34 +919,44 @@ static void lyricwiki_playback ()
             if (! skipreset)
                 textedit->show_lyrics ();
 
-            pthread_attr_t thread_attrs;
-            if (! pthread_attr_init (& thread_attrs))
+            if (frominit || ! q_eventloop)  // JWT:ON PLUGIN-ACTIVATION, WIDGET ISN'T FULLY CREATED YET, SO DON'T RUN AS SEPARATE THREAD!:
             {
-                if (! pthread_attr_setdetachstate (& thread_attrs, PTHREAD_CREATE_DETACHED)
-                        || ! pthread_attr_setscope (& thread_attrs, PTHREAD_SCOPE_SYSTEM))
-                {
-                    pthread_t helper_thread;
-
-                    if (pthread_create (&helper_thread, nullptr, helper_thread_fn, nullptr))
-                        AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
-                    else  // THREAD STARTED!...
-                    {
-                        if (! q_eventloop.isRunning ())
-                            q_eventloop.exec ();   // WAIT HERE UNTIL THREAD IS DONE, BUT KEEP GUI WORKING!
-
-                        if (! skiplyricsupdate)
-                            textedit->show_lyrics ();
-                    }
-                }
-                else
-                    AUDERR ("s:Error detatching helper thread: %s!\n", strerror (errno));
-
-                if (pthread_attr_destroy (& thread_attrs))
-                    AUDERR ("s:Error destroying helper thread attributes: %s!\n", strerror (errno));
+                helper_thread_fn (textedit);  // JWT:(WE CAN SEGFAULT IF THREADDED+EVENT LOOP AND WIDGET ISN'T FULLY CREATED!)
+                textedit->show_lyrics ();
             }
             else
-                AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
+            {
+                pthread_attr_t thread_attrs;
+                if (! pthread_attr_init (& thread_attrs))
+                {
+                    if (! pthread_attr_setdetachstate (& thread_attrs, PTHREAD_CREATE_DETACHED)
+                            || ! pthread_attr_setscope (& thread_attrs, PTHREAD_SCOPE_SYSTEM))
+                    {
+                        pthread_t helper_thread;
+
+                        if (pthread_create (&helper_thread, nullptr, helper_thread_fn, nullptr))
+                            AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
+                        else  // THREAD STARTED!...
+                        {
+                            if (! q_eventloop->isRunning ())
+                                q_eventloop->exec ();  // WAIT HERE UNTIL THREAD IS DONE, BUT KEEP GUI WORKING!
+
+                            if (! skiplyricsupdate)
+                                textedit->show_lyrics ();
+                        }
+                    }
+                    else
+                        AUDERR ("s:Error detatching helper thread: %s!\n", strerror (errno));
+
+                    if (pthread_attr_destroy (& thread_attrs))
+                        AUDERR ("s:Error destroying helper thread attributes: %s!\n", strerror (errno));
+                }
+                else
+                    AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
+            }
         }
+        else
+            fromsongstartup = false;  // TELL ANY THREADS STILL RUNNING TO ABORT!
     }
     lyricStr = String ();
 }
@@ -926,23 +965,34 @@ static void lyricwiki_playback ()
 static void lyricwiki_playback_began ()
 {
     skipreset = false;
+    fromsongstartup = true;
+    skiplyricsupdate = false;
+    lyricwiki_playback ();
+}
+
+/* CALLED WHEN LYRICWIKI PLUGIN FIRST ACTIVATED (IF ACTIVATED DURING SONG PLAYING): */
+static void lyricwiki_playback_initial ()
+{
+    skipreset = false;
     frominit = true;
+    fromsongstartup = true;
     lyricwiki_playback ();
 }
 
 /* CALLED WHEN TUPLE CHANGES (STREAMS CHANGE TITLE, ETC. WHILE PLAYING:  */
 static void lyricwiki_playback_changed ()
 {
-    frominit = false;
+    fromsongstartup = false;
     lyricwiki_playback ();
 }
 
-/* CALLED WHEN PLAYBACK IS STOPPED, MAKE SURE NO THREADS HAVE THE LOCAL EVENT LOOP RUNNING!: */
+/* CALLED WHEN PLAYBACK IS STOPPED, MAKE SURE NO DANGLING THREADS HAVE LOCAL EVENT LOOP RUNNING!: */
 static void kill_thread_eventloop ()
 {
     skipreset = false;
-    if (q_eventloop.isRunning ())
-        q_eventloop.exit ();
+    skiplyricsupdate = true;
+    if (q_eventloop && q_eventloop->isRunning ())
+        q_eventloop->exit ();
 }
 
 /* CALLED WHEN USER CHANGES LYRICS TEXT IN WIDGET, MAKE [SAVE] OPTION VISIBLE: */
@@ -964,6 +1014,12 @@ static void lw_cleanup (QObject * object = nullptr)
     hook_dissociate ("tuple change", (HookFunction) lyricwiki_playback_changed);
     hook_dissociate ("playback stop", (HookFunction) kill_thread_eventloop);
 
+    if (q_eventloop)
+    {
+        if (q_eventloop->isRunning ())
+            q_eventloop->exit ();
+        q_eventloop = nullptr;
+    }
     textedit = nullptr;
 }
 
@@ -981,11 +1037,13 @@ void * LyricWikiQt::get_qt_widget ()
     hook_associate ("tuple change", (HookFunction) lyricwiki_playback_changed, nullptr);
     hook_associate ("playback ready", (HookFunction) lyricwiki_playback_began, nullptr);
 
-    if (aud_drct_get_ready ())
-        lyricwiki_playback_began ();
-
     QObject::connect (textedit, & QObject::destroyed, lw_cleanup);
     QObject::connect (textedit, & QTextEdit::textChanged, allow_usersave);
+
+    if (aud_drct_get_ready ())
+        lyricwiki_playback_initial ();
+
+    frominit = false;
 
     return textedit;
 }
