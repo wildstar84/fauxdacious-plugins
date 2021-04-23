@@ -228,7 +228,8 @@ NeonFile::NeonFile (const char * url) :
     neon_timeoutsec = aud_get_int("neon", "neon_timeoutsec");
     if (neon_timeoutsec <= 0)
         neon_timeoutsec = NEON_TIMEOUTSEC;
-    buffer = (char *) malloc(neon_netblksize);
+
+    buffer = (char *) malloc (neon_netblksize);
 }
 
 NeonFile::~NeonFile ()
@@ -240,6 +241,9 @@ NeonFile::~NeonFile ()
         ne_request_destroy (m_request);
     if (m_session)
         ne_session_destroy (m_session);
+
+    if (buffer)
+        free (buffer);
 
     ne_uri_free (& m_purl);
 }
@@ -530,7 +534,7 @@ int NeonFile::open_request (int64_t startbyte, String * error)
             break;
         case 416:
             /* JWT:Server claims it can accept range, but doesn't, retry w/startbyte=0 */
-            AUDERR ("w:Got 416 Requested Range Not Satisfiable, try again starting at beginning...\n");
+            AUDERR ("w:Got 416 Requested Range Not Satisfiable, trying again starting at beginning...\n");
             ne_end_request (m_request);
             ret = ne_begin_request (m_request);
             break;
@@ -605,8 +609,8 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
     int ret;
     String proxy_host;
     int proxy_port = 0;
-    String proxy_user{""}; // ne_session_socks_proxy requires non NULL user and password
-    String proxy_pass{""};
+    String proxy_user (""); // ne_session_socks_proxy requires non NULL user and password
+    String proxy_pass ("");
     bool socks_proxy = false;
     ne_sock_sversion socks_type = NE_SOCK_SOCKSV4A;
 
