@@ -26,6 +26,7 @@
 #include <libxml/tree.h>
 #include <libxml/HTMLparser.h>
 #include <libxml/xpath.h>
+#include <pthread.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -38,10 +39,10 @@
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/plugins.h>
 #include <libfauxdcore/probe.h>
-#include <libfauxdcore/runtime.h>
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/hook.h>
 #include <libfauxdcore/vfs_async.h>
+#include <libfauxdcore/runtime.h>
 #include <libfauxdcore/preferences.h>
 
 #ifdef S_IRGRP
@@ -49,6 +50,17 @@
 #else
 #define DIRMODE (S_IRWXU)
 #endif
+
+typedef struct {
+    String filename;       /* of song file */
+    String title, artist, album; /* INPUT PARAMETERS, PASSED BETWEEN FUNCTIONS */
+    String uri;            /* URI we are trying to retrieve */
+    String local_filename; /* JWT:CALCULATED LOCAL FILENAME TO SAVE LYRICS TO */
+    gint startlyrics;      /* JWT:OFFSET IN LYRICS WINDOW WHERE LYRIC TEXT ACTUALLY STARTS */
+    String shotitle;       /* JWT:NEXT 3 FOR THREAD TO SAVE LYRIC DATA UNTIL MAIN THREAD CAN DISPLAY IT: */
+    String shoartist;
+    String sholyrics;
+} LyricsState;
 
 class LyricWiki : public GeneralPlugin
 {
@@ -91,31 +103,29 @@ const PreferencesWidget LyricWiki::widgets[] = {
 
 const PluginPreferences LyricWiki::prefs = {{widgets}};
 
-typedef struct {
-    String filename;       /* of song file */
-    String title, artist, album;
-    String uri;            /* URI we are trying to retrieve */
-    String local_filename; /* JWT:CALCULATED LOCAL FILENAME TO SAVE LYRICS TO */
-    gint startlyrics;      /* JWT:OFFSET IN LYRICS WINDOW WHERE LYRIC TEXT ACTUALLY STARTS */
-} LyricsState;
+static GtkTextView * textview;
+static GtkTextBuffer * textbuffer;
 
+static bool fromsongstartup = false;  // JWT:TRUE WHEN THREAD STARTED BY SONG CHANGE.
+static bool abortthreads = false;     // JWT:TRUE IF WE WANT TO ABORT ANY CURRENTLY-RUNNING THREADS.
 static LyricsState state;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 bool LyricWiki::init ()
 {
     aud_config_set_defaults ("lyricwiki", defaults);
-
     return true;
 }
 
 /*
- * Suppress libxml warnings, because lyricwiki does not generate anything near
+ * DEPRECIATED: Suppress libxml warnings, because lyricwiki does not generate anything near
  * valid HTML.
  */
 static void libxml_error_handler (void * ctx, const char * msg, ...)
 {
 }
 
+/* DEPRECIATED: CALLED FOR FETCHING LYRICS THE OLD-SCHOOL AUDACIOUS WAY (NO PERL HELPER): */
 static CharPtr scrape_lyrics_from_lyricwiki_edit_page (const char * buf, int64_t len)
 {
     xmlDocPtr doc;
@@ -190,6 +200,7 @@ give_up:
     return ret;
 }
 
+/* DEPRECIATED: CALLED FOR FETCHING LYRICS THE OLD-SCHOOL AUDACIOUS WAY (NO PERL HELPER): */
 static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t len)
 {
     xmlDocPtr doc;
@@ -287,15 +298,17 @@ static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t
     return uri;
 }
 
-static void update_lyrics_window (const char * title, const char * artist,
- const char * lyrics, bool edit_enabled);
+static void update_lyrics (const char * title, const char * artist, const char * lyrics);
+static void show_lyrics ();
 
 static GtkWidget * edit_button;
 static GtkWidget * save_button;
-static GtkWidget * tuple_save_button;
+static GtkWidget * tag_save_button;
 
 static void save_lyrics_locally ();
+static void save_lyrics_locally_fromscreen ();
 
+/* DEPRECIATED: STEP 3 OF 3 (FOR FETCHING LYRICS THE OLD-SCHOOL AUDACIOUS WAY (NO HELPER)): */
 static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *)
 {
     /* JWT:WE'RE ONLY HERE IF *NOT* USING THE PERL HELPER (THE OLD-SCHOOL WAY)! */
@@ -304,8 +317,10 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
 
     if (! buf.len ())
     {
-        update_lyrics_window (_("Error"), nullptr,
-                str_printf (_("Unable to fetch %s"), uri), true);
+        update_lyrics (_("Error"), nullptr,
+                str_printf (_("Unable to fetch %s"), uri));
+        show_lyrics ();
+        gtk_widget_set_sensitive (edit_button, true);
         return;
     }
 
@@ -313,18 +328,22 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
 
     if (! lyrics)
     {
-        update_lyrics_window (_("No lyrics Found"),
+        update_lyrics (_("No lyrics Found"),
                 (const char *) str_concat ({"Title: ", (const char *) state.title, "\nArtist: ",
                         (const char *) state.artist}),
-                str_printf (_("Unable to parse(3) %s"), uri), true);
+                str_printf (_("Unable to parse(3) %s"), uri));
+        show_lyrics ();
+        gtk_widget_set_sensitive (edit_button, true);
         return;
     }
 
-    update_lyrics_window (state.title, state.artist, lyrics, true);
+    update_lyrics (state.title, state.artist, lyrics);
+    show_lyrics ();
     AUDINFO ("i:Lyrics came from old LyricWiki site!\n");
+    gtk_widget_set_sensitive (edit_button, true);
     gtk_widget_set_sensitive (save_button, true);
     if (aud_get_bool ("lyricwiki", "cache_lyrics"))
-        save_lyrics_locally ();
+        save_lyrics_locally_fromscreen ();
 
     /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
     if (! strncmp ((const char *) state.filename, "file://", 7)
@@ -335,10 +354,18 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
         PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
         bool can_write = aud_file_can_write_tuple (state.filename, decoder);
         if (can_write)
-            gtk_widget_set_sensitive (tuple_save_button, true);
+            gtk_widget_set_sensitive (tag_save_button, true);
     }
 }
 
+/* CALLED BY g_idle_add() TO UPDATE LYRIC WIDGET FROM THREAD: */
+static gboolean lyrics_ready (gpointer data)
+{
+    show_lyrics ();
+    return false;
+}
+
+/* DEPRECIATED: STEP 2 OF 3 (FOR FETCHING LYRICS THE OLD-SCHOOL AUDACIOUS WAY (NO HELPER)): */
 static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void *)
 {
     if (! state.uri || strcmp (state.uri, uri1))
@@ -346,8 +373,10 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
 
     if (! buf.len ())
     {
-        update_lyrics_window (_("Error"), nullptr,
-                str_printf (_("Unable to fetch %s"), uri1), false);
+        update_lyrics (_("Error"), nullptr,
+                str_printf (_("Unable to fetch %s"), uri1));
+        show_lyrics ();
+        gtk_widget_set_sensitive (edit_button, false);
         return;
     }
 
@@ -355,41 +384,62 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
 
     if (! uri)
     {
-        update_lyrics_window (_("Error"), nullptr,
-                str_printf (_("Unable to parse(2) %s"), uri1), false);
+        update_lyrics (_("Error"), nullptr,
+                str_printf (_("Unable to parse(2) %s"), uri1));
+        show_lyrics ();
+        gtk_widget_set_sensitive (edit_button, false);
         return;
     }
     else if (uri == String ("N/A"))
     {
-        update_lyrics_window (state.title, state.artist, _("No lyrics available"), false);
+        update_lyrics (state.title, state.artist, _("No lyrics available"));
+        show_lyrics ();
+        gtk_widget_set_sensitive (edit_button, false);
         return;
     }
 
     state.uri = uri;
 
-    update_lyrics_window (state.title, state.artist, _("Looking for lyrics ..."), true);
+    update_lyrics (state.title, state.artist, _("Looking for lyrics ..."));
+    show_lyrics ();
+    gtk_widget_set_sensitive (edit_button, true);
     vfs_async_file_get_contents (uri, get_lyrics_step_3, nullptr);
 }
 
-/* HANDLE FETCHING LYRICS FROM WEB VIA HELPER (1-STEP) OR fandom.com? (STEP 1 OF 3): */
-static void get_lyrics_step_1 ()
+/* (SEPARATE THREAD) HANDLE FETCHING LYRICS FROM WEB VIA HELPER (1-STEP) OR fandom.com? (STEP 1 OF 3): */
+/* NOTE:  WHEN STARTING PLAY, WE WAIT 2 SEC. B/C NORMALLY, A STREAM STILL HAS IT'S LAST-PLAYED
+   TITLE-TUPLE AND, QUICKLY AFTER STARTING PLAY, A TUPLE-CHANGE WILL OCCUR BEFORE THE FIRST THREAD CAN
+   LOOK UP THE "OLD" LYRICS (IF NOT CACHED), IF SO WE WANT TO ABORT THE FIRST THREAD SO THAT ONLY THE
+   NEW THREAD WILL LOOK UP THE CURRENT LYRICS FOR THE NOW-CHANGED TUPLE (TITLE)!  WE STILL HAVE TO
+   INITIATE A LOOKUP ON PLAY-START SINCE OTHERWISE FILES (WHICH HAVE NO TUPLE-CHANGES) WOULD NEVER
+   HAVE THEIR LYRICS LOOKED UP!
+*/
+static void * helper_thread_fn (void * data)
 {
-    if (! state.artist || ! state.title)
+    bool abortthisthread = abortthreads;
+    if (abortthisthread)
     {
-        update_lyrics_window (_("Error"), nullptr, _("Missing title and/or artist"), false);
-        return;
+        pthread_exit (nullptr);
+        return nullptr;
     }
-    if (! aud_get_bool ("lyricwiki", "search_internet"))
+    if (fromsongstartup)  // TRUE IF SONG-START, FALSE ON TUPLE-CHANGE!
     {
-        update_lyrics_window (_("No lyrics Found locally"),
-                (const char *) str_concat ({"Title: ", (const char *) state.title, "\nArtist: ",
-                (const char *) state.artist}),
-                str_printf (_("Unable to fetch lyrics (Fetch lyrics from internet option not enabled).")),
-                false);
-        return;
+        abortthreads = true;
+        g_usleep (2000000);  // SLEEP 2" TO ALLOW FOR ANY IMMEDIATE TUPLE CHANGE TO OVERRIDE! */
+        if (abortthisthread || ! fromsongstartup)  // CHGD. BY ANOTHER THREAD WHILST WE WERE SLEEPING!
+        {
+            /* ANOTHER THREAD HAS BEEN STARTED BY TUPLE-CHANGE, WHILE WE SLEPT, SO ABORT THIS
+               THREAD AND LET THE LATTER (TUPLE-CHANGE) THREAD UPDATE THE LYRICS!
+            */
+            pthread_exit (nullptr);
+            return nullptr;
+        }
     }
 
+    pthread_mutex_lock (& mutex);
+
     String lyric_helper = aud_get_str ("audacious", "lyric_helper");
+
     if (lyric_helper[0])  //JWT:WE HAVE A PERL HELPER, LESSEE IF IT CAN FIND/DOWNLOAD LYRICS FOR US:
     {
         bool lyrics_found = false;
@@ -425,7 +475,7 @@ static void get_lyrics_step_1 ()
                     lyrics.resize (lyrics.len ()+1);
                     lyrics[lyrics.len ()-1] = '\0';
                     lyrics_found = true;
-                    update_lyrics_window (state.title, state.artist, (const char *) lyrics.begin (), false);
+                    update_lyrics (state.title, state.artist, (const char *) lyrics.begin ());
                     gtk_widget_set_sensitive (save_button, true);
                     if (aud_get_bool ("lyricwiki", "cache_lyrics"))
                         save_lyrics_locally ();
@@ -440,21 +490,22 @@ static void get_lyrics_step_1 ()
                         PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
                         bool can_write = aud_file_can_write_tuple (state.filename, decoder);
                         if (can_write)
-                            gtk_widget_set_sensitive (tuple_save_button, true);
+                            gtk_widget_set_sensitive (tag_save_button, true);
                     }
                 }
             }
         }
         if (! lyrics_found)
         {
-            update_lyrics_window (_("No lyrics Found"),
+            update_lyrics (_("No lyrics Found"),
                     (const char *) str_concat ({"Title: ", (const char *) state.title, "\nArtist: ",
                     (const char *) state.artist}),
-                    str_printf (_("Unable to fetch lyrics.")), false);
-            return;
+                    str_printf (_("Unable to fetch lyrics.")));
+
+            goto THREAD_EXIT;
         }
     }
-    else /* NO HELPER, TRY THE OLD SCHOOL "3-STEP C" WAY: (MAYBE fandom.com CAME BACK OR AUDACIOUS FIXED?) */
+    else /* DEPRECIATED:NO HELPER, TRY THE OLD SCHOOL "3-STEP C" WAY: (MAYBE fandom.com CAME BACK OR AUDACIOUS FIXED?) */
     {
         StringBuf title_buf = str_encode_percent (state.title);
         StringBuf artist_buf = str_encode_percent (state.artist);
@@ -463,9 +514,23 @@ static void get_lyrics_step_1 ()
                 "action=lyrics&artist=%s&song=%s&fmt=xml", (const char *) artist_buf,
                 (const char *) title_buf));
 
-        update_lyrics_window (state.title, state.artist, _("Connecting to lyrics.fandom.com ..."), false);
+        update_lyrics (state.title, state.artist, _("Connecting to lyrics.fandom.com ..."));
+        gtk_widget_set_sensitive (edit_button, false);
         vfs_async_file_get_contents (state.uri, get_lyrics_step_2, nullptr);
     }
+
+THREAD_EXIT:
+    pthread_mutex_unlock (& mutex);
+
+    if (! abortthisthread)
+    {
+        g_idle_add (lyrics_ready, nullptr);
+        abortthreads = false;
+    }
+
+    pthread_exit (nullptr);
+
+    return nullptr;
 }
 
 /* JWT:HANDLE LYRICS FROM LOCAL LYRICS FILES: */
@@ -473,16 +538,19 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
 {
     if (! buf.len ())
     {
-        update_lyrics_window (_("Error"), nullptr,
-                str_printf (_("Unable to fetch file %s"), uri), false);
+        update_lyrics (_("Error"), nullptr,
+                str_printf (_("Unable to fetch file %s"), uri));
+        show_lyrics ();
+        gtk_widget_set_sensitive (edit_button, false);
         return;
     }
 
     StringBuf nullterminated_buf = str_copy (buf.begin (), buf.len ());
-    update_lyrics_window (state.title, state.artist, (const char *) nullterminated_buf, false);
+    update_lyrics (state.title, state.artist, (const char *) nullterminated_buf);
+    show_lyrics ();
 
-    /* JWT:ALLOW 'EM TO EDIT LYRICWIKI, EVEN IF LYRICS ARE LOCAL, IF THEY HAVE BOTH REQUIRED FIELDS: */
-    /* BUT ONLY IF USING OLD SITE (*NOT* USING THE PERL "HELPER")! */
+    /* JWT:(DEPRECIATED):  ALLOW 'EM TO EDIT LYRICWIKI, EVEN IF LYRICS ARE LOCAL, IF THEY HAVE */
+    /* BOTH REQUIRED FIELDS:BUT ONLY IF USING OLD SITE (*NOT* USING THE PERL "HELPER")! */
     String lyric_helper = aud_get_str ("audacious", "lyric_helper");
     if (! lyric_helper[0] && state.artist && state.title)
     {
@@ -509,20 +577,56 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
         PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
         bool can_write = aud_file_can_write_tuple (state.filename, decoder);
         if (can_write)
-            gtk_widget_set_sensitive (tuple_save_button, true);
+            gtk_widget_set_sensitive (tag_save_button, true);
     }
 }
 
-static GtkTextView * textview;
-static GtkTextBuffer * textbuffer;
-
+/* DEPRECIATED! */
 static void launch_edit_page ()
 {
     if (state.uri)
         gtk_show_uri (nullptr, state.uri, GDK_CURRENT_TIME, nullptr);
 }
 
+/* CALLED WHEN USER SELECTS "SAVE LOCALLY" TO CACHE (BEFORE LYRICS ARE SHOWN ONSCREEN): */
 static void save_lyrics_locally ()
+{
+    if (state.local_filename && state.local_filename[0] && textbuffer)
+    {
+        AUDINFO ("i:Caching lyrics locally to (%s)!\n", (const char *) state.local_filename);
+        if (state.sholyrics && state.sholyrics[0])
+        {
+            const char * lyrics = (const char *) state.sholyrics;
+            int sz = strlen (lyrics);
+            String user_dir = String (aud_get_path (AudPath::UserDir));
+            if (strstr ((const char *) state.local_filename, (const char *) user_dir))
+            {
+                /* WE'RE STORING IN GLOBAL LYRICS CACHE, CREATE DIRECTORIES AS NEEDED: */
+                StringBuf artist_path = filename_get_parent (state.local_filename);
+                if (g_mkdir_with_parents (artist_path, DIRMODE) < 0)
+                {
+                    AUDERR ("e:Could not create missing lyrics directory (%s): %s!\n", (const char *) artist_path, strerror (errno));
+                    return;
+                }
+            }
+            /* WRITE THE LYRICS FILE (WHETHER LOCAL OR GLOBAL LYRICS CACHE: */
+            VFSFile file (state.local_filename, "w");
+            if (file)
+            {
+                if (file.fwrite (lyrics, 1, sz) == sz)
+                {
+                    AUDINFO ("i:Successfully cached %d bytes of lyrics locally to (%s).\n", sz,
+                            (const char *) state.local_filename);
+
+                    gtk_widget_set_sensitive (save_button, false);
+                }
+            }
+        }
+    }
+}
+
+/* CALLED WHEN USER SELECTS "SAVE LOCALLY" FROM MENU: */
+static void save_lyrics_locally_fromscreen ()
 {
     if (state.local_filename && state.local_filename[0] && textbuffer)
     {
@@ -568,6 +672,7 @@ static void save_lyrics_locally ()
     }
 }
 
+/* CALLED WHEN USER SELECTS "SAVE IN ID3 TAG" FROM MENU (LOCAL SONG FILES ONLY): */
 static void save_lyrics_in_id3tag ()
 {
     if (textbuffer)
@@ -596,17 +701,26 @@ static void save_lyrics_in_id3tag ()
                 else
                     AUDERR ("e:Could not save lyrics to id3 tag.\n");
 
-                gtk_widget_set_sensitive (tuple_save_button, false);
+                gtk_widget_set_sensitive (tag_save_button, false);
             }
         }
     }
 }
 
+/* CALLED WHEN USER CHANGES LYRICS TEXT IN WIDGET, MAKE [SAVE] OPTION VISIBLE: */
+static void allow_usersave (GtkTextBuffer *textbuffer,
+               char        * preedit,
+               gpointer     user_data)
+{
+    if (! gtk_widget_get_sensitive (save_button))
+        gtk_widget_set_sensitive (save_button, true);
+}
+
 static GtkWidget * build_widget ()
 {
     textview = (GtkTextView *) gtk_text_view_new ();
-    gtk_text_view_set_editable (textview, false);
-    gtk_text_view_set_cursor_visible (textview, false);
+    gtk_text_view_set_editable (textview, true);
+    gtk_text_view_set_cursor_visible (textview, true);
     gtk_text_view_set_left_margin (textview, 4);
     gtk_text_view_set_right_margin (textview, 4);
     gtk_text_view_set_wrap_mode (textview, GTK_WRAP_WORD);
@@ -637,51 +751,59 @@ static GtkWidget * build_widget ()
     gtk_widget_set_sensitive (save_button, false);
     gtk_box_pack_end ((GtkBox *) hbox, save_button, false, false, 0);
 
-    tuple_save_button = gtk_button_new_with_mnemonic (_("Save ID3"));
-    gtk_widget_set_sensitive (tuple_save_button, false);
-    gtk_box_pack_end ((GtkBox *) hbox, tuple_save_button, false, false, 0);
+    tag_save_button = gtk_button_new_with_mnemonic (_("Save ID3"));
+    gtk_widget_set_sensitive (tag_save_button, false);
+    gtk_box_pack_end ((GtkBox *) hbox, tag_save_button, false, false, 0);
 
     g_signal_connect (edit_button, "clicked", (GCallback) launch_edit_page, nullptr);
-    g_signal_connect (save_button, "clicked", (GCallback) save_lyrics_locally, nullptr);
-    g_signal_connect (tuple_save_button, "clicked", (GCallback) save_lyrics_in_id3tag, nullptr);
+    g_signal_connect (save_button, "clicked", (GCallback) save_lyrics_locally_fromscreen, nullptr);
+    g_signal_connect (tag_save_button, "clicked", (GCallback) save_lyrics_in_id3tag, nullptr);
+    g_signal_connect (textbuffer, "changed", (GCallback) allow_usersave, nullptr);
 
     return vbox;
 }
 
-static void update_lyrics_window (const char * title, const char * artist,
- const char * lyrics, bool edit_enabled)
+/* CALLED BY BOTH MAIN AND THREAD TO UPDATE LYRICS (FOR LATER DISPLAYING IN THE WIDGET): */
+static void update_lyrics (const char * title, const char * artist, const char * lyrics)
+{
+    state.shotitle = title ? String (title) : String ("");
+    state.shoartist = artist ? String (artist) : String ("");
+    state.sholyrics = lyrics ? String (lyrics) : String ("");
+}
+
+static void show_lyrics ()
 {
     GtkTextIter iter, startlyrics;
 
     if (! textbuffer)
         return;
 
+    bool ok2save_was = gtk_widget_get_sensitive (save_button);  // OK2SAVE GETS SET TO TRUE BY allow_usersave() CALLBACK IN HERE!:
+
     gtk_text_buffer_set_text (textbuffer, "", -1);
-
     gtk_text_buffer_get_start_iter (textbuffer, & iter);
-
-    gtk_text_buffer_insert_with_tags_by_name (textbuffer, & iter, title, -1,
+    gtk_text_buffer_insert_with_tags_by_name (textbuffer, & iter, str_to_utf8 (state.shotitle, -1), -1,
      "weight_bold", "size_x_large", nullptr);
 
-    if (artist)
+    if (state.shoartist)
     {
         gtk_text_buffer_insert (textbuffer, & iter, "\n", -1);
-        gtk_text_buffer_insert_with_tags_by_name (textbuffer, & iter, artist, -1,
+        gtk_text_buffer_insert_with_tags_by_name (textbuffer, & iter, str_to_utf8 (state.shoartist, -1), -1,
          "style_italic", nullptr);
     }
 
     gtk_text_buffer_insert (textbuffer, & iter, "\n\n", -1);
     gtk_text_buffer_get_end_iter (textbuffer, & startlyrics);
     state.startlyrics = gtk_text_iter_get_offset (& startlyrics);
-    gtk_text_buffer_insert (textbuffer, & iter, lyrics, -1);
+    gtk_text_buffer_insert (textbuffer, & iter, str_to_utf8 (state.sholyrics, -1), -1);
 
     gtk_text_buffer_get_start_iter (textbuffer, & iter);
     gtk_text_view_scroll_to_iter (textview, & iter, 0, true, 0, 0);
-
-    gtk_widget_set_sensitive (edit_button, edit_enabled);
+    gtk_widget_set_sensitive (save_button, ok2save_was);
 }
 
-static void lyricwiki_playback_began ()
+/* CALLED WHENEVER WE NEED LYRICS: */
+static void lyricwiki_playback ()
 {
     /* FIXME: cancel previous VFS requests (not possible with current API) */
 
@@ -690,8 +812,10 @@ static void lyricwiki_playback_began ()
     String lyricStr = String ("");
     StringBuf path = StringBuf ();
 
+    abortthreads = false;
     state.filename = aud_drct_get_filename ();
     state.uri = String ();
+    gtk_widget_set_sensitive (edit_button, false);
     state.local_filename = String ("");
 
     if (! strncmp (state.filename, "cdda://?", 8))  // FOR CDs, LOOK FOR DIRECTORY WITH TRACK LYRIC FILES:
@@ -762,12 +886,13 @@ static void lyricwiki_playback_began ()
     state.artist = tuple.get_str (Tuple::Artist);
     state.album = tuple.get_str (Tuple::Album);
     gtk_widget_set_sensitive (save_button, false);
-    gtk_widget_set_sensitive (tuple_save_button, false);
+    gtk_widget_set_sensitive (tag_save_button, false);
 
     if (found_lyricfile)  // JWT:WE HAVE LYRICS STORED IN A LOCAL FILE MATCHING FILE NAME!:
     {
         AUDINFO ("i:Local lyric file found (%s).\n", (const char *) lyricStr);
         vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
+        abortthreads = true;  // TELL ANY SLEEPING THREADS TO ABORT!
     }
     else  // NO LOCAL LYRICS FILE FOUND, SO CHECK FOR ID3 LYRICS TAGS, THEN GLOBAL LYRIC FILE MATCHING ARTIST/TITLE:
     {
@@ -777,8 +902,9 @@ static void lyricwiki_playback_began ()
         if (lyricsFromTuple && lyricsFromTuple[0])
         {
             AUDDBG ("i:Lyrics found in ID3 tag.\n");
-            update_lyrics_window (state.title, state.artist, (const char *) lyricsFromTuple,
-                    false);
+            update_lyrics (state.title, state.artist, (const char *) lyricsFromTuple);
+            show_lyrics ();
+            gtk_widget_set_sensitive (edit_button, false);
             gtk_widget_set_sensitive (save_button, true);
             AUDINFO ("i:Lyrics came from id3 tag!\n");
             need_lyrics = false;
@@ -835,6 +961,7 @@ static void lyricwiki_playback_began ()
                 if (need_lyrics && found_lyricfile)
                 {
                     AUDINFO ("i:Global lyric file found by artist/title (%s).\n", (const char *) lyricStr);
+                    abortthreads = true;  // TELL ANY THREADS STILL RUNNING TO ABORT!
                     vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
                     lyricStr = String ();
                     if (save_by_songfile)
@@ -848,12 +975,72 @@ static void lyricwiki_playback_began ()
         if (need_lyrics)
         {
             AUDINFO ("i:No Local lyric file found, try fetching from lyricwiki...\n");
-            get_lyrics_step_1 ();
+            update_lyrics ("Searching web for lyrics...", nullptr, nullptr);
+            show_lyrics ();
+            if (! state.artist || ! state.title)
+            {
+                update_lyrics (_("Error"), nullptr, _("Missing title and/or artist"));
+                show_lyrics ();
+                gtk_widget_set_sensitive (edit_button, false);  /* NO EDITING LYRICS ON HELPER-SERVED SITES! */
+                return;
+            }
+            if (! aud_get_bool ("lyricwiki", "search_internet"))
+            {
+                update_lyrics (_("No lyrics Found locally"),
+                        (const char *) str_concat ({"Title: ", (const char *) state.title, "\nArtist: ",
+                        (const char *) state.artist}),
+                        str_printf (_("Unable to fetch lyrics (Fetch lyrics from internet option not enabled).")));
+                show_lyrics ();
+                return;
+            }
+
+            pthread_attr_t thread_attrs;
+            if (! pthread_attr_init (& thread_attrs))
+            {
+                if (! pthread_attr_setdetachstate (& thread_attrs, PTHREAD_CREATE_DETACHED)
+                        || ! pthread_attr_setscope (& thread_attrs, PTHREAD_SCOPE_SYSTEM))
+                {
+                    pthread_t helper_thread;
+
+                    if (pthread_create (&helper_thread, nullptr, helper_thread_fn, nullptr))
+                        AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
+                }
+                else
+                    AUDERR ("s:Error detatching helper thread: %s!\n", strerror (errno));
+
+                if (pthread_attr_destroy (& thread_attrs))
+                    AUDERR ("s:Error destroying helper thread attributes: %s!\n", strerror (errno));
+            }
+            else
+                AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
         }
+        else
+            abortthreads = true;  // TELL ANY SLEEPING THREADS TO ABORT!
     }
     lyricStr = String ();
 }
 
+/* CALLED WHEN PLAYBACK STARTS: */
+static void lyricwiki_playback_began ()
+{
+    fromsongstartup = true;
+    lyricwiki_playback ();
+}
+
+/* CALLED WHEN TUPLE CHANGES (STREAMS CHANGE TITLE, ETC. WHILE PLAYING:  */
+static void lyricwiki_playback_changed ()
+{
+    fromsongstartup = false;
+    lyricwiki_playback ();
+}
+
+/* CALLED WHEN PLAYBACK IS STOPPED, MAKE SURE NO DANGLING THREADS HAVE LOCAL EVENT LOOP RUNNING!: */
+static void kill_thread_eventloop ()
+{
+    abortthreads = true;
+}
+
+/* CALLED ON SHUTDOWN TO CLEAN UP: */
 static void destroy_cb ()
 {
     state.filename = String ();
@@ -862,27 +1049,30 @@ static void destroy_cb ()
     state.uri = String ();
     state.local_filename = String ();
 
-    hook_dissociate ("tuple change", (HookFunction) lyricwiki_playback_began);
+    hook_dissociate ("playback stop", (HookFunction) kill_thread_eventloop);
+    hook_dissociate ("tuple change", (HookFunction) lyricwiki_playback_changed);
     hook_dissociate ("playback ready", (HookFunction) lyricwiki_playback_began);
 
     textview = nullptr;
     textbuffer = nullptr;
     save_button = nullptr;
-    tuple_save_button = nullptr;
+    tag_save_button = nullptr;
     edit_button = nullptr;
 }
 
+/* CALLED ON STARTUP (WIDGET CREATION): */
 void * LyricWiki::get_gtk_widget ()
 {
     GtkWidget * vbox = build_widget ();
 
-    hook_associate ("tuple change", (HookFunction) lyricwiki_playback_began, nullptr);
     hook_associate ("playback ready", (HookFunction) lyricwiki_playback_began, nullptr);
+    hook_associate ("tuple change", (HookFunction) lyricwiki_playback_changed, nullptr);
+    hook_associate ("playback stop", (HookFunction) kill_thread_eventloop, nullptr);
+
+    g_signal_connect (vbox, "destroy", destroy_cb, nullptr);
 
     if (aud_drct_get_ready ())
         lyricwiki_playback_began ();
-
-    g_signal_connect (vbox, "destroy", destroy_cb, nullptr);
 
     return vbox;
 }
