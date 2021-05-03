@@ -376,7 +376,7 @@ int neon_vfs_verify_environment_ssl_certs (void * userdata, int failures,
     const char * sslCertFile = g_getenv ("SSL_CERT_FILE");
 
     /* JWT:ADDED FOR Youtube / Vimeo PLAY ON WINDOWS, SINCE WINDOWS SEEMS TO CHECK & NOT TRUST CERT. ISSUER?! */
-    if (aud_get_bool ("neon", "ignore_ssl_certs"))  return 0;
+    if (aud_get_bool ("neon", "ignore_ssl_certs"))  return failures & ~NE_SSL_UNTRUSTED;
 
     if (sslCertFile != nullptr)
     {
