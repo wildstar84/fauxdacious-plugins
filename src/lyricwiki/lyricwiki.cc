@@ -106,8 +106,9 @@ const PluginPreferences LyricWiki::prefs = {{widgets}};
 static GtkTextView * textview;
 static GtkTextBuffer * textbuffer;
 
-static bool fromsongstartup = false;  // JWT:TRUE WHEN THREAD STARTED BY SONG CHANGE.
 static bool abortthreads = false;     // JWT:TRUE IF WE WANT TO ABORT ANY CURRENTLY-RUNNING THREADS.
+static bool resetthreads = false;     // JWT:TRUE STOP ANY THREADS RUNNING ON SONG CHANGE OR SHUTDOWN.
+static bool fromsongstartup = false;  // JWT:TRUE WHEN THREAD STARTED BY SONG CHANGE.
 static LyricsState state;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -414,9 +415,9 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
    INITIATE A LOOKUP ON PLAY-START SINCE OTHERWISE FILES (WHICH HAVE NO TUPLE-CHANGES) WOULD NEVER
    HAVE THEIR LYRICS LOOKED UP!
 */
-static void * helper_thread_fn (void * data)
+static void * lyric_helper_thread_fn (void * data)
 {
-    bool abortthisthread = abortthreads;
+    bool abortthisthread = abortthreads || resetthreads;
     if (abortthisthread)
     {
         pthread_exit (nullptr);
@@ -424,9 +425,11 @@ static void * helper_thread_fn (void * data)
     }
     if (fromsongstartup)  // TRUE IF SONG-START, FALSE ON TUPLE-CHANGE!
     {
+        int sleep_msec = aud_get_int ("lyricwiki", "sleep_msec");
+        if (sleep_msec < 1)  sleep_msec = 1600;
         abortthreads = true;
-        g_usleep (2000000);  // SLEEP 2" TO ALLOW FOR ANY IMMEDIATE TUPLE CHANGE TO OVERRIDE! */
-        if (abortthisthread || ! fromsongstartup)  // CHGD. BY ANOTHER THREAD WHILST WE WERE SLEEPING!
+        g_usleep (sleep_msec * 1000);  // SLEEP 2" TO ALLOW FOR ANY IMMEDIATE TUPLE CHANGE TO OVERRIDE! */
+        if (! fromsongstartup || resetthreads)  // CHGD. BY ANOTHER THREAD WHILST WE WERE SLEEPING!
         {
             /* ANOTHER THREAD HAS BEEN STARTED BY TUPLE-CHANGE, WHILE WE SLEPT, SO ABORT THIS
                THREAD AND LET THE LATTER (TUPLE-CHANGE) THREAD UPDATE THE LYRICS!
@@ -439,6 +442,9 @@ static void * helper_thread_fn (void * data)
     pthread_mutex_lock (& mutex);
 
     String lyric_helper = aud_get_str ("audacious", "lyric_helper");
+
+    if (resetthreads)
+        goto THREAD_EXIT;
 
     if (lyric_helper[0])  //JWT:WE HAVE A PERL HELPER, LESSEE IF IT CAN FIND/DOWNLOAD LYRICS FOR US:
     {
@@ -463,39 +469,42 @@ static void * helper_thread_fn (void * data)
 #endif
         String lyric_fid = String (str_concat ({aud_get_path (AudPath::UserDir), "/_tmp_lyrics.txt"}));
 
-        gtk_widget_set_sensitive (edit_button, false);  /* NO EDITING LYRICS ON HELPER-SERVED SITES! */
-        if (g_stat ((const char *) lyric_fid, & statbuf) == 0)
+        if (! resetthreads)
         {
-            VFSFile lyrics_file ((const char *) lyric_fid, "r");
-            if (lyrics_file)
+            gtk_widget_set_sensitive (edit_button, false);  /* NO EDITING LYRICS ON HELPER-SERVED SITES! */
+            if (g_stat ((const char *) lyric_fid, & statbuf) == 0)
             {
-                Index<char> lyrics = lyrics_file.read_all ();
-                if (lyrics.len () > 1)
+                VFSFile lyrics_file ((const char *) lyric_fid, "r");
+                if (lyrics_file)
                 {
-                    lyrics.resize (lyrics.len ()+1);
-                    lyrics[lyrics.len ()-1] = '\0';
-                    lyrics_found = true;
-                    update_lyrics (state.title, state.artist, (const char *) lyrics.begin ());
-                    gtk_widget_set_sensitive (save_button, true);
-                    if (aud_get_bool ("lyricwiki", "cache_lyrics"))
-                        save_lyrics_locally ();
-
-                    AUDINFO ("i:Lyrics came from HELPER!\n");
-                    /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
-                    if (! strncmp ((const char *) state.filename, "file://", 7)
-                            && str_has_suffix_nocase ((const char *) state.filename, ".mp3"))
+                    Index<char> lyrics = lyrics_file.read_all ();
+                    if (lyrics.len () > 1)
                     {
-                        String error;
-                        VFSFile file (state.filename, "r");
-                        PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
-                        bool can_write = aud_file_can_write_tuple (state.filename, decoder);
-                        if (can_write)
-                            gtk_widget_set_sensitive (tag_save_button, true);
+                        lyrics.resize (lyrics.len ()+1);
+                        lyrics[lyrics.len ()-1] = '\0';
+                        lyrics_found = true;
+                        update_lyrics (state.title, state.artist, (const char *) lyrics.begin ());
+                        gtk_widget_set_sensitive (save_button, true);
+                        if (aud_get_bool ("lyricwiki", "cache_lyrics"))
+                            save_lyrics_locally ();
+
+                        AUDINFO ("i:Lyrics came from HELPER!\n");
+                        /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
+                        if (! strncmp ((const char *) state.filename, "file://", 7)
+                                && str_has_suffix_nocase ((const char *) state.filename, ".mp3"))
+                        {
+                            String error;
+                            VFSFile file (state.filename, "r");
+                            PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
+                            bool can_write = aud_file_can_write_tuple (state.filename, decoder);
+                            if (can_write)
+                                gtk_widget_set_sensitive (tag_save_button, true);
+                        }
                     }
                 }
             }
         }
-        if (! lyrics_found)
+        if (! lyrics_found && ! resetthreads)
         {
             update_lyrics (_("No lyrics Found"),
                     (const char *) str_concat ({"Title: ", (const char *) state.title, "\nArtist: ",
@@ -520,13 +529,15 @@ static void * helper_thread_fn (void * data)
     }
 
 THREAD_EXIT:
-    pthread_mutex_unlock (& mutex);
+    lyric_helper = String ();
 
-    if (! abortthisthread)
+    if (! abortthisthread && ! resetthreads)
     {
-        g_idle_add (lyrics_ready, nullptr);
         abortthreads = false;
+        g_idle_add (lyrics_ready, nullptr);
     }
+
+    pthread_mutex_unlock (& mutex);
 
     pthread_exit (nullptr);
 
@@ -1000,9 +1011,10 @@ static void lyricwiki_playback ()
                 if (! pthread_attr_setdetachstate (& thread_attrs, PTHREAD_CREATE_DETACHED)
                         || ! pthread_attr_setscope (& thread_attrs, PTHREAD_SCOPE_SYSTEM))
                 {
-                    pthread_t helper_thread;
+                    pthread_t lyric_helper_thread;
 
-                    if (pthread_create (&helper_thread, nullptr, helper_thread_fn, nullptr))
+                    resetthreads = false;
+                    if (pthread_create (&lyric_helper_thread, nullptr, lyric_helper_thread_fn, nullptr))
                         AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
                 }
                 else
@@ -1023,6 +1035,7 @@ static void lyricwiki_playback ()
 /* CALLED WHEN PLAYBACK STARTS: */
 static void lyricwiki_playback_began ()
 {
+    resetthreads = true;
     fromsongstartup = true;
     lyricwiki_playback ();
 }
@@ -1038,20 +1051,23 @@ static void lyricwiki_playback_changed ()
 static void kill_thread_eventloop ()
 {
     abortthreads = true;
+    resetthreads = true;
 }
 
 /* CALLED ON SHUTDOWN TO CLEAN UP: */
 static void destroy_cb ()
 {
+    kill_thread_eventloop ();
+
+    hook_dissociate ("playback stop", (HookFunction) kill_thread_eventloop);
+    hook_dissociate ("tuple change", (HookFunction) lyricwiki_playback_changed);
+    hook_dissociate ("playback ready", (HookFunction) lyricwiki_playback_began);
+
     state.filename = String ();
     state.title = String ();
     state.artist = String ();
     state.uri = String ();
     state.local_filename = String ();
-
-    hook_dissociate ("playback stop", (HookFunction) kill_thread_eventloop);
-    hook_dissociate ("tuple change", (HookFunction) lyricwiki_playback_changed);
-    hook_dissociate ("playback ready", (HookFunction) lyricwiki_playback_began);
 
     textview = nullptr;
     textbuffer = nullptr;
