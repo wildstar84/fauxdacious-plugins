@@ -17,9 +17,11 @@
  * the use of this software.
  */
 
+#include <QApplication>
 #include <QLabel>
 #include <QPixmap>
 #include <QThread>
+#include <QEvent>
 
 #include <errno.h>
 #include <pthread.h>
@@ -42,9 +44,11 @@
 
 #include <libfauxdqt/libfauxdqt.h>
 
-static bool frominit = false;  // TRUE WHEN THREAD STARTED BY SONG CHANGE (album_init()).
-static bool skipreset = false; // TRUE WHILE THREAD RUNNING AFTER STARTED BY SONG CHANGE (album_init()).
+static bool fromsongstartup = false;  // TRUE WHEN THREAD STARTED BY SONG CHANGE (album_init()).
+static bool abortthreads = false;     // JWT:TRUE IF WE WANT TO ABORT ANY CURRENTLY-RUNNING THREADS.
+static bool resetthreads = false;     // JWT:TRUE STOP ANY THREADS RUNNING ON SONG CHANGE OR SHUTDOWN.
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static int customType = QEvent::registerEventType();
 static bool hide_dup_art_icon;   /* JWT:TOGGLE TO TRUE TO HIDE (DUPLICATE) ART ICON IN INFOBAR IF A WEB IMAGE FETCHED. */
 static bool last_image_from_web; /* JWT:TRUE IF LAST IMAGE CAME FROM WEB ("LOOK FOR ALBUM ART ON musicbrainz" OPTION). */
 
@@ -97,10 +101,11 @@ public:
         init ();
     }
 
+    bool event (QEvent*);
+
     /* JWT:CALLED BY ALBUMART FETCHING THREAD WHEN IT HAS FINISHED SEARCHING/FETCHING ALBUM-COVER IMAGE */
     void ready_art ()
     {
-        String cover_helper = aud_get_str ("audacious", "cover_helper");
         String coverart_file;
         Index<String> extlist = str_list_to_index ("jpg,png,jpeg,gif", ",");
 
@@ -137,7 +142,9 @@ public:
     {
         bool haveartalready = false;
 
-        if (! skipreset)
+        if (abortthreads)
+            abortthreads = false;
+        else
         {
             origPixmap = QPixmap (audqt::art_request_current (0, 0));
             if (origPixmap.isNull ())
@@ -159,15 +166,14 @@ public:
             aud_set_bool ("qtui", "infoarea_show_art", false);
         }
         last_image_from_web = false;
+        if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP INTERNET ART SEARCH! */
+        {
+            String filename = aud_drct_get_filename ();
+            if (! strncmp (filename, "file://", 7))
+                return;
+        }
         if (aud_get_str ("audacious", "cover_helper") && aud_get_bool ("albumart", "internet_coverartlookup"))
         {
-            if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP INTERNET ART SEARCH! */
-            {
-                String filename = aud_drct_get_filename ();
-                if (! strncmp (filename, "file://", 7))
-                    return;
-            }
-
             pthread_attr_t thread_attrs;
             if (! pthread_attr_init (& thread_attrs))
             {
@@ -176,6 +182,7 @@ public:
                 {
                     pthread_t helper_thread;
 
+                    resetthreads = false;
                     if (pthread_create (&helper_thread, nullptr, helper_thread_fn, this))
                         AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
                 }
@@ -192,8 +199,8 @@ public:
 
     void init_update_art ()
     {
-        skipreset = false;
-        frominit = true;
+        resetthreads = true;
+        fromsongstartup = true;
         update_art ();  // JWT:CHECK FILES & DISKS (TUPLE DOESN'T CHANGE IN THESE) ONCE NOW ON PLAY START!
     }
 
@@ -253,13 +260,23 @@ private:
 
     static void * helper_thread_fn (void * data)
     {
-        if (frominit)
+        bool abortthisthread = abortthreads || resetthreads;
+        if (abortthisthread)
         {
-            skipreset = true;
-            QThread::usleep (2000000);  // SLEEP 2" TO ALLOW FOR ANY TUPLE CHANGE TO OVERRIDE! */
-            if (! frominit)
+            pthread_exit (nullptr);
+            return nullptr;
+        }
+        if (fromsongstartup)
+        {
+            int sleep_msec = aud_get_int ("albumart", "sleep_msec");
+            if (sleep_msec < 1)  sleep_msec = 1500;
+            abortthreads = true;
+            QThread::usleep (sleep_msec * 1000);  // SLEEP 2" TO ALLOW FOR ANY TUPLE CHANGE TO OVERRIDE! */
+            if (! fromsongstartup || resetthreads)
             {
-                skipreset = false;
+                /* ANOTHER THREAD HAS BEEN STARTED BY TUPLE-CHANGE, WHILE WE SLEPT, SO ABORT THIS
+                   THREAD AND LET THE LATTER (TUPLE-CHANGE) THREAD UPDATE THE LYRICS!
+                */
                 pthread_exit (nullptr);
                 return nullptr;
             }
@@ -268,14 +285,15 @@ private:
         pthread_mutex_lock (& mutex);
 
         String cover_helper = aud_get_str ("audacious", "cover_helper");
-        ((ArtLabel *) data)->origPixmap = QPixmap ();
-        if (cover_helper && cover_helper[0]) //JWT:WE HAVE A PERL HELPER TO LOOK UP COVER ART.
+        if (! resetthreads && cover_helper && cover_helper[0]) //JWT:WE HAVE A PERL HELPER TO LOOK UP COVER ART.
         {
             Tuple tuple = aud_drct_get_tuple ();
             String Title = tuple.get_str (Tuple::Title);
             String Artist = tuple.get_str (Tuple::Artist);
             String Album = tuple.get_str (Tuple::Album);
             const char * album = (const char *) Album;
+            ((ArtLabel *) data)->origPixmap = QPixmap ();
+
             if (Title && Title[0])
             {
                 if (album && ! strstr (album, "://"))  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
@@ -309,6 +327,7 @@ private:
                 }
                 if (!Artist || !Artist[0])
                     Artist = String ("_");
+
                 StringBuf album_buf = str_encode_percent (Album);
                 StringBuf artist_buf = str_encode_percent (Artist);
                 StringBuf title_buf = str_encode_percent (Title);
@@ -322,21 +341,43 @@ private:
                         (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
                         (const char *) artist_buf, "' '", (const char *) title_buf, "' "}));
 #endif
-
-                hook_call ("albumart ready", nullptr);
             }
         }
+        else
+            abortthisthread = true;
+
         cover_helper = String ();
+
+        if (! abortthisthread && ! resetthreads)
+        {
+            abortthreads = false;
+            QApplication::postEvent((ArtLabel *) data, new QEvent((QEvent::Type) customType));
+        }
 
         pthread_mutex_unlock (& mutex);
 
-        skipreset = false;
         pthread_exit (nullptr);
+
         return nullptr;
     }
 };
 
 #undef MARGIN
+
+/* JWT:EMULATE g_idle_add() IN Qt - FROM:  https://stackoverflow.com/questions/30031230/qt-equivalent-to-gobject-idle-add */
+bool ArtLabel::event(QEvent* event) {
+    if (event->type() == (QEvent::Type) customType) {
+        // Do whatever your idle callback would do
+        // Optional: Post event again to self if this should be repeated
+        //           implementing behaviour of returning TRUE from g_idle_add callback
+        ready_art ();
+
+        return true;
+    }
+
+    // Else default handler, may want to replace QWidget with actual base of "MyWidget"
+    return QLabel::event(event);
+}
 
 /* JWT:CALLED WHEN SONG ENTRY CHANGES: */
 static void init_update (void *, ArtLabel * widget)
@@ -344,16 +385,9 @@ static void init_update (void *, ArtLabel * widget)
     widget->init_update_art ();
 }
 
-/* JWT:CALLED WHEN TITLE CHANGES WITHIN THE SAME SONG/STREAM ENTRY: */
-static void albumart_ready (void *, ArtLabel * widget)
-{
-    frominit = false;
-    widget->ready_art ();
-}
-
 static void tuple_update (void *, ArtLabel * widget)
 {
-    frominit = false;
+    fromsongstartup = false;
     widget->update_art ();
 }
 
@@ -395,6 +429,7 @@ static void hide_dup_art_icon_toggle_fn ()
 
 static void widget_cleanup (QObject * widget)
 {
+    resetthreads = true;
     if (aud_get_bool ("albumart", "hide_dup_art_icon")
             && ! aud_get_bool ("qtui", "infoarea_show_art")
             && aud_get_bool ("albumart", "_infoarea_show_art_saved"))
@@ -406,7 +441,6 @@ static void widget_cleanup (QObject * widget)
     }
 
     hook_dissociate ("playback stop", (HookFunction) clear, widget);
-    hook_dissociate ("albumart ready", (HookFunction) albumart_ready, widget);
     hook_dissociate ("tuple change", (HookFunction) tuple_update, widget);
     hook_dissociate ("playback ready", (HookFunction) init_update, widget);
 }
@@ -419,7 +453,6 @@ void * AlbumArtQt::get_qt_widget ()
 
     hook_associate ("playback ready", (HookFunction) init_update, widget);
     hook_associate ("tuple change", (HookFunction) tuple_update, widget);
-    hook_associate ("albumart ready", (HookFunction) albumart_ready, widget);
     hook_associate ("playback stop", (HookFunction) clear, widget);
 
     if (aud_drct_get_ready ())
