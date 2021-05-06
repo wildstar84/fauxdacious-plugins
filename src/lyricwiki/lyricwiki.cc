@@ -425,17 +425,20 @@ static void * lyric_helper_thread_fn (void * data)
     }
     if (fromsongstartup)  // TRUE IF SONG-START, FALSE ON TUPLE-CHANGE!
     {
-        int sleep_msec = aud_get_int ("lyricwiki", "sleep_msec");
-        if (sleep_msec < 1)  sleep_msec = 1600;
-        abortthreads = true;
-        g_usleep (sleep_msec * 1000);  // SLEEP 2" TO ALLOW FOR ANY IMMEDIATE TUPLE CHANGE TO OVERRIDE! */
-        if (! fromsongstartup || resetthreads)  // CHGD. BY ANOTHER THREAD WHILST WE WERE SLEEPING!
+        if (! strcmp_nocase (state.filename, "https://", 8) || ! strcmp_nocase (state.filename, "http://", 7))
         {
-            /* ANOTHER THREAD HAS BEEN STARTED BY TUPLE-CHANGE, WHILE WE SLEPT, SO ABORT THIS
-               THREAD AND LET THE LATTER (TUPLE-CHANGE) THREAD UPDATE THE LYRICS!
-            */
-            pthread_exit (nullptr);
-            return nullptr;
+            int sleep_msec = aud_get_int ("lyricwiki", "sleep_msec");
+            if (sleep_msec < 1)  sleep_msec = 1600;
+            abortthreads = true;
+            g_usleep (sleep_msec * 1000);  // SLEEP 2" TO ALLOW FOR ANY IMMEDIATE TUPLE CHANGE TO OVERRIDE! */
+            if (! fromsongstartup || resetthreads)  // CHGD. BY ANOTHER THREAD WHILST WE WERE SLEEPING!
+            {
+                /* ANOTHER THREAD HAS BEEN STARTED BY TUPLE-CHANGE, WHILE WE SLEPT, SO ABORT THIS
+                   THREAD AND LET THE LATTER (TUPLE-CHANGE) THREAD UPDATE THE LYRICS!
+                */
+                pthread_exit (nullptr);
+                return nullptr;
+            }
         }
     }
 

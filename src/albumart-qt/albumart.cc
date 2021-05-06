@@ -107,17 +107,16 @@ public:
     void ready_art ()
     {
         String coverart_file;
-        Index<String> extlist = str_list_to_index ("jpg,png,jpeg,gif", ",");
+        Index<String> extlist = str_list_to_index ("jpg,png,gif,jpeg", ",");
 
         for (auto & ext : extlist)
         {
             coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
-            const char * filenamechar = coverart_file + 7;
+            const char * filenamechar = coverart_file;
             struct stat statbuf;
-            if (stat (filenamechar, &statbuf) >= 0)  // ART IMAGE FILE EXISTS:
+            if (stat (filenamechar+7, &statbuf) >= 0)  // ART IMAGE FILE EXISTS:
             {
-                coverart_file = String (filename_to_uri (filenamechar));
-                origPixmap = QPixmap (audqt::art_request ((const char *) coverart_file, 0, 0));
+                origPixmap = QPixmap (audqt::art_request (filenamechar, 0, 0));
                 origSize = origPixmap.size ();
                 drawArt ();
 
@@ -180,10 +179,10 @@ public:
                 if (! pthread_attr_setdetachstate (& thread_attrs, PTHREAD_CREATE_DETACHED)
                         || ! pthread_attr_setscope (& thread_attrs, PTHREAD_SCOPE_PROCESS))
                 {
-                    pthread_t helper_thread;
+                    pthread_t album_helper_thread;
 
                     resetthreads = false;
-                    if (pthread_create (&helper_thread, nullptr, helper_thread_fn, this))
+                    if (pthread_create (&album_helper_thread, nullptr, album_helper_thread_fn, this))
                         AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
                 }
                 else
@@ -258,7 +257,7 @@ private:
 #endif
     }
 
-    static void * helper_thread_fn (void * data)
+    static void * album_helper_thread_fn (void * data)
     {
         bool abortthisthread = abortthreads || resetthreads;
         if (abortthisthread)
@@ -268,17 +267,22 @@ private:
         }
         if (fromsongstartup)
         {
-            int sleep_msec = aud_get_int ("albumart", "sleep_msec");
-            if (sleep_msec < 1)  sleep_msec = 1500;
-            abortthreads = true;
-            QThread::usleep (sleep_msec * 1000);  // SLEEP 2" TO ALLOW FOR ANY TUPLE CHANGE TO OVERRIDE! */
-            if (! fromsongstartup || resetthreads)
+            String filename = aud_drct_get_filename ();
+            if (! strcmp_nocase (filename, "https://", 8) || ! strcmp_nocase (filename, "http://", 7))
             {
-                /* ANOTHER THREAD HAS BEEN STARTED BY TUPLE-CHANGE, WHILE WE SLEPT, SO ABORT THIS
-                   THREAD AND LET THE LATTER (TUPLE-CHANGE) THREAD UPDATE THE LYRICS!
-                */
-                pthread_exit (nullptr);
-                return nullptr;
+                int sleep_msec = aud_get_int ("albumart", "sleep_msec");
+                if (sleep_msec < 1)  sleep_msec = 1500;
+                abortthreads = true;
+                QThread::usleep (sleep_msec * 1000);  // SLEEP 2" TO ALLOW FOR ANY TUPLE CHANGE TO OVERRIDE! */
+                if (! fromsongstartup || resetthreads)
+                {
+                    /* ANOTHER THREAD HAS BEEN STARTED BY TUPLE-CHANGE, WHILE WE SLEPT, SO ABORT THIS
+                       THREAD AND LET THE LATTER (TUPLE-CHANGE) THREAD UPDATE THE LYRICS!
+                    */
+                    filename = String ();
+                    pthread_exit (nullptr);
+                    return nullptr;
+                }
             }
         }
 
