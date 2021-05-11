@@ -40,7 +40,7 @@
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
 static bool fromsongstartup = false;  // TRUE WHEN THREAD STARTED BY SONG CHANGE (album_init()).
-static bool abortthreads = false;     // JWT:TRUE IF WE WANT TO ABORT ANY CURRENTLY-RUNNING THREADS.
+static bool skipArtReInit = false;    // JWT:TRUE:SKIP RESETTING ART (ALREADY RESET BY THREAD NOW SLEEPING).
 static bool resetthreads = false;     // JWT:TRUE STOP ANY THREADS RUNNING ON SONG CHANGE OR SHUTDOWN.
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool hide_dup_art_icon;   /* JWT:TOGGLE TO TRUE TO HIDE (DUPLICATE) ART ICON IN INFOBAR IF A WEB IMAGE FETCHED. */
@@ -124,7 +124,7 @@ static gboolean albumart_ready (gpointer widget)
 */
 static void * album_helper_thread_fn (void * data)
 {
-    bool abortthisthread = abortthreads || resetthreads;
+    bool abortthisthread = resetthreads;
     if (abortthisthread)
     {
         pthread_exit (nullptr);
@@ -137,13 +137,14 @@ static void * album_helper_thread_fn (void * data)
         {
             int sleep_msec = aud_get_int ("albumart", "sleep_msec");
             if (sleep_msec < 1)  sleep_msec = 1500;
-            abortthreads = true;
+            skipArtReInit = true;
             g_usleep (sleep_msec * 1000);  // SLEEP 2" TO ALLOW FOR ANY TUPLE CHANGE TO OVERRIDE! */
             if (! fromsongstartup || resetthreads)
             {
                 /* ANOTHER THREAD HAS BEEN STARTED BY TUPLE-CHANGE, WHILE WE SLEPT, SO ABORT THIS
                    THREAD AND LET THE LATTER (TUPLE-CHANGE) THREAD UPDATE THE LYRICS!
                 */
+                filename = String ();
                 pthread_exit (nullptr);
                 return nullptr;
             }
@@ -163,9 +164,15 @@ static void * album_helper_thread_fn (void * data)
         const char * album = (const char *) Album;
         if (Title && Title[0])
         {
-            if (album && ! strstr (album, "://"))  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
+            bool skipweb = false;
+            if (album && album[0])  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
             {
-                if (aud_get_bool (nullptr, "split_titles"))
+                if (strstr (album, "://"))  // ALBUM FIELD IS A URI (PBLY A PODCAST/VIDEO FROM STREAMFINDER!):
+                {
+                    Album = String ("_");
+                    skipweb = true;
+                }
+                else if (aud_get_bool (nullptr, "split_titles"))
                 {
                     /* ALBUM MAY ALSO CONTAIN THE STREAM NAME (IE. "<ALBUM> - <STREAM NAME>"): STRIP THAT OFF: */
                     const char * throwaway = strstr (album, " - ");
@@ -175,6 +182,9 @@ static void * album_helper_thread_fn (void * data)
             }
             else
                 Album = String ("_");
+
+            const char * webfetch = ! skipweb
+                    && aud_get_bool ("albumart", "internet_coverartlookup") ? "" : "NOWEB";
 
             if (! aud_get_bool (nullptr, "split_titles"))
             {
@@ -202,12 +212,13 @@ static void * album_helper_thread_fn (void * data)
 #ifdef _WIN32
             WinExec ((const char *) str_concat ({cover_helper, " ALBUM '",
                     (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
-                    (const char *) artist_buf, "' '", (const char *) title_buf, "' "}),
-                    SW_HIDE);
+                    (const char *) artist_buf, "' '", (const char *) title_buf, "' ",
+                    webfetch}), SW_HIDE);
 #else
             system ((const char *) str_concat ({cover_helper, " ALBUM '",
                     (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
-                    (const char *) artist_buf, "' '", (const char *) title_buf, "' "}));
+                    (const char *) artist_buf, "' '", (const char *) title_buf, "' ",
+                    webfetch}));
 #endif
 
         }
@@ -219,7 +230,7 @@ static void * album_helper_thread_fn (void * data)
 
     if (! abortthisthread && ! resetthreads)
     {
-        abortthreads = false;
+        skipArtReInit = false;
         g_idle_add (albumart_ready, data);
     }
 
@@ -235,17 +246,8 @@ static void album_update (void *, GtkWidget * widget)
 {
     bool haveartalready = false;
 
-    if (aud_get_bool ("albumart", "hide_dup_art_icon")
-            && aud_get_bool ("gtkui", "infoarea_show_art"))
-    {
-        /* JWT:HIDE INFOBAR ART ICON (DUP?) IF DISPLAYING THE IMAGE IN THE ALBUMART BOX! */
-        /* BUT WE'LL RESHOW IT IF WE FETCH A CUSTOM ALBUM COVER FROM THE WEB (NOT A DUP!) */
-        aud_set_bool ("gtkui", "infoarea_show_art", false);
-        hook_call ("gtkui toggle infoarea_art", nullptr);
-    }
-    last_image_from_web = false;
-    if (abortthreads)
-        abortthreads = false;
+    if (skipArtReInit)
+        skipArtReInit = false;
     else
     {
         AudguiPixbuf pixbuf = audgui_pixbuf_request_current ();
@@ -261,13 +263,22 @@ static void album_update (void *, GtkWidget * widget)
             haveartalready = false;
     }
 
-    if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP INTERNET ART SEARCH! */
+    if (aud_get_bool ("albumart", "hide_dup_art_icon")
+            && aud_get_bool ("gtkui", "infoarea_show_art"))
+    {
+        /* JWT:HIDE INFOBAR ART ICON (DUP?) IF DISPLAYING THE IMAGE IN THE ALBUMART BOX! */
+        /* BUT WE'LL RESHOW IT IF WE FETCH A CUSTOM ALBUM COVER FROM THE WEB (NOT A DUP!) */
+        aud_set_bool ("gtkui", "infoarea_show_art", false);
+        hook_call ("gtkui toggle infoarea_art", nullptr);
+    }
+    last_image_from_web = false;
+    if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP FURTHER ART SEARCH! */
     {
         String filename = aud_drct_get_filename ();
-        if (! strncmp (filename, "file://", 7))
+        if (! strncmp (filename, "file://", 7))  // JWT:FILES DON'T CHANGE TITLES MID-PLAY!
             return;
     }
-    if (aud_get_str ("audacious", "cover_helper") && aud_get_bool ("albumart", "internet_coverartlookup"))
+    if (aud_get_str ("audacious", "cover_helper"))
     {
         pthread_attr_t thread_attrs;
         if (! pthread_attr_init (& thread_attrs))
@@ -295,22 +306,9 @@ static void album_update (void *, GtkWidget * widget)
 /* JWT:CALLED WHEN SONG ENTRY CHANGES: */
 static void album_init (void *, GtkWidget * widget)
 {
-    if (aud_get_bool ("albumart", "internet_coverartlookup"))
-    {
-        resetthreads = true;
-        fromsongstartup = true;
-        album_update (nullptr, widget);  // JWT:CHECK FILES & DISKS (TUPLE DOESN'T CHANGE IN THESE) ONCE NOW ON PLAY START!
-    }
-    else
-    {
-        AudguiPixbuf pixbuf = audgui_pixbuf_request_current ();
-
-        if (! pixbuf)
-            pixbuf = audgui_pixbuf_fallback ();
-
-        if (pixbuf)
-            audgui_scaled_image_set (widget, pixbuf.get ());
-    }
+    resetthreads = true;
+    fromsongstartup = true;
+    album_update (nullptr, widget);  // JWT:CHECK FILES & DISKS (TUPLE DOESN'T CHANGE IN THESE) ONCE NOW ON PLAY START!
 }
 
 /* JWT:CALLED WHEN TITLE CHANGES WITHIN THE SAME SONG/STREAM ENTRY: */
@@ -323,7 +321,7 @@ static void album_tuplechg (void *, GtkWidget * widget)
 /* JWT:CALLED WHEN PLAY IS STOPPED (BUT NOT WHEN JUMPING BETWEEN ENTRIES: */
 static void album_clear (void *, GtkWidget * widget)
 {
-    abortthreads = true;
+    resetthreads = true;
     audgui_scaled_image_set (widget, nullptr);
 }
 

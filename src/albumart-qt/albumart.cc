@@ -45,7 +45,7 @@
 #include <libfauxdqt/libfauxdqt.h>
 
 static bool fromsongstartup = false;  // TRUE WHEN THREAD STARTED BY SONG CHANGE (album_init()).
-static bool abortthreads = false;     // JWT:TRUE IF WE WANT TO ABORT ANY CURRENTLY-RUNNING THREADS.
+static bool skipArtReInit = false;    // JWT:TRUE:SKIP RESETTING ART (ALREADY RESET BY THREAD NOW SLEEPING).
 static bool resetthreads = false;     // JWT:TRUE STOP ANY THREADS RUNNING ON SONG CHANGE OR SHUTDOWN.
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int customType = QEvent::registerEventType();
@@ -141,8 +141,8 @@ public:
     {
         bool haveartalready = false;
 
-        if (abortthreads)
-            abortthreads = false;
+        if (skipArtReInit)
+            skipArtReInit = false;
         else
         {
             origPixmap = QPixmap (audqt::art_request_current (0, 0));
@@ -171,7 +171,7 @@ public:
             if (! strncmp (filename, "file://", 7))
                 return;
         }
-        if (aud_get_str ("audacious", "cover_helper") && aud_get_bool ("albumart", "internet_coverartlookup"))
+        if (aud_get_str ("audacious", "cover_helper"))
         {
             pthread_attr_t thread_attrs;
             if (! pthread_attr_init (& thread_attrs))
@@ -259,7 +259,7 @@ private:
 
     static void * album_helper_thread_fn (void * data)
     {
-        bool abortthisthread = abortthreads || resetthreads;
+        bool abortthisthread = resetthreads;
         if (abortthisthread)
         {
             pthread_exit (nullptr);
@@ -272,7 +272,7 @@ private:
             {
                 int sleep_msec = aud_get_int ("albumart", "sleep_msec");
                 if (sleep_msec < 1)  sleep_msec = 1500;
-                abortthreads = true;
+                skipArtReInit = true;
                 QThread::usleep (sleep_msec * 1000);  // SLEEP 2" TO ALLOW FOR ANY TUPLE CHANGE TO OVERRIDE! */
                 if (! fromsongstartup || resetthreads)
                 {
@@ -300,9 +300,15 @@ private:
 
             if (Title && Title[0])
             {
-                if (album && ! strstr (album, "://"))  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
+                bool skipweb = false;
+                if (album && album[0])  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
                 {
-                    if (aud_get_bool (nullptr, "split_titles"))
+                    if (strstr (album, "://"))  // ALBUM FIELD IS A URI (PBLY A PODCAST/VIDEO FROM STREAMFINDER!):
+                    {
+                        Album = String ("_");
+                        skipweb = true;
+                    }
+                    else if (aud_get_bool (nullptr, "split_titles"))
                     {
                         /* ALBUM MAY ALSO CONTAIN THE STREAM NAME (IE. "<ALBUM> - <STREAM NAME>"): STRIP THAT OFF: */
                         const char * throwaway = strstr (album, " - ");
@@ -312,6 +318,9 @@ private:
                 }
                 else
                     Album = String ("_");
+
+                const char * webfetch = ! skipweb
+                        && aud_get_bool ("albumart", "internet_coverartlookup") ? "" : "NOWEB";
 
                 if (! aud_get_bool (nullptr, "split_titles"))
                 {
@@ -335,15 +344,17 @@ private:
                 StringBuf album_buf = str_encode_percent (Album);
                 StringBuf artist_buf = str_encode_percent (Artist);
                 StringBuf title_buf = str_encode_percent (Title);
+
 #ifdef _WIN32
                 WinExec ((const char *) str_concat ({cover_helper, " ALBUM '",
                         (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
-                        (const char *) artist_buf, "' '", (const char *) title_buf, "' "}),
-                        SW_HIDE);
+                        (const char *) artist_buf, "' '", (const char *) title_buf, "' ",
+                        webfetch}), SW_HIDE);
 #else
                 system ((const char *) str_concat ({cover_helper, " ALBUM '",
                         (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
-                        (const char *) artist_buf, "' '", (const char *) title_buf, "' "}));
+                        (const char *) artist_buf, "' '", (const char *) title_buf, "' ",
+                        webfetch}));
 #endif
             }
         }
@@ -354,7 +365,7 @@ private:
 
         if (! abortthisthread && ! resetthreads)
         {
-            abortthreads = false;
+            skipArtReInit = false;
             QApplication::postEvent((ArtLabel *) data, new QEvent((QEvent::Type) customType));
         }
 
@@ -398,6 +409,7 @@ static void tuple_update (void *, ArtLabel * widget)
 /* JWT:CALLED WHEN PLAY IS STOPPED (BUT NOT WHEN JUMPING BETWEEN ENTRIES: */
 static void clear (void *, ArtLabel * widget)
 {
+    resetthreads = true;
     widget->clear ();
 }
 
