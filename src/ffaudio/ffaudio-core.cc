@@ -23,6 +23,9 @@
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
+extern "C" {
+#include <unistd.h>
+}
 
 #undef FFAUDIO_DOUBLECHECK  /* Doublecheck probing result for debugging purposes */
 #undef FFAUDIO_NO_BLACKLIST /* Don't blacklist any recognized codecs/formats */
@@ -63,12 +66,36 @@
 
 typedef struct
 {
+    int capacity;
+    int size;
+    int front;
+    int rear;
+    AVPacket * elements;
+}
+pktQueue;
+
+typedef struct
+{
     int stream_idx;
     AVStream * stream;
     AVCodecContext * context;  // JWT:ADDED
     AVCodec * codec;
 }
 CodecInfo;
+
+typedef struct
+{
+    CodecInfo cinfo, vcinfo;   //AUDIO AND VIDEO CODECS
+    pktQueue *pktQ = nullptr;  // QUEUE FOR VIDEO-PACKET QUEUEING.
+    pktQueue *apktQ = nullptr; // QUEUE FOR AUDIO-PACKET QUEUEING.
+    AVFormatContext * ic = nullptr;  // AVstuff.
+    int errcount = 0;
+}
+DataShared2Thread;
+
+static int thread_exit;  // INDICATES READER-THREAD EXIT AND STATUS (0=RUNNING, 1=EOF, 2=STOPPED, -1=ERROR.
+static pthread_mutex_t read_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 class FFaudio : public InputPlugin
 {
@@ -109,11 +136,13 @@ EXPORT FFaudio aud_plugin_instance;
 const char * const FFaudio::defaults[] = {
     "play_video", "TRUE",   // TRUE: SHOW VIDEO, FALSE: PLAY AUDIO ONLY.
     "video_codec_flag_gray", "FALSE",   // PLAY VIDEO IN BLACK & WHITE (WINDOWS-ONLY, UNLESS FFMPEG COMPILED W/--enable-gray)!
-    "video_qsize", "7",     // SET A PRETTY GOOD DEFAULT.
+    "video_qsize", "6",     // SET A PRETTY GOOD DEFAULT.
     "video_windowtitle", "Fauxdacious Video",  // APPEND TO VIDEO WINDOW-TITLE.
     "video_xmove", "1",     // RESTORE WINDOW TO PREV. SAVED POSITION.
     "video_ysize", "-1",    // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
     "save_video", "FALSE",  // DUB VIDEO AS BEING PLAYED.
+    "dash_extensions", "m3u8,mpd", // (DASH) LET FFMPEG HANDLE TRANSPORT FOR THESE EXTENSIONS INSTEAD OF NEON!
+    "reader_sleep_ms", "50", // TIME FOR READER THREAD TO SLEEP IN MILLISEC TO ALLOW QUEUES TO DRAIN.
 #ifdef _WIN32
     "save_video_file", "C:\\Temp\\lastvideo",
 #else
@@ -123,22 +152,25 @@ const char * const FFaudio::defaults[] = {
 };
 
 const PreferencesWidget FFaudio::widgets[] = {
-    WidgetLabel (N_("<b>Advanced</b>")),
     WidgetCheck (N_("Play video stream in popup window when video stream found"),
         WidgetBool ("ffaudio", "play_video")),
 #ifdef _WIN32
     WidgetCheck (N_("Show video in black & white"),  // WE HAVE ffmpeg COMPILED W/--enable-gray IN WINDOWS!
         WidgetBool ("ffaudio", "video_codec_flag_gray")),
 #endif
-    WidgetSpin (N_("Video packet queue size"),
-        /* ALLOW UP TO 128 - THERE'S SOME REALLY CRAPPY VIDEOS OUT THERE, YOU LISTENIN', brighteon.com?! */
-        WidgetInt ("ffaudio", "video_qsize"), {0, 128, 1}),
     WidgetCheck (N_("Record video to file"),
         WidgetBool ("ffaudio", "save_video")),
     WidgetEntry (N_("Record path/filename:"),
         WidgetString ("ffaudio", "save_video_file"),
         {false},
-        WIDGET_CHILD)
+        WIDGET_CHILD),
+    WidgetLabel (N_("<b>Advanced</b>")),
+    WidgetSpin (N_("Video packet queue size"),
+        WidgetInt ("ffaudio", "video_qsize"), {2, 16, 1}),
+    WidgetSpin (N_("Reader sleep interval (millisec)"),
+        WidgetInt ("ffaudio", "reader_sleep_ms"), {1, 500, 1}),
+    WidgetEntry (N_("Dash stream extensions:"),
+        WidgetString ("ffaudio", "dash_extensions"))
 };
 
 const PluginPreferences FFaudio::prefs = {{widgets}};
@@ -169,7 +201,7 @@ struct ScopedFrame
     JWT: ADDED ALL THIS QUEUE STUFF TO SMOOTH VIDEO PERFORMANCE SO THAT VIDEO FRAMES WOULD 
     BE OUTPUT MORE INTERLACED WITH THE AUDIO FRAMES BY QUEUEING VIDEO FRAMES UNTIL AN 
     AUDIO FRAME IS PROCESSED, THEN DEQUEUEING AND PROCESSING 'EM WITH EACH AUDIO FRAME.  
-    THE SIZE OF THIS QUEUE IS SET BY video_qsize CONFIG PARAMETER AND DEFAULTS TO 8.
+    THE SIZE OF THIS QUEUE IS SET BY video_qsize CONFIG PARAMETER AND DEFAULTS TO 6.
     HAVING TOO MANY CAN RESULT IN DELAYED VIDEO, SO EXPERIMENT.  IDEALLY, PACKETS SHOULD 
     BE PROCESSED:  V A V A V A..., BUT THIS HANDLES:  
     V1 V2 V3 V4 V5 A1 A2 A3 A4 A5 A6 A7 V7 A8... AS: 
@@ -180,16 +212,6 @@ struct ScopedFrame
     BORROWED THESE FUNCTIONS FROM:
     http://www.thelearningpoint.net/computer-science/data-structures-queues--with-c-program-source-code
 */
-
-typedef struct 
-{
-    int capacity;
-    int size;
-    int front;
-    int rear;
-    AVPacket *elements;
-}
-pktQueue;
 
 pktQueue * createQueue (int maxElements)
 {
@@ -206,7 +228,7 @@ pktQueue * createQueue (int maxElements)
     return Q;
 }
 
-bool Dequeue (pktQueue *Q)
+bool Dequeue (pktQueue * Q)
 {
     /* If Queue size is zero then it is empty. So we cannot pop */
     if (! Q->size)
@@ -214,39 +236,49 @@ bool Dequeue (pktQueue *Q)
     /* Removing an element is equivalent to incrementing index of front by one */
     else
     {
+        pthread_mutex_lock (& queue_mutex);  // (READER THREAD IS ENQUEUING MORE AT SAME TIME)!
+
         Q->size--;
-        av_free_packet (&Q->elements[Q->front]);
+        av_free_packet (& Q->elements[Q->front]);
 
         Q->front++;
         /* As we fill elements in circular fashion */
         if (Q->front == Q->capacity)
             Q->front = 0;
+
+        pthread_mutex_unlock (& queue_mutex);
     }
     return true;
 }
 
 /* JWT:FLUSH AND FREE EVERYTHING IN THE QUEUE */
-void QFlush (pktQueue *Q)
+void QFlush (pktQueue * Q)
 {
+    pthread_mutex_lock (& queue_mutex);  // DON'T ALLOW THREADS TO ENQUEUE OR DEQUEUE WHILST FLUSHING!
+
     while (Q->size > 0)
     {
         Q->size--;
-        av_free_packet (&Q->elements[Q->front]);
+        av_free_packet (& Q->elements[Q->front]);
 
         Q->front++;
         /* As we fill elements in circular fashion */
         if (Q->front == Q->capacity)
             Q->front = 0;
     }
+
+    pthread_mutex_unlock (& queue_mutex);
 }
 
-bool Enqueue (pktQueue *Q, AVPacket element)
+bool Enqueue (pktQueue * Q, AVPacket element)
 {
     /* If the Queue is full, we cannot push an element into it as there is no space for it.*/
     if (Q->size == Q->capacity)
         return false;
     else
     {
+        pthread_mutex_lock (& queue_mutex);  // (MAIN THREAD IS DEQUEUING THEM AT SAME TIME)!
+
         Q->size++;
         Q->rear += 1;
         /* As we fill the queue in circular fashion */
@@ -254,11 +286,13 @@ bool Enqueue (pktQueue *Q, AVPacket element)
             Q->rear = 0;
         /* Insert the element in its rear side */ 
         Q->elements[Q->rear] = element;
+
+        pthread_mutex_unlock (& queue_mutex);
     }
     return true;
 }
 
-void destroyQueue (pktQueue *Q)
+void destroyQueue (pktQueue * Q)
 {
     QFlush (Q);
     free (Q->elements);
@@ -477,7 +511,7 @@ static AVInputFormat * get_format (const char * name, VFSFile & file)
     return f ? f : get_format_by_content (name, file);
 }
 
-static AVFormatContext * open_input_file (const char * name, VFSFile & file)
+static AVFormatContext * open_input_file (const char * name, VFSFile & file, bool fromtag)
 {
     AVFormatContext * c = nullptr;
 
@@ -486,13 +520,43 @@ static AVFormatContext * open_input_file (const char * name, VFSFile & file)
     AVInputFormat * f = nullptr;
     const char * xname = strncmp (name, "stdin://", 8) ? name : "pipe:";
 
+    bool havedashstream = false;
+    String dash_extensions = aud_get_str ("ffaudio", "dash_extensions");
+    /* WE'RE STDIN! */
     if (! strncmp (name, "stdin://-.mp4", 13))   /* JWT:SOME MP4's OPENED VIA STDIN REQUIRE THIS TO WORK?! */
     {
         AUDINFO ("-open_input_file (STDIN!)\n");
         if (LOG (avformat_open_input, & c, xname, nullptr, nullptr) < 0)
             return nullptr;
     }
-    else
+    /* WE'RE A "DASH-ISH" STREAM (CLOSE neon AND LET ffmpeg/libav HANDLE TRANSPORT)! */
+    else if (! fromtag && ! strncmp (name, "http", 4))
+    {
+        String sext = String (uri_get_extension (name));
+        if (sext && sext[0] && dash_extensions && dash_extensions[0])
+        {
+            Index<String> extlist = str_list_to_index (dash_extensions, ",");
+            for (auto & ext : extlist)
+            {
+                if (ext == sext)
+                {
+                    if (file)
+                        file = VFSFile ();   // CLOSE UP Fauxdacious/neon I/O AND USE FFMPEG'S I/O!:
+
+                    c = avformat_alloc_context ();
+                    if (LOG (avformat_open_input, & c, xname, f, nullptr) < 0)
+                    {
+                        if (c)
+                            avformat_free_context (c);
+                        return nullptr;
+                    }
+                    havedashstream = true;
+                    break;
+                }
+            }
+        }
+    }
+    if (! havedashstream)
     {
         AUDINFO ("-open_input_file (%s)\n", name);
         if (! file)
@@ -539,6 +603,8 @@ static void close_input_file (AVFormatContext * c)
             if (strcmp (c->filename, "pipe:"))
 #endif
                 io_context_free (c->pb);
+
+            c->pb = nullptr;
         }
 #if CHECK_LIBAVFORMAT_VERSION (53, 25, 0, 53, 17, 0)
         avformat_close_input (&c);
@@ -660,7 +726,7 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
 {
     if (strncmp (filename, "stdin://", 8))  /* WE'RE NOT STDIN! */
     {
-        SmartPtr<AVFormatContext, close_input_file> ic (open_input_file (filename, file));
+        SmartPtr<AVFormatContext, close_input_file> ic (open_input_file (filename, file, true));
         if (! ic)
             return false;
 
@@ -822,7 +888,7 @@ void FFaudio::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
             return; /* read next packet (continue past errors) */
 #else
         frameFinished = 0;
-        len = LOG (avcodec_decode_video2, vcinfo->context, vframe.ptr, &frameFinished, pkt);
+        len = LOG (avcodec_decode_video2, vcinfo->context, vframe.ptr, & frameFinished, pkt);
         /* Did we get a video frame? */
         if (len < 0)
         {
@@ -924,17 +990,115 @@ void save_window_xy (SDL_Window * sdl_window, int video_window_x, int video_wind
     AUDDBG ("--save_window_xy(%d, %d)\n", x, y);
 }
 
+static void * reader_thread_fn (void * data)
+{
+    int ret;
+    int minbuffer = 12;
+    AVPacket pkt;
+    DataShared2Thread * TD = (DataShared2Thread *) data;
+    TD->errcount = 0;
+    long reader_sleep_ms = (long) aud_get_int ("ffaudio", "reader_sleep_ms") * 1000000L;
+    struct timespec sleeptime;
+
+    sleeptime.tv_sec = 0;
+    sleeptime.tv_nsec = reader_sleep_ms;
+
+    /* OUTER LOOP TO READ, QUEUE AND PROCESS AUDIO & VIDEO PACKETS FROM THE STREAM: */
+    while (thread_exit < 2)
+    {
+        /* READ NEXT FRAME (OR MORE) OF DATA */
+        pkt = AVPacket ();
+        av_init_packet (& pkt);
+
+        pthread_mutex_lock (& read_mutex);  // BLOCK READING WHILST SEEKING (CHANGING POSITION)!
+        ret = LOG (av_read_frame, TD->ic, & pkt);
+        pthread_mutex_unlock (& read_mutex);
+
+        if (ret < 0)  // CHECK FOR EOF OR ERRORS:
+        {
+            ++TD->errcount;
+            if (ret == (int) AVERROR_EOF)
+            {
+                AUDDBG ("eof reached\n");
+                av_free_packet (& pkt);
+                thread_exit = 1;  // EOF
+                goto THREAD_EXIT;
+            }
+            else if (TD->errcount > 4)
+            {
+                AUDERR ("av_read_frame error %d, giving up.\n", ret);
+                av_free_packet (& pkt);
+                thread_exit = -1;  // ERROR
+                goto THREAD_EXIT;
+            }
+            else
+            {
+                av_free_packet (& pkt);
+                continue;
+            }
+        }
+        else
+            TD->errcount = 0;
+
+        /* NOW PROCESS THE CURRENTLY-READ PACKET: */
+        if (pkt.stream_index == TD->cinfo.stream_idx)  /* WE READ AN AUDIO PACKET: */
+        {
+            if (TD->apktQ->size == TD->apktQ->capacity)
+            {
+                do
+                {
+                    nanosleep (& sleeptime, NULL);
+                    if (thread_exit == 2)
+                    {
+                        av_free_packet (& pkt);
+                        goto THREAD_EXIT;
+                    }
+                }
+                while ((TD->pktQ->size > minbuffer || TD->apktQ->size == TD->apktQ->capacity)
+                        && TD->apktQ->size > minbuffer);
+            }
+            Enqueue (TD->apktQ, pkt);
+        }
+        else if (pkt.stream_index == TD->vcinfo.stream_idx)  /* WE READ A VIDEO PACKET: */
+        {
+            if (TD->pktQ->size == TD->pktQ->capacity)
+            {
+                do
+                {
+                    nanosleep (& sleeptime, NULL);
+                    if (thread_exit == 2)
+                    {
+                        av_free_packet (& pkt);
+                        goto THREAD_EXIT;
+                    }
+                }
+                while ((TD->apktQ->size > minbuffer || TD->pktQ->size == TD->pktQ->capacity)
+                        && TD->pktQ->size > minbuffer);
+            }
+            Enqueue (TD->pktQ, pkt);
+        }
+        else
+            av_free_packet (& pkt);
+    }
+
+THREAD_EXIT:
+    if (! thread_exit)
+        thread_exit = -1;  // ERROR? (SHOULDN'T HAPPEN)!
+
+    pthread_mutex_unlock (& queue_mutex);
+    pthread_mutex_unlock (& read_mutex);
+
+    pthread_exit (nullptr);
+
+    return nullptr;
+}
+
 bool FFaudio::play (const char * filename, VFSFile & file)
 {
     AUDDBG ("FFaudio::play(%s).\n", filename);
 
-    SmartPtr<AVFormatContext, close_input_file> ic (open_input_file (filename, file));
-    if (! ic)
-        return false;
-
     AUDDBG ("FFaudio::play () -----------------Playing %s.\n", filename);
 
-    int errcount = 0;
     int out_fmt;
     int vx = 0;
     int vy = 0;
@@ -959,10 +1123,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     bool vcodec_opened = false;
     bool planar;                   // USED BY Audacious
     bool returnok = false;
-    bool eof = false;
     bool last_resized = true;      // TRUE IF VIDEO-WINDOW HAS BEEN RE-ASPECTED SINCE LAST RESIZE EVENT (HAS CORRECT ASPECT RATIO).
-    pktQueue *pktQ = nullptr;      // QUEUE FOR VIDEO-PACKET QUEUEING.
-    pktQueue *apktQ = nullptr;     // QUEUE FOR AUDIO-PACKET QUEUEING.
     SDL_Event       event;         // SDL EVENTS, IE. RESIZE, KILL WINDOW, ETC.
     int video_fudge_x = 0; int video_fudge_y = 0;  // FUDGE-FACTOR TO MAINTAIN VIDEO SCREEN LOCN. BETWEEN RUNS.
     bool needWinSzFudge = true;    // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
@@ -972,13 +1133,17 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     SDL_Texture * bmp = nullptr;   // CAN'T USE SMARTPTR HERE IN WINDOWS - renderer.get() FAILS IF VIDEO PLAY NOT TURNED ON?!
 #endif
 
+    DataShared2Thread TD;
+
+    TD.ic = open_input_file (filename, file, false);
+    if (! TD.ic)
+        return false;
+
 /* STUFF THAT GETS FREED MUST BE DECLARED AND INITIALIZED AFTER HERE B/C BEFORE HERE, WE RETURN, 
    AFTER HERE, WE GO TO error_exit (AND FREE STUFF)! */
 
     AVPacket pkt;
-    CodecInfo cinfo, vcinfo;  //AUDIO AND VIDEO CODECS
-
-    if (! find_codec (ic.get (), & cinfo, & vcinfo))   //CAN CHANGE play_video!
+    if (! find_codec (TD.ic, & TD.cinfo, & TD.vcinfo))   //CAN CHANGE play_video!
     {
         AUDERR ("No codec found for %s, can't play.\n", filename);
         goto error_exit;
@@ -996,29 +1161,29 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         AUDINFO ("---- playing from STDIN: get TUPLE stuff now (if at front of stream): IC is defined\n");
         tuple.set_filename (filename);
 
-        if ((int) ic->duration != 0)
-            tuple.set_int (Tuple::Length, ic->duration / 1000);
+        if ((int) TD.ic->duration != 0)
+            tuple.set_int (Tuple::Length, TD.ic->duration / 1000);
         else
             tuple.unset (Tuple::Length);
 
-        tuple.set_int (Tuple::Bitrate, ic->bit_rate / 1000);
-        tuple.set_int (Tuple::Channels, cinfo.context->channels);
+        tuple.set_int (Tuple::Bitrate, TD.ic->bit_rate / 1000);
+        tuple.set_int (Tuple::Channels, TD.cinfo.context->channels);
 
-        if (cinfo.codec->long_name)
-            tuple.set_str (Tuple::Codec, cinfo.codec->long_name);
-        if (ic->metadata)
-            read_metadata_dict (tuple, ic->metadata);
-        if (cinfo.stream->metadata)
-            read_metadata_dict (tuple, cinfo.stream->metadata);
+        if (TD.cinfo.codec->long_name)
+            tuple.set_str (Tuple::Codec, TD.cinfo.codec->long_name);
+        if (TD.ic->metadata)
+            read_metadata_dict (tuple, TD.ic->metadata);
+        if (TD.cinfo.stream->metadata)
+            read_metadata_dict (tuple, TD.cinfo.stream->metadata);
 
         set_playback_tuple (tuple.ref ());
     }
-    AUDDBG ("got codec %s for stream index %d, opening\n", cinfo.codec->name, cinfo.stream_idx);
+    AUDDBG ("got codec %s for stream index %d, opening\n", TD.cinfo.codec->name, TD.cinfo.stream_idx);
 
-    if (LOG (avcodec_open2, cinfo.context, cinfo.codec, nullptr) < 0)
+    if (LOG (avcodec_open2, TD.cinfo.context, TD.cinfo.codec, nullptr) < 0)
         goto error_exit;
 
-    if (! convert_format (cinfo.context->sample_fmt, out_fmt, planar))
+    if (! convert_format (TD.cinfo.context->sample_fmt, out_fmt, planar))
         goto error_exit;
 
     myplay_video = play_video;
@@ -1069,7 +1234,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
             sprintf (video_windowpos, "SDL_VIDEO_WINDOW_POS=%d, %d", video_window_x, video_window_y);
             putenv (video_windowpos);
         }
-        if (LOG (avcodec_open2, vcinfo.context, vcinfo.codec, nullptr) < 0)
+        if (LOG (avcodec_open2, TD.vcinfo.context, TD.vcinfo.codec, nullptr) < 0)
             goto error_exit;
 
         /* NOW CALCULATE THE WIDTH, HEIGHT, & ASPECT BASED ON VIDEO'S SIZE & AND ANY USER PARAMATERS GIVEN:
@@ -1080,26 +1245,26 @@ bool FFaudio::play (const char * filename, VFSFile & file)
             AND ADJUST THE OTHER DIMENTION ACCORDINGLY TO FIT THE NEW VIDEO'S ASPECT RATIO.
             IF BOTH ARE SPECIFIED AS "-1", USE PREVIOUSLY-SAVED WINDOW SIZE REGUARDLESS OF ASPECT RATIO.
         */        
-        video_aspect_ratio = vcinfo.context->height
-            ? (float)vcinfo.context->width / (float)vcinfo.context->height : 1.0;
+        video_aspect_ratio = TD.vcinfo.context->height
+            ? (float) TD.vcinfo.context->width / (float) TD.vcinfo.context->height : 1.0;
         vx = aud_get_int ("ffaudio", "video_xsize");
         vy = aud_get_int ("ffaudio", "video_ysize");
         if (vx && !vy)   /* User specified (or saved) width only, calc. height based on aspect: */
         {
-            video_width = (vx == -1) ? (video_window_w ? video_window_w : vcinfo.context->width) : vx;
+            video_width = (vx == -1) ? (video_window_w ? video_window_w : TD.vcinfo.context->width) : vx;
             video_height = (int)((float)video_width / video_aspect_ratio);
         }
         else if (!vx && vy)   /* User specified (or saved) height only, calc. width based on aspect: */
         {
-            video_height = (vy == -1) ? (video_window_h ? video_window_h : vcinfo.context->height) : vy;
+            video_height = (vy == -1) ? (video_window_h ? video_window_h : TD.vcinfo.context->height) : vy;
             video_width = (int)((float)video_height * video_aspect_ratio);
         }
         else if (vx && vy)   /* User specified fixed width and height: */
         {
             if (vx == -1 && vy == -1)  /* Use same (saved) settings or video's settings (SCREW THE ASPECT)! */
             {
-                video_width = video_window_w ? video_window_w : vcinfo.context->width;
-                video_height = video_window_h ? video_window_h : vcinfo.context->height;
+                video_width = video_window_w ? video_window_w : TD.vcinfo.context->width;
+                video_height = video_window_h ? video_window_h : TD.vcinfo.context->height;
             }
             else if (vx == -1)  /* Use same (saved) height & calculate new width based on aspect: */
             {
@@ -1119,11 +1284,11 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         }
         else   /* User specified nothing, use the video's desired wXh (& ignore saved settings!): */
         {
-            video_width = vcinfo.context->width;
-            video_height = vcinfo.context->height;
+            video_width = TD.vcinfo.context->width;
+            video_height = TD.vcinfo.context->height;
         }
-        video_requested_width = vcinfo.context->width;
-        video_requested_height = vcinfo.context->height;
+        video_requested_width = TD.vcinfo.context->width;
+        video_requested_height = TD.vcinfo.context->height;
         video_aspect_ratio = video_height
             ? (float)video_width / (float)video_height : 1.0;   /* Fall thru to square to avoid possibliity of "/0"! */
 
@@ -1156,26 +1321,26 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 breakout1:
 
     /* Open audio output */
-    AUDDBG ("opening audio output - bitrate=%ld=\n", (long) ic->bit_rate);
+    AUDDBG ("opening audio output - bitrate=%ld=\n", (long) TD.ic->bit_rate);
 
-    set_stream_bitrate (ic->bit_rate);
-    open_audio (out_fmt, cinfo.context->sample_rate, cinfo.context->channels);
+    set_stream_bitrate (TD.ic->bit_rate);
+    open_audio (out_fmt, TD.cinfo.context->sample_rate, TD.cinfo.context->channels);
 
-    int seek_value, ret;
+    int seek_value;
     /* JWT:video_qsize:  MAX # PACKETS TO QUEUE UP FOR INTERLACING TO SMOOTH VIDEO
-        PLAYBACK - GOOD RANGE IS 6-28, DEFAULT IS 8:
+        PLAYBACK - GOOD RANGE IS 6-12, DEFAULT IS 6:
         NOT ENOUGH = JITTERY VIDEO
         TOO MANY = AUDIO/VIDEO BECOME NOTICABLY OUT OF SYNC!
     */
-    if (video_qsize < 1)
+    if (video_qsize < 2)
         video_qsize = (aud_get_int ("ffaudio", "video_qsize"))
-                ? aud_get_int ("ffaudio", "video_qsize") : 8;
-    if (video_qsize < 1)
+                ? aud_get_int ("ffaudio", "video_qsize") : 6;
+    if (video_qsize < 2)
         video_qsize = 8;
 
     /* TYPICALLY THERE'S TWICE AS MANY AUDIO PACKETS AS VIDEO, SO THIS IS COUNTER-INTUITIVE, BUT IT WORKS BEST! */
-    pktQ = createQueue (3 * video_qsize); // ALLOW FOR A BUNCH OF VIDEO PACKETS (USUALLY AT STARTUP),
-    apktQ = createQueue (video_qsize);    // BUT, GENERALLY THE AUDIO QUEUE WILL FILL FIRST FORCING OUTPUT:
+    TD.pktQ = createQueue (12 * video_qsize); // ALLOW FOR A BUNCH OF VIDEO PACKETS (USUALLY AT STARTUP),
+    TD.apktQ = createQueue (12 * video_qsize);    // BUT, GENERALLY THE AUDIO QUEUE WILL FILL FIRST FORCING OUTPUT:
     returnok = true;
     AUDDBG ("i:video queue size %d\n", video_qsize);
 
@@ -1192,69 +1357,261 @@ breakout1:
 #ifdef _WIN32
 #define bmpptr bmp
     else  // CAN'T SMARTPTR THIS IN WINBLOWS SINCE FATAL ERROR (ON renderer.get IF NO RENDERER) IF VIDEO-PLAY TURNED OFF (COMPILER DIFFERENCE)!
-        bmp = createSDL2Texture (sdl_window, renderer.get (), myplay_video, vcinfo.context->width, vcinfo.context->height);
+        bmp = createSDL2Texture (sdl_window, renderer.get (), myplay_video,
+                TD.vcinfo.context->width, TD.vcinfo.context->height);
 #else
 #define bmpptr bmp.get ()
-    SmartPtr<SDL_Texture, SDL_DestroyTexture> bmp (createSDL2Texture (sdl_window, renderer.get (), myplay_video, vcinfo.context->width, vcinfo.context->height));
+    SmartPtr<SDL_Texture, SDL_DestroyTexture> bmp (createSDL2Texture (sdl_window, renderer.get (),
+            myplay_video, TD.vcinfo.context->width, TD.vcinfo.context->height));
 #endif
     if (! bmp)
         myplay_video = false;
 
-    /* OUTER LOOP TO READ, QUEUE AND PROCESS AUDIO & VIDEO PACKETS FROM THE STREAM: */
-    while (1)
+    /* START UP READER THREAD: */
+    pthread_attr_t thread_attrs;
+    pthread_t helper_thread;
+
+    if (! pthread_attr_init (& thread_attrs))
     {
-        /* CHECK IF WE NEED TO QUIT (EOF OR USER PRESSED STOP BUTTON OR WENT TO ANOTHER SONG): */
-        if (eof || check_stop ())
+        if (! pthread_attr_setdetachstate (& thread_attrs, PTHREAD_CREATE_DETACHED)
+                || ! pthread_attr_setscope (& thread_attrs, PTHREAD_SCOPE_PROCESS))
         {
-            if (eof)   /* EOF: WRITE OUT EVERYTHING THAT'S WAITING IN THE QUEUES: */
-            {
-                while (apktQ->size > 0 || pktQ->size > 0)
+            thread_exit = 0;
+            if (pthread_create (&helper_thread, nullptr, reader_thread_fn, & TD))
+                AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
+        }
+        else
+            AUDERR ("s:Error detatching helper thread: %s!\n", strerror (errno));
+
+        if (pthread_attr_destroy (& thread_attrs))
+            AUDERR ("s:Error destroying helper thread attributes: %s!\n", strerror (errno));
+    }
+    else
+    {
+        AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
+        goto error_exit;
+    }
+
+    AVPacket * pktRef;
+    /* LOOP TO PROCESS QUEUED AUDIO & VIDEO PACKETS FROM THE STREAM, INTERLACE AND OUTPUT THEM: */
+    while (! thread_exit)
+    {
+        if (myplay_video)
+        {
+            if ((pktRef = (TD.apktQ->size ? & TD.apktQ->elements[TD.apktQ->front] : nullptr)))
+            {   // PROCESS NEXT AUDIO FRAME(S) IN QUEUE:
+                write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+                Dequeue (TD.apktQ);
+                /* NOTE:THE HARDCODED MULTIPLES STAGGERED B/C AFTER 2X, WE HESITATE A BIT TO ADD MORE: */
+                /* (MAINTAIN THE A/V RATIO AS CLOSE TO 1:1-ISH OR THE VIDEO'S OVERALL RATIO AS POSSIBLE) */
+                if (TD.apktQ->size > int(1.4 * TD.pktQ->size))  // CLOSER TO 2X AUDIOS QUEUED THAN VIDEOS, PROCESS AN EXTRA ONE!
                 {
-                    AVPacket * pktRef;
-                    while (1)  // WE PREFER TO OUTPUT ORDERED AS AUDIO, VIDEO, AUDIO, ...
+                    pktRef = & TD.apktQ->elements[TD.apktQ->front];
+                    write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+                    Dequeue (TD.apktQ);
+                    if (TD.apktQ->size > int(2.8 * TD.pktQ->size))  // CLOSER TO 3X AUDIOS QUEUED THAN VIDEOS, PROCESS ANOTHER EXTRA ONE!
                     {
-                        if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))
-                        {   // PROCESS NEXT AUDIO FRAME IN QUEUE:
-                            write_audioframe (& cinfo, pktRef, out_fmt, planar);
-                            Dequeue (apktQ);
+                        pktRef = & TD.apktQ->elements[TD.apktQ->front];
+                        write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+                        Dequeue (TD.apktQ);
+                        if (TD.apktQ->size > int(4.2 * TD.pktQ->size))  // CLOSER TO 4X AUDIOS QUEUED THAN VIDEOS, PROCESS ANOTHER EXTRA ONE!
+                        {
+                            pktRef = & TD.apktQ->elements[TD.apktQ->front];
+                            write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+                            Dequeue (TD.apktQ);
                         }
-                        if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))
-                        {   // PROCESS NEXT VIDEO FRAME IN QUEUE:
-                            write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
-                                    video_width, video_height, last_resized, & windowIsStable);
-                            Dequeue (pktQ);
-                        }
-                        else
-                            break;
-                        if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))
-                        {   // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
-                            write_audioframe (& cinfo, pktRef, out_fmt, planar);
-                            Dequeue (apktQ);
-                        }
-                        else
-                            break;
                     }
                 }
             }
-
-            /* On shutdown/EOF, send an empty packet to "flush" the decoders */
-            pkt = AVPacket ();
-            av_init_packet (& pkt);
-            pkt.data=nullptr; pkt.size=0;
-            write_audioframe (& cinfo, & pkt, out_fmt, planar);
-            if (myplay_video)  /* IF VIDEO-WINDOW STILL INTACT (NOT CLOSED BY USER PRESSING WINDOW'S CORNER [X]): */
-                write_videoframe (renderer.get (), & vcinfo, bmpptr, & pkt, 
+            if ((pktRef = (TD.pktQ->size ? & TD.pktQ->elements[TD.pktQ->front] : nullptr)))
+            {   // PROCESS NEXT VIDEO FRAME(S) IN QUEUE:
+                write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pktRef,
                         video_width, video_height, last_resized, & windowIsStable);
-            av_free_packet (& pkt);
-#ifdef _WIN32
-            if (bmp)  // GOTTA FREE THIS BEFORE WE LEAVE SCOPE!
-            {
-                SDL_DestroyTexture (bmp);
-                SDL_Delay (50);
-                bmp = nullptr;
+                Dequeue (TD.pktQ);
+                if (TD.pktQ->size > int(1.4 * TD.apktQ->size))  // CLOSER TO 2X VIDEOS QUEUED THAN AUDIOS, PROCESS AN EXTRA ONE!
+                {
+                    pktRef = & TD.pktQ->elements[TD.pktQ->front];
+                    write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pktRef,
+                            video_width, video_height, last_resized, & windowIsStable);
+                    Dequeue (TD.pktQ);
+                    if (TD.pktQ->size > int(2.8 * TD.apktQ->size))  // CLOSER TO 3X VIDEOS QUEUED THAN AUDIOS, PROCESS ANOTHER EXTRA ONE!
+                    {
+                        pktRef = & TD.pktQ->elements[TD.pktQ->front];
+                        write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pktRef,
+                                video_width, video_height, last_resized, & windowIsStable);
+                        Dequeue (TD.pktQ);
+                        if (TD.pktQ->size > int(4.2 * TD.apktQ->size))  // CLOSER TO 4X VIDEOS QUEUED THAN AUDIOS, PROCESS ANOTHER EXTRA ONE!
+                        {
+                            pktRef = & TD.pktQ->elements[TD.pktQ->front];
+                            write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pktRef,
+                                    video_width, video_height, last_resized, & windowIsStable);
+                            Dequeue (TD.pktQ);
+                        }
+                    }
+                }
             }
-#endif
-            goto error_exit;
+            while (SDL_PollEvent (&event))
+            {
+                switch (event.type) {
+                    case SDL_WINDOWEVENT:
+                        switch (event.window.event)
+                        {
+                            case SDL_WINDOWEVENT_CLOSE:  /* USER CLICKED THE "X" IN UPPER-RIGHT CORNER, KILL VIDEO WINDOW BUT KEEP PLAYING AUDIO! */
+                                AUDDBG ("i:SDL_CLOSE (User killed video window for this play)!\n");
+                                if (myplay_video && sdl_window)
+                                {
+                                    /* DISABLE "video_display" VISUALIZATION PLUGIN (WHICH WILL HIDE THE VIDEO WINDOW! */
+                                    /* (THIS IS HOW ALL OTHER VISUALIZATION PLUGINS WORK) */
+                                    save_window_xy (sdl_window, video_window_x, video_window_y,
+                                            video_fudge_x, video_fudge_y, video_display_at_startup);
+                                    PluginHandle * visHandle = aud_plugin_lookup_basename ("video_display");
+                                    aud_plugin_enable (visHandle, false);  // DISABLE VIDEO VISUALIZATION PLUGIN!
+                                }
+                                break;
+                            case SDL_WINDOWEVENT_RESIZED:  /* WINDOW CHANGED SIZE EITHER BY US OR BY USER DRAGGING WINDOW CORNER (WE DON'T KNOW WHICH HERE) */
+                                if (! windowNowExposed)
+                                    break;
+                                /* Resize the sdl_window. */
+                                resized_window_width = event.window.data1;  // window's reported new size
+                                resized_window_height = event.window.data2;
+                                AUDDBG ("i:SDL_RESIZE!!!!!! rvw=%d h=%d\n", resized_window_width, resized_window_height);
+                                last_resized = false;  // false means now we'll need re-aspecting, so stop blitting!
+                                last_resizeevent_time = time (nullptr);  // reset the wait counter for when to assume user's done dragging window corner.
+                                break;
+                            case SDL_WINDOWEVENT_EXPOSED:  // window went from underneith another to visible (clicked on?)
+                                if (last_resized)
+                                {
+                                    SDL_RenderPresent (renderer.get ());  // only blit a single frame at startup will get refreshed!
+                                    windowNowExposed = true;
+                                }
+                                break;
+                            case SDL_WINDOWEVENT_HIDDEN:
+                                /* SOME WMS SEEM TO SEND A "SHOW" EVENT IMMEDIATELY AFTER SOME "HIDE" EVENTS?! */
+                                break;
+                            case SDL_WINDOWEVENT_SHOWN:
+                                /* UNDO IMMEDIATE (RE)SHOW-ON-HIDE CAUSED BY SOME WMS! */
+                                if (! aud_get_bool ("audacious", "video_display"))
+                                    SDL_HideWindow (sdl_window);
+                                break;
+                        }
+                }
+            }
+            if (! last_resized)  /* IF WINDOW CHANGED SIZE (SINCE LAST RE-ASPECTING: */
+            {
+                /* RE-ASPECT ONLY IF IT'S BEEN AT LEAST 1 SECOND SINCE LAST RESIZE EVENT (USER STOPPED DRAGGING
+                   WINDOW CORNER!  PBM. IS WE DON'T KNOW WHEN USER'S DONE DRAGGING THE MOUSE, SO WE GET
+                   A CONTINUOUS SPEWAGE OF "RESIZED" EVENTS AND WE WON'T BOTHER RE-ASPECTING THE WINDOW UNTIL
+                   WE'RE (PRETTY) SURE HE'S DONE! (RE-CALCULATING THE ASPECT RATIO AND RESIZING WINDOW TO
+                   MATCH THAT WHILST THE WINDOW IS CHANGING SIZE IS *EXTREMELY* INEFFICIENT AND COCKS
+                   UP THE DISPLAY AND PLAYBACK!)
+                */
+                if (difftime (time (nullptr), last_resizeevent_time) > video_resizedelay)
+                {
+                    float new_aspect_ratio;  // ASPECT (for comparing), W, & H OF WINDOW AFTER USER DONE RESIZING:
+                    int new_video_width;     // WILL ADJUST ONE OF THESE TO RESTORE TO VIDEO'S PROPER ASPECT
+                    int new_video_height;    // THEN RESIZE (RE-ASPECT) THE WINDOW TO KEEP ASPECT CONSTANT!
+                    /* CALCULATE THE RESIZED WINDOW'S ASPECT RATIO */
+                    new_aspect_ratio = resized_window_height
+                        ? (float)resized_window_width / (float)resized_window_height : 1.0;
+                    /* NOW MANUALLY ADJUST EITHER THE WIDTH OR HEIGHT BASED ON USER'S CONFIG. TO RESTORE
+                       THE NEW WINDOW TO THE PROPER ASPECT RATIO FOR THE CURRENTLY-PLAYING VIDEO:
+                    */
+                    if (vy == -1)  // USER SAYS ADJUST HEIGHT TO MATCH WIDTH:
+                    {
+                        new_video_height = resized_window_height;
+                        new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
+                    }
+                    else if (vx == -1)  // USER SAYS ADJUST WIDTH TO MATCH HEIGHT:
+                    {
+                        new_video_width = resized_window_width;
+                        new_video_height = (int)((float)new_video_width / video_aspect_ratio);
+                    }
+                    else  // USER DOESN'T CARE, SO WE DECIDE WHICH TO ADJUST:
+                    {
+                        if (resized_window_width < video_width || resized_window_height < video_height)
+                        {
+                            if (new_aspect_ratio > video_aspect_ratio)  // WINDOW SHRANK & BECAME MORE HORIZONTAL - ADJUST WIDTH TO NEW HEIGHT:
+                            {
+                                new_video_height = resized_window_height;
+                                new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
+                            }
+                            else  // WINDOW SHRANK & BECAME MORE VERTICAL - ADJUST HEIGHT TO NEW WIDTH:
+                            {
+                                new_video_width = resized_window_width;
+                                new_video_height = (int)((float)new_video_width / video_aspect_ratio);
+                            }
+                        }
+                        else
+                        {
+                            if (new_aspect_ratio > video_aspect_ratio)  // WINDOW GREW & BECAME MORE HORIZONTAL - ADJUST HEIGHT TO NEW WIDTH:
+                            {
+                                new_video_width = resized_window_width;
+                                new_video_height = (int)((float)new_video_width / video_aspect_ratio);
+                            }
+                            else  // WINDOW GREW & BECAME MORE VERTICAL - ADJUST WIDTH TO NEW HEIGHT:
+                            {
+                                new_video_height = resized_window_height;
+                                new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
+                            }
+                        }
+                    }
+                    /* USER SHRANK THE WINDOW BELOW "DORESET" THRESHOLD (user-configurable) SO RESIZE TO VIDEO'S ORIGINALLY REQUESTED (IDEAL) SIZE: */
+                    if (resized_window_width <  video_doreset_width && resized_window_height <  video_doreset_height)
+                    {
+                        new_video_width = video_requested_width;
+                        new_video_height = video_requested_height;
+                    }
+                    video_width = new_video_width;
+                    video_height = new_video_height;
+                    /* NOW MANUALLY RESIZE (RE-ASPECT) WINDOW BASED ON VIDEO'S ORIGINALLY-CALCULATED ASPECT RATIO: */
+                    SDL_SetWindowSize (sdl_window, video_width, video_height);
+                    SDL_Delay (50);
+                    last_resized = true;  // WE'VE RE-ASPECTED, SO ALLOW BLITTING TO RESUME!
+                }
+            }
+            /* (SDL2): WE HAVE TO WAIT UNTIL HERE FOR SDL_GetWindowPosition() TO RETURN THE CORRECT POSITION
+               SO WE CAN CALCULATE A "FUDGE FACTOR" SINCE:
+               1) SDL_SetWindowPosition(x, y) FOLLOWED BY SDL_GetWindowPosition() DOES *NOT*
+               RETURN (x, y) BUT x+<windowdecorationwidth>, y+windowdecorationheight!
+               (THIS IS B/C THE WINDOW IS PLACED W/IT'S UPPER LEFT CORNER AT THE SPECIFIED POSITION, *BUT* THE
+               COORDINATES RETURNED REFER TO THE UPPER LEFT CORNER OF THE ACTUAL (UNDECORATED) VIDEO SCREEN!!)
+               2) SDL_GetWindowPosition() SEEMS TO RETURN PSUEDO-RANDOMLY *DIFFERENT* COORDINATES AFTER THE FIRST
+               BLIT THAN THOSE WHERE THE WINDOW WAS ORIGINALLY PLACED, BUT IS CONSISTANT AFTER THAT, SO WE WAIT
+               UNTIL NOW (AFTER FIRST BLIT BUT BEFORE USER CAN MOVE THE WINDOW) TO GET THE WINDOW-POSITION AND
+               COMPARE WITH WHAT WE INITIALLY SET THE WINDOW TO TO DETERMINE THE NECESSARY "FUDGE FACTOR" IN
+               ORDER TO ADJUST THE COORDINATES WHEN WE'RE READY TO SAVE THE WINDOW-POSITION WHEN EXITING PLAY!
+               (VERY ANNOYING, ISN'T IT!)  FOR SDL-1, THE FUDGE-FACTOR IS ONLY THE WxH OF WINDOW-DECORATIONS.
+               (WE MARK THE WINDOW AS "STABLE" FOR THIS PURPOSE AFTER BLITTING A FRAME)
+               NOTE:  THE WINDOW DOESN'T *MOVE* AFTER INITIAL PLACEMENT, JUST THE RETURNED COORDINATES DIFFER!
+            */
+            if (needWinSzFudge && windowIsStable)
+            {
+                int x, y;
+                SDL_GetWindowPosition (sdl_window, &x, &y);
+                video_fudge_x = video_window_x - x;
+                video_fudge_y = video_window_y - y;
+                AUDDBG ("FUDGE SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x, video_window_y, video_fudge_x, video_fudge_y);
+                if ((video_fudge_x || video_fudge_y) && ! aud_get_bool ("audacious", "afterstep"))
+                {
+                    /* JWT:FOR SOME REASON AFTERSTEP DOESN'T SEEM TO NEED NOR WORK WITH THIS!: */
+                    SDL_SetWindowPosition (sdl_window, x+video_fudge_x, y+video_fudge_y);
+                    video_fudge_x = video_fudge_y = 0;
+                    AUDDBG ("WINDOW MOVED BY FUDGE AND FUDGE RESET TO 0,0 (WERE NOT RUNNING AFTERSTEP)!\n");
+                }
+                needWinSzFudge = false;
+            }
+        }
+        else if ((pktRef = (TD.apktQ->size ? & TD.apktQ->elements[TD.apktQ->front] : nullptr)))
+        {   // PROCESS NEXT AUDIO FRAME IN QUEUE:
+            write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+            Dequeue (TD.apktQ);
+        }
+
+        /* CHECK IF WE NEED TO QUIT (EOF OR USER PRESSED STOP BUTTON OR WENT TO ANOTHER SONG): */
+        if (check_stop ())
+        {
+            thread_exit = 2;  // STOPPED BY USER
+            break;
         }
 
         /* CHECK IF USER MOVED THE SEEK/POSITION SLIDER, IF SO FLUSH QUEUES AND SEEK TO NEW POSITION: */
@@ -1262,283 +1619,85 @@ breakout1:
         if (seek_value >= 0)
         {
             /* JWT:FIRST, FLUSH ANY PACKETS SITTING IN THE QUEUES TO CLEAR THE QUEUES! */
-            QFlush (apktQ);
-            QFlush (pktQ);
-            /* JWT: HAD TO CHANGE THIS FROM "AVSEEK_FLAG_ANY" TO AVSEEK_FLAG_BACKWARD 
+            QFlush (TD.apktQ);
+            QFlush (TD.pktQ);
+            /* JWT: HAD TO CHANGE THIS FROM "AVSEEK_FLAG_ANY" TO AVSEEK_FLAG_BACKWARD
                 TO GET SEEK TO NOT RANDOMLY BRICK?! */
-            if (LOG (av_seek_frame, ic.get (), -1, (int64_t) seek_value *
+
+            pthread_mutex_lock (& read_mutex);  // BLOCK READING WHILST SEEKING (CHANGING POSITION)!
+
+            if (LOG (av_seek_frame, TD.ic, -1, (int64_t) seek_value *
                     AV_TIME_BASE / 1000, AVSEEK_FLAG_BACKWARD) >= 0)
-                errcount = 0;
+                TD.errcount = 0;
+
+            pthread_mutex_unlock (& read_mutex);
+
             seek_value = -1;
         }
+    }  // END PACKET-PROCESSING LOOP.
 
-        /* READ NEXT FRAME (OR MORE) OF DATA */
+    if (pthread_join (helper_thread, NULL))
+        AUDERR ("Error joining thread\n");
+
+    if (thread_exit == 1)  // EOF:
+    {
+        while (TD.apktQ->size > 0 || TD.pktQ->size > 0)
+        {
+            AVPacket * pktRef;
+            while (1)  // WE PREFER TO OUTPUT ORDERED AS AUDIO, VIDEO, AUDIO, ...
+            {
+                if ((pktRef = (TD.apktQ->size ? & TD.apktQ->elements[TD.apktQ->front] : nullptr)))
+                {   // PROCESS NEXT AUDIO FRAME IN QUEUE:
+                    write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+                    Dequeue (TD.apktQ);
+                }
+                if ((pktRef = (TD.pktQ->size ? & TD.pktQ->elements[TD.pktQ->front] : nullptr)))
+                {   // PROCESS NEXT VIDEO FRAME IN QUEUE:
+                    write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pktRef,
+                            video_width, video_height, last_resized, & windowIsStable);
+                    Dequeue (TD.pktQ);
+                }
+                else
+                    break;
+                if ((pktRef = (TD.apktQ->size ? & TD.apktQ->elements[TD.apktQ->front] : nullptr)))
+                {   // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
+                    write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+                    Dequeue (TD.apktQ);
+                }
+                else
+                    break;
+            }
+        }
         pkt = AVPacket ();
         av_init_packet (& pkt);
-        ret = LOG (av_read_frame, ic.get (), & pkt);
-        if (ret < 0)  // CHECK FOR EOF OR ERRORS:
-        {
-            ++errcount;
-            if (ret == (int) AVERROR_EOF)
-            {
-                AUDDBG ("eof reached\n");
-                av_free_packet (& pkt);
-                eof = true;
-                continue;
-            }
-            else if (errcount > 4)
-            {
-                AUDERR ("av_read_frame error %d, giving up.\n", ret);
-                av_free_packet (& pkt);
-                returnok = false;
+        pkt.data=nullptr; pkt.size=0;
+        write_audioframe (& TD.cinfo, & pkt, out_fmt, planar);
+        if (myplay_video)  /* IF VIDEO-WINDOW STILL INTACT (NOT CLOSED BY USER PRESSING WINDOW'S CORNER [X]): */
+            write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, & pkt,
+                    video_width, video_height, last_resized, & windowIsStable);
+
+        av_free_packet (& pkt);
 #ifdef _WIN32
-                if (bmp)  // GOTTA FREE THIS BEFORE WE LEAVE SCOPE!
-                {
-                    SDL_DestroyTexture (bmp);
-                    SDL_Delay (50);
-                    bmp = nullptr;
-                }
+        if (bmp)  // GOTTA FREE THIS BEFORE WE LEAVE SCOPE!
+        {
+            SDL_DestroyTexture (bmp);
+            SDL_Delay (50);
+            bmp = nullptr;
+        }
 #endif
-                goto error_exit;
-            }
-            else
-            {
-                av_free_packet (& pkt);
-                continue;
-            }
-        }
-        else
-            errcount = 0;
-
-        /* AFTER READING BUT BEFORE PROCESSING EACH PACKET, CHECK IF EITHER QUEUE IS FULL, IF SO, WRITE
-           QUEUED PACKETS UNTIL AT LEAST ONE QUEUE IS EMPTIED, ORDERING OUTPUT AS:  VIDEO, THEN
-           AUDIO, VIDEO, AUDIO, AUDIO, VIDEO, AUDIO... SINCE WE TYPICALLY HAVE TWICE AS MANY AUDIO PACKETS
-           AS VIDEO BUT, VIDEO USUALLY LAGS SLIGHTLY, SO WE ALWAYS TRY TO DO A VIDEO PACKET FIRST.
-           THIS IS THE SECRET TO KEEPING OUTPUT SYNCED & SMOOTH! */
-        if (myplay_video)
-        {
-            if (apktQ->size == apktQ->capacity || pktQ->size == pktQ->capacity)
-            {   // ONE OF THE PACKET (USUALLY AUDIO) QUEUES IS FULL:
-                AVPacket * pktRef;
-                if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))
-                {   // ALWAYS TRY TO PROCESS A VIDEO FRAME FIRST:
-                    write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef,
-                            video_width, video_height, last_resized, & windowIsStable);
-                    Dequeue (pktQ);
-                }
-                while (1)  // NOW TRY TO PROCESS AT LEAST 1 AUDIO, 1 VIDEO, AND A 2ND AUDIO, BUT KEEP GOING UNTIL ONE QUEUE IS EMPTY:
-                {          // (USUALLY, THERE ARE MORE AUDIOS THAN VIDEOS IN MOST STREAMS):
-                    if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))
-                    {   // PROCESS NEXT AUDIO FRAME IN QUEUE:
-                        write_audioframe (& cinfo, pktRef, out_fmt, planar);
-                        Dequeue (apktQ);
-                    }
-                    if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))
-                    {   // PROCESS NEXT VIDEO FRAME IN QUEUE:
-                        write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef,
-                                video_width, video_height, last_resized, & windowIsStable);
-                        Dequeue (pktQ);
-                        if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))
-                        {   // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
-                            write_audioframe (& cinfo, pktRef, out_fmt, planar);
-                            Dequeue (apktQ);
-                        }
-                        else
-                        {
-                            if ((pktRef = ((pktQ->size >= video_qsize) ? & pktQ->elements[pktQ->front] : nullptr)))
-                            {   // PROCESS AN EXTRA VIDEO PKT WHEN AUDIO Q EMPTY & A BUNCH OF VIDEO PKTS REMAIN, IE. HD VIDEOS (MAKES 'EM SMOOTHER):
-                                write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef,
-                                        video_width, video_height, last_resized, & windowIsStable);
-                                Dequeue (pktQ);
-                            }
-                            break;  // STOP: AUDIO QUEUE IS NOW EMPTY.
-                        }
-                    }
-                    else
-                        break;  // STOP: VIDEO QUEUE IS NOW EMPTY.
-                }
-            }
-            /* NOW PROCESS THE CURRENTLY-READ PACKET, EITHER OUTPUTTING IT OR QUEUEING IT: */
-            if (pkt.stream_index == cinfo.stream_idx)  /* WE READ AN AUDIO PACKET, IF PLAYING VIDEO, QUEUE IT, OTHERWISE JUST PROCESS IT: */
-                Enqueue (apktQ, pkt);
-            else if (pkt.stream_index == vcinfo.stream_idx)  /* WE READ A VIDEO PACKET, QUEUE IT (ALWAYS): */
-                Enqueue (pktQ, pkt);
-            else
-                av_free_packet (& pkt);
-        }
-        else   /* PROCESS AUDIO PACKETS AND IGNORE ANY OTHER SUBSTREAMS */
-        {
-            if (pkt.stream_index == cinfo.stream_idx)  /* WE READ AN AUDIO PACKET, IF PLAYING VIDEO, QUEUE IT, OTHERWISE JUST PROCESS IT: */
-                write_audioframe (& cinfo, & pkt, out_fmt, planar);
-
-            av_free_packet (& pkt);
-            continue;
-        }
-        /* AT THIS POINT THE PACKET MUST BE EITHER ENQUEUED OR FREED! */
-
-        /* JWT: NOW HANDLE ANY VIDEO UI EVENTS SUCH AS RESIZE OR KILL VIDEO SCREEN (IF PLAYING VIDEO): */
-        /*      IF WE'RE HERE, WE *ARE* STILL PLAYING VIDEO (BUT THAT MAY CHANGE WITHIN THIS LOOP)! */
-        while (SDL_PollEvent (&event))
-        {
-            switch (event.type) {
-                case SDL_WINDOWEVENT:
-                    switch (event.window.event)
-                    {
-                        case SDL_WINDOWEVENT_CLOSE:  /* USER CLICKED THE "X" IN UPPER-RIGHT CORNER, KILL VIDEO WINDOW BUT KEEP PLAYING AUDIO! */
-                            AUDDBG ("i:SDL_CLOSE (User killed video window for this play)!\n");
-                            if (myplay_video && sdl_window)
-                            {
-                                /* DISABLE "video_display" VISUALIZATION PLUGIN (WHICH WILL HIDE THE VIDEO WINDOW! */
-                                /* (THIS IS HOW ALL OTHER VISUALIZATION PLUGINS WORK) */
-                                save_window_xy (sdl_window, video_window_x, video_window_y,
-                                        video_fudge_x, video_fudge_y, video_display_at_startup);
-                                PluginHandle * visHandle = aud_plugin_lookup_basename ("video_display");
-                                aud_plugin_enable (visHandle, false);  // DISABLE VIDEO VISUALIZATION PLUGIN!
-                            }
-                            break;
-                        case SDL_WINDOWEVENT_RESIZED:  /* WINDOW CHANGED SIZE EITHER BY US OR BY USER DRAGGING WINDOW CORNER (WE DON'T KNOW WHICH HERE) */
-                            if (! windowNowExposed)
-                                break;
-                            /* Resize the sdl_window. */
-                            resized_window_width = event.window.data1;  // window's reported new size
-                            resized_window_height = event.window.data2;
-                            AUDDBG ("i:SDL_RESIZE!!!!!! rvw=%d h=%d\n", resized_window_width, resized_window_height);
-                            last_resized = false;  // false means now we'll need re-aspecting, so stop blitting!
-                            last_resizeevent_time = time (nullptr);  // reset the wait counter for when to assume user's done dragging window corner.
-                            break;
-                        case SDL_WINDOWEVENT_EXPOSED:  // window went from underneith another to visible (clicked on?)
-                            if (last_resized)
-                            {
-                                SDL_RenderPresent (renderer.get ());  // only blit a single frame at startup will get refreshed!
-                                windowNowExposed = true;
-                            }
-                            break;
-                        case SDL_WINDOWEVENT_HIDDEN:
-                            /* SOME WMS SEEM TO SEND A "SHOW" EVENT IMMEDIATELY AFTER SOME "HIDE" EVENTS?! */
-                            break;
-                        case SDL_WINDOWEVENT_SHOWN:
-                            /* UNDO IMMEDIATE (RE)SHOW-ON-HIDE CAUSED BY SOME WMS! */
-                            if (! aud_get_bool ("audacious", "video_display"))
-                                SDL_HideWindow (sdl_window);
-                            break;
-                    }
-            }
-        }
-        if (! last_resized)  /* IF WINDOW CHANGED SIZE (SINCE LAST RE-ASPECTING: */
-        {
-            /* RE-ASPECT ONLY IF IT'S BEEN AT LEAST 1 SECOND SINCE LAST RESIZE EVENT (USER STOPPED DRAGGING
-               WINDOW CORNER!  PBM. IS WE DON'T KNOW WHEN USER'S DONE DRAGGING THE MOUSE, SO WE GET 
-               A CONTINUOUS SPEWAGE OF "RESIZED" EVENTS AND WE WON'T BOTHER RE-ASPECTING THE WINDOW UNTIL
-               WE'RE (PRETTY) SURE HE'S DONE! (RE-CALCULATING THE ASPECT RATIO AND RESIZING WINDOW TO 
-               MATCH THAT WHILST THE WINDOW IS CHANGING SIZE IS *EXTREMELY* INEFFICIENT AND COCKS
-               UP THE DISPLAY AND PLAYBACK!)
-            */
-            if (difftime (time (nullptr), last_resizeevent_time) > video_resizedelay)
-            {
-                float new_aspect_ratio;  // ASPECT (for comparing), W, & H OF WINDOW AFTER USER DONE RESIZING:
-                int new_video_width;     // WILL ADJUST ONE OF THESE TO RESTORE TO VIDEO'S PROPER ASPECT
-                int new_video_height;    // THEN RESIZE (RE-ASPECT) THE WINDOW TO KEEP ASPECT CONSTANT!
-                /* CALCULATE THE RESIZED WINDOW'S ASPECT RATIO */
-                new_aspect_ratio = resized_window_height
-                    ? (float)resized_window_width / (float)resized_window_height : 1.0;
-                /* NOW MANUALLY ADJUST EITHER THE WIDTH OR HEIGHT BASED ON USER'S CONFIG. TO RESTORE 
-                   THE NEW WINDOW TO THE PROPER ASPECT RATIO FOR THE CURRENTLY-PLAYING VIDEO:
-                */
-                if (vy == -1)  // USER SAYS ADJUST HEIGHT TO MATCH WIDTH:
-                {
-                    new_video_height = resized_window_height;
-                    new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
-                }
-                else if (vx == -1)  // USER SAYS ADJUST WIDTH TO MATCH HEIGHT:
-                {
-                    new_video_width = resized_window_width;
-                    new_video_height = (int)((float)new_video_width / video_aspect_ratio);
-                }
-                else  // USER DOESN'T CARE, SO WE DECIDE WHICH TO ADJUST:
-                {
-                    if (resized_window_width < video_width || resized_window_height < video_height)
-                    {
-                        if (new_aspect_ratio > video_aspect_ratio)  // WINDOW SHRANK & BECAME MORE HORIZONTAL - ADJUST WIDTH TO NEW HEIGHT:
-                        {
-                            new_video_height = resized_window_height;
-                            new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
-                        }
-                        else  // WINDOW SHRANK & BECAME MORE VERTICAL - ADJUST HEIGHT TO NEW WIDTH:
-                        {
-                            new_video_width = resized_window_width;
-                            new_video_height = (int)((float)new_video_width / video_aspect_ratio);
-                        }
-                    }
-                    else
-                    {
-                        if (new_aspect_ratio > video_aspect_ratio)  // WINDOW GREW & BECAME MORE HORIZONTAL - ADJUST HEIGHT TO NEW WIDTH:
-                        {
-                            new_video_width = resized_window_width;
-                            new_video_height = (int)((float)new_video_width / video_aspect_ratio);
-                        }
-                        else  // WINDOW GREW & BECAME MORE VERTICAL - ADJUST WIDTH TO NEW HEIGHT:
-                        {
-                            new_video_height = resized_window_height;
-                            new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
-                        }
-                    }
-                }
-                /* USER SHRANK THE WINDOW BELOW "DORESET" THRESHOLD (user-configurable) SO RESIZE TO VIDEO'S ORIGINALLY REQUESTED (IDEAL) SIZE: */
-                if (resized_window_width <  video_doreset_width && resized_window_height <  video_doreset_height)
-                {
-                    new_video_width = video_requested_width;
-                    new_video_height = video_requested_height;
-                }
-                video_width = new_video_width;
-                video_height = new_video_height;
-                /* NOW MANUALLY RESIZE (RE-ASPECT) WINDOW BASED ON VIDEO'S ORIGINALLY-CALCULATED ASPECT RATIO: */
-                SDL_SetWindowSize (sdl_window, video_width, video_height);
-                SDL_Delay (50);
-                last_resized = true;  // WE'VE RE-ASPECTED, SO ALLOW BLITTING TO RESUME!
-            }
-        }
-        /* (SDL2): WE HAVE TO WAIT UNTIL HERE FOR SDL_GetWindowPosition() TO RETURN THE CORRECT POSITION
-           SO WE CAN CALCULATE A "FUDGE FACTOR" SINCE:  
-           1) SDL_SetWindowPosition(x, y) FOLLOWED BY SDL_GetWindowPosition() DOES *NOT* 
-           RETURN (x, y) BUT x+<windowdecorationwidth>, y+windowdecorationheight!
-           (THIS IS B/C THE WINDOW IS PLACED W/IT'S UPPER LEFT CORNER AT THE SPECIFIED POSITION, *BUT* THE 
-           COORDINATES RETURNED REFER TO THE UPPER LEFT CORNER OF THE ACTUAL (UNDECORATED) VIDEO SCREEN!!)
-           2) SDL_GetWindowPosition() SEEMS TO RETURN PSUEDO-RANDOMLY *DIFFERENT* COORDINATES AFTER THE FIRST 
-           BLIT THAN THOSE WHERE THE WINDOW WAS ORIGINALLY PLACED, BUT IS CONSISTANT AFTER THAT, SO WE WAIT 
-           UNTIL NOW (AFTER FIRST BLIT BUT BEFORE USER CAN MOVE THE WINDOW) TO GET THE WINDOW-POSITION AND 
-           COMPARE WITH WHAT WE INITIALLY SET THE WINDOW TO TO DETERMINE THE NECESSARY "FUDGE FACTOR" IN 
-           ORDER TO ADJUST THE COORDINATES WHEN WE'RE READY TO SAVE THE WINDOW-POSITION WHEN EXITING PLAY!
-           (VERY ANNOYING, ISN'T IT!)  FOR SDL-1, THE FUDGE-FACTOR IS ONLY THE WxH OF WINDOW-DECORATIONS.
-           (WE MARK THE WINDOW AS "STABLE" FOR THIS PURPOSE AFTER BLITTING A FRAME)
-           NOTE:  THE WINDOW DOESN'T *MOVE* AFTER INITIAL PLACEMENT, JUST THE RETURNED COORDINATES DIFFER!
-        */
-        if (needWinSzFudge && windowIsStable)
-        {
-            int x, y;
-            SDL_GetWindowPosition (sdl_window, &x, &y);
-            video_fudge_x = video_window_x - x;
-            video_fudge_y = video_window_y - y;
-            AUDDBG ("FUDGE SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x, video_window_y, video_fudge_x, video_fudge_y);
-            if ((video_fudge_x || video_fudge_y) && ! aud_get_bool ("audacious", "afterstep"))
-            {
-                /* JWT:FOR SOME REASON AFTERSTEP DOESN'T SEEM TO NEED NOR WORK WITH THIS!: */
-                SDL_SetWindowPosition (sdl_window, x+video_fudge_x, y+video_fudge_y);
-                video_fudge_x = video_fudge_y = 0;
-                AUDDBG ("WINDOW MOVED BY FUDGE AND FUDGE RESET TO 0,0 (WERE NOT RUNNING AFTERSTEP)!\n");
-            }
-            needWinSzFudge = false;
-        }
-    }  // END PACKET-PROCESSING LOOP.
+    }
+    else if (thread_exit < 0)
+        returnok = false;
 
     }  // END OF SUBSCOPE FOR DECLARING SDL2 TEXTURE AS SCOPED SMARTPOINTER.
 
 error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
 
     AUDDBG ("end of playback.\n");
-    if (pktQ)
-        destroyQueue (pktQ);
-    if (apktQ)
-        destroyQueue (apktQ);
+    if (TD.pktQ)
+        destroyQueue (TD.pktQ);
+    if (TD.apktQ)
+        destroyQueue (TD.apktQ);
 
     if (myplay_video && sdl_window)
     {
@@ -1553,20 +1712,26 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
     if (vcodec_opened)
     {
 #ifdef ALLOC_CONTEXT
-        avcodec_free_context (& vcinfo.context);
-        av_free (vcinfo.context);
+        avcodec_free_context (& TD.vcinfo.context);
+        av_free (TD.vcinfo.context);
 #else
-        avcodec_close (vcinfo.context);
+        avcodec_close (TD.vcinfo.context);
 #endif
     }
     if (codec_opened)
     {
 #ifdef ALLOC_CONTEXT
-        avcodec_free_context (& cinfo.context);
-        av_free (cinfo.context);
+        avcodec_free_context (& TD.cinfo.context);
+        av_free (TD.cinfo.context);
 #else
-        avcodec_close (cinfo.context);
+        avcodec_close (TD.cinfo.context);
 #endif
+    }
+
+    if (TD.ic)  // GOTTA FREE THIS!
+    {
+        close_input_file (TD.ic);
+        TD.ic = nullptr;
     }
 
     if (aud_get_bool ("ffaudio", "save_video"))
