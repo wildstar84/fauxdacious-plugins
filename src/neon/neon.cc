@@ -260,8 +260,7 @@ static void add_icy (struct icy_metadata * m, const char * name, const char * va
         AUDDBG ("Found StreamTitle: %s\n", value);
         m->stream_title = String (str_to_utf8 (value, -1));
     }
-
-    if (neon_strcmp (name, "StreamUrl"))
+    else if (neon_strcmp (name, "StreamUrl"))
     {
         AUDDBG ("Found StreamUrl: %s\n", value);
         m->stream_url = String (str_to_utf8 (value, -1));
@@ -1179,6 +1178,9 @@ String NeonFile::get_metadata (const char * field)
 
     if (! strcmp (field, "content-bitrate"))
         return String (int_to_str (m_icy_metadata.stream_bitrate * 1000));
+
+    if (! strcmp (field, "stream-url"))
+        return m_icy_metadata.stream_url;
 
     return String ();
 }
