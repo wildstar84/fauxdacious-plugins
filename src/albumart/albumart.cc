@@ -183,8 +183,8 @@ static void * album_helper_thread_fn (void * data)
             else
                 Album = String ("_");
 
-            const char * webfetch = ! skipweb
-                    && aud_get_bool ("albumart", "internet_coverartlookup") ? "" : "NOWEB";
+            const char * webfetch = ! skipweb && aud_get_bool ("albumart", "internet_coverartlookup")
+                    ? aud_get_str (nullptr, "_cover_art_link") : "NOWEB";
 
             if (! aud_get_bool (nullptr, "split_titles"))
             {
@@ -221,6 +221,7 @@ static void * album_helper_thread_fn (void * data)
                     webfetch}));
 #endif
 
+            aud_set_str (nullptr, "_cover_art_link", "");
         }
     }
     else

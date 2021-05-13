@@ -319,8 +319,8 @@ private:
                 else
                     Album = String ("_");
 
-                const char * webfetch = ! skipweb
-                        && aud_get_bool ("albumart", "internet_coverartlookup") ? "" : "NOWEB";
+                const char * webfetch = ! skipweb && aud_get_bool ("albumart", "internet_coverartlookup")
+                        ? aud_get_str (nullptr, "_cover_art_link") : "NOWEB";
 
                 if (! aud_get_bool (nullptr, "split_titles"))
                 {
@@ -356,6 +356,8 @@ private:
                         (const char *) artist_buf, "' '", (const char *) title_buf, "' ",
                         webfetch}));
 #endif
+
+                aud_set_str (nullptr, "_cover_art_link", "");
             }
         }
         else
