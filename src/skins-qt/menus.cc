@@ -106,9 +106,9 @@ static const audqt::MenuItem playback_items[] = {
     audqt::MenuSep (),
     audqt::MenuCommand ({N_("Set A-B Repeat"), nullptr, "A"}, action_ab_set),
     audqt::MenuCommand ({N_("Clear A-B Repeat"), nullptr, "Shift+A"}, action_ab_clear),
-#if 0
     audqt::MenuSep (),
-    audqt::MenuCommand ({N_("Jump to Song ..."), "go-jump", "J"}, audgui_jump_to_track),
+    audqt::MenuCommand ({N_("Jump to Song ..."), "go-jump", "J"}, aud_ui_show_jump_to_song),
+#if 0
     audqt::MenuCommand ({N_("Jump to Time ..."), "go-jump", "Ctrl+J"}, audgui_jump_to_time)
 #endif
 };
@@ -210,8 +210,8 @@ static const audqt::MenuItem sort_selected_items[] = {
     audqt::MenuCommand ({N_("By Artist")}, sort_sel_artist),
     audqt::MenuCommand ({N_("By Album")}, sort_sel_album),
     audqt::MenuCommand ({N_("By Album Artist")}, sort_sel_album_artist),
-    audqt::MenuCommand ({N_("By Genre")}, sort_sel_genre),
     audqt::MenuCommand ({N_("By Release Date")}, sort_sel_date),
+    audqt::MenuCommand ({N_("By Genre")}, sort_sel_genre),
     audqt::MenuCommand ({N_("By Length")}, sort_sel_length),
     audqt::MenuCommand ({N_("By File Name")}, sort_sel_filename),
     audqt::MenuCommand ({N_("By File Path")}, sort_sel_path),
