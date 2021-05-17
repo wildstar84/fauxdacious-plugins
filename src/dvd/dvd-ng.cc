@@ -261,8 +261,8 @@ static Index<trackinfo_t> trackinfo;
 static QueuedFunc purge_func;
 
 static bool scan_dvd ();
-static bool refresh_trackinfo (bool warning);
-static void reset_trackinfo ();
+static bool dvd_refresh_trackinfo (bool warning);
+static void dvd_reset_trackinfo ();
 static int calculate_track_length (uint32_t startlsn, uint32_t endlsn);
 static int find_trackno_from_filename (const char * filename);
 
@@ -350,7 +350,7 @@ static void dvd_error (const char * message_format, ...)
 }
 
 /* from audacious */
-static int log_result (const char * func, int ret)
+static int dvd_log_result (const char * func, int ret)
 {
     if (ret < 0 && ret != (int) AVERROR_EOF && ret != AVERROR (EAGAIN))
     {
@@ -364,10 +364,10 @@ static int log_result (const char * func, int ret)
     return ret;
 }
 
-#define LOG(function, ...) log_result (#function, function (__VA_ARGS__))
+#define LOG(function, ...) dvd_log_result (#function, function (__VA_ARGS__))
 
 /* from audacious */
-static void ffaudio_log_cb (void * avcl, int av_level, const char * fmt, va_list va)
+static void dvd_log_cb (void * avcl, int av_level, const char * fmt, va_list va)
 {
     audlog::Level level = audlog::Debug;
     char message [IOBUF];
@@ -442,7 +442,7 @@ bool DVD::init ()
         initted = true;
     }
 
-    av_log_set_callback (ffaudio_log_cb);
+    av_log_set_callback (dvd_log_cb);
 
     return true;
 }
@@ -2388,13 +2388,13 @@ bool DVD::play (const char * name, VFSFile & file)
     if (! check_disk_status ())  // CHECK THAT DISK IS STILL IN THE DRIVE!:
     {
         dvd_error ("Attempt to play removed disk, clearing playlist of DVD tracks!\n");
-        reset_trackinfo ();
+        dvd_reset_trackinfo ();
         purge_func.queue (purge_all_playlists, nullptr);
         pthread_mutex_unlock (& mutex);
         return false;
     }
 
-    if (! trackinfo.len () && ! refresh_trackinfo (true))
+    if (! trackinfo.len () && ! dvd_refresh_trackinfo (true))
     {
         pthread_mutex_unlock (& mutex);
         return false;
@@ -2903,7 +2903,7 @@ void DVD::cleanup ()
 
     pthread_mutex_lock (& mutex);
 
-    reset_trackinfo ();
+    dvd_reset_trackinfo ();
     purge_func.stop ();
 
     pthread_mutex_unlock (& mutex);
@@ -3068,19 +3068,19 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
     if (whole_disk && ! playing)
     {
         AUDINFO ("READ_TAG: whole disk and not playing, close DVD!\n");
-        reset_trackinfo ();
+        dvd_reset_trackinfo ();
         purge_func.queue (purge_all_playlists, nullptr);
     }
     else if (dvdnav_priv && ! check_disk_status ())  // CHECK THAT DISK IS STILL IN THE DRIVE!:
     {
         AUDERR ("Attempt to play removed disk, clearing playlist of DVD tracks!\n");
-        reset_trackinfo ();
+        dvd_reset_trackinfo ();
         purge_func.queue (purge_all_playlists, nullptr);
         pthread_mutex_unlock (& mutex);
         goto DONE;
     }
 
-    if (! trackinfo.len () && ! refresh_trackinfo (true))
+    if (! trackinfo.len () && ! dvd_refresh_trackinfo (true))
         goto DONE;
 
     if (whole_disk)  // WE'RE OPENING dvd://:
@@ -3369,7 +3369,7 @@ static bool scan_dvd ()
 }
 
 /* from audacious cdaudio-ng:  mutex must be locked */
-static bool refresh_trackinfo (bool warning)
+static bool dvd_refresh_trackinfo (bool warning)
 {
     int xtry = 0;
     int maxopentries = aud_get_int ("dvd", "maxopentries");
@@ -3395,22 +3395,22 @@ tryagain:   // WE TRY 4 TIMES TO GIVE THE DRIVE A CHANCE TO SPIN UP...
 
         //timer_add (TimerRate::Hz1, monitor);
     }
-    AUDINFO ("Success: refresh_trackinfo - DVD opened and scanned! lang=%d=\n", dvdnav_priv->langid);
+    AUDINFO ("Success: dvd_refresh_trackinfo - DVD opened and scanned! lang=%d=\n", dvdnav_priv->langid);
 //    dvdnav_priv->langid = 0;
     dvdnav_get_title_string (dvdnav_priv->dvdnav, & dvdnav_priv->title_str);
     return true;
 
 fail:
-    AUDERR ("s:FAIL: refresh_trackinfo, couldn't open or scan DVD!\n");
+    AUDERR ("s:FAIL: dvd_refresh_trackinfo, couldn't open or scan DVD!\n");
     if (warning)
         dvd_error ("Failed to open DVD.\n");
-    reset_trackinfo ();
+    dvd_reset_trackinfo ();
     purge_func.queue (purge_all_playlists, nullptr);
     return false;
 }
 
 /* from audacious cdaudio-ng:  mutex must be locked */
-static void reset_trackinfo ()
+static void dvd_reset_trackinfo ()
 {
     //timer_remove (TimerRate::Hz1, monitor);
     AUDINFO ("i:RESET_TRACKINFO called, will CLOSE DVD IF OPENED!\n");
