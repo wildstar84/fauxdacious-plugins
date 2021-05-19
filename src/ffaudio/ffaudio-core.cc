@@ -141,7 +141,6 @@ const char * const FFaudio::defaults[] = {
     "video_xmove", "1",     // RESTORE WINDOW TO PREV. SAVED POSITION.
     "video_ysize", "-1",    // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
     "save_video", "FALSE",  // DUB VIDEO AS BEING PLAYED.
-    "dash_extensions", "m3u8,mpd", // (DASH) LET FFMPEG HANDLE TRANSPORT FOR THESE EXTENSIONS INSTEAD OF NEON!
     "reader_sleep_ms", "50", // TIME FOR READER THREAD TO SLEEP IN MILLISEC TO ALLOW QUEUES TO DRAIN.
 #ifdef _WIN32
     "save_video_file", "C:\\Temp\\lastvideo",
@@ -168,9 +167,7 @@ const PreferencesWidget FFaudio::widgets[] = {
     WidgetSpin (N_("Video packet queue size"),
         WidgetInt ("ffaudio", "video_qsize"), {2, 16, 1}),
     WidgetSpin (N_("Reader sleep interval (millisec)"),
-        WidgetInt ("ffaudio", "reader_sleep_ms"), {1, 500, 1}),
-    WidgetEntry (N_("Dash stream extensions:"),
-        WidgetString ("ffaudio", "dash_extensions"))
+        WidgetInt ("ffaudio", "reader_sleep_ms"), {1, 500, 1})
 };
 
 const PluginPreferences FFaudio::prefs = {{widgets}};
@@ -511,7 +508,7 @@ static AVInputFormat * get_format (const char * name, VFSFile & file)
     return f ? f : get_format_by_content (name, file);
 }
 
-static AVFormatContext * open_input_file (const char * name, VFSFile & file, bool fromtag)
+static AVFormatContext * open_input_file (const char * name, VFSFile & file)
 {
     AVFormatContext * c = nullptr;
 
@@ -520,43 +517,13 @@ static AVFormatContext * open_input_file (const char * name, VFSFile & file, boo
     AVInputFormat * f = nullptr;
     const char * xname = strncmp (name, "stdin://", 8) ? name : "pipe:";
 
-    bool havedashstream = false;
-    String dash_extensions = aud_get_str ("ffaudio", "dash_extensions");
-    /* WE'RE STDIN! */
     if (! strncmp (name, "stdin://-.mp4", 13))   /* JWT:SOME MP4's OPENED VIA STDIN REQUIRE THIS TO WORK?! */
     {
         AUDINFO ("-open_input_file (STDIN!)\n");
         if (LOG (avformat_open_input, & c, xname, nullptr, nullptr) < 0)
             return nullptr;
     }
-    /* WE'RE A "DASH-ISH" STREAM (CLOSE neon AND LET ffmpeg/libav HANDLE TRANSPORT)! */
-    else if (! fromtag && ! strncmp (name, "http", 4))
-    {
-        String sext = String (uri_get_extension (name));
-        if (sext && sext[0] && dash_extensions && dash_extensions[0])
-        {
-            Index<String> extlist = str_list_to_index (dash_extensions, ",");
-            for (auto & ext : extlist)
-            {
-                if (ext == sext)
-                {
-                    if (file)
-                        file = VFSFile ();   // CLOSE UP Fauxdacious/neon I/O AND USE FFMPEG'S I/O!:
-
-                    c = avformat_alloc_context ();
-                    if (LOG (avformat_open_input, & c, xname, f, nullptr) < 0)
-                    {
-                        if (c)
-                            avformat_free_context (c);
-                        return nullptr;
-                    }
-                    havedashstream = true;
-                    break;
-                }
-            }
-        }
-    }
-    if (! havedashstream)
+    else
     {
         AUDINFO ("-open_input_file (%s)\n", name);
         if (! file)
@@ -726,7 +693,7 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
 {
     if (strncmp (filename, "stdin://", 8))  /* WE'RE NOT STDIN! */
     {
-        SmartPtr<AVFormatContext, close_input_file> ic (open_input_file (filename, file, true));
+        SmartPtr<AVFormatContext, close_input_file> ic (open_input_file (filename, file));
         if (! ic)
             return false;
 
@@ -1135,7 +1102,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 
     DataShared2Thread TD;
 
-    TD.ic = open_input_file (filename, file, false);
+    TD.ic = open_input_file (filename, file);
     if (! TD.ic)
         return false;
 
@@ -1639,7 +1606,7 @@ breakout1:
     if (pthread_join (helper_thread, NULL))
         AUDERR ("Error joining thread\n");
 
-    if (thread_exit == 1)  // EOF:
+    if (thread_exit < 2)  // OUTPUT ANYTHING LEFT IN THE QUEUES (UNLESS USER HIT STOP-BUTTON):
     {
         while (TD.apktQ->size > 0 || TD.pktQ->size > 0)
         {
