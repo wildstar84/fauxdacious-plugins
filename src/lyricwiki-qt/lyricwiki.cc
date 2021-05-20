@@ -72,12 +72,12 @@ typedef struct {
     bool ok2save;          /* JWT:SET TO TRUE IF GOT LYRICS FROM LYRICWIKI (LOCAL FILE DOESN'T EXIST) */
     bool ok2saveTag;       /* JWT:SET TO TRUE IF GOT LYRICS FROM LYRICWIKI && LOCAL MP3 FILE */
     bool ok2edit;          /* JWT:DEPRECIATED:  SET TO TRUE IF USER CAN EDIT LYRICS (SITE) */
+    bool usedCacheName;    /* JWT:TRUE IF LYRICS CAME FROM CACHE OR HELPER (ALLOW USER TO FORCE REFRESH) */
     String shotitle;       /* JWT:NEXT 3 FOR THREAD TO SAVE LYRIC DATA UNTIL MAIN THREAD CAN DISPLAY IT: */
     String shoartist;
     String sholyrics;
 } LyricsState;
 
-static bool abortthreads = false;     // JWT:TRUE IF WE WANT TO ABORT ANY CURRENTLY-RUNNING THREADS.
 static bool resetthreads = false;     // JWT:TRUE STOP ANY THREADS RUNNING ON SONG CHANGE OR SHUTDOWN.
 static bool fromsongstartup = false;  // JWT:TRUE WHEN THREAD STARTED BY SONG CHANGE.
 static LyricsState state;             // GLOBAL VARIABLE STRUCT. */
@@ -388,8 +388,9 @@ static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t
 }
 
 static void update_lyrics (const char * title, const char * artist, const char * lyrics);
-
 static void save_lyrics_locally (bool haveonscreen);
+static void lyricwiki_playback (bool force_refresh);
+static void force_lyrics_refresh ();
 
 /* DEPRECIATED: STEP 3 OF 3 (FOR FETCHING LYRICS THE OLD-SCHOOL AUDACIOUS WAY (NO HELPER)): */
 static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *)
@@ -492,7 +493,7 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
 */
 static void * lyric_helper_thread_fn (void * data)
 {
-    bool abortthisthread = abortthreads || resetthreads;
+    bool abortthisthread = resetthreads;
     if (abortthisthread)
     {
         pthread_exit (nullptr);
@@ -504,7 +505,6 @@ static void * lyric_helper_thread_fn (void * data)
         {
             int sleep_msec = aud_get_int ("lyricwiki", "sleep_msec");
             if (sleep_msec < 1)  sleep_msec = 1600;
-            abortthreads = true;
             QThread::usleep (sleep_msec * 1000);  // SLEEP 2" TO ALLOW FOR ANY IMMEDIATE TUPLE CHANGE TO OVERRIDE!
             if (! fromsongstartup || resetthreads)  // CHGD. BY ANOTHER THREAD WHILST WE WERE SLEEPING!
             {
@@ -562,8 +562,11 @@ static void * lyric_helper_thread_fn (void * data)
                     update_lyrics (state.title, state.artist, (const char *) lyrics.begin ());
                     state.ok2save = true;
                     if (aud_get_bool ("lyricwiki", "cache_lyrics"))
+                    {
                         save_lyrics_locally (false);
-
+                        if (aud_get_bool ("lyricwiki", "search_internet"))
+                            state.usedCacheName = true;
+                    }
                     AUDINFO ("i:Lyrics came from HELPER!\n");
                     /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
                     if (! strncmp ((const char *) state.filename, "file://", 7)
@@ -607,10 +610,7 @@ THREAD_EXIT:
     lyric_helper = String ();
 
     if (! abortthisthread && ! resetthreads)
-    {
-        abortthreads = false;
         QApplication::postEvent(textedit, new QEvent((QEvent::Type) customType));
-    }
 
     pthread_mutex_unlock (& mutex);
 
@@ -711,6 +711,13 @@ static void save_lyrics_locally (bool haveonscreen)
     }
 }
 
+/* CALLED WHEN USER SELECTS "Refresh" FROM MENU: */
+static void force_lyrics_refresh ()
+{
+    fromsongstartup = false;
+    lyricwiki_playback (true);
+}
+
 /* CALLED WHEN USER SELECTS "SAVE IN ID3 TAG" FROM MENU (LOCAL SONG FILES ONLY): */
 static void save_lyrics_in_id3tag ()
 {
@@ -754,7 +761,7 @@ static void update_lyrics (const char * title, const char * artist, const char *
 }
 
 /* CALLED WHENEVER WE NEED LYRICS: */
-static void lyricwiki_playback ()
+static void lyricwiki_playback (bool force_refresh)
 {
     /* FIXME: cancel previous VFS requests (not possible with current API) */
 
@@ -763,10 +770,10 @@ static void lyricwiki_playback ()
     String lyricStr = String ("");
     StringBuf path = StringBuf ();
 
-    abortthreads = false;
     state.filename = aud_drct_get_filename ();
     state.uri = String ();
     state.ok2edit = false;
+    state.usedCacheName = false;
     state.local_filename = String ("");
 
     if (! strncmp (state.filename, "cdda://?", 8))  // FOR CDs, LOOK FOR DIRECTORY WITH TRACK LYRIC FILES:
@@ -843,7 +850,6 @@ static void lyricwiki_playback ()
     {
         AUDINFO ("i:Local lyric file found (%s).\n", (const char *) lyricStr);
         vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
-        abortthreads = true;  // TELL ANY SLEEPING THREADS TO ABORT!
     }
     else  // NO LOCAL LYRICS FILE FOUND, SO CHECK FOR ID3 LYRICS TAGS, THEN GLOBAL LYRIC FILE MATCHING ARTIST/TITLE:
     {
@@ -903,7 +909,7 @@ static void lyricwiki_playback ()
                 StringBuf base_path = filename_build ({user_dir, "lyrics"});
                 StringBuf artist_path = filename_build ({base_path, state.artist});
                 lyricStr = String (str_concat({filename_build({artist_path, state.title}), ".lrc"}));
-                found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
+                found_lyricfile = force_refresh ? 0 : ! (g_stat ((const char *) lyricStr, & statbuf));
 
                 /* local_filename := (GLOBAL) ARTIST NAME/TITLE, IF NOT ALREADY SET *OR* save_by_songfile NOT SET. */
                 if (! state.local_filename || ! state.local_filename[0] || ! save_by_songfile)
@@ -912,9 +918,9 @@ static void lyricwiki_playback ()
                 if (need_lyrics && found_lyricfile)
                 {
                     AUDINFO ("i:Global lyric file found by artist/title (%s).\n", (const char *) lyricStr);
-                    abortthreads = true;  // TELL ANY THREADS STILL RUNNING TO ABORT!
                     vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
                     lyricStr = String ();
+                    state.usedCacheName = true;
                     if (save_by_songfile)
                         state.ok2save = true;
 
@@ -966,8 +972,6 @@ static void lyricwiki_playback ()
             else
                 AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
         }
-        else
-            abortthreads = true;  // TELL ANY SLEEPING THREADS TO ABORT!
     }
     lyricStr = String ();
 }
@@ -977,20 +981,20 @@ static void lyricwiki_playback_began ()
 {
     resetthreads = true;
     fromsongstartup = true;
-    lyricwiki_playback ();
+    lyricwiki_playback (false);
 }
 
 /* CALLED WHEN TUPLE CHANGES (STREAMS CHANGE TITLE, ETC. WHILE PLAYING:  */
 static void lyricwiki_playback_changed ()
 {
     fromsongstartup = false;
-    lyricwiki_playback ();
+    lyricwiki_playback (false);
 }
 
 /* CALLED WHEN PLAYBACK IS STOPPED, MAKE SURE NO DANGLING THREADS HAVE LOCAL EVENT LOOP RUNNING!: */
 static void kill_thread_eventloop ()
 {
-    abortthreads = true;
+    state.usedCacheName = false;
     resetthreads = true;
 }
 
@@ -1060,6 +1064,14 @@ void TextEdit::contextMenuEvent (QContextMenuEvent * event)
         QAction * tuple_save_button = menu->addAction (_("Save ID3"));
         QObject::connect (tuple_save_button, & QAction::triggered, [] () {
             save_lyrics_in_id3tag ();
+        });
+    }
+    if (state.usedCacheName && aud_get_bool ("lyricwiki", "cache_lyrics")
+            && aud_get_bool ("lyricwiki", "search_internet"))
+    {
+        QAction * refresh = menu->addAction (_("Refresh"));
+        QObject::connect (refresh, & QAction::triggered, [] () {
+            force_lyrics_refresh ();
         });
     }
     menu->exec (event->globalPos ());

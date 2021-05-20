@@ -106,7 +106,6 @@ const PluginPreferences LyricWiki::prefs = {{widgets}};
 static GtkTextView * textview;
 static GtkTextBuffer * textbuffer;
 
-static bool abortthreads = false;     // JWT:TRUE IF WE WANT TO ABORT ANY CURRENTLY-RUNNING THREADS.
 static bool resetthreads = false;     // JWT:TRUE STOP ANY THREADS RUNNING ON SONG CHANGE OR SHUTDOWN.
 static bool fromsongstartup = false;  // JWT:TRUE WHEN THREAD STARTED BY SONG CHANGE.
 static LyricsState state;
@@ -301,8 +300,11 @@ static String scrape_uri_from_lyricwiki_search_result (const char * buf, int64_t
 
 static void update_lyrics (const char * title, const char * artist, const char * lyrics);
 static void show_lyrics ();
+static void lyricwiki_playback (bool force_refresh);
+static void force_lyrics_refresh ();
 
-static GtkWidget * edit_button;
+// DEPRECIATED: static GtkWidget * edit_button;
+static GtkWidget * refresh_button;
 static GtkWidget * save_button;
 static GtkWidget * tag_save_button;
 
@@ -321,7 +323,7 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
         update_lyrics (_("Error"), nullptr,
                 str_printf (_("Unable to fetch %s"), uri));
         show_lyrics ();
-        gtk_widget_set_sensitive (edit_button, true);
+// DEPRECIATED:         gtk_widget_set_sensitive (edit_button, true);
         return;
     }
 
@@ -334,14 +336,14 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
                         (const char *) state.artist}),
                 str_printf (_("Unable to parse(3) %s"), uri));
         show_lyrics ();
-        gtk_widget_set_sensitive (edit_button, true);
+// DEPRECIATED:         gtk_widget_set_sensitive (edit_button, true);
         return;
     }
 
     update_lyrics (state.title, state.artist, lyrics);
     show_lyrics ();
     AUDINFO ("i:Lyrics came from old LyricWiki site!\n");
-    gtk_widget_set_sensitive (edit_button, true);
+// DEPRECIATED:     gtk_widget_set_sensitive (edit_button, true);
     gtk_widget_set_sensitive (save_button, true);
     if (aud_get_bool ("lyricwiki", "cache_lyrics"))
         save_lyrics_locally_fromscreen ();
@@ -377,7 +379,7 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
         update_lyrics (_("Error"), nullptr,
                 str_printf (_("Unable to fetch %s"), uri1));
         show_lyrics ();
-        gtk_widget_set_sensitive (edit_button, false);
+// DEPRECIATED:         gtk_widget_set_sensitive (edit_button, false);
         return;
     }
 
@@ -388,14 +390,14 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
         update_lyrics (_("Error"), nullptr,
                 str_printf (_("Unable to parse(2) %s"), uri1));
         show_lyrics ();
-        gtk_widget_set_sensitive (edit_button, false);
+// DEPRECIATED:         gtk_widget_set_sensitive (edit_button, false);
         return;
     }
     else if (uri == String ("N/A"))
     {
         update_lyrics (state.title, state.artist, _("No lyrics available"));
         show_lyrics ();
-        gtk_widget_set_sensitive (edit_button, false);
+// DEPRECIATED:         gtk_widget_set_sensitive (edit_button, false);
         return;
     }
 
@@ -403,7 +405,7 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
 
     update_lyrics (state.title, state.artist, _("Looking for lyrics ..."));
     show_lyrics ();
-    gtk_widget_set_sensitive (edit_button, true);
+// DEPRECIATED:     gtk_widget_set_sensitive (edit_button, true);
     vfs_async_file_get_contents (uri, get_lyrics_step_3, nullptr);
 }
 
@@ -417,7 +419,7 @@ static void get_lyrics_step_2 (const char * uri1, const Index<char> & buf, void 
 */
 static void * lyric_helper_thread_fn (void * data)
 {
-    bool abortthisthread = abortthreads || resetthreads;
+    bool abortthisthread = resetthreads;
     if (abortthisthread)
     {
         pthread_exit (nullptr);
@@ -429,7 +431,6 @@ static void * lyric_helper_thread_fn (void * data)
         {
             int sleep_msec = aud_get_int ("lyricwiki", "sleep_msec");
             if (sleep_msec < 1)  sleep_msec = 1600;
-            abortthreads = true;
             g_usleep (sleep_msec * 1000);  // SLEEP 2" TO ALLOW FOR ANY IMMEDIATE TUPLE CHANGE TO OVERRIDE! */
             if (! fromsongstartup || resetthreads)  // CHGD. BY ANOTHER THREAD WHILST WE WERE SLEEPING!
             {
@@ -474,7 +475,7 @@ static void * lyric_helper_thread_fn (void * data)
 
         if (! resetthreads)
         {
-            gtk_widget_set_sensitive (edit_button, false);  /* NO EDITING LYRICS ON HELPER-SERVED SITES! */
+// DEPRECIATED:             gtk_widget_set_sensitive (edit_button, false);  /* NO EDITING LYRICS ON HELPER-SERVED SITES! */
             if (g_stat ((const char *) lyric_fid, & statbuf) == 0)
             {
                 VFSFile lyrics_file ((const char *) lyric_fid, "r");
@@ -489,8 +490,11 @@ static void * lyric_helper_thread_fn (void * data)
                         update_lyrics (state.title, state.artist, (const char *) lyrics.begin ());
                         gtk_widget_set_sensitive (save_button, true);
                         if (aud_get_bool ("lyricwiki", "cache_lyrics"))
+                        {
                             save_lyrics_locally ();
-
+                            if (aud_get_bool ("lyricwiki", "search_internet"))
+                                gtk_widget_set_sensitive (refresh_button, true);
+                        }
                         AUDINFO ("i:Lyrics came from HELPER!\n");
                         /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
                         if (! strncmp ((const char *) state.filename, "file://", 7)
@@ -527,7 +531,7 @@ static void * lyric_helper_thread_fn (void * data)
                 (const char *) title_buf));
 
         update_lyrics (state.title, state.artist, _("Connecting to lyrics.fandom.com ..."));
-        gtk_widget_set_sensitive (edit_button, false);
+// DEPRECIATED:         gtk_widget_set_sensitive (edit_button, false);
         vfs_async_file_get_contents (state.uri, get_lyrics_step_2, nullptr);
     }
 
@@ -535,10 +539,7 @@ THREAD_EXIT:
     lyric_helper = String ();
 
     if (! abortthisthread && ! resetthreads)
-    {
-        abortthreads = false;
         g_idle_add (lyrics_ready, nullptr);
-    }
 
     pthread_mutex_unlock (& mutex);
 
@@ -555,7 +556,7 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
         update_lyrics (_("Error"), nullptr,
                 str_printf (_("Unable to fetch file %s"), uri));
         show_lyrics ();
-        gtk_widget_set_sensitive (edit_button, false);
+// DEPRECIATED:         gtk_widget_set_sensitive (edit_button, false);
         return;
     }
 
@@ -576,10 +577,10 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
         artist_buf = str_encode_percent (artist_buf, -1);
         state.uri = String (str_printf ("https://lyrics.fandom.com/index.php?action=edit&title=%s:%s",
                 (const char *) artist_buf, (const char *) title_buf));
-        gtk_widget_set_sensitive (edit_button, true);
+// DEPRECIATED:         gtk_widget_set_sensitive (edit_button, true);
     }
-    else
-        gtk_widget_set_sensitive (edit_button, false);
+// DEPRECIATED:     else
+// DEPRECIATED:         gtk_widget_set_sensitive (edit_button, false);
 
     AUDINFO ("i:Lyrics came from local file: (%s)!\n", (const char *) state.local_filename);
     /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE, EVEN IF LYRICS ARE FROM LOCAL FILE. */
@@ -595,12 +596,13 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
     }
 }
 
-/* DEPRECIATED! */
+/* DEPRECIATED!:
 static void launch_edit_page ()
 {
     if (state.uri)
         gtk_show_uri (nullptr, state.uri, GDK_CURRENT_TIME, nullptr);
 }
+*/
 
 /* CALLED WHEN USER SELECTS "SAVE LOCALLY" TO CACHE (BEFORE LYRICS ARE SHOWN ONSCREEN): */
 static void save_lyrics_locally ()
@@ -686,6 +688,13 @@ static void save_lyrics_locally_fromscreen ()
     }
 }
 
+/* CALLED WHEN USER SELECTS "Refresh" FROM MENU: */
+static void force_lyrics_refresh ()
+{
+    fromsongstartup = false;
+    lyricwiki_playback (true);
+}
+
 /* CALLED WHEN USER SELECTS "SAVE IN ID3 TAG" FROM MENU (LOCAL SONG FILES ONLY): */
 static void save_lyrics_in_id3tag ()
 {
@@ -757,9 +766,13 @@ static GtkWidget * build_widget ()
     GtkWidget * hbox = gtk_hbox_new (false, 6);
     gtk_box_pack_start ((GtkBox *) vbox, hbox, false, false, 0);
 
-    edit_button = gtk_button_new_with_mnemonic (_("Edit Lyricwiki"));
-    gtk_widget_set_sensitive (edit_button, false);
-    gtk_box_pack_end ((GtkBox *) hbox, edit_button, false, false, 0);
+    // DEPRECIATED: edit_button = gtk_button_new_with_mnemonic (_("Edit Lyricwiki"));
+    // DEPRECIATED: gtk_widget_set_sensitive (edit_button, false);
+    // DEPRECIATED: gtk_box_pack_end ((GtkBox *) hbox, edit_button, false, false, 0);
+
+    refresh_button = gtk_button_new_with_mnemonic (_("Refresh"));
+    gtk_widget_set_sensitive (refresh_button, false);
+    gtk_box_pack_end ((GtkBox *) hbox, refresh_button, false, false, 0);
 
     save_button = gtk_button_new_with_mnemonic (_("Save Locally"));
     gtk_widget_set_sensitive (save_button, false);
@@ -769,7 +782,8 @@ static GtkWidget * build_widget ()
     gtk_widget_set_sensitive (tag_save_button, false);
     gtk_box_pack_end ((GtkBox *) hbox, tag_save_button, false, false, 0);
 
-    g_signal_connect (edit_button, "clicked", (GCallback) launch_edit_page, nullptr);
+// DEPRECIATED:     g_signal_connect (edit_button, "clicked", (GCallback) launch_edit_page, nullptr);
+    g_signal_connect (refresh_button, "clicked", (GCallback) force_lyrics_refresh, nullptr);
     g_signal_connect (save_button, "clicked", (GCallback) save_lyrics_locally_fromscreen, nullptr);
     g_signal_connect (tag_save_button, "clicked", (GCallback) save_lyrics_in_id3tag, nullptr);
     g_signal_connect (textbuffer, "changed", (GCallback) allow_usersave, nullptr);
@@ -817,7 +831,7 @@ static void show_lyrics ()
 }
 
 /* CALLED WHENEVER WE NEED LYRICS: */
-static void lyricwiki_playback ()
+static void lyricwiki_playback (bool force_refresh)
 {
     /* FIXME: cancel previous VFS requests (not possible with current API) */
 
@@ -826,10 +840,10 @@ static void lyricwiki_playback ()
     String lyricStr = String ("");
     StringBuf path = StringBuf ();
 
-    abortthreads = false;
     state.filename = aud_drct_get_filename ();
     state.uri = String ();
-    gtk_widget_set_sensitive (edit_button, false);
+// DEPRECIATED:     gtk_widget_set_sensitive (edit_button, false);
+    gtk_widget_set_sensitive (refresh_button, false);
     state.local_filename = String ("");
 
     if (! strncmp (state.filename, "cdda://?", 8))  // FOR CDs, LOOK FOR DIRECTORY WITH TRACK LYRIC FILES:
@@ -906,7 +920,6 @@ static void lyricwiki_playback ()
     {
         AUDINFO ("i:Local lyric file found (%s).\n", (const char *) lyricStr);
         vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
-        abortthreads = true;  // TELL ANY SLEEPING THREADS TO ABORT!
     }
     else  // NO LOCAL LYRICS FILE FOUND, SO CHECK FOR ID3 LYRICS TAGS, THEN GLOBAL LYRIC FILE MATCHING ARTIST/TITLE:
     {
@@ -918,7 +931,7 @@ static void lyricwiki_playback ()
             AUDDBG ("i:Lyrics found in ID3 tag.\n");
             update_lyrics (state.title, state.artist, (const char *) lyricsFromTuple);
             show_lyrics ();
-            gtk_widget_set_sensitive (edit_button, false);
+// DEPRECIATED:             gtk_widget_set_sensitive (edit_button, false);
             gtk_widget_set_sensitive (save_button, true);
             AUDINFO ("i:Lyrics came from id3 tag!\n");
             need_lyrics = false;
@@ -966,7 +979,7 @@ static void lyricwiki_playback ()
                 StringBuf base_path = filename_build ({user_dir, "lyrics"});
                 StringBuf artist_path = filename_build ({base_path, state.artist});
                 lyricStr = String (str_concat({filename_build({artist_path, state.title}), ".lrc"}));
-                found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
+                found_lyricfile = force_refresh ? 0 : ! (g_stat ((const char *) lyricStr, & statbuf));
 
                 /* local_filename := (GLOBAL) ARTIST NAME/TITLE, IF NOT ALREADY SET *OR* save_by_songfile NOT SET. */
                 if (! state.local_filename || ! state.local_filename[0] || ! save_by_songfile)
@@ -975,9 +988,11 @@ static void lyricwiki_playback ()
                 if (need_lyrics && found_lyricfile)
                 {
                     AUDINFO ("i:Global lyric file found by artist/title (%s).\n", (const char *) lyricStr);
-                    abortthreads = true;  // TELL ANY THREADS STILL RUNNING TO ABORT!
                     vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
                     lyricStr = String ();
+                    if (aud_get_bool ("lyricwiki", "cache_lyrics")
+                            && aud_get_bool ("lyricwiki", "search_internet"))
+                        gtk_widget_set_sensitive (refresh_button, true);
                     if (save_by_songfile)
                         gtk_widget_set_sensitive (save_button, true);
 
@@ -995,7 +1010,7 @@ static void lyricwiki_playback ()
             {
                 update_lyrics (_("Error"), nullptr, _("Missing title and/or artist"));
                 show_lyrics ();
-                gtk_widget_set_sensitive (edit_button, false);  /* NO EDITING LYRICS ON HELPER-SERVED SITES! */
+// DEPRECIATED:                 gtk_widget_set_sensitive (edit_button, false);  /* NO EDITING LYRICS ON HELPER-SERVED SITES! */
                 return;
             }
             if (! aud_get_bool ("lyricwiki", "search_internet"))
@@ -1029,8 +1044,6 @@ static void lyricwiki_playback ()
             else
                 AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
         }
-        else
-            abortthreads = true;  // TELL ANY SLEEPING THREADS TO ABORT!
     }
     lyricStr = String ();
 }
@@ -1040,20 +1053,20 @@ static void lyricwiki_playback_began ()
 {
     resetthreads = true;
     fromsongstartup = true;
-    lyricwiki_playback ();
+    lyricwiki_playback (false);
 }
 
 /* CALLED WHEN TUPLE CHANGES (STREAMS CHANGE TITLE, ETC. WHILE PLAYING:  */
 static void lyricwiki_playback_changed ()
 {
     fromsongstartup = false;
-    lyricwiki_playback ();
+    lyricwiki_playback (false);
 }
 
 /* CALLED WHEN PLAYBACK IS STOPPED, MAKE SURE NO DANGLING THREADS HAVE LOCAL EVENT LOOP RUNNING!: */
 static void kill_thread_eventloop ()
 {
-    abortthreads = true;
+    gtk_widget_set_sensitive (refresh_button, false);
     resetthreads = true;
 }
 
@@ -1076,7 +1089,7 @@ static void destroy_cb ()
     textbuffer = nullptr;
     save_button = nullptr;
     tag_save_button = nullptr;
-    edit_button = nullptr;
+// DEPRECIATED:     edit_button = nullptr;
 }
 
 /* CALLED ON STARTUP (WIDGET CREATION): */
