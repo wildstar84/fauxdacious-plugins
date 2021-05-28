@@ -112,9 +112,12 @@ public:
         if (state.sholyrics)
         {
             QString Q_Lyrics = QString (str_to_utf8 (state.sholyrics, -1));
-            (Q_Lyrics.contains ('<') && Q_Lyrics.contains ('>'))
-                    ? cursor.insertHtml (Q_Lyrics.replace (QChar ('\n'), "<br>"))
-                    : cursor.insertText (Q_Lyrics);
+            if (Q_Lyrics.length() > 0)
+            {
+                (Q_Lyrics.contains ('<') && Q_Lyrics.contains ('>'))
+                        ? cursor.insertHtml (Q_Lyrics.replace (QChar ('\n'), "<br>"))
+                        : cursor.insertText (Q_Lyrics);
+            }
         }
         state.ok2save = ok2save_was;
     }
@@ -559,7 +562,7 @@ static void * lyric_helper_thread_fn (void * data)
                     lyrics.resize (lyrics.len ()+1);
                     lyrics[lyrics.len ()-1] = '\0';
                     lyrics_found = true;
-                    update_lyrics (state.title, state.artist, (const char *) lyrics.begin ());
+                    update_lyrics (state.title, state.artist, lyrics.begin ());
                     state.ok2save = true;
                     if (aud_get_bool ("lyricwiki", "cache_lyrics"))
                     {
@@ -674,10 +677,10 @@ static void save_lyrics_locally (bool haveonscreen)
     if (state.local_filename && state.local_filename[0])
     {
         AUDINFO ("i:Saving lyrics locally to (%s)!\n", (const char *) state.local_filename);
-        QString lyrics = haveonscreen ? textedit->toPlainText () : QString (state.sholyrics);
+        QString lyrics = haveonscreen ? textedit->toPlainText () : QString (str_to_utf8 (state.sholyrics, -1));
         if (! lyrics.isNull() && ! lyrics.isEmpty())
         {
-            if (state.startlyrics > 0)
+            if (haveonscreen && state.startlyrics > 0)
                 lyrics.remove(0, state.startlyrics);
 
             int sz = lyrics.length ();
