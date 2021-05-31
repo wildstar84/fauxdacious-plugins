@@ -448,6 +448,7 @@ static void hide_dup_art_icon_toggle_fn ()
 static void widget_cleanup (QObject * widget)
 {
     resetthreads = true;
+    aud_set_bool ("albumart", "_isactive", false);
     if (aud_get_bool ("albumart", "hide_dup_art_icon")
             && ! aud_get_bool ("qtui", "infoarea_show_art")
             && aud_get_bool ("albumart", "_infoarea_show_art_saved"))
@@ -472,6 +473,8 @@ void * AlbumArtQt::get_qt_widget ()
     hook_associate ("playback ready", (HookFunction) init_update, widget);
     hook_associate ("tuple change", (HookFunction) tuple_update, widget);
     hook_associate ("playback stop", (HookFunction) clear, widget);
+
+    aud_set_bool ("albumart", "_isactive", true);
 
     if (aud_drct_get_ready ())
         widget->update_art ();

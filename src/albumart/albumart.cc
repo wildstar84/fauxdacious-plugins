@@ -357,6 +357,7 @@ static void hide_dup_art_icon_toggle_fn ()
 static void album_cleanup (GtkWidget * widget)
 {
     resetthreads = true;
+    aud_set_bool ("albumart", "_isactive", false);
     if (aud_get_bool ("albumart", "hide_dup_art_icon")
             && ! aud_get_bool ("gtkui", "infoarea_show_art")
             && aud_get_bool ("albumart", "_infoarea_show_art_saved"))
@@ -384,6 +385,8 @@ void * AlbumArtPlugin::get_gtk_widget ()
     hook_associate ("playback ready", (HookFunction) album_init, widget);
     hook_associate ("tuple change", (HookFunction) album_tuplechg, widget);
     hook_associate ("playback stop", (HookFunction) album_clear, widget);
+
+    aud_set_bool ("albumart", "_isactive", true);
 
     if (aud_drct_get_ready ())
         album_init (nullptr, widget);

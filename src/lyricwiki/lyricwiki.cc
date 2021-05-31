@@ -57,6 +57,7 @@ typedef struct {
     String uri;            /* URI we are trying to retrieve */
     String local_filename; /* JWT:CALCULATED LOCAL FILENAME TO SAVE LYRICS TO */
     gint startlyrics;      /* JWT:OFFSET IN LYRICS WINDOW WHERE LYRIC TEXT ACTUALLY STARTS */
+    bool force_refresh;    /* JWT:TRUE IF USER FORCED REFRESH VIA [Refresh] BUTTON (DON'T WAIT FOR ALBUMART! */
     String shotitle;       /* JWT:NEXT 3 FOR THREAD TO SAVE LYRIC DATA UNTIL MAIN THREAD CAN DISPLAY IT: */
     String shoartist;
     String sholyrics;
@@ -457,19 +458,23 @@ static void * lyric_helper_thread_fn (void * data)
         if (! state.album)
             state.album = String ("_");
 
+        /* JWT:DON'T WANT HELPER WAITING FOR ALBUMART UNLESS ALBUMART ACTIVE AND NOT A USER-FORCED REFRESH: */
+        const char * flags = (! state.force_refresh && aud_get_bool ("albumart", "_isactive")
+                && aud_get_bool ("albumart", "internet_coverartlookup")) ? "ALBUMART" : "none";
+
         AUDINFO ("i:HELPER FOUND: WILL DO (%s)\n", (const char *) str_concat ({lyric_helper, " \"",
                 (const char *) state.artist, "\" \"",
                 (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir),
-                " \"", (const char *) state.album, "\" "}));
+                " \"", (const char *) state.album, "\" '", flags, "' "}));
 #ifdef _WIN32
         WinExec ((const char *) str_concat ({lyric_helper, " \"", (const char *) state.artist, "\" \"",
                 (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir),
-                " \"", (const char *) state.album, "\" "}),
+                " \"", (const char *) state.album, "\" '", flags, "' "}),
                 SW_HIDE);
 #else
         system ((const char *) str_concat ({lyric_helper, " \"", (const char *) state.artist, "\" \"",
                 (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir),
-                " \"", (const char *) state.album, "\" "}));
+                " \"", (const char *) state.album, "\" '", flags, "' "}));
 #endif
         String lyric_fid = String (str_concat ({aud_get_path (AudPath::UserDir), "/_tmp_lyrics.txt"}));
 
@@ -845,6 +850,7 @@ static void lyricwiki_playback (bool force_refresh)
 // DEPRECIATED:     gtk_widget_set_sensitive (edit_button, false);
     gtk_widget_set_sensitive (refresh_button, false);
     state.local_filename = String ("");
+    state.force_refresh = force_refresh;
 
     if (! strncmp (state.filename, "cdda://?", 8))  // FOR CDs, LOOK FOR DIRECTORY WITH TRACK LYRIC FILES:
     {
