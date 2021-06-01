@@ -235,12 +235,21 @@ NeonFile::NeonFile (const char * url) :
 NeonFile::~NeonFile ()
 {
     if (m_reader_status.reading)
+    {
+        pthread_mutex_unlock (& m_reader_status.mutex);
         kill_reader ();
+    }
 
     if (m_request)
+    {
         ne_request_destroy (m_request);
+        m_request = nullptr;
+    }
     if (m_session)
+    {
         ne_session_destroy (m_session);
+        m_session = nullptr;
+    }
 
     if (buffer)
         free (buffer);
@@ -364,7 +373,9 @@ void NeonFile::kill_reader ()
     pthread_mutex_unlock (& m_reader_status.mutex);
 
     AUDDBG ("Waiting for reader thread to die...\n");
-    pthread_join (m_reader, nullptr);
+    if (pthread_join (m_reader, nullptr))
+        AUDERR("ERROR: joining thread!\n");
+
     AUDDBG ("Reader thread has died\n");
 }
 

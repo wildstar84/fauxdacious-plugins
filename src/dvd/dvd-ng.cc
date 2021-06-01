@@ -164,7 +164,7 @@ private:
     AVFormatContext * open_input_file (struct pollfd * input_fd_p);
 #endif
     void reader_demuxer ();
-    static void * reader_thread (void * data)
+    static void * dvd_reader_thread_fn (void * data)
     { 
         ((DVD *) data)->reader_demuxer ();
         AUDINFO ("i:reader_demuxer done!!!\n");
@@ -2457,7 +2457,7 @@ bool DVD::play (const char * name, VFSFile & file)
     /* SPAWN THE READER/DEMUXER THREAD */
 #ifndef NODEMUXING
     AUDDBG("PLAY:opened OUTPUT PIPE (%s) !!!!!!!!...\n", (const char *)dvdnav_priv->fifo_str);
-    if (pthread_create (&rdmux_thread, nullptr, reader_thread, this))
+    if (pthread_create (&rdmux_thread, nullptr, dvd_reader_thread_fn, this))
     {
         dvd_error ("s:Error creating playback reader thread: %s\n", strerror(errno));
         stop_playback = true;
