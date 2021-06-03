@@ -112,11 +112,24 @@ public:
         for (auto & ext : extlist)
         {
             coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
+#ifdef _WIN32
+            const char * filenamechar = coverart_file + 7;
+#else
             const char * filenamechar = coverart_file;
+#endif
             struct stat statbuf;
+#ifdef _WIN32
+            if (stat (filenamechar, &statbuf) >= 0)  // ART IMAGE FILE EXISTS:
+#else
             if (stat (filenamechar+7, &statbuf) >= 0)  // ART IMAGE FILE EXISTS:
+#endif
             {
+#ifdef _WIN32
+                coverart_file = String (filename_to_uri (filenamechar));
+                origPixmap = QPixmap (audqt::art_request ((const char *) coverart_file, 0, 0));
+#else
                 origPixmap = QPixmap (audqt::art_request (filenamechar, 0, 0));
+#endif
                 origSize = origPixmap.size ();
                 drawArt ();
 
