@@ -50,7 +50,7 @@ static bool resetthreads = false;     // JWT:TRUE STOP ANY THREADS RUNNING ON SO
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int customType = QEvent::registerEventType();
 static bool hide_dup_art_icon;   /* JWT:TOGGLE TO TRUE TO HIDE (DUPLICATE) ART ICON IN INFOBAR IF A WEB IMAGE FETCHED. */
-static bool last_image_from_web; /* JWT:TRUE IF LAST IMAGE CAME FROM WEB ("LOOK FOR ALBUM ART ON musicbrainz" OPTION). */
+static bool last_image_from_web; /* JWT:TRUE IF LAST IMAGE CAME FROM WEB ("Look for album art on the web" OPTION). */
 
 /* JWT:SEPARATE THREAD TO CALL THE HELPER SO THAT THE "LONG" TIME IT TAKES DOESN'T FREEZE THE GUI
    DISPLAY WHILE ATTEMPTING TO FIND AND FETCH THE ALBUM-ART.  THIS THREAD MUST *NOT* CALL THE
@@ -431,7 +431,7 @@ static void clear (void *, ArtLabel * widget)
 /* JWT:CALLED WHEN USER TOOGLES THE hide_dup_art_icon CHECKBOX: */
 /* IF ON, WE HIDE THE "DUPLICATE" IMG. IN INFOBAR, UNLESS WE FETCHED AN IMG. FROM THE WEB! */
 /* (THIS OPTION HAS NO EFFECT UNLESS BOTH THE "VIEW - SHOW INFOBAR ALBUM ART" -AND THE - */
-/* THE PLUGIN'S "LOOK FOR ALBUM ART ON musicbrainz" OPTIONS ARE BOTH ON)! */
+/* THE PLUGIN'S "LOOK FOR ALBUM ART ON THE WEB" OPTIONS ARE BOTH ON)! */
 static void hide_dup_art_icon_toggle_fn ()
 {
     bool infoarea_show_art = aud_get_bool ("qtui", "infoarea_show_art");
@@ -511,9 +511,9 @@ bool AlbumArtQt::init ()
 
 const PreferencesWidget AlbumArtQt::widgets[] = {
     WidgetLabel(N_("<b>Albumart Configuration</b>")),
-    WidgetCheck (N_("Look for album art on Musicbrainz.com"),
+    WidgetCheck (N_("Look for album art on the web."),
         WidgetBool ("albumart", "internet_coverartlookup")),
-    WidgetCheck (N_("Hide info bar art icon unless separate album cover fetched"),
+    WidgetCheck (N_("Hide info bar art icon unless separate album cover fetched."),
         WidgetBool (hide_dup_art_icon, hide_dup_art_icon_toggle_fn)),
 };
 

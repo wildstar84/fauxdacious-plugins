@@ -44,7 +44,7 @@ static bool skipArtReInit = false;    // JWT:TRUE:SKIP RESETTING ART (ALREADY RE
 static bool resetthreads = false;     // JWT:TRUE STOP ANY THREADS RUNNING ON SONG CHANGE OR SHUTDOWN.
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool hide_dup_art_icon;   /* JWT:TOGGLE TO TRUE TO HIDE (DUPLICATE) ART ICON IN INFOBAR IF A WEB IMAGE FETCHED. */
-static bool last_image_from_web; /* JWT:TRUE IF LAST IMAGE CAME FROM WEB ("LOOK FOR ALBUM ART ON musicbrainz" OPTION). */
+static bool last_image_from_web; /* JWT:TRUE IF LAST IMAGE CAME FROM WEB ("Look for album art on the web" OPTION). */
 
 class AlbumArtPlugin : public GeneralPlugin
 {
@@ -342,7 +342,7 @@ static void album_clear (void *, GtkWidget * widget)
 /* JWT:CALLED WHEN USER TOOGLES THE hide_dup_art_icon CHECKBOX: */
 /* IF ON, WE HIDE THE "DUPLICATE" IMG. IN INFOBAR, UNLESS WE FETCHED AN IMG. FROM THE WEB! */
 /* (THIS OPTION HAS NO EFFECT UNLESS BOTH THE "VIEW - SHOW INFOBAR ALBUM ART" -AND THE - */
-/* THE PLUGIN'S "LOOK FOR ALBUM ART ON musicbrainz" OPTIONS ARE BOTH ON)! */
+/* THE PLUGIN'S "LOOK FOR ALBUM ART ON THE WEB" OPTIONS ARE BOTH ON)! */
 static void hide_dup_art_icon_toggle_fn ()
 {
     bool infoarea_show_art = aud_get_bool ("gtkui", "infoarea_show_art");
@@ -407,20 +407,17 @@ void * AlbumArtPlugin::get_gtk_widget ()
     return widget;
 }
 
-/* JWT:FIXME: THIS IS MARKED "EXPERIMENTAL" IN WINDOWS SINCE GUI-INTERACTION CAN
+/*  DEPRECIATED: JWT:FIXME: THIS IS MARKED "EXPERIMENTAL" IN WINDOWS SINCE GUI-INTERACTION CAN
     BECOME INVISIBLE AFTER A TIME UNTIL PLAY STOPPED & RESTARTED LEADING TO A BAD
     USER-EXPERIENCE, AND I HAVEN'T BEEN ABLE TO FIGURE OUT WHY?!?!?!
+    UPDATE:  AS OF v4.1.2-final, THIS ISSUE SEEMS TO BE RESOLVED!
 */
 
 const PreferencesWidget AlbumArtPlugin::widgets[] = {
     WidgetLabel(N_("<b>Albumart Configuration</b>")),
-#ifdef _WIN32
-    WidgetCheck (N_("Look for album art on Musicbrainz.com (EXPERIMENTAL!)"),
-#else
-    WidgetCheck (N_("Look for album art on Musicbrainz.com"),
-#endif
+    WidgetCheck (N_("Look for album art on the web."),
         WidgetBool ("albumart", "internet_coverartlookup")),
-    WidgetCheck (N_("Hide info bar art icon unless separate album cover fetched"),
+    WidgetCheck (N_("Hide info bar art icon unless separate album cover fetched."),
         WidgetBool (hide_dup_art_icon, hide_dup_art_icon_toggle_fn)),
 };
 
