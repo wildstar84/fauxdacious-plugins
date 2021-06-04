@@ -247,7 +247,11 @@ NeonFile::~NeonFile ()
     }
     if (m_session)
     {
-        ne_session_destroy (m_session);
+        try {  /* JWT:CURRENT libtasn1.so.6 (_asn1_delete_structure() CAN SEGFAULT?!): */
+            ne_session_destroy (m_session);
+        } catch (...) {
+            AUDERR ("e:FAILED TO DESTROY SESSION! (libtasn1 bug: would have caused Fauxdacious crash!\n");
+        }
         m_session = nullptr;
     }
 
@@ -374,7 +378,7 @@ void NeonFile::kill_reader ()
 
     AUDDBG ("Waiting for reader thread to die...\n");
     if (pthread_join (m_reader, nullptr))
-        AUDERR("ERROR: joining thread!\n");
+        AUDERR ("ERROR: joining thread!\n");
 
     AUDDBG ("Reader thread has died\n");
 }
