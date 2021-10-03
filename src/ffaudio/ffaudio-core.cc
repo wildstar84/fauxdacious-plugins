@@ -1021,8 +1021,7 @@ static void * reader_thread_fn (void * data)
                         goto THREAD_EXIT;
                     }
                 }
-                while ((TD->pktQ->size > minbuffer || TD->apktQ->size == TD->apktQ->capacity)
-                        && TD->apktQ->size > minbuffer);
+                while (TD->pktQ->size > minbuffer && TD->apktQ->size > minbuffer);
             }
             Enqueue (TD->apktQ, pkt);
         }
@@ -1039,8 +1038,7 @@ static void * reader_thread_fn (void * data)
                         goto THREAD_EXIT;
                     }
                 }
-                while ((TD->apktQ->size > minbuffer || TD->pktQ->size == TD->pktQ->capacity)
-                        && TD->pktQ->size > minbuffer);
+                while (TD->apktQ->size > minbuffer && TD->pktQ->size > minbuffer);
             }
             Enqueue (TD->pktQ, pkt);
         }
@@ -1371,17 +1369,17 @@ breakout1:
                 Dequeue (TD.apktQ);
                 /* NOTE:THE HARDCODED MULTIPLES STAGGERED B/C AFTER 2X, WE HESITATE A BIT TO ADD MORE: */
                 /* (MAINTAIN THE A/V RATIO AS CLOSE TO 1:1-ISH OR THE VIDEO'S OVERALL RATIO AS POSSIBLE) */
-                if (TD.apktQ->size > int(1.4 * TD.pktQ->size))  // CLOSER TO 2X AUDIOS QUEUED THAN VIDEOS, PROCESS AN EXTRA ONE!
+                if (TD.apktQ->size > int(1.1 * TD.pktQ->size))  // CLOSER TO 2X AUDIOS QUEUED THAN VIDEOS, PROCESS AN EXTRA ONE!
                 {
                     pktRef = & TD.apktQ->elements[TD.apktQ->front];
                     write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
                     Dequeue (TD.apktQ);
-                    if (TD.apktQ->size > int(2.8 * TD.pktQ->size))  // CLOSER TO 3X AUDIOS QUEUED THAN VIDEOS, PROCESS ANOTHER EXTRA ONE!
+                    if (TD.apktQ->size > int(2.7 * TD.pktQ->size))  // CLOSER TO 3X AUDIOS QUEUED THAN VIDEOS, PROCESS ANOTHER EXTRA ONE!
                     {
                         pktRef = & TD.apktQ->elements[TD.apktQ->front];
                         write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
                         Dequeue (TD.apktQ);
-                        if (TD.apktQ->size > int(4.2 * TD.pktQ->size))  // CLOSER TO 4X AUDIOS QUEUED THAN VIDEOS, PROCESS ANOTHER EXTRA ONE!
+                        if (TD.apktQ->size > int(4.3 * TD.pktQ->size))  // CLOSER TO 4X AUDIOS QUEUED THAN VIDEOS, PROCESS ANOTHER EXTRA ONE!
                         {
                             pktRef = & TD.apktQ->elements[TD.apktQ->front];
                             write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
@@ -1611,28 +1609,16 @@ breakout1:
         while (TD.apktQ->size > 0 || TD.pktQ->size > 0)
         {
             AVPacket * pktRef;
-            while (1)  // WE PREFER TO OUTPUT ORDERED AS AUDIO, VIDEO, AUDIO, ...
-            {
-                if ((pktRef = (TD.apktQ->size ? & TD.apktQ->elements[TD.apktQ->front] : nullptr)))
-                {   // PROCESS NEXT AUDIO FRAME IN QUEUE:
-                    write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
-                    Dequeue (TD.apktQ);
-                }
-                if ((pktRef = (TD.pktQ->size ? & TD.pktQ->elements[TD.pktQ->front] : nullptr)))
-                {   // PROCESS NEXT VIDEO FRAME IN QUEUE:
-                    write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pktRef,
-                            video_width, video_height, last_resized, & windowIsStable);
-                    Dequeue (TD.pktQ);
-                }
-                else
-                    break;
-                if ((pktRef = (TD.apktQ->size ? & TD.apktQ->elements[TD.apktQ->front] : nullptr)))
-                {   // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
-                    write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
-                    Dequeue (TD.apktQ);
-                }
-                else
-                    break;
+            if ((pktRef = (TD.apktQ->size ? & TD.apktQ->elements[TD.apktQ->front] : nullptr)))
+            {   // PROCESS NEXT AUDIO FRAME IN QUEUE:
+                write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+                Dequeue (TD.apktQ);
+            }
+            if (myplay_video && (pktRef = (TD.pktQ->size ? & TD.pktQ->elements[TD.pktQ->front] : nullptr)))
+            {   // PROCESS NEXT VIDEO FRAME IN QUEUE:
+                write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pktRef,
+                        video_width, video_height, last_resized, & windowIsStable);
+                Dequeue (TD.pktQ);
             }
         }
         pkt = AVPacket ();
