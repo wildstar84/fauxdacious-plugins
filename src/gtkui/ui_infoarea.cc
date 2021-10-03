@@ -401,7 +401,28 @@ static void set_album_art ()
         return;
     }
 
-    area->pb = audgui_pixbuf_request_current ();
+    bool noAltArt = true;
+    if (aud_get_bool ("albumart", "_isactive"))
+    {
+        Tuple tuple = aud_drct_get_tuple ();
+        String tfld = tuple.get_str (Tuple::Comment);
+        if (tfld && tfld[0])
+        {
+            const char * tfld_offset = strstr ((const char *) tfld, ";file://");
+            if (tfld_offset)
+            {
+                tfld_offset += 1;
+                if (tfld_offset)
+                {
+                    area->pb = audgui_pixbuf_request (tfld_offset);
+                    if (area->pb)
+                        noAltArt = false;
+                }
+            }
+        }
+    }
+    if (noAltArt)
+        area->pb = audgui_pixbuf_request_current ();
     if (area->pb)
     {
         audgui_pixbuf_scale_within (area->pb, ICON_SIZE);

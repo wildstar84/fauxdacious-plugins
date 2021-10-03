@@ -168,14 +168,31 @@ public:
             drawArt ();
         }
 
-        if (aud_get_bool ("albumart", "hide_dup_art_icon")
-                && aud_get_bool ("qtui", "infoarea_show_art"))
+        if (aud_get_bool ("albumart", "hide_dup_art_icon"))
         {
-            /* JWT:HIDE INFOBAR ART ICON (DUP?) IF DISPLAYING THE IMAGE IN THE ALBUMART BOX! */
-            /* BUT WE'LL RESHOW IT IF WE FETCH A CUSTOM ALBUM COVER FROM THE WEB (NOT A DUP!) */
-            aud_set_bool ("qtui", "infoarea_show_art", false);
-            hook_call ("qtui toggle infoarea_art", nullptr);
-            aud_set_bool ("qtui", "infoarea_show_art", false);
+            Tuple tuple = aud_drct_get_tuple ();
+            String tfld = tuple.get_str (Tuple::Comment);
+            if (aud_get_bool ("qtui", "infoarea_show_art"))
+            {
+                if (! tfld || ! tfld[0] || ! strstr ((const char *) tfld, ";"))
+                {
+                    /* JWT:HIDE INFOBAR ART ICON (DUP?) IF DISPLAYING THE IMAGE IN THE ALBUMART BOX! */
+                    /* BUT WE'LL RESHOW IT IF WE FETCH A CUSTOM ALBUM COVER FROM THE WEB (NOT A DUP!) */
+                    aud_set_bool ("qtui", "infoarea_show_art", false);
+                    hook_call ("qtui toggle infoarea_art", nullptr);
+                    aud_set_bool ("qtui", "infoarea_show_art", false);
+                }
+            }
+            else if (aud_get_bool ("albumart", "_infoarea_show_art_saved"))
+            {
+                if (tfld && tfld[0] && strstr ((const char *) tfld, ";"))
+                {
+                    /* JWT:WE QUIT HIDDEN DUE TO DUP. ICONS, BUT CAME UP W/CHANNEL ICON, SO SHOW IT! */
+                    aud_set_bool ("qtui", "infoarea_show_art", true);
+                    hook_call ("qtui toggle infoarea_art", nullptr);
+                    aud_set_bool ("qtui", "infoarea_show_art", true);
+                }
+            }
         }
         last_image_from_web = false;
         if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP INTERNET ART SEARCH! */
