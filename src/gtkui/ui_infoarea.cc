@@ -26,6 +26,7 @@
 #include <libfauxdcore/hook.h>
 #include <libfauxdcore/interface.h>
 #include <libfauxdcore/runtime.h>
+#include <libfauxdcore/probe.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "ui_infoarea.h"
@@ -404,6 +405,7 @@ static void set_album_art ()
     bool noAltArt = true;
     if (aud_get_bool ("albumart", "_isactive"))
     {
+        /* JWT:AlbumArt PLUGIN ACTIVE, SEE IF WE HAVE "CHANNEL ICON" TO PUT IN INFO_BAR INSTEAD: */
         Tuple tuple = aud_drct_get_tuple ();
         String tfld = tuple.get_str (Tuple::Comment);
         if (tfld && tfld[0])
@@ -411,6 +413,7 @@ static void set_album_art ()
             const char * tfld_offset = strstr ((const char *) tfld, ";file://");
             if (tfld_offset)
             {
+                /* FOUND CHANNEL ICON IN COMMENT FIELD: */
                 tfld_offset += 1;
                 if (tfld_offset)
                 {
@@ -419,8 +422,32 @@ static void set_album_art ()
                         noAltArt = false;
                 }
             }
+            else  /* NO CHANNEL ICON IN COMMENT (OVERWRITTEN BY STREAM METATAGS?), SO CHECK tmp_tag_data: */
+            {     /* (THIS ONLY APPLIES TO STREAMING VIDEOS/PODCASTS, WHICH ALWAYS PUT IT THERE) */
+                const char * filename = aud_drct_get_filename ();
+                if (filename && aud_read_tag_from_tagfile (filename, "tmp_tag_data", tuple))
+                {
+                    String tfld = tuple.get_str (Tuple::Comment);
+                    if (tfld && tfld[0])
+                    {
+                        /* THERE'S A COMMENT BUT NO ART FILE IN IT (IE. RUMBLE.COM STREAMS HAVE A COMMENT): */
+                        const char * tfld_offset = strstr ((const char *) tfld, ";file://");
+                        if (tfld_offset)
+                        {
+                            tfld_offset += 1;
+                            if (tfld_offset)
+                            {
+                                area->pb = audgui_pixbuf_request (tfld_offset);
+                                if (area->pb)
+                                    noAltArt = false;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
+    aud_set_bool ("albumart", "_have_channel_art", ! noAltArt); // TELL AlbumArt PLUGIN.
     if (noAltArt)
         area->pb = audgui_pixbuf_request_current ();
     if (area->pb)
