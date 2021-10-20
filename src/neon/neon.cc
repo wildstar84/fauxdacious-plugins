@@ -95,6 +95,12 @@ struct icy_metadata
 
 static const char * const neon_schemes[] = {"http", "https"};
 
+static const ComboItem ignore_ssl_certs_choices[] = {
+    ComboItem (N_("Never"), 0),               // (DEFAULT) - PERFORM FULL SSL CERT. CHECKS ON HTTPS STREAMS.
+    ComboItem (N_("Untrusted"), 1),           // (WINDOWS DEFAULT) CHECK BUT ALLOW UNTRUSTED CERTS. (M$ WINDOWS SEEMS TO NEED)?
+    ComboItem (N_("All checks (risky!)"), 2)  // SKIP ALL SSL VALIDATION (RISKY) USER MUST TRUST STREAMING SITES!
+};
+
 class NeonTransport : public TransportPlugin
 {
 public:
@@ -118,10 +124,11 @@ const char * const NeonTransport::defaults[] = {
     "neon_retries", aud::numeric_string<NEON_RETRY_COUNT>::str,
     "neon_timeoutsec", aud::numeric_string<NEON_TIMEOUTSEC>::str,
 #ifdef _WIN32
-    "ignore_ssl_certs", "TRUE",  // WINDOWS DOESN'T USE SSL_CERT_* ENV. VARS & THUS CAN'T FIND CERTS?!
+    "ignore_ssl_certs", 1,  // WINDOWS DOESN'T USE SSL_CERT_* ENV. VARS & THUS CAN'T FIND CERTS?!
 #else
-    "ignore_ssl_certs", "FALSE",
+    "ignore_ssl_certs", 0,
 #endif
+    "user_agent", "Fauxdacious/" PACKAGE_VERSION,
     nullptr
 };
 
@@ -189,6 +196,7 @@ private:
     char * buffer;
     int neon_retry_count;
     int neon_timeoutsec;
+    String user_agent;
     Index<char> m_icy_buf;        /* Buffer for ICY metadata */
     icy_metadata m_icy_metadata;  /* Current ICY metadata */
 
@@ -228,7 +236,12 @@ NeonFile::NeonFile (const char * url) :
     neon_timeoutsec = aud_get_int("neon", "neon_timeoutsec");
     if (neon_timeoutsec <= 0)
         neon_timeoutsec = NEON_TIMEOUTSEC;
-
+    user_agent = aud_get_str ("neon", "user_agent");
+    if (! user_agent || ! user_agent[0])
+    {
+        user_agent = String ("Fauxdacious/" PACKAGE_VERSION);
+        aud_set_str ("neon", "user_agent", user_agent);  // JWT:SET DEFAULTS DOESN'T SEEM TO DO THIS?!
+    }
     buffer = (char *) malloc (neon_netblksize);
 }
 
@@ -255,6 +268,7 @@ NeonFile::~NeonFile ()
         m_session = nullptr;
     }
 
+    user_agent = String ();
     if (buffer)
         free (buffer);
 
@@ -675,7 +689,7 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
         ne_set_session_flag (m_session, NE_SESSFLAG_PERSIST, 0);
         ne_set_connect_timeout (m_session, neon_timeoutsec);
         ne_set_read_timeout (m_session, neon_timeoutsec);
-        ne_set_useragent (m_session, "Fauxdacious/" PACKAGE_VERSION);
+        ne_set_useragent (m_session, user_agent);
 
         if (use_proxy)
         {
@@ -1213,8 +1227,9 @@ int64_t NeonFile::fsize ()
 
 const PreferencesWidget NeonTransport::widgets[] = {
     WidgetLabel(N_("<b>Neon Configuration</b>")),
-    WidgetCheck (N_("Ignore invalid SSL certificates"),
-        WidgetBool ("neon", "ignore_ssl_certs")),
+    WidgetCombo (N_("Ignore invalid SSL certificates"),
+        WidgetInt ("neon", "ignore_ssl_certs"),
+        {{ignore_ssl_certs_choices}}),
     WidgetSpin (N_("Network Buffer (bytes):"),
         WidgetInt ("neon", "neon_buffersz"),
         {256, 32768, 512}),
@@ -1224,6 +1239,8 @@ const PreferencesWidget NeonTransport::widgets[] = {
     WidgetSpin (N_("Timeout (sec):"),
         WidgetInt ("neon", "neon_timeoutsec"),
         {1, 30, 1}),
+    WidgetEntry (N_("User Agent:"),
+        WidgetString ("neon", "user_agent")),
 };
 
 const PluginPreferences NeonTransport::prefs = {{widgets}};

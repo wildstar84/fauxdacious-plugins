@@ -372,11 +372,15 @@ static bool validate_directory_certs (const char * directory,
 int neon_vfs_verify_environment_ssl_certs (void * userdata, int failures,
  const ne_ssl_certificate * serverCert)
 {
+    /* JWT:ADDED FOR Youtube / Vimeo PLAY ON WINDOWS, SINCE WINDOWS SEEMS TO CHECK & NOT TRUST CERT. ISSUER?! */
+    int ignore_ssl_certs = aud_get_int ("neon", "ignore_ssl_certs");
+    if (ignore_ssl_certs == 2)
+        return 0;
+    else if (ignore_ssl_certs == 1)
+        return failures & ~NE_SSL_UNTRUSTED;
+
     // First check the certificate file, if we have one.
     const char * sslCertFile = g_getenv ("SSL_CERT_FILE");
-
-    /* JWT:ADDED FOR Youtube / Vimeo PLAY ON WINDOWS, SINCE WINDOWS SEEMS TO CHECK & NOT TRUST CERT. ISSUER?! */
-    if (aud_get_bool ("neon", "ignore_ssl_certs"))  return failures & ~NE_SSL_UNTRUSTED;
 
     if (sslCertFile != nullptr)
     {
