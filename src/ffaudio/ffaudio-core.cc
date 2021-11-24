@@ -1779,6 +1779,9 @@ const char * const FFaudio::exts[] = {
     /* WebM Videos  // JWT:ADDED */
     "webm",
 
+    /* Matroska */
+    "mka", "mkv",
+
     /* end of table */
     nullptr
 };
