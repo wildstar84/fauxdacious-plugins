@@ -71,6 +71,7 @@ typedef struct {
     int startlyrics;       /* JWT:OFFSET IN LYRICS WINDOW WHERE LYRIC TEXT ACTUALLY STARTS */
     bool ok2save;          /* JWT:SET TO TRUE IF GOT LYRICS FROM LYRICWIKI (LOCAL FILE DOESN'T EXIST) */
     bool ok2saveTag;       /* JWT:SET TO TRUE IF GOT LYRICS FROM LYRICWIKI && LOCAL MP3 FILE */
+    bool Wasok2saveTag;    /* JWT:SET TO TRUE AFTER SAVE TO TAGS, FOR RESETTING IF USER EDITS THEM */
     bool ok2edit;          /* JWT:DEPRECIATED:  SET TO TRUE IF USER CAN EDIT LYRICS (SITE) */
     bool usedCacheName;    /* JWT:TRUE IF LYRICS CAME FROM CACHE OR HELPER (ALLOW USER TO FORCE REFRESH) */
     bool force_refresh;    /* JWT:TRUE IF USER FORCED REFRESH VIA [Refresh] BUTTON (DON'T WAIT FOR ALBUMART! */
@@ -84,6 +85,7 @@ static bool fromsongstartup = false;  // JWT:TRUE WHEN THREAD STARTED BY SONG CH
 static LyricsState state;             // GLOBAL VARIABLE STRUCT. */
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int customType = QEvent::registerEventType();
+static Index<String> extlist = str_list_to_index (".mp3,.ogg,.ogm,.oga,.flac,.fla,.wv", ",");
 
 class TextEdit : public QTextEdit
 {
@@ -434,15 +436,22 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
         save_lyrics_locally (true);
 
     /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
-    if (! strncmp ((const char *) state.filename, "file://", 7)
-            && str_has_suffix_nocase ((const char *) state.filename, ".mp3"))
+    if (! strncmp ((const char *) state.filename, "file://", 7))
     {
-        String error;
-        VFSFile file (state.filename, "r");
-        PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
-        bool can_write = aud_file_can_write_tuple (state.filename, decoder);
-        if (can_write)
-            state.ok2saveTag = true;
+        for (auto & ext : extlist)
+        {
+            if (str_has_suffix_nocase ((const char *) state.filename, (const char *) ext))
+            {
+                String error;
+                VFSFile file (state.filename, "r");
+                PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
+                bool can_write = aud_file_can_write_tuple (state.filename, decoder);
+                if (can_write)
+                    state.ok2saveTag = true;
+                break;
+            }
+        }
+        state.Wasok2saveTag = state.ok2saveTag;
     }
 }
 
@@ -577,15 +586,21 @@ static void * lyric_helper_thread_fn (void * data)
                     }
                     AUDINFO ("i:Lyrics came from HELPER!\n");
                     /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
-                    if (! strncmp ((const char *) state.filename, "file://", 7)
-                            && str_has_suffix_nocase ((const char *) state.filename, ".mp3"))
+                    if (! strncmp ((const char *) state.filename, "file://", 7))
                     {
-                        String error;
-                        VFSFile file (state.filename, "r");
-                        PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
-                        bool can_write = aud_file_can_write_tuple (state.filename, decoder);
-                        if (can_write)
-                            state.ok2saveTag = true;
+                        for (auto & ext : extlist)
+                        {
+                            if (str_has_suffix_nocase ((const char *) state.filename, (const char *) ext))
+                            {
+                                String error;
+                                VFSFile file (state.filename, "r");
+                                PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
+                                bool can_write = aud_file_can_write_tuple (state.filename, decoder);
+                                if (can_write)
+                                    state.ok2saveTag = true;
+                            }
+                        }
+                        state.Wasok2saveTag = state.ok2saveTag;
                     }
                 }
             }
@@ -663,15 +678,21 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
 
     AUDINFO ("i:Lyrics came from local file: (%s)!\n", (const char *) state.local_filename);
     /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE, EVEN IF LYRICS ARE FROM LOCAL FILE. */
-    if (! strncmp ((const char *) state.filename, "file://", 7)
-            && str_has_suffix_nocase ((const char *) state.filename, ".mp3"))
+    if (! strncmp ((const char *) state.filename, "file://", 7))
     {
-        String error;
-        VFSFile file (state.filename, "r");
-        PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
-        bool can_write = aud_file_can_write_tuple (state.filename, decoder);
-        if (can_write)
-            state.ok2saveTag = true;
+        for (auto & ext : extlist)
+        {
+            if (str_has_suffix_nocase ((const char *) state.filename, (const char *) ext))
+            {
+                String error;
+                VFSFile file (state.filename, "r");
+                PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
+                bool can_write = aud_file_can_write_tuple (state.filename, decoder);
+                if (can_write)
+                    state.ok2saveTag = true;
+            }
+        }
+        state.Wasok2saveTag = state.ok2saveTag;
     }
 }
 
@@ -726,8 +747,8 @@ static void force_lyrics_refresh ()
     lyricwiki_playback (true);
 }
 
-/* CALLED WHEN USER SELECTS "SAVE IN ID3 TAG" FROM MENU (LOCAL SONG FILES ONLY): */
-static void save_lyrics_in_id3tag ()
+/* CALLED WHEN USER SELECTS "SAVE IN ID3 TAG/VORBIS COMMENT" FROM MENU (LOCAL SONG FILES ONLY): */
+static void save_lyrics_in_embedded_tag ()
 {
     QString lyrics = textedit->toPlainText ();
     if (! lyrics.isNull() && ! lyrics.isEmpty())
@@ -745,10 +766,11 @@ static void save_lyrics_in_id3tag ()
             PluginHandle * decoder = aud_file_find_decoder (state.filename, true, file, & error);
             bool success = aud_file_write_tuple (state.filename, decoder, tuple);
             if (success)
-                AUDINFO ("i:Successfully saved %d bytes of lyrics to Id3 tag.\n", sz);
+                AUDINFO ("i:Successfully saved %d bytes of lyrics to embedded tag.\n", sz);
             else
-                AUDERR ("e:Could not save lyrics to id3 tag.\n");
+                AUDERR ("e:Could not save lyrics to embedded tag.\n");
 
+            state.Wasok2saveTag = state.ok2saveTag;
             state.ok2saveTag = false;
         }
     }
@@ -758,6 +780,7 @@ static void save_lyrics_in_id3tag ()
 static void allow_usersave ()
 {
     state.ok2save = true;
+    state.ok2saveTag = state.Wasok2saveTag;
 }
 
 /* CALLED BY BOTH MAIN AND THREAD TO UPDATE LYRICS (FOR LATER DISPLAYING IN THE WIDGET): */
@@ -854,25 +877,28 @@ static void lyricwiki_playback (bool force_refresh)
     state.album = tuple.get_str (Tuple::Album);
     state.ok2save = false;
     state.ok2saveTag = false;
+    state.Wasok2saveTag = false;
 
     if (found_lyricfile)  // JWT:WE HAVE LYRICS STORED IN A LOCAL FILE MATCHING FILE NAME!:
     {
         AUDINFO ("i:Local lyric file found (%s).\n", (const char *) lyricStr);
         vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
     }
-    else  // NO LOCAL LYRICS FILE FOUND, SO CHECK FOR ID3 LYRICS TAGS, THEN GLOBAL LYRIC FILE MATCHING ARTIST/TITLE:
+    else  // NO LOCAL LYRICS FILE FOUND, SO CHECK FOR EMBEDDED LYRICS TAGS, THEN GLOBAL LYRIC FILE MATCHING ARTIST/TITLE:
     {
         bool need_lyrics = true;
         String lyricsFromTuple = tuple.get_str (Tuple::Lyrics);
 
         if (lyricsFromTuple && lyricsFromTuple[0])
         {
-            AUDDBG ("i:Lyrics found in ID3 tag.\n");
+            AUDDBG ("i:Lyrics found in embedded tag.\n");
             update_lyrics (state.title, state.artist, (const char *) lyricsFromTuple);
             textedit->show_lyrics ();
             state.ok2edit = false;
             state.ok2save = true;
-            AUDINFO ("i:Lyrics came from id3 tag!\n");
+            state.Wasok2saveTag = true;
+
+            AUDINFO ("i:Lyrics came from embedded tag!\n");
             need_lyrics = false;
         }
         if (state.title)
@@ -1070,9 +1096,9 @@ void TextEdit::contextMenuEvent (QContextMenuEvent * event)
     }
     if (state.ok2saveTag)
     {
-        QAction * tuple_save_button = menu->addAction (_("Save ID3"));
+        QAction * tuple_save_button = menu->addAction (_("Save Embedded"));
         QObject::connect (tuple_save_button, & QAction::triggered, [] () {
-            save_lyrics_in_id3tag ();
+            save_lyrics_in_embedded_tag ();
         });
     }
     if (state.usedCacheName && aud_get_bool ("lyricwiki", "cache_lyrics")
