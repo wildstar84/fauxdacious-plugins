@@ -104,7 +104,7 @@ typedef struct
     int startlsn;
     int endlsn;
     bool tag_read;    /* JWT:TRUE IF WE'VE ALREADY READ THE TAG DATA FOR THIS TRACK.  */
-    int tag_source;   /* JWT:0=NO TAGS(YET?), 1=FROM CDD[A|B], 2=FROM tmp_tag_data, 3=FROM CUSTOM TAG FILE */
+    int tag_source;   /* JWT:0=NO TAGS(YET?), 1=FROM CD[-TEXT|DB], 2=FROM tmp_tag_data, 3=FROM CUSTOM TAG FILE */
     String discidstr; /* JWT:SAVE THAT DISK-ID FOR COVER-ART STUFF. */
 }
 trackinfo_t;
@@ -127,7 +127,6 @@ static int calculate_track_length (int startlsn, int endlsn);
 static int find_trackno_from_filename (const char * filename);
 static String coverart_file;       /* JWT:PATH OF LAST GOOD COVER ART FILE (IF ANY) FOR CURRENTLY-PLAYING CD. */
 static bool coverart_file_sought;  /* JWT:TRUE IF WE'VE ALREADY LOOKED FOR A COVER ART FILE FOR CURRENTLY-PLAYING CD. */
-static bool custom_tagfile_sought; /* JWT:TRUE IF WE'VE ALREADY LOOKED FOR A CUSTOM TAG FILE FOR CURRENTLY-PLAYING CD. */
 static bool custom_helper_sought;  /* JWT:TRUE IF WE'VE ALREADY INVOKED HELPER SCRIPT FOR CURRENTLY-PLAYING CD. */
 
 const char CDAudio::about[] =
@@ -145,6 +144,7 @@ const char * const CDAudio::defaults[] = {
  "cddbserver", "gnudb.gnudb.org",  // SEE: https://www.gnudb.org/
  "cddbport", "8880",
  "use_customtagfiles", "TRUE",
+ "seek_albumart_for_cds", "FALSE",
  nullptr};
 
 const PreferencesWidget CDAudio::widgets[] = {
@@ -175,7 +175,9 @@ const PreferencesWidget CDAudio::widgets[] = {
         {0, 65535, 1},
         WIDGET_CHILD),
     WidgetCheck (N_("Allow Custom Tag-files"),
-        WidgetBool ("CDDA", "use_customtagfiles"))
+        WidgetBool ("CDDA", "use_customtagfiles")),
+    WidgetCheck (N_("Seek Track Albumart (ymmv)"),
+        WidgetBool ("CDDA", "seek_albumart_for_cds"))
 };
 
 const PluginPreferences CDAudio::prefs = {{widgets}};
@@ -412,10 +414,8 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
 
         int disktagrefresh = aud_get_int (nullptr, "_disktagrefresh");
         if (disktagrefresh == trackno)  /* JWT:FORCE REFRESH ON TRACK# WITH UPDATED SONG INFO! */
-        {
             trackinfo[trackno].tag_read = false;
-            custom_tagfile_sought = false;
-        }
+
         tuple.set_int (Tuple::Length, 
                 calculate_track_length (trackinfo[trackno].startlsn, trackinfo[trackno].endlsn));
         tuple.set_int (Tuple::Channels, cdio_get_track_channels (pcdrom_drive->p_cdio, trackno));
@@ -441,21 +441,25 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                 tuple.set_str (Tuple::AlbumArtist, trackinfo[0].performer);
             if (trackinfo[trackno].genre)
                 tuple.set_str (Tuple::Genre, trackinfo[trackno].genre);
-            if (! custom_tagfile_sought && aud_get_bool ("CDDA", "use_customtagfiles")
+            if (aud_get_bool ("CDDA", "use_customtagfiles")
                     && trackinfo[0].discidstr && trackinfo[0].discidstr[0])
             {
+                /* USER WANTS TO USE CUSTOM TAG FILE (~/.config/fauxdacious[-instance]/[DISK-ID].tag) IF EXISTS: */
                 AUDINFO ("--DISKID=%s= TRYING CUSTOM\n", (const char *)trackinfo[0].discidstr);
+
                 String tag_file = String (str_concat ({(const char *)trackinfo[0].discidstr, ".tag"}));
                 Tuple user_tuple = Tuple ();
+                /* PRECEDENCE:  0=NONE, 1=DEFAULT, 2=OVERRIDE, 3=ONLY */
                 int precedence = aud_read_tag_from_tagfile ((const char *)str_printf ("%s%d", "cdda://?", trackno), 
                         (const char *)tag_file, user_tuple);
                 AUDDBG ("--TAG FID=%s= TRACK=%d= PREC=%d=\n", (const char *)tag_file, trackno, precedence);
-                if (precedence)
+                if (precedence)  // 0=NONE:  (IGNORE WHAT'S IN THIS TAGFILE).
                 {
                     if (disktagrefresh == trackno)
-                        precedence = 2;  // FORCE OVERWRITE IF USER CHGD. SONG INFO!:
+                        precedence = 2;  // FORCE "OVERRIDE" IF USER CHGD. SONG INFO!:
                     trackinfo[trackno].tag_source = 3;  // WE FETCHED FROM CUSTOM FILE.
                     AUDINFO ("--CUSTOM TAG(%d) FILE(%s) PRECEDENCE=%d\n", trackno, (const char *)tag_file, precedence);
+                    /* FOR EACH FIELD, USE CUSTOM TAG FILE DATA IF NO CURRENT VALUE *OR* IF "OVERRIDE" OR "ONLY": */
                     const char * tfld = (const char *) user_tuple.get_str (Tuple::Title);
                     if (tfld && (precedence > 1 || ! trackinfo[trackno].name))
                     {
@@ -495,14 +499,19 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                         trackinfo[trackno].genre = String (tfld);
                     }
                     tfld = (const char *) user_tuple.get_str (Tuple::Comment);
-                    if (tfld && (precedence > 1 || ! coverart_file))
-                        tuple.set_str (Tuple::Comment, tfld);
+                    if (tfld)
+                    {
+                        if (coverart_file && coverart_file[0] && strcmp (tfld, (const char *) coverart_file)
+                                && ! strstr (tfld, ";"))
+                            /* FOR CD TRACKS THAT HAVE THEIR OWN IMAGE, MAKE THE CD COVER ART THE ALBUM IMAGE! */
+                            tuple.set_str (Tuple::Comment, String (str_concat ({tfld, ";", (const char *) coverart_file})));
+                        else
+                            tuple.set_str (Tuple::Comment, tfld);
+                    }
                     int ifld = user_tuple.get_int (Tuple::Year);
                     if (ifld && ifld > 1000)
                         tuple.set_int (Tuple::Year, ifld);
                 }
-                else
-                    custom_tagfile_sought = true;  //ONLY SEEK ONCE IF NOT FOUND, OTHERWISE FOR EACH TRACK!
             }
 
             if (! coverart_file_sought)
@@ -524,10 +533,7 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                         if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
                             coverart_file = String (_(""));
                         else
-                        {
-                            coverart_file = String (filename_to_uri (filenamechar));
                             break;
-                        }
                     }
                 }
                 //IF NO COVER-ART FILE NAMED AFTER THE TITLE, SEE IF ONE NAMED AFTER THE DISK-ID:
@@ -546,10 +552,7 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                         if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
                             coverart_file = String (_(""));
                         else
-                        {
-                            coverart_file = String (filename_to_uri (filenamechar));
                             break;
-                        }
                     }
                 }
             }
@@ -558,10 +561,12 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                 if (! custom_helper_sought && trackinfo[0].discidstr && trackinfo[0].discidstr[0]
                         && (! coverart_file || ! coverart_file[0] || ! trackinfo[0].name || ! trackinfo[trackno].name))
                 {
-                    /* NOTE: NOT ALL CDS HAVE TRACK TITLE INFO OR WORK W/CDDB, SO IF NOT, WE FETCH THAT TOO!: */
+                    /* NOTE: NOT ALL CDS HAVE TRACK TITLE INFO OR WORK W/CD[-TEXT|DB], SO IF NOT, WE FETCH THAT TOO!: */
                     /* NOTE2:  IF USER SAVED COVER-ART FILE BY TITLE, THIS WEB SEARCH IS NOT MADE! */
                     AUDINFO ("--NO COVER ART BY DISK-ID OR NO CD TITLE, LOOK FOR HELPER:\n");
                     String cover_helper = aud_get_str ("audacious", "cover_helper");
+                    /* FLAG TELLING HELPER TO FETCH COVER-ART+TRACK METADATA (CDT) OR JUST COVER-ART (CD): */
+                    /* HELPER WILL WRITE TAG DATA (CDT) TO "tmp_tag_data" WITH PRECEDENCE=DEFAULT. */
                     const char * cdt = ((! trackinfo[0].name || ! trackinfo[trackno].name) 
                             && aud_get_bool ("CDDA", "use_customtagfiles")) ? " CDT " : " CD ";
                     if (trackinfo[0].name) AUDINFO ("--T0name=%s=\n", (const char *)trackinfo[0].name);
@@ -593,10 +598,7 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                             if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
                                 coverart_file = String (_(""));
                             else
-                            {
-                                coverart_file = String (filename_to_uri (filenamechar));
                                 break;
-                            }
                         }
                     }
                 }
@@ -606,12 +608,12 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                 if (trackno && ! trackinfo[trackno].name)
                 {
                     AUDINFO ("--NO TITLE SET FOR TRACK(%d), WILL TRY TO FETCH!\n", trackno);
-                    Tuple user_tuple = Tuple ();
+                    Tuple helper_tuple = Tuple ();
                     if (aud_read_tag_from_tagfile ((const char *) str_printf ("%s%d", "cdda://?", trackno),
-                            "tmp_tag_data", user_tuple))
+                            "tmp_tag_data", helper_tuple))
                     {
-                        trackinfo[trackno].tag_source = 2; // WE FETCHED FROM tmp_tag_data.
-                        const char * tfld = (const char *) user_tuple.get_str (Tuple::Title);
+                        trackinfo[trackno].tag_source = 2; // WE FETCHED FROM HELPER(tmp_tag_data).
+                        const char * tfld = (const char *) helper_tuple.get_str (Tuple::Title);
                         if (tfld)
                         {
                             AUDINFO ("--SET TRK(%d):=%s=\n", trackno, tfld);
@@ -620,19 +622,19 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                         }
                         if (! trackinfo[trackno].performer)
                         {
-                            const char * tfld = (const char *) user_tuple.get_str (Tuple::Artist);
+                            const char * tfld = (const char *) helper_tuple.get_str (Tuple::Artist);
                             if (tfld)
                                 tuple.set_str (Tuple::Artist, tfld);
                         }
                         if (! tuple.get_str (Tuple::Album))
                         {
-                            const char * tfld = (const char *) user_tuple.get_str (Tuple::Album);
+                            const char * tfld = (const char *) helper_tuple.get_str (Tuple::Album);
                             if (tfld)
                                 tuple.set_str (Tuple::Album, tfld);
                         }
                         if (! tuple.get_str (Tuple::AlbumArtist))
                         {
-                            const char * tfld = (const char *) user_tuple.get_str (Tuple::AlbumArtist);
+                            const char * tfld = (const char *) helper_tuple.get_str (Tuple::AlbumArtist);
                             if (tfld)
                                 tuple.set_str (Tuple::AlbumArtist, tfld);
                         }
@@ -643,23 +645,26 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
             if (coverart_file)
             {
                 const char * tfld = (const char *) tuple.get_str (Tuple::Comment);
-                if (! tfld)
+                if (! tfld)  // NOTHING IN COMMENT FIELD, DEFAULT IT TO COVER ART FILENAME:
                     tuple.set_str (Tuple::Comment, coverart_file);
             }
-            if (trackinfo[trackno].tag_source > 0) // WE GOT SOME TAG DATA FROM SOMEWHERE!:
+            if (trackinfo[trackno].tag_source > 0) // WE GOT SOME TAG DATA FROM SOMEWHERE, SO TAG & BAG IT!:
             {
                 if (trackinfo[trackno].tag_source < 3 // 3=WE FETCHED FROM CUSTOM TAG FILE: NO NEED TO OVERWRITE!
                         && aud_get_bool ("CDDA", "use_customtagfiles")
                         && trackinfo[0].discidstr && trackinfo[0].discidstr[0])
                 {
+                    /* WRITE IT TO CUSTOM TAG FILE (<disk-id>.tag) IF USER WANTS THAT: */
                     String tag_file = String (str_concat ({(const char *) trackinfo[0].discidstr, ".tag"}));
                     aud_write_tag_to_tagfile (filename, tuple, (const char *) tag_file);
                 }
+                /* WRITE TO tmp_tag_data SO aud_file_read_tag() CAN FIND IT!: */
                 if (trackinfo[trackno].tag_source != 2) // 2=WE FETCHED FROM EXISTING tmp_tag_data: NO NEED TO OVERWRITE!
                     aud_write_tag_to_tagfile (filename, tuple, "tmp_tag_data");
             }
-            else if (coverart_file)  // NO TAG DATA - JUST WRITE OUT A tmp_tag_data W/"Comment=<cover-art-fid> FOR EACH TRACK:
-                    aud_write_tag_to_tagfile (filename, tuple, "tmp_tag_data");
+            else if (coverart_file)
+                /* NO TAG DATA FOR TRACK: JUST WRITE TO tmp_tag_data ENTRY W/"Comment=<cover-art-fid>": */
+                aud_write_tag_to_tagfile (filename, tuple, "tmp_tag_data");
         }
         if (disktagrefresh)
             aud_set_int (nullptr, "_disktagrefresh", 0);
@@ -736,7 +741,6 @@ static bool scan_cd ()
     AUDDBG ("Scanning CD drive.\n");
     trackinfo.clear ();
     coverart_file_sought = false;
-    custom_tagfile_sought = false;
     custom_helper_sought = false;
 
     /* general track initialization */
@@ -819,7 +823,7 @@ static bool scan_cd ()
             trackinfo[0].name = String (pcdtext->field[CDTEXT_TITLE]);
             trackinfo[0].genre = String (pcdtext->field[CDTEXT_GENRE]);
 #endif
-            trackinfo[0].tag_source = 1; // WE FETCHED FROM CDD[A|B].
+            trackinfo[0].tag_source = 1; // WE FETCHED FROM CD-TEXT.
         }
     }
 
@@ -851,7 +855,7 @@ static bool scan_cd ()
             trackinfo[trackno].name = String (pcdtext->field[CDTEXT_TITLE]);
             trackinfo[trackno].genre = String (pcdtext->field[CDTEXT_GENRE]);
 #endif
-            trackinfo[trackno].tag_source = 1; // WE FETCHED FROM CDD[A|B].
+            trackinfo[trackno].tag_source = 1; // WE FETCHED FROM CD-TEXT.
             cdtext_was_available = true;
         }
     }
@@ -893,8 +897,10 @@ static bool scan_cd ()
         }
     }
 
-    if (!cdtext_was_available)
+    if (! cdtext_was_available)
     {
+        if (aud_get_bool ("CDDA", "use_cdtext"))
+            AUDERR ("i:No CD-text data available on disk.\n");
         /* initialize de cddb subsystem */
         cddb_conn_t *pcddb_conn = nullptr;
         cddb_disc_t *pcddb_disc = nullptr;
@@ -1021,7 +1027,7 @@ static bool scan_cd ()
                             trackinfo[0].performer = String (cddb_disc_get_artist (pcddb_disc));
                             trackinfo[0].name = String (cddb_disc_get_title (pcddb_disc));
                             trackinfo[0].genre = String (cddb_disc_get_genre (pcddb_disc));
-                            trackinfo[0].tag_source = 1; // WE FETCHED FROM CDD[A|B].
+                            trackinfo[0].tag_source = 1; // WE FETCHED FROM CDDB.
 
                             int trackno;
                             for (trackno = firsttrackno; trackno <= lasttrackno;
@@ -1034,7 +1040,7 @@ static bool scan_cd ()
                                 trackinfo[trackno].performer = String (cddb_track_get_artist (pcddb_track));
                                 trackinfo[trackno].name = String (cddb_track_get_title (pcddb_track));
                                 trackinfo[trackno].genre = String (cddb_disc_get_genre (pcddb_disc));
-                                trackinfo[trackno].tag_source = 1; // WE FETCHED FROM CDD[A|B].
+                                trackinfo[trackno].tag_source = 1; // WE FETCHED FROM CDDB.
                             }
                         }
                     }
@@ -1092,7 +1098,6 @@ static void reset_trackinfo ()
             aud_delete_tag_from_tagfile (str_printf ("%s%d", "cdda://?", i), "tmp_tag_data");
     }
     coverart_file = String ();
-    custom_tagfile_sought = false;
 }
 
 /* thread safe (mutex may be locked) */

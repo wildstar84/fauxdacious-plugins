@@ -303,7 +303,9 @@ static void album_update (void *, GtkWidget * widget)
     if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP FURTHER ART SEARCH! */
     {
         String filename = aud_drct_get_filename ();
-        if (! strncmp (filename, "file://", 7))  // JWT:FILES DON'T CHANGE TITLES MID-PLAY!
+        if (! strncmp (filename, "file://", 7)
+                || (! strncmp (filename, "cdda://", 7) && ! aud_get_bool ("CDDA", "seek_albumart_for_cds"))
+                || ! strncmp (filename, "dvd://", 6))
             return;
     }
     if (aud_get_str ("audacious", "cover_helper"))
