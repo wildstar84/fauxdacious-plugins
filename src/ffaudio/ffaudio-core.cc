@@ -668,6 +668,7 @@ static const struct {
     {Tuple::String, Tuple::Composer, {"composer", nullptr}},
     {Tuple::Int, Tuple::Year, {"year", "WM/Year", "date", nullptr}},
     {Tuple::Int, Tuple::Track, {"track", "WM/TrackNumber", nullptr}},
+    {Tuple::String, Tuple::Lyrics, {"lyrics", nullptr}},
 };
 
 static void read_metadata_dict (Tuple & tuple, AVDictionary * dict)

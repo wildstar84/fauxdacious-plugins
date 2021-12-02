@@ -129,6 +129,7 @@ static void
 set_tuple_str(Tuple &tuple, Tuple::Field field,
     vorbis_comment *comment, const char *key)
 {
+    AUDINFO ("-VORBCMT: KEY=%s= VAL=%s=\n", key, vorbis_comment_query (comment, key, 0));
     tuple.set_str (field, vorbis_comment_query (comment, key, 0));
 }
 
@@ -473,6 +474,8 @@ const char VorbisPlugin::about[] =
     "Gian-Carlo Pascutto <gcp@sjeng.org>\n"
     "Eugene Zagidullin <e.asphyx@gmail.com>");
 
+/* JWT:".ogv" IS ALSO A VALID VORBIS FORMAT, BUT SUPPORTS VIDEO IN OGG, SO WE'RE
+   LEAVING IT OFF FOR NOW SO THAT FFAUDIO WILL PICK IT UP FOR VIDEO PLAYING. */
 const char * const VorbisPlugin::exts[] = {"ogg", "ogm", "oga", nullptr};
 const char * const VorbisPlugin::mimes[] = {
     "application/ogg",
