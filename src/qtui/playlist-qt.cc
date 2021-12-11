@@ -301,7 +301,18 @@ bool PlaylistWidget::scrollToCurrent (bool force)
         if (aud_playlist_get_focus (m_playlist) != entry)
             scrolled = true;
 
-        aud_playlist_select_all (m_playlist, false);
+        if (aud_get_bool (nullptr, "advance_2_next_selected"))
+        {
+            int prev_entry = aud_get_int (nullptr, "_prev_entry");
+            if (prev_entry >= 0)
+            {
+                aud_playlist_entry_set_selected (m_playlist, prev_entry, false);
+                aud_set_int (nullptr, "_prev_entry", -1);
+            }
+        }
+        else
+            aud_playlist_select_all (m_playlist, false);
+
         aud_playlist_entry_set_selected (m_playlist, entry, true);
         aud_playlist_set_focus (m_playlist, entry);
 

@@ -491,10 +491,23 @@ void ui_playlist_notebook_position (void * data, void * user)
 {
     int list = aud::from_ptr<int> (data);
     int row = aud_playlist_get_position (list);
+    if (row < 0)  /* JWT:MAKE CONSISTANT WITH OTHER INTERFACES: */
+        return;
 
     if (aud_get_bool ("gtkui", "autoscroll"))
     {
-        aud_playlist_select_all (list, false);
+        if (aud_get_bool (nullptr, "advance_2_next_selected"))
+        {
+            int prev_row = aud_get_int (nullptr, "_prev_entry");
+            if (prev_row >= 0)
+            {
+                aud_playlist_entry_set_selected (list, prev_row, false);
+                aud_set_int (nullptr, "_prev_entry", -1);
+            }
+        }
+        else
+            aud_playlist_select_all (list, false);
+
         aud_playlist_entry_set_selected (list, row, true);
         aud_playlist_set_focus (list, row);
     }

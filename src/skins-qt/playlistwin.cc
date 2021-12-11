@@ -504,15 +504,30 @@ static void update_cb (void *, void *)
 
 static void follow_cb (void * data, void *)
 {
+    bool advance_2_next_selected = aud_get_bool (nullptr, "advance_2_next_selected");
     int list = aud::from_ptr<int> (data);
-    aud_playlist_select_all (list, false);
+    if (advance_2_next_selected)
+    {
+        int prev_row = aud_get_int (nullptr, "_prev_entry");
+        if (prev_row >= 0)
+        {
+            aud_playlist_entry_set_selected (list, prev_row, false);
+            aud_set_int (nullptr, "_prev_entry", -1);
+        }
+    }
+    else
+        aud_playlist_select_all (list, false);
 
     int row = aud_playlist_get_position (list);
     if (row >= 0)
         aud_playlist_entry_set_selected (list, row, true);
 
     if (list == aud_playlist_get_active ())
+    {
+        if (advance_2_next_selected && row >= 0)
+            playlistwin_list->set_focused (row);
         song_changed = true;
+    }
 }
 
 void playlistwin_create ()
