@@ -24,12 +24,12 @@
 #include <libfauxdcore/index.h>
 #include <libfauxdcore/mainloop.h>
 #include <libfauxdqt/dock.h>
+#include <libfauxdqt/info_bar.h>
 
 #include "../ui-common/dialogs-qt.h"
 
 #include <QMainWindow>
 
-class InfoBar;
 class PlaylistTabs;
 class PluginHandle;
 class QVBoxLayout;
@@ -48,7 +48,7 @@ private:
     PlaylistTabs * m_playlist_tabs;
     QWidget * m_center_widget;
     QVBoxLayout * m_center_layout;
-    InfoBar * m_infobar;
+    audqt::InfoBar * m_infobar;
     StatusBar * m_statusbar;
 
     PluginHandle * m_search_tool, * m_playlist_manager;

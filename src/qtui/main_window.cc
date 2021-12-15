@@ -28,8 +28,8 @@
 #include <libfauxdcore/plugins.h>
 
 #include <libfauxdqt/libfauxdqt.h>
+#include <libfauxdqt/info_bar.h>
 
-#include "info_bar.h"
 #include "menus.h"
 #include "playlist-qt.h"
 #include "playlist_tabs.h"
@@ -78,7 +78,7 @@ protected:
         in_event = false;
     }
 
-    void keyPressEvent(QKeyEvent * event) override
+    void keyPressEvent (QKeyEvent * event) override
     {
         auto mods = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier;
         if (!(event->modifiers () & mods) && event->key () == Qt::Key_Escape &&
@@ -141,7 +141,7 @@ MainWindow::MainWindow () :
     m_playlist_tabs (new PlaylistTabs (this)),
     m_center_widget (new QWidget (this)),
     m_center_layout (audqt::make_vbox (m_center_widget, 0)),
-    m_infobar (new InfoBar (this)),
+    m_infobar (new audqt::InfoBar (this)),
     m_statusbar (new StatusBar (this)),
     m_search_tool (aud_plugin_lookup_basename ("search-tool-qt")),
     m_playlist_manager (aud_plugin_lookup_basename ("playlist-manager-qt"))
