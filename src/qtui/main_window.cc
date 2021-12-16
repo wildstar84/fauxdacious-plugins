@@ -546,6 +546,14 @@ void MainWindow::add_dock_item (audqt::DockItem * item)
             w->setFloating (true);
     }
 
+    /* JWT:APPEND THE FAUXDACIOUS INSTANCE-NAME (IF NOT DEFAULT) 'CASE WE'RE RUNNING MULTIPLE INSTANCES!: */
+    if (strstr (w->windowTitle().toUtf8().constData(), "Mini-Fauxdacious"))
+    {
+        String instancename = aud_get_instancename ();
+        if (instancename != String ("fauxdacious"))
+            w->setWindowTitle (QString ("%1 (%2)").arg (w->windowTitle()).arg ((const char *) instancename));
+    }
+
     /* workaround for QTBUG-89144 to make sure wm can manage the window! */
     auto flags = w->windowFlags();
     if (flags & Qt::X11BypassWindowManagerHint)
