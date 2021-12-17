@@ -276,8 +276,9 @@ private:
 
     void drawArt ()
     {
-        if (origSize.width () <= size ().width () - MARGIN &&
-            origSize.height () <= size ().height () - MARGIN)
+        if (! aud_get_bool ("albumart", "scale_to_fill")
+                && origSize.width () <= size ().width () - MARGIN
+                && origSize.height () <= size ().height () - MARGIN)
             setPixmap (origPixmap);
         else
             setPixmap (origPixmap.scaled (size ().width () - MARGIN, size ().height () - MARGIN,
@@ -517,6 +518,7 @@ EXPORT AlbumArtQt aud_plugin_instance;
 
 const char * const AlbumArtQt::defaults[] = {
     "internet_coverartlookup", "FALSE",
+    "scale_to_fill", "FALSE",
     nullptr
 };
 
@@ -533,6 +535,8 @@ const PreferencesWidget AlbumArtQt::widgets[] = {
         WidgetBool ("albumart", "internet_coverartlookup")),
     WidgetCheck (N_("Hide info bar art icon unless separate album cover fetched."),
         WidgetBool (hide_dup_art_icon, hide_dup_art_icon_toggle_fn)),
+    WidgetCheck (N_("Scale small images to fill."),
+        WidgetBool ("albumart", "scale_to_fill")),
 };
 
 const PluginPreferences AlbumArtQt::prefs = {{widgets}};

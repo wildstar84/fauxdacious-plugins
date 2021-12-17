@@ -70,6 +70,7 @@ EXPORT AlbumArtPlugin aud_plugin_instance;
 
 const char * const AlbumArtPlugin::defaults[] = {
     "internet_coverartlookup", "FALSE",
+    "scale_to_fill", "FALSE",
     nullptr
 };
 
@@ -435,6 +436,8 @@ const PreferencesWidget AlbumArtPlugin::widgets[] = {
         WidgetBool ("albumart", "internet_coverartlookup")),
     WidgetCheck (N_("Hide info bar art icon unless separate album cover fetched."),
         WidgetBool (hide_dup_art_icon, hide_dup_art_icon_toggle_fn)),
+    WidgetCheck (N_("Scale small images to fill."),
+        WidgetBool ("albumart", "scale_to_fill")),
 };
 
 const PluginPreferences AlbumArtPlugin::prefs = {{widgets}};
