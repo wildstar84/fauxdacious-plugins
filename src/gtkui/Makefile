@@ -4,7 +4,6 @@ SRCS = columns.cc \
        layout.cc \
        menu-ops.cc \
        menus.cc \
-       ui_infoarea.cc \
        ui_gtk.cc \
        ui_playlist_widget.cc \
        ui_playlist_notebook.cc \

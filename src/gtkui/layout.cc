@@ -26,6 +26,7 @@
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/plugins.h>
+#include <libfauxdcore/audstrings.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "layout.h"
@@ -341,7 +342,18 @@ static void item_add (Item * item)
         item->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
         NULL_ON_DESTROY (item->window);
 
-        gtk_window_set_title ((GtkWindow *) item->window, item->name);
+        /* JWT:APPEND THE FAUXDACIOUS INSTANCE-NAME (IF NOT DEFAULT) 'CASE WE'RE RUNNING MULTIPLE INSTANCES!: */
+        if (strstr (item->name, "Mini-Fauxdacious"))  /* ONLY NEED THIS ON MINI-FAUXDACIOUS PLUGIN. */
+        {
+            StringBuf title = str_copy (_("Mini-Fauxdacious"));
+            String instancename = aud_get_instancename ();
+            if (instancename != String ("fauxdacious"))
+                str_append_printf (title, " (%s)", (const char *) instancename);
+            gtk_window_set_title ((GtkWindow *) item->window, (const char *) title);
+        }
+        else
+            gtk_window_set_title ((GtkWindow *) item->window, item->name);
+
         gtk_container_set_border_width ((GtkContainer *) item->window, 2);
 
         g_signal_connect_swapped (item->window, "delete-event", (GCallback)

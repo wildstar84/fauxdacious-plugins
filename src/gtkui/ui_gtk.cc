@@ -38,7 +38,7 @@
 #include "layout.h"
 #include "ui_playlist_notebook.h"
 #include "ui_playlist_widget.h"
-#include "ui_infoarea.h"
+#include <libfauxdgui/ui_infoarea.h>
 #include "ui_statusbar.h"
 #include "playlist_util.h"
 
@@ -127,7 +127,7 @@ static unsigned long volume_change_handler_id;
 static GtkAccelGroup * accel;
 
 static GtkWidget * window, * vbox_outer, * menu_box, * menu, * toolbar, * vbox,
- * infoarea, * statusbar;
+ * infoarea, * statusbar, * infoarea_eventbox;
 static GtkToolItem * menu_button, * search_button, * button_play, * button_stop,
  * button_record, * button_shuffle, * button_repeat;
 static GtkWidget * slider, * label_time;
@@ -571,19 +571,47 @@ static gboolean window_keypress_cb (GtkWidget *, GdkEventKey * event)
             return false;
         }
         break;
-      case GDK_MOD1_MASK:
-        switch (event->keyval)
+      case GDK_MOD1_MASK:        // [Alt]
         {
-          case GDK_KEY_Left:
-            if (aud_drct_get_playing ())
-                do_seek (aud_drct_get_time () - aud_get_int (0, "step_size") * 1000);
-            break;
-          case GDK_KEY_Right:
-            if (aud_drct_get_playing ())
-                do_seek (aud_drct_get_time () + aud_get_int (0, "step_size") * 1000);
-            break;
-          default:
-            return false;
+            PluginHandle * plugin;
+
+            switch (event->keyval)
+            {
+              case 'a':
+                plugin = aud_plugin_lookup_basename ("albumart");
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 'g':
+                plugin = aud_plugin_lookup_basename ("gnomeshortcuts");
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 'l':
+                plugin = aud_plugin_lookup_basename ("lyricwiki");
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 'm':
+                plugin = aud_plugin_lookup_basename ("info-bar-plugin-gtk");
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 'p':
+                plugin = aud_plugin_lookup_basename ("playlist-manager");
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 's':
+                plugin = aud_plugin_lookup_basename ("search-tool");
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case GDK_KEY_Left:
+                if (aud_drct_get_playing ())
+                    do_seek (aud_drct_get_time () - aud_get_int (0, "step_size") * 5000);
+                break;
+              case GDK_KEY_Right:
+                if (aud_drct_get_playing ())
+                    do_seek (aud_drct_get_time () + aud_get_int (0, "step_size") * 5000);
+                break;
+              default:
+                return false;
+            }
         }
       default:
         return false;
@@ -701,6 +729,7 @@ static void ui_hooks_associate ()
     hook_associate ("set step_size", (HookFunction) update_step_size, nullptr);
     hook_associate ("set volume_delta", (HookFunction) update_volume_delta, nullptr);
     hook_associate ("config save", (HookFunction) config_save, nullptr);
+    hook_associate ("gtkui toggle infoarea", (HookFunction) show_hide_infoarea, nullptr);
 }
 
 static void ui_hooks_disassociate ()
@@ -722,6 +751,7 @@ static void ui_hooks_disassociate ()
     hook_dissociate ("set step_size", (HookFunction) update_step_size);
     hook_dissociate ("set volume_delta", (HookFunction) update_volume_delta);
     hook_dissociate ("config save", (HookFunction) config_save);
+    hook_dissociate ("gtkui toggle infoarea", (HookFunction) show_hide_infoarea);
 }
 
 static void add_dock_plugin (PluginHandle * plugin, void *)
@@ -734,6 +764,15 @@ static void add_dock_plugin (PluginHandle * plugin, void *)
 static void remove_dock_plugin (PluginHandle * plugin, void *)
 {
     layout_remove (plugin);
+    bool is_infobar = (strstr (aud_plugin_get_basename (plugin), "info-bar-plugin-gtk"));
+    if (is_infobar)  /* JWT:HAD TO DO THIS HERE INSTEAD OF IN PLUGIN DUE infoarea NOT BEING OBJECT-ORIENTED! */
+    {
+        if (aud_get_bool ("gtkui", "_infoarea_was_visible"))
+        {
+            aud_set_bool ("gtkui", "infoarea_visible", true);
+            hook_call ("gtkui toggle infoarea", nullptr);
+        }
+    }
 }
 
 static void add_dock_plugins ()
@@ -1046,25 +1085,48 @@ void show_hide_menu ()
     }
 }
 
+/* JWT:HANDLE MOUSE DOUBLE-CLICK ON INFO-BAR TO INVOKE MiniFauxdacious Plugin (& HIDE THIS INFOBAR): */
+static gboolean infobar_mousebtn_cb (GtkWidget *widget, GdkEventButton * event)
+{
+    if (event->type == GDK_2BUTTON_PRESS && aud_get_bool ("gtkui", "infoarea_visible"))
+    {
+        PluginHandle * infobarHandle = aud_plugin_lookup_basename ("info-bar-plugin-gtk");
+        if (infobarHandle && ! aud_plugin_get_enabled (infobarHandle))
+            aud_plugin_enable (infobarHandle, true);
+    }
+
+    return false;
+}
+
 void show_hide_infoarea ()
 {
     bool show = aud_get_bool ("gtkui", "infoarea_visible");
 
     if (show && ! infoarea)
     {
-        infoarea = ui_infoarea_new ();
-        g_signal_connect (infoarea, "destroy", (GCallback) gtk_widget_destroyed, & infoarea);
-        gtk_box_pack_end ((GtkBox *) vbox, infoarea, false, false, 0);
-        gtk_widget_show_all (infoarea);
+        /* JWT:MUST DISABLE THIS PLUGIN, IF ENABLED, BEFORE SHOWING INFO-BAR (NOT FULLY OBJECT-ORIENTED)!: */
+        PluginHandle * MiniFauxdaciousPlugin = aud_plugin_lookup_basename ("info-bar-plugin-gtk");
+        if (! aud_plugin_get_enabled (MiniFauxdaciousPlugin))
+        {
+            infoarea = ui_infoarea_new ();
+            g_signal_connect (infoarea, "destroy", (GCallback) gtk_widget_destroyed, & infoarea);
+            infoarea_eventbox = gtk_event_box_new ();
+            gtk_box_pack_end ((GtkBox *) vbox, infoarea_eventbox, false, false, 0);
+            gtk_container_add ((GtkContainer *) infoarea_eventbox, infoarea);
+            g_signal_connect_swapped (infoarea_eventbox, "button-press-event", (GCallback) infobar_mousebtn_cb, infoarea);
 
-        show_hide_infoarea_art ();
-        show_hide_infoarea_vis ();
+            gtk_widget_show_all (infoarea_eventbox);
+
+            show_hide_infoarea_art ();
+            show_hide_infoarea_vis ();
+        }
     }
 
     if (! show && infoarea)
     {
-        gtk_widget_destroy (infoarea);
+        gtk_widget_destroy (infoarea_eventbox);
         infoarea = nullptr;
+        infoarea_eventbox = nullptr;
     }
 }
 
