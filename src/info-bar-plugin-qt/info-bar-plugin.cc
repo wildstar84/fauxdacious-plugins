@@ -64,6 +64,7 @@ void * InfoBarPlugin::get_qt_widget ()
         hook_call ("qtui toggle infoarea", nullptr);
         aud_set_bool ("qtui", "infoarea_visible", false);
     }
+    widget->setToolTip ("Space: pause\nEsc: close\nUp|Down: volume\nQ: Quit\nB: next\nC: pause\nX: play\nZ: prev");
 
     return widget;
 }
