@@ -465,6 +465,7 @@ static void * lyric_helper_thread_fn (void * data)
     if (lyric_helper[0])  //JWT:WE HAVE A PERL HELPER, LESSEE IF IT CAN FIND/DOWNLOAD LYRICS FOR US:
     {
         bool lyrics_found = false;
+        int helper_returncode = 0;
         GStatBuf statbuf;
         if (! state.album)
             state.album = String ("_");
@@ -483,7 +484,7 @@ static void * lyric_helper_thread_fn (void * data)
                 " \"", (const char *) state.album, "\" '", flags, "' "}),
                 SW_HIDE);
 #else
-        system ((const char *) str_concat ({lyric_helper, " \"", (const char *) state.artist, "\" \"",
+        helper_returncode = system ((const char *) str_concat ({lyric_helper, " \"", (const char *) state.artist, "\" \"",
                 (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir),
                 " \"", (const char *) state.album, "\" '", flags, "' "}));
 #endif
@@ -538,10 +539,13 @@ static void * lyric_helper_thread_fn (void * data)
         }
         if (! lyrics_found && ! resetthreads)
         {
+            /* HELPER RETURNS 4 (1024) IF WEB-SEARCH SKIPPED DUE TO USER-CONFIG. */
             update_lyrics (_("No lyrics Found"),
                     (const char *) str_concat ({"Title: ", (const char *) state.title, "\nArtist: ",
                     (const char *) state.artist}),
-                    str_printf (_("Unable to fetch lyrics.")));
+                    ((helper_returncode == 1024)
+                            ? str_printf (_("Lyrics fetch skipped (helper config)."))
+                            : str_printf (_("Unable to fetch lyrics."))));
 
             goto THREAD_EXIT;
         }
