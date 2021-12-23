@@ -579,27 +579,53 @@ static gboolean window_keypress_cb (GtkWidget *, GdkEventKey * event)
             {
               case 'a':
                 plugin = aud_plugin_lookup_basename ("albumart");
-                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 'b':
+                plugin = aud_plugin_lookup_basename ("blur_scope");
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 'c':
+                plugin = aud_plugin_lookup_basename ("cairo-spectrum");
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
                 break;
               case 'g':
                 plugin = aud_plugin_lookup_basename ("gnomeshortcuts");
-                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
                 break;
               case 'l':
                 plugin = aud_plugin_lookup_basename ("lyricwiki");
-                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
                 break;
               case 'm':
                 plugin = aud_plugin_lookup_basename ("info-bar-plugin-gtk");
-                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 'o':
+                plugin = aud_plugin_lookup_basename ("gl-spectrum");
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
                 break;
               case 'p':
                 plugin = aud_plugin_lookup_basename ("playlist-manager");
-                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
                 break;
               case 's':
                 plugin = aud_plugin_lookup_basename ("search-tool");
-                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 'v':
+                plugin = aud_plugin_lookup_basename ("video_display");
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
                 break;
               case GDK_KEY_Left:
                 if (aud_drct_get_playing ())

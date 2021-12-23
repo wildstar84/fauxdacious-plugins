@@ -108,9 +108,6 @@ static gboolean infobar_keypress_cb (GtkWidget *, GdkEventKey * event)
         case 'b':
             aud_drct_pl_next ();
             break;
-        case 'q':
-            aud_quit ();
-            break;
         }
 
         break;
@@ -123,27 +120,56 @@ static gboolean infobar_keypress_cb (GtkWidget *, GdkEventKey * event)
             {
               case 'a':
                 plugin = aud_plugin_lookup_basename ("albumart");
-                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 'b':
+                plugin = aud_plugin_lookup_basename ("blur_scope");
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 'c':
+                plugin = aud_plugin_lookup_basename ("cairo-spectrum");
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
                 break;
               case 'g':
                 plugin = aud_plugin_lookup_basename ("gnomeshortcuts");
-                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
                 break;
               case 'l':
                 plugin = aud_plugin_lookup_basename ("lyricwiki");
-                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
                 break;
               case 'm':
                 plugin = aud_plugin_lookup_basename ("info-bar-plugin-gtk");
-                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 'o':
+                plugin = aud_plugin_lookup_basename ("gl-spectrum");
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
                 break;
               case 'p':
                 plugin = aud_plugin_lookup_basename ("playlist-manager");
-                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 'q':
+                aud_quit ();
                 break;
               case 's':
                 plugin = aud_plugin_lookup_basename ("search-tool");
-                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+                break;
+              case 'v':
+                plugin = aud_plugin_lookup_basename ("video_display");
+                if (plugin)
+                    aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
                 break;
               default:
                 return false;
@@ -184,7 +210,7 @@ void * InfoBarPlugin::get_gtk_widget ()
     show_hide_infoarea_vis ();
 
     gtk_widget_set_can_focus (widget, true);
-    gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nQ: Quit\nB: next\nC: pause\nX: play\nZ: prev");
+    gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nAlt-Q: Quit\nB: next\nC: pause\nX: play\nZ: previous");
 
     return widget;
 }

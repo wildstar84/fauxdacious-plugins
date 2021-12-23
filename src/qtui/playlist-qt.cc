@@ -24,6 +24,7 @@
 
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/drct.h>
+#include <libfauxdcore/plugin.h>
 #include <libfauxdcore/runtime.h>
 #include <libfauxdqt/libfauxdqt.h>
 
@@ -149,38 +150,38 @@ void PlaylistWidget::keyPressEvent (QKeyEvent * event)
     {
         switch (event->key ())
         {
-        case Qt::Key_Enter:
-        case Qt::Key_Return:
+          case Qt::Key_Enter:
+          case Qt::Key_Return:
             playCurrentIndex ();
             return;
-        case Qt::Key_Right:
+          case Qt::Key_Right:
             aud_drct_seek (aud_drct_get_time () + aud_get_int (0, "step_size") * 1000);
             return;
-        case Qt::Key_Left:
+          case Qt::Key_Left:
             aud_drct_seek (aud_drct_get_time () - aud_get_int (0, "step_size") * 1000);
             return;
-        case Qt::Key_Space:
+          case Qt::Key_Space:
             aud_drct_play_pause ();
             return;
-        case Qt::Key_Delete:
+          case Qt::Key_Delete:
             pl_remove_selected ();
             return;
-        case Qt::Key_Z:
+          case Qt::Key_Z:
             aud_drct_pl_prev ();
             return;
-        case Qt::Key_X:
+          case Qt::Key_X:
             aud_drct_play ();
             return;
-        case Qt::Key_C:
+          case Qt::Key_C:
             aud_drct_pause ();
             return;
-        case Qt::Key_V:
+          case Qt::Key_V:
             aud_drct_stop ();
             return;
-        case Qt::Key_B:
+          case Qt::Key_B:
             aud_drct_pl_next ();
             return;
-        case Qt::Key_Tab:
+          case Qt::Key_Tab:
             {
             	   int activepl = aud_playlist_get_active ();
             	   if (activepl+1 >= aud_playlist_count ())
@@ -188,6 +189,59 @@ void PlaylistWidget::keyPressEvent (QKeyEvent * event)
                 else
                     aud_playlist_set_active (aud_playlist_get_active () + 1);
             }
+            return;
+        }
+    }
+    else if (event->modifiers () & Qt::AltModifier)
+    {
+        PluginHandle * plugin;
+
+        switch (event->key ())
+        {
+          case Qt::Key_A:
+            plugin = aud_plugin_lookup_basename ("albumart-qt");
+            if (plugin)
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+            return;
+          case Qt::Key_B:
+            plugin = aud_plugin_lookup_basename ("blur_scope-qt");
+            if (plugin)
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+            return;
+          case Qt::Key_L:
+            plugin = aud_plugin_lookup_basename ("lyricwiki-qt");
+            if (plugin)
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+            return;
+          case Qt::Key_M:
+            plugin = aud_plugin_lookup_basename ("info-bar-plugin-qt");
+            if (plugin)
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+            return;
+          case Qt::Key_O:
+            plugin = aud_plugin_lookup_basename ("gl-spectrum-qt");
+            if (plugin)
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+            return;
+          case Qt::Key_P:
+            plugin = aud_plugin_lookup_basename ("playlist-manager-qt");
+            if (plugin)
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+            return;
+          case Qt::Key_S:
+            plugin = aud_plugin_lookup_basename ("search-tool-qt");
+            if (plugin)
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+            return;
+          case Qt::Key_U:
+            plugin = aud_plugin_lookup_basename ("vumeter-qt");
+            if (plugin)
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
+            return;
+          case Qt::Key_V:
+            plugin = aud_plugin_lookup_basename ("video_display");
+            if (plugin)
+                aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
             return;
         }
     }
