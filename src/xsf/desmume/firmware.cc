@@ -19,7 +19,7 @@
 #include "NDSSystem.h"
 
 #define WANT_AUD_BSWAP
-#include <libaudcore/audio.h>
+#include <libfauxdcore/audio.h>
 
 static inline uint32_t DWNUM(uint32_t i) { return i >> 2; }
 
