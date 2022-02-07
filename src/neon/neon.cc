@@ -124,9 +124,9 @@ const char * const NeonTransport::defaults[] = {
     "neon_retries", aud::numeric_string<NEON_RETRY_COUNT>::str,
     "neon_timeoutsec", aud::numeric_string<NEON_TIMEOUTSEC>::str,
 #ifdef _WIN32
-    "ignore_ssl_certs", 1,  // WINDOWS DOESN'T USE SSL_CERT_* ENV. VARS & THUS CAN'T FIND CERTS?!
+    "ignore_ssl_certs", "1",  // WINDOWS DOESN'T USE SSL_CERT_* ENV. VARS & THUS CAN'T FIND CERTS?!
 #else
-    "ignore_ssl_certs", 0,
+    "ignore_ssl_certs", "0",
 #endif
     "user_agent", "Fauxdacious/" PACKAGE_VERSION,
     nullptr
