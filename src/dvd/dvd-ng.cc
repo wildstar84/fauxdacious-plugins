@@ -93,10 +93,6 @@ extern "C" {
 #define SEND_PACKET 1
 #endif
 
-#if CHECK_LIBAVCODEC_VERSION (55, 25, 100, 55, 16, 0)
-#define av_free_packet av_packet_unref
-#endif
-
 typedef struct
 {
     int stream_idx;
@@ -227,6 +223,7 @@ typedef enum {
 } dvdnav_state_t;
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool playing;            /* From Audacious - TRUE WHILE DVD IS ACTIVELY PLAYING. */
 static bool play_video;  /* JWT: TRUE IF USER IS CURRENTLY PLAYING VIDEO (KILLING VID. WINDOW TURNS OFF)! */
 static bool stop_playback;      /* SIGNAL FROM USER TO STOP PLAYBACK */
@@ -337,6 +334,11 @@ const PreferencesWidget DVD::widgets[] = {  // GUI-BASED USER-SPECIFIABLE OPTION
 };
 
 const PluginPreferences DVD::prefs = {{widgets}};
+
+static void notify_playback2stop (void *, void *)
+{
+    stop_playback = true;
+}
 
 /* from audacious:  DISPLAY MESSAGE IN A POPUP WINDOW */
 static void dvd_error (const char * message_format, ...)
@@ -921,17 +923,16 @@ typedef struct
     int size;
     int front;
     int rear;
-    AVPacket *elements;
+    AVPacket * * elements;
 }
 pktQueue;
 
 pktQueue * createQueue (int maxElements)
 {
     /* Create a Queue */
-    pktQueue *Q;
-    Q = (pktQueue *) malloc (sizeof (pktQueue));
+    pktQueue * Q = (pktQueue *) malloc (sizeof (pktQueue));
     /* Initialise its properties */
-    Q->elements = (AVPacket *) malloc (sizeof (AVPacket) * maxElements);
+    Q->elements = (AVPacket * *) malloc (sizeof (AVPacket *) * maxElements);
     Q->size = 0;
     Q->capacity = maxElements;
     Q->front = 0;
@@ -948,13 +949,17 @@ bool Dequeue (pktQueue *Q)
     /* Removing an element is equivalent to incrementing index of front by one */
     else
     {
+        pthread_mutex_lock (& queue_mutex);  // (READER THREAD IS ENQUEUING MORE AT SAME TIME)!
+
         Q->size--;
-        av_free_packet (& Q->elements[Q->front]);
+        av_packet_free (& Q->elements[Q->front]);
 
         Q->front++;
         /* As we fill elements in circular fashion */
         if (Q->front == Q->capacity)
             Q->front = 0;
+
+        pthread_mutex_unlock (& queue_mutex);
     }
     return true;
 }
@@ -962,10 +967,12 @@ bool Dequeue (pktQueue *Q)
 /* JWT:FLUSH AND FREE EVERYTHING IN THE QUEUE */
 void QFlush (pktQueue *Q)
 {
+    pthread_mutex_lock (& queue_mutex);  // DON'T ALLOW THREADS TO ENQUEUE OR DEQUEUE WHILST FLUSHING!
+
     while (Q->size > 0)
     {
         Q->size--;
-        av_free_packet (& Q->elements[Q->front]);
+        av_packet_free (& Q->elements[Q->front]);
 
         Q->front++;
         /* As we fill elements in circular fashion */
@@ -973,22 +980,27 @@ void QFlush (pktQueue *Q)
             Q->front = 0;
     }
 
+    pthread_mutex_unlock (& queue_mutex);
 }
 
-bool Enqueue (pktQueue *Q, AVPacket element)
+bool Enqueue (pktQueue *Q, AVPacket * element)
 {
     /* If the Queue is full, we cannot push an element into it as there is no space for it.*/
     if (Q->size == Q->capacity)
         return false;
     else
     {
-        Q->size++;
+        pthread_mutex_lock (& queue_mutex);  // (MAIN THREAD IS DEQUEUING THEM AT SAME TIME)!
+
         Q->rear++;
         /* As we fill the queue in circular fashion */
         if (Q->rear == Q->capacity)
             Q->rear = 0;
-        /* Insert the element in its rear side */ 
+        /* Insert the element in its rear side */
         Q->elements[Q->rear] = element;
+        Q->size++;
+
+        pthread_mutex_unlock (& queue_mutex);
     }
     return true;
 }
@@ -1342,9 +1354,9 @@ startover:
     SDL_Event       event;       // SDL EVENTS, IE. RESIZE, KILL WINDOW, ETC.
 
     CodecInfo cinfo, vcinfo;     // AUDIO AND VIDEO CODECS.
-    AVPacket pkt;
-    pktQueue *pktQ = nullptr;    // QUEUE FOR VIDEO-PACKET QUEUEING.
-    pktQueue *apktQ = nullptr;   // QUEUE FOR AUDIO-PACKET QUEUEING.
+    AVPacket * pkt;
+    pktQueue * pktQ = nullptr;    // QUEUE FOR VIDEO-PACKET QUEUEING.
+    pktQueue * apktQ = nullptr;   // QUEUE FOR AUDIO-PACKET QUEUEING.
 
     AUDINFO ("---- reader_demuxer starting over! ----\n");
     video_default_width = 720;   // WINDOW-SIZE DEFAULTS FOR DVDS (just initialize for sanity).
@@ -1730,15 +1742,22 @@ AUDDBG("---INPUT PIPE OPENED!\n");
         }
 
         /* READ AND PROCESS NEXT FRAME: */
-        pkt = AVPacket ();
-        av_init_packet (& pkt);
-        ret = LOG (av_read_frame, c.get (), & pkt);
+        pkt = av_packet_alloc ();
+        if (! pkt)
+        {
+            dvdnav_priv->nochannelhop = false;
+            AUDERR ("s:FFMpeg error: could not allocate memory for packet, giving up.\n");
+            stop_playback = true;
+            checkcodecs = false;
+            goto error_exit;
+        }
+        ret = LOG (av_read_frame, c.get (), pkt);
         if (ret < 0)  // CHECK FOR EOF OR ERRORS:
         {
             ++errcount;
             if (ret == (int) AVERROR_EOF)  /* END OF FILE WHILST READING FRAMES: */
             {
-                av_free_packet (& pkt);
+                av_packet_free (& pkt);
                 readblock = false;
                 if (! eof)
                 {
@@ -1746,20 +1765,20 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                     /* FIRST, PROCESS ANYTHING STILL IN THE QUEUES: */
                     while (apktQ->size > 0 || pktQ->size > 0)
                     {
-                        AVPacket * pktRef;
                         while (1)   // WE PREFER TO OUTPUT ORDERED AS AUDIO, VIDEO, AUDIO, ...
                         {
-                            if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS NEXT AUDIO FRAME IN QUEUE:
+                            if (apktQ->size > 0)  // PROCESS NEXT AUDIO FRAME IN QUEUE:
                             {
-                                write_audioframe (& cinfo, pktRef, out_fmt, planar);
+                                write_audioframe (& cinfo, apktQ->elements[apktQ->front], out_fmt, planar);
                                 Dequeue (apktQ);
                             }
-                            if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS NEXT VIDEO FRAME IN QUEUE:
+                            if (pktQ->size > 0)  // PROCESS NEXT VIDEO FRAME IN QUEUE:
                             {
                                 if (myplay_video && vcodec_opened
-                                        && write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
-                                             video_width, video_height, & last_resized, & windowIsStable,
-                                             & resized_window_width, & resized_window_height))
+                                        && write_videoframe (renderer.get (), & vcinfo, bmpptr,
+                                                pktQ->elements[pktQ->front],
+                                                video_width, video_height, & last_resized, & windowIsStable,
+                                                & resized_window_width, & resized_window_height))
                                     SDL_RenderPresent (renderer.get ());
 
                                 Dequeue (pktQ);
@@ -1767,9 +1786,9 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                             else
                                 break;
 
-                            if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
+                            if (apktQ->size > 0)  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
                             {
-                                write_audioframe (& cinfo, pktRef, out_fmt, planar);
+                                write_audioframe (& cinfo, apktQ->elements[apktQ->front], out_fmt, planar);
                                 Dequeue (apktQ);
                             }
                             else
@@ -1780,32 +1799,33 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                     {
                         if (myplay_video && vcodec_opened && ! menu_flushed)  /* FLUSH VIDEO CODEC TO ENSURE USER SEES ALL OF THE MENU SCREEN: */
                         {
-                            AVPacket * pktRef;
                             AUDINFO ("WE'RE PLAYING A MENU, FLUSH VIDEO PACKETS (writes a video frame)!\n");
-                            while ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS REMAINING VIDEO FRAME(S) IN QUEUE:
+                            while (pktQ->size > 0)  // PROCESS REMAINING VIDEO FRAME(S) IN QUEUE:
                             {
-                                if (write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
-                                             video_width, video_height, & last_resized, & windowIsStable,
-                                             & resized_window_width, & resized_window_height))
+                                if (write_videoframe (renderer.get (), & vcinfo, bmpptr,
+                                            pktQ->elements[pktQ->front],
+                                            video_width, video_height, & last_resized, & windowIsStable,
+                                            & resized_window_width, & resized_window_height))
                                     SDL_RenderPresent (renderer.get ());
 
                                 Dequeue (pktQ);
                             }
-                            AVPacket emptypkt = AVPacket ();
-                            av_init_packet (& emptypkt);
-                            emptypkt.data=nullptr; emptypkt.size=0;
-                            if (write_videoframe (renderer.get (), & vcinfo, bmpptr, & emptypkt, 
-                                    video_width, video_height, & last_resized, & windowIsStable,
-                                    & resized_window_width, & resized_window_height))
+                            AVPacket * emptypkt = av_packet_alloc ();
+                            if (emptypkt)
                             {
-                                if (! menubuttons_adjusted && menubuttons.len () > 0)
-                                    menubuttons_adjusted = adjust_menubuttons (last_requested_width, (uint32_t)video_width,
-                                            last_requested_height, (uint32_t)video_height);
+                                emptypkt->data=nullptr; emptypkt->size=0;
+                                if (write_videoframe (renderer.get (), & vcinfo, bmpptr, emptypkt,
+                                        video_width, video_height, & last_resized, & windowIsStable,
+                                        & resized_window_width, & resized_window_height))
+                                {
+                                    if (! menubuttons_adjusted && menubuttons.len () > 0)
+                                        menubuttons_adjusted = adjust_menubuttons (last_requested_width, (uint32_t)video_width,
+                                                last_requested_height, (uint32_t)video_height);
 
-                                draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
+                                    draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
+                                }
+                                av_packet_free (& emptypkt);
                             }
-
-                            av_free_packet (& emptypkt);
                         }
                         AUDINFO ("i:MENU EOF: BUTTON COUNT IN THIS MENU:  %d! duration=%d\n", pci->hli.hl_gi.btn_ns, dvdnav_priv->duration);
                         if (! myplay_video || pci->hli.hl_gi.btn_ns <= 1 
@@ -1889,13 +1909,13 @@ AUDDBG("---INPUT PIPE OPENED!\n");
             {
                 dvdnav_priv->nochannelhop = false;
                 AUDERR ("w:av_read_frame error %d, giving up.\n", ret);
-                av_free_packet (& pkt);
+                av_packet_free (& pkt);
                 goto error_exit;
             }
             else
             {
                 AUDERR ("w:Error reading packet, try again?\n");
-                av_free_packet (& pkt);
+                av_packet_free (& pkt);
                 continue;
             }
         }
@@ -1913,31 +1933,33 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 // PACKET WRITTEN, THEN WE FORCE A FLUSH IN ORDER TO GET THE FULL MENU DISPLAYED, OTHERWISE,
                 // USER MAY GET A BLACK SCREEN WITH NOTHING BUT BUTTON RECTANGLES UNTIL IT HITS EOF OR
                 // UNTIL THE MUSIC / ANIMATION ENDS:
-                AVPacket * pktRef;
                 menu_flushed = true;
-                while ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS REMAINING VIDEO FRAME(S) IN QUEUE:
+                while (pktQ->size > 0)  // PROCESS REMAINING VIDEO FRAME(S) IN QUEUE:
                 {
-                    if (write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
-                                 video_width, video_height, & last_resized, & windowIsStable,
-                                 & resized_window_width, & resized_window_height))
+                    if (write_videoframe (renderer.get (), & vcinfo, bmpptr,
+                                pktQ->elements[pktQ->front],
+                                video_width, video_height, & last_resized, & windowIsStable,
+                                & resized_window_width, & resized_window_height))
                         SDL_RenderPresent (renderer.get ());
 
                     Dequeue (pktQ);
                 }
-                AVPacket emptypkt = AVPacket ();
-                av_init_packet (& emptypkt);
-                emptypkt.data=nullptr; emptypkt.size=0;
-                if (write_videoframe (renderer.get (), & vcinfo, bmpptr, & emptypkt, 
-                      video_width, video_height, & last_resized, & windowIsStable,
-                      & resized_window_width, & resized_window_height))
+                AVPacket * emptypkt = av_packet_alloc ();
+                if (emptypkt)
                 {
-                    if (! menubuttons_adjusted && menubuttons.len () > 0)
-                        menubuttons_adjusted = adjust_menubuttons (last_requested_width, (uint32_t)video_width,
-                            last_requested_height, (uint32_t)video_height);
+                    emptypkt->data=nullptr; emptypkt->size=0;
+                    if (write_videoframe (renderer.get (), & vcinfo, bmpptr, emptypkt,
+                          video_width, video_height, & last_resized, & windowIsStable,
+                          & resized_window_width, & resized_window_height))
+                    {
+                        if (! menubuttons_adjusted && menubuttons.len () > 0)
+                            menubuttons_adjusted = adjust_menubuttons (last_requested_width, (uint32_t)video_width,
+                                last_requested_height, (uint32_t)video_height);
 
-                    draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
+                        draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
+                    }
+                    av_packet_free (& emptypkt);
                 }
-                av_free_packet (& emptypkt);
             }
         }
 
@@ -1947,19 +1969,19 @@ AUDDBG("---INPUT PIPE OPENED!\n");
            OUTPUT SYNCED & SMOOTH! */
         if (apktQ->size == apktQ->capacity || pktQ->size == pktQ->capacity)  // ONE OF THE PACKET QUEUES IS FULL:
         {
-            AVPacket * pktRef;
             while (1)  // TRY TO READ AT LEAST 1 AUDIO, THEN 1 VIDEO, BUT KEEP GOING UNTIL ONE QUEUE IS EMPTY:
             {
-                if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS NEXT AUDIO FRAME IN QUEUE:
+                if (apktQ->size > 0)  // PROCESS NEXT AUDIO FRAME IN QUEUE:
                 {
-                    write_audioframe (& cinfo, pktRef, out_fmt, planar);
+                    write_audioframe (& cinfo, apktQ->elements[apktQ->front], out_fmt, planar);
                     Dequeue (apktQ);
                 }
-                if ((pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))  // PROCESS NEXT VIDEO FRAME IN QUEUE:
+                if (pktQ->size > 0)  // PROCESS NEXT VIDEO FRAME IN QUEUE:
                 {
                     if (myplay_video && vcodec_opened)
                     {
-                        if (write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
+                        if (write_videoframe (renderer.get (), & vcinfo, bmpptr,
+                                pktQ->elements[pktQ->front],
                                 video_width, video_height, & last_resized, & windowIsStable,
                                 & resized_window_width, & resized_window_height))
                         {
@@ -1984,18 +2006,20 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 }
                 else
                     break;
-                if ((pktRef = (apktQ->size ? & apktQ->elements[apktQ->front] : nullptr)))  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
+
+                if (apktQ->size > 0)  // PROCESS A 2ND AUDIO FRAME IN QUEUE (DO 2 AUDIOS PER VIDEO!):
                 {
-                    write_audioframe (& cinfo, pktRef, out_fmt, planar);
+                    write_audioframe (& cinfo, apktQ->elements[apktQ->front], out_fmt, planar);
                     Dequeue (apktQ);
                 }
                 else
                 {
-                    if (pktQ->size > 2 && (pktRef = (pktQ->size ? & pktQ->elements[pktQ->front] : nullptr)))
+                    if (pktQ->size > 2)
                     {   // PROCESS AN EXTRA VIDEO PKT WHEN AUDIO Q EMPTY & A BUNCH OF VIDEO PKTS REMAIN, IE. HD VIDEOS (MAKES 'EM SMOOTHER):
                         if (myplay_video && vcodec_opened)
                         {
-                            if (write_videoframe (renderer.get (), & vcinfo, bmpptr, pktRef, 
+                            if (write_videoframe (renderer.get (), & vcinfo, bmpptr,
+                                    pktQ->elements[pktQ->front],
                                     video_width, video_height, & last_resized, & windowIsStable,
                                     & resized_window_width, & resized_window_height) && playing_a_menu)
                             {
@@ -2015,26 +2039,27 @@ AUDDBG("---INPUT PIPE OPENED!\n");
         {
             if (dvdnav_priv->demuxing)
             {
-                if (codec_opened && pkt.stream_index == cinfo.stream_idx)  /* WE READ AN AUDIO PACKET: */
-                    Enqueue (apktQ, pkt);
+                if (codec_opened && pkt->stream_index == cinfo.stream_idx)  /* WE READ AN AUDIO PACKET: */
+                {
+                    if (! Enqueue (apktQ, pkt))
+                        av_packet_free (& pkt);
+                }
                 else
                 {
                     if (vcodec_opened)
                     {
-                        if (pkt.stream_index == vcinfo.stream_idx)  /* WE READ A VIDEO PACKET: */
-                            Enqueue (pktQ, pkt);
-                        else
-                            av_free_packet (& pkt);
+                        if (pkt->stream_index != vcinfo.stream_idx || ! Enqueue (pktQ, pkt))  /* WE READ A VIDEO PACKET: */
+                            av_packet_free (& pkt);
                     }
                     else   /* IGNORE ANY OTHER SUBSTREAMS */
                     {
-                        av_free_packet (& pkt);
+                        av_packet_free (& pkt);
                         continue;
                     }
                 }
             }
             else
-                av_free_packet (& pkt);
+                av_packet_free (& pkt);
         }
         /* AT THIS POINT THE PACKET MUST BE EITHER ENQUEUED OR FREED! */
         /* JWT: NOW HANDLE ANY VIDEO UI EVENTS SUCH AS RESIZE OR KILL VIDEO SCREEN (IF PLAYING VIDEO): */
@@ -2454,6 +2479,9 @@ bool DVD::play (const char * name, VFSFile & file)
         stop_playback = true;
     }
 #endif
+
+    hook_associate ("stopped by user", notify_playback2stop, nullptr);
+
     /* SPAWN THE READER/DEMUXER THREAD */
 #ifndef NODEMUXING
     AUDDBG("PLAY:opened OUTPUT PIPE (%s) !!!!!!!!...\n", (const char *)dvdnav_priv->fifo_str);
@@ -2475,6 +2503,7 @@ bool DVD::play (const char * name, VFSFile & file)
         {
             dvd_error ("Couldn't select title %d, error '%s'\n", dvdnav_priv->track, dvdnav_err_to_string (dvdnav_priv->dvdnav));
             pthread_mutex_unlock (& mutex);
+            hook_dissociate ("stopped by user", notify_playback2stop);
             return false;
         }
         // show_audio_subs_languages (dvdnav_priv->dvdnav);
@@ -2869,7 +2898,11 @@ bool DVD::play (const char * name, VFSFile & file)
 
 GETMEOUTTAHERE:
     reader_please_die = true;
+
     pthread_mutex_unlock (& mutex);
+
+    hook_dissociate ("stopped by user", notify_playback2stop);
+
     aud_set_bool (nullptr, "eqpreset_nameonly", save_eqpreset_nameonly);
     AUDINFO ("WE HAVE EXITED THE PLAY LOOP, WAITING FOR READER THREAD TO STOP!...\n");
     if (pthread_join (rdmux_thread, NULL))
