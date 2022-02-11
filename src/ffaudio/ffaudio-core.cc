@@ -60,17 +60,13 @@ extern "C" {
 #define SEND_PACKET 1
 #endif
 
-#if CHECK_LIBAVCODEC_VERSION (55, 25, 100, 55, 16, 0)
-#define av_free_packet av_packet_unref
-#endif
-
 typedef struct
 {
     int capacity;
     int size;
     int front;
     int rear;
-    AVPacket * elements;
+    AVPacket * * elements;
 }
 pktQueue;
 
@@ -90,6 +86,7 @@ typedef struct
     pktQueue *apktQ = nullptr; // QUEUE FOR AUDIO-PACKET QUEUEING.
     AVFormatContext * ic = nullptr;  // AVstuff.
     int errcount = 0;
+    bool videoalso;
 }
 DataShared2Thread;
 
@@ -213,10 +210,9 @@ struct ScopedFrame
 pktQueue * createQueue (int maxElements)
 {
     /* Create a Queue */
-    pktQueue *Q;
-    Q = (pktQueue *) malloc (sizeof (pktQueue));
+    pktQueue * Q = (pktQueue *) malloc (sizeof (pktQueue));
     /* Initialise its properties */
-    Q->elements = (AVPacket *) malloc (sizeof (AVPacket) * maxElements);
+    Q->elements = (AVPacket * *) malloc (sizeof (AVPacket *) * maxElements);
     Q->size = 0;
     Q->capacity = maxElements;
     Q->front = 0;
@@ -236,7 +232,7 @@ bool Dequeue (pktQueue * Q)
         pthread_mutex_lock (& queue_mutex);  // (READER THREAD IS ENQUEUING MORE AT SAME TIME)!
 
         Q->size--;
-        av_free_packet (& Q->elements[Q->front]);
+        av_packet_free (& Q->elements[Q->front]);
 
         Q->front++;
         /* As we fill elements in circular fashion */
@@ -256,7 +252,7 @@ void QFlush (pktQueue * Q)
     while (Q->size > 0)
     {
         Q->size--;
-        av_free_packet (& Q->elements[Q->front]);
+        av_packet_free (& Q->elements[Q->front]);
 
         Q->front++;
         /* As we fill elements in circular fashion */
@@ -267,7 +263,7 @@ void QFlush (pktQueue * Q)
     pthread_mutex_unlock (& queue_mutex);
 }
 
-bool Enqueue (pktQueue * Q, AVPacket element)
+bool Enqueue (pktQueue * Q, AVPacket * element)
 {
     /* If the Queue is full, we cannot push an element into it as there is no space for it.*/
     if (Q->size == Q->capacity)
@@ -276,13 +272,13 @@ bool Enqueue (pktQueue * Q, AVPacket element)
     {
         pthread_mutex_lock (& queue_mutex);  // (MAIN THREAD IS DEQUEUING THEM AT SAME TIME)!
 
-        Q->size++;
         Q->rear += 1;
         /* As we fill the queue in circular fashion */
         if (Q->rear == Q->capacity)
             Q->rear = 0;
-        /* Insert the element in its rear side */ 
+        /* Insert the element in its rear side */
         Q->elements[Q->rear] = element;
+        Q->size++;
 
         pthread_mutex_unlock (& queue_mutex);
     }
@@ -962,7 +958,7 @@ static void * reader_thread_fn (void * data)
 {
     int ret;
     int minbuffer = 12;
-    AVPacket pkt;
+    AVPacket * pkt;
     DataShared2Thread * TD = (DataShared2Thread *) data;
     TD->errcount = 0;
     long reader_sleep_ms = (long) aud_get_int ("ffaudio", "reader_sleep_ms") * 1000000L;
@@ -975,11 +971,16 @@ static void * reader_thread_fn (void * data)
     while (thread_exit < 2)
     {
         /* READ NEXT FRAME (OR MORE) OF DATA */
-        pkt = AVPacket ();
-        av_init_packet (& pkt);
+        pkt = av_packet_alloc ();
+        if (! pkt)
+        {
+            AUDERR ("FFMpeg error: could not allocate memory for packet, giving up.\n");
+            thread_exit = -1;  // ERROR
+            goto THREAD_EXIT;
+        }
 
         pthread_mutex_lock (& read_mutex);  // BLOCK READING WHILST SEEKING (CHANGING POSITION)!
-        ret = LOG (av_read_frame, TD->ic, & pkt);
+        ret = LOG (av_read_frame, TD->ic, pkt);
         pthread_mutex_unlock (& read_mutex);
 
         if (ret < 0)  // CHECK FOR EOF OR ERRORS:
@@ -988,20 +989,20 @@ static void * reader_thread_fn (void * data)
             if (ret == (int) AVERROR_EOF)
             {
                 AUDDBG ("eof reached\n");
-                av_free_packet (& pkt);
+                av_packet_free (& pkt);
                 thread_exit = 1;  // EOF
                 goto THREAD_EXIT;
             }
             else if (TD->errcount > 4)
             {
                 AUDERR ("av_read_frame error %d, giving up.\n", ret);
-                av_free_packet (& pkt);
+                av_packet_free (& pkt);
                 thread_exit = -1;  // ERROR
                 goto THREAD_EXIT;
             }
             else
             {
-                av_free_packet (& pkt);
+                av_packet_free (& pkt);
                 continue;
             }
         }
@@ -1009,7 +1010,7 @@ static void * reader_thread_fn (void * data)
             TD->errcount = 0;
 
         /* NOW PROCESS THE CURRENTLY-READ PACKET: */
-        if (pkt.stream_index == TD->cinfo.stream_idx)  /* WE READ AN AUDIO PACKET: */
+        if (pkt->stream_index == TD->cinfo.stream_idx)  /* WE READ AN AUDIO PACKET: */
         {
             if (TD->apktQ->size == TD->apktQ->capacity)
             {
@@ -1018,15 +1019,16 @@ static void * reader_thread_fn (void * data)
                     nanosleep (& sleeptime, NULL);
                     if (thread_exit == 2)
                     {
-                        av_free_packet (& pkt);
+                        av_packet_free (& pkt);
                         goto THREAD_EXIT;
                     }
                 }
                 while (TD->pktQ->size > minbuffer && TD->apktQ->size > minbuffer);
             }
-            Enqueue (TD->apktQ, pkt);
+            if (! Enqueue (TD->apktQ, pkt))
+                av_packet_free (& pkt);
         }
-        else if (pkt.stream_index == TD->vcinfo.stream_idx)  /* WE READ A VIDEO PACKET: */
+        else if (TD->videoalso && pkt->stream_index == TD->vcinfo.stream_idx)  /* WE READ A VIDEO PACKET: */
         {
             if (TD->pktQ->size == TD->pktQ->capacity)
             {
@@ -1035,16 +1037,17 @@ static void * reader_thread_fn (void * data)
                     nanosleep (& sleeptime, NULL);
                     if (thread_exit == 2)
                     {
-                        av_free_packet (& pkt);
+                        av_packet_free (& pkt);
                         goto THREAD_EXIT;
                     }
                 }
                 while (TD->apktQ->size > minbuffer && TD->pktQ->size > minbuffer);
             }
-            Enqueue (TD->pktQ, pkt);
+            if (! Enqueue (TD->pktQ, pkt))
+                av_packet_free (& pkt);
         }
         else
-            av_free_packet (& pkt);
+            av_packet_free (& pkt);
     }
 
 THREAD_EXIT:
@@ -1108,7 +1111,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 /* STUFF THAT GETS FREED MUST BE DECLARED AND INITIALIZED AFTER HERE B/C BEFORE HERE, WE RETURN, 
    AFTER HERE, WE GO TO error_exit (AND FREE STUFF)! */
 
-    AVPacket pkt;
+    AVPacket * pkt;
     if (! find_codec (TD.ic, & TD.cinfo, & TD.vcinfo))   //CAN CHANGE play_video!
     {
         AUDERR ("No codec found for %s, can't play.\n", filename);
@@ -1333,6 +1336,7 @@ breakout1:
     if (! bmp)
         myplay_video = false;
 
+    TD.videoalso = myplay_video;
     /* START UP READER THREAD: */
     pthread_attr_t thread_attrs;
     pthread_t helper_thread;
@@ -1358,58 +1362,51 @@ breakout1:
         goto error_exit;
     }
 
-    AVPacket * pktRef;
     /* LOOP TO PROCESS QUEUED AUDIO & VIDEO PACKETS FROM THE STREAM, INTERLACE AND OUTPUT THEM: */
     while (! thread_exit)
     {
         if (myplay_video)
         {
-            if ((pktRef = (TD.apktQ->size ? & TD.apktQ->elements[TD.apktQ->front] : nullptr)))
+            if (TD.apktQ->size > 0)
             {   // PROCESS NEXT AUDIO FRAME(S) IN QUEUE:
-                write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+                write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
                 Dequeue (TD.apktQ);
                 /* NOTE:THE HARDCODED MULTIPLES STAGGERED B/C AFTER 2X, WE HESITATE A BIT TO ADD MORE: */
                 /* (MAINTAIN THE A/V RATIO AS CLOSE TO 1:1-ISH OR THE VIDEO'S OVERALL RATIO AS POSSIBLE) */
                 if (TD.apktQ->size > int(1.1 * TD.pktQ->size))  // CLOSER TO 2X AUDIOS QUEUED THAN VIDEOS, PROCESS AN EXTRA ONE!
                 {
-                    pktRef = & TD.apktQ->elements[TD.apktQ->front];
-                    write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+                    write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
                     Dequeue (TD.apktQ);
                     if (TD.apktQ->size > int(2.7 * TD.pktQ->size))  // CLOSER TO 3X AUDIOS QUEUED THAN VIDEOS, PROCESS ANOTHER EXTRA ONE!
                     {
-                        pktRef = & TD.apktQ->elements[TD.apktQ->front];
-                        write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+                        write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
                         Dequeue (TD.apktQ);
                         if (TD.apktQ->size > int(4.3 * TD.pktQ->size))  // CLOSER TO 4X AUDIOS QUEUED THAN VIDEOS, PROCESS ANOTHER EXTRA ONE!
                         {
-                            pktRef = & TD.apktQ->elements[TD.apktQ->front];
-                            write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+                            write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
                             Dequeue (TD.apktQ);
                         }
                     }
                 }
             }
-            if ((pktRef = (TD.pktQ->size ? & TD.pktQ->elements[TD.pktQ->front] : nullptr)))
+            if (TD.pktQ->size > 0)
             {   // PROCESS NEXT VIDEO FRAME(S) IN QUEUE:
-                write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pktRef,
+                write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, TD.pktQ->elements[TD.pktQ->front],
                         video_width, video_height, last_resized, & windowIsStable);
                 Dequeue (TD.pktQ);
                 if (TD.pktQ->size > int(1.4 * TD.apktQ->size))  // CLOSER TO 2X VIDEOS QUEUED THAN AUDIOS, PROCESS AN EXTRA ONE!
                 {
-                    pktRef = & TD.pktQ->elements[TD.pktQ->front];
-                    write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pktRef,
+                    write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, TD.pktQ->elements[TD.pktQ->front],
                             video_width, video_height, last_resized, & windowIsStable);
                     Dequeue (TD.pktQ);
                     if (TD.pktQ->size > int(2.8 * TD.apktQ->size))  // CLOSER TO 3X VIDEOS QUEUED THAN AUDIOS, PROCESS ANOTHER EXTRA ONE!
                     {
-                        pktRef = & TD.pktQ->elements[TD.pktQ->front];
-                        write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pktRef,
+                        write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, TD.pktQ->elements[TD.pktQ->front],
                                 video_width, video_height, last_resized, & windowIsStable);
                         Dequeue (TD.pktQ);
                         if (TD.pktQ->size > int(4.2 * TD.apktQ->size))  // CLOSER TO 4X VIDEOS QUEUED THAN AUDIOS, PROCESS ANOTHER EXTRA ONE!
                         {
-                            pktRef = & TD.pktQ->elements[TD.pktQ->front];
-                            write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pktRef,
+                            write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, TD.pktQ->elements[TD.pktQ->front],
                                     video_width, video_height, last_resized, & windowIsStable);
                             Dequeue (TD.pktQ);
                         }
@@ -1567,9 +1564,9 @@ breakout1:
                 needWinSzFudge = false;
             }
         }
-        else if ((pktRef = (TD.apktQ->size ? & TD.apktQ->elements[TD.apktQ->front] : nullptr)))
+        else if (TD.apktQ->size > 0)
         {   // PROCESS NEXT AUDIO FRAME IN QUEUE:
-            write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+            write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
             Dequeue (TD.apktQ);
         }
 
@@ -1609,28 +1606,29 @@ breakout1:
     {
         while (TD.apktQ->size > 0 || TD.pktQ->size > 0)
         {
-            AVPacket * pktRef;
-            if ((pktRef = (TD.apktQ->size ? & TD.apktQ->elements[TD.apktQ->front] : nullptr)))
+            if (TD.apktQ->size > 0)
             {   // PROCESS NEXT AUDIO FRAME IN QUEUE:
-                write_audioframe (& TD.cinfo, pktRef, out_fmt, planar);
+                write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
                 Dequeue (TD.apktQ);
             }
-            if (myplay_video && (pktRef = (TD.pktQ->size ? & TD.pktQ->elements[TD.pktQ->front] : nullptr)))
+            if (myplay_video && TD.pktQ->size > 0)
             {   // PROCESS NEXT VIDEO FRAME IN QUEUE:
-                write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pktRef,
+                write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, TD.pktQ->elements[TD.pktQ->front],
                         video_width, video_height, last_resized, & windowIsStable);
                 Dequeue (TD.pktQ);
             }
         }
-        pkt = AVPacket ();
-        av_init_packet (& pkt);
-        pkt.data=nullptr; pkt.size=0;
-        write_audioframe (& TD.cinfo, & pkt, out_fmt, planar);
-        if (myplay_video)  /* IF VIDEO-WINDOW STILL INTACT (NOT CLOSED BY USER PRESSING WINDOW'S CORNER [X]): */
-            write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, & pkt,
-                    video_width, video_height, last_resized, & windowIsStable);
+        pkt = av_packet_alloc ();
+        if (pkt)
+        {
+            pkt->data=nullptr; pkt->size=0;
+            write_audioframe (& TD.cinfo, pkt, out_fmt, planar);
+            if (myplay_video)  /* IF VIDEO-WINDOW STILL INTACT (NOT CLOSED BY USER PRESSING WINDOW'S CORNER [X]): */
+                write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pkt,
+                        video_width, video_height, last_resized, & windowIsStable);
 
-        av_free_packet (& pkt);
+            av_packet_free (& pkt);
+        }
 #ifdef _WIN32
         if (bmp)  // GOTTA FREE THIS BEFORE WE LEAVE SCOPE!
         {
