@@ -677,7 +677,7 @@ static bool check_disk_status ()
         return false;
 
 #ifdef _WIN32
-    return true;  // FIXME!
+    return true;  // FIXME (NOT SURE HOW)!
 #else
     int disk;
     if ((disk = open (dvdnav_priv->filename, O_RDONLY | O_NONBLOCK)) < 0)
@@ -716,7 +716,7 @@ bool DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
             avcodec_flush_buffers (vcinfo->context);
 #else
         frameFinished = 0;
-        len = LOG (avcodec_decode_video2, vcinfo->context, vframe.ptr, &frameFinished, pkt);
+        len = LOG (avcodec_decode_video2, vcinfo->context, vframe.ptr, & frameFinished, pkt);
         /* Did we get a video frame? */
         if (len < 0)
         {
@@ -1045,12 +1045,6 @@ readagain:
     if (red)
         red = (int) dwRead;
     if (red < 2)
-    {
-        if (readblock && ! reader_please_die)
-            goto readagain;
-        else
-            return -1;
-    }
 #else
     while (poll ((struct pollfd *) input_fd_p, 1, 200) <= 0)
     {
@@ -1061,13 +1055,13 @@ readagain:
     }
     red = read (((struct pollfd *) input_fd_p)->fd, buf, size);
     if (red <= 0)
+#endif
     {
         if (readblock && ! reader_please_die)
             goto readagain;
         else
             return -1;
     }
-#endif
 
     AUDDBG("--READ(%d) BYTES (sz=%d)\n", red, size);
     return (reader_please_die ? -1 : red);
@@ -1422,7 +1416,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 if (idx == dvdnav_priv->lastaudiostream)
                 {
                     audioStream=i;  // WE'RE GONNA TRY USING THE "idx"'TH AUDIO STREAM INSTEAD OF 1ST ONE:
-                    AUDINFO ("------BREAK OUT WITH AUDIO (%d)nd STREAM(%d)!\n", idx, i);
+                    AUDINFO ("------BREAK OUT WITH AUDIO (%d)th STREAM(%d)!\n", idx, i);
                     break;
                 }
                 idx++;
@@ -1506,7 +1500,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
 #endif
             vcodec_opened = false;
         }
-        myplay_video = play_video;
+        else
+            myplay_video = play_video;
     }
     if (playing_a_menu && !vcodec_opened && aud_get_bool ("dvd", "play_video"))
     {
@@ -1654,31 +1649,25 @@ AUDDBG("---INPUT PIPE OPENED!\n");
     pktQ = playing_a_menu ? createQueue (1) : createQueue (2 * video_qsize);
     apktQ = createQueue (video_qsize);
 
-    /* SUBSCOPE FOR DECLARING SDL2 TEXTURE AS SCOPED SMARTPOINTER: */
+    /* SUBSCOPE FOR DECLARING SDL2 TEXTURE: */
     {
     bool windowNowExposed = false;  // JWT:NEEDED TO PREVENT RESIZING WINDOW BEFORE EXPOSING ON MS-WINDOWS?!
     int seek_value;
     bool highlightbuttons = playing_a_menu ? aud_get_bool ("dvd", "highlightbuttons") : false;
-#ifdef _WIN32
-    SDL_Texture * bmp = nullptr;    // CAN'T USE SMARTPTR HERE IN WINDOWS - renderer.get() FAILS IF VIDEO PLAY NOT TURNED ON?!
-#endif
+    SDL_Texture * bmp = nullptr;
     int minmenushowsec = aud_get_int ("dvd", "minmenushowsec");
     if (minmenushowsec < 1)
         minmenushowsec = 16;
+
     if (! renderer)
     {
         if (myplay_video)
             AUDERR ("e:SDL: could not create video renderer - no video play (%s)\n", SDL_GetError ());
         myplay_video = false;
     }
-#ifdef _WIN32
-#define bmpptr bmp
-    else  // CAN'T SMARTPTR THIS IN WINBLOWS SINCE FATAL ERROR (ON renderer.get IF NO RENDERER) IF VIDEO-PLAY TURNED OFF (COMPILER DIFFERENCE)!
+    else if (myplay_video)  // CAN'T SMARTPTR THIS IN WINBLOWS SINCE FATAL ERROR (ON renderer.get IF NO RENDERER) IF VIDEO-PLAY TURNED OFF (COMPILER DIFFERENCE)!
         bmp = createSDL2Texture (sdl_window, renderer.get (), myplay_video, vcinfo.context->width, vcinfo.context->height);
-#else
-#define bmpptr bmp.get ()
-    SmartPtr<SDL_Texture, SDL_DestroyTexture> bmp (createSDL2Texture (sdl_window, renderer.get (), myplay_video, vcinfo.context->width, vcinfo.context->height));
-#endif
+
     if (myplay_video && ! bmp)
     {
         AUDERR ("e:NO VIDEO DUE TO INABILITY TO GET TEXTURE!\n");
@@ -1710,6 +1699,14 @@ AUDDBG("---INPUT PIPE OPENED!\n");
     menuawaitingclick = false;
     while (! reader_please_die)
     {
+        if (codec_opened && check_stop ())  //check_stop NO WORKEE IF WE'RE A VIDEO-ONLY STREAM!
+        {
+            stop_playback = true;
+            checkcodecs = false;
+            readblock = false;
+            AUDDBG ("USER PRESSED STOP BUTTON!!!!!!!!!!!\n");
+            goto error_exit;
+        }
         if (playing_a_menu != were_playing_a_menu)  // CHG. FROM MOVIE TO MENU OR VICE VERSA, RECHECK CODECS!
             checkcodecs = true;
         if (checkcodecs)  /* WE NEED TO START OVER - CHANNEL CHANGE, NEED TO RESCAN CODECS / STREAMS! */
@@ -1717,6 +1714,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
             AUDDBG ("--CODEC CHECK REQUESTED, FLUSH VIDEO QUEUES!\n");
             QFlush (apktQ);      // FLUSH PACKET QUEUES:
             QFlush (pktQ);
+            if (bmp)
+                SDL_DestroyTexture (bmp);
             goto error_exit;
         }
 
@@ -1754,6 +1753,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
             AUDERR ("s:FFMpeg error: could not allocate memory for packet, giving up.\n");
             stop_playback = true;
             checkcodecs = false;
+            if (bmp)
+                SDL_DestroyTexture (bmp);
             goto error_exit;
         }
         ret = pause_reading ? -1 : LOG (av_read_frame, c.get (), pkt);
@@ -1789,7 +1790,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                             if (pktQ->size > 0)  // PROCESS NEXT VIDEO FRAME IN QUEUE:
                             {
                                 if (myplay_video && vcodec_opened
-                                        && write_videoframe (renderer.get (), & vcinfo, bmpptr,
+                                        && write_videoframe (renderer.get (), & vcinfo, bmp,
                                                 pktQ->elements[pktQ->front],
                                                 video_width, video_height, & last_resized, & windowIsStable,
                                                 & resized_window_width, & resized_window_height))
@@ -1813,22 +1814,11 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                     {
                         if (myplay_video && vcodec_opened && ! menu_flushed)  /* FLUSH VIDEO CODEC TO ENSURE USER SEES ALL OF THE MENU SCREEN: */
                         {
-                            AUDINFO ("WE'RE PLAYING A MENU, FLUSH VIDEO PACKETS (writes a video frame)!\n");
-                            while (pktQ->size > 0)  // PROCESS REMAINING VIDEO FRAME(S) IN QUEUE:
-                            {
-                                if (write_videoframe (renderer.get (), & vcinfo, bmpptr,
-                                            pktQ->elements[pktQ->front],
-                                            video_width, video_height, & last_resized, & windowIsStable,
-                                            & resized_window_width, & resized_window_height))
-                                    SDL_RenderPresent (renderer.get ());
-
-                                Dequeue (pktQ);
-                            }
+                            AUDINFO ("WE'RE PLAYING A MENU, FLUSH VIDEO PACKETS (writes a video frame)! Qsize=%d=\n", pktQ->size);
                             AVPacket * emptypkt = av_packet_alloc ();
                             if (emptypkt)
                             {
-                                emptypkt->data=nullptr; emptypkt->size=0;
-                                if (write_videoframe (renderer.get (), & vcinfo, bmpptr, emptypkt,
+                                if (write_videoframe (renderer.get (), & vcinfo, bmp, emptypkt,
                                         video_width, video_height, & last_resized, & windowIsStable,
                                         & resized_window_width, & resized_window_height))
                                 {
@@ -1932,6 +1922,10 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 dvdnav_priv->nochannelhop = false;
                 AUDERR ("w:av_read_frame error %d, giving up.\n", ret);
                 av_packet_free (& pkt);
+                stop_playback = true;
+                checkcodecs = false;
+                if (bmp)
+                    SDL_DestroyTexture (bmp);
                 goto error_exit;
             }
             else
@@ -1946,19 +1940,19 @@ AUDDBG("---INPUT PIPE OPENED!\n");
             errcount = 0;
             eof = false;
             if (! (dvdnav_priv->state & NAV_FLAG_WAIT))
-                readblock = true;  //BLOCK ON MOVIES OR MENUS (SOME NEED!) IFF *NOT* IN WAIT STATE!!
+                readblock = true;  //BLOCK ON MOVIES, OR MENUS PLAYING MUSIC (SOME NEED!) IFF *NOT* IN WAIT STATE!!
 
             if (playing_a_menu && menu_written && ! menu_flushed
                     && difftime (time (nullptr), last_menuframe_time) > 1)
             {
                 // WHEN PLAYING MENUS, WE WAIT FOR A FULL SECOND AFTER GETTING LAST VIDEO
                 // PACKET WRITTEN, THEN WE FORCE A FLUSH IN ORDER TO GET THE FULL MENU DISPLAYED, OTHERWISE,
-                // USER MAY GET A BLACK SCREEN WITH NOTHING BUT BUTTON RECTANGLES UNTIL IT HITS EOF OR
+                // USER MAY GET A BLANK SCREEN WITH NOTHING BUT BUTTON RECTANGLES UNTIL IT HITS EOF OR
                 // UNTIL THE MUSIC / ANIMATION ENDS:
-                menu_flushed = true;
+                menu_flushed = true;    // SEEMS TO NEED TO BE HERE RATHER THAN 25 LINES BELOW?!
                 while (pktQ->size > 0)  // PROCESS REMAINING VIDEO FRAME(S) IN QUEUE:
                 {
-                    if (write_videoframe (renderer.get (), & vcinfo, bmpptr,
+                    if (bmp && renderer && write_videoframe (renderer.get (), & vcinfo, bmp,
                                 pktQ->elements[pktQ->front],
                                 video_width, video_height, & last_resized, & windowIsStable,
                                 & resized_window_width, & resized_window_height))
@@ -1969,8 +1963,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 AVPacket * emptypkt = av_packet_alloc ();
                 if (emptypkt)
                 {
-                    emptypkt->data=nullptr; emptypkt->size=0;
-                    if (write_videoframe (renderer.get (), & vcinfo, bmpptr, emptypkt,
+                    if (bmp && renderer && write_videoframe (renderer.get (), & vcinfo, bmp, emptypkt,
                           video_width, video_height, & last_resized, & windowIsStable,
                           & resized_window_width, & resized_window_height))
                     {
@@ -2002,7 +1995,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 {
                     if (myplay_video && vcodec_opened)
                     {
-                        if (write_videoframe (renderer.get (), & vcinfo, bmpptr,
+                        if (write_videoframe (renderer.get (), & vcinfo, bmp,
                                 pktQ->elements[pktQ->front],
                                 video_width, video_height, & last_resized, & windowIsStable,
                                 & resized_window_width, & resized_window_height))
@@ -2018,7 +2011,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                             else
                                 SDL_RenderPresent (renderer.get ());
                         }
-                        if (playing_a_menu)
+                        if (playing_a_menu)  // SEEMS TO NEED TO BE HERE INSTEAD OF INSIDE IF-BLOCK JUST ABOVE?!
                         {
                             last_menuframe_time = time (nullptr);
                             menu_written = true;
@@ -2040,14 +2033,17 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                     {   // PROCESS AN EXTRA VIDEO PKT WHEN AUDIO Q EMPTY & A BUNCH OF VIDEO PKTS REMAIN, IE. HD VIDEOS (MAKES 'EM SMOOTHER):
                         if (myplay_video && vcodec_opened)
                         {
-                            if (write_videoframe (renderer.get (), & vcinfo, bmpptr,
+                            if (write_videoframe (renderer.get (), & vcinfo, bmp,
                                     pktQ->elements[pktQ->front],
                                     video_width, video_height, & last_resized, & windowIsStable,
                                     & resized_window_width, & resized_window_height) && playing_a_menu)
                             {
                                 draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
-                                last_menuframe_time = time (nullptr);
-                                menu_written = true;
+                                if (playing_a_menu)
+                                {
+                                    last_menuframe_time = time (nullptr);
+                                    menu_written = true;
+                                }
                             }
                         }
                         Dequeue (pktQ);
@@ -2056,7 +2052,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 }
             }
         }
-        /* NOW PROCESS THE CURRENTLY-READ PACKET, EITHER OUTPUTTING IT OR QUEUEING IT: */
+        /* NOW PROCESS THE CURRENTLY-READ PACKET, EITHER ENQUEUEING OR DISCARDING IT: */
         if (! eof)
         {
             if (dvdnav_priv->demuxing)
@@ -2073,9 +2069,10 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                         if (pkt && (pkt->stream_index != vcinfo.stream_idx || ! Enqueue (pktQ, pkt)))  /* WE READ A VIDEO PACKET: */
                             av_packet_free (& pkt);
                     }
-                    else if (pkt)   /* IGNORE ANY OTHER SUBSTREAMS */
+                    else   /* IGNORE ANY OTHER SUBSTREAMS */
                     {
-                        av_packet_free (& pkt);
+                        if (pkt)
+                            av_packet_free (& pkt);
                         continue;
                     }
                 }
@@ -2083,14 +2080,20 @@ AUDDBG("---INPUT PIPE OPENED!\n");
             else if (pkt)
                 av_packet_free (& pkt);
         }
-        /* AT THIS POINT THE PACKET MUST BE EITHER ENQUEUED OR FREED! */
+        else if (pkt)
+            av_packet_free (& pkt);
+
+        if (! myplay_video)
+            continue;
+
+        /* AT THIS POINT THE PACKET MUST BE EITHER ENQUEUED OR FREED AND WE ARE (DIS)PLAYING VIDEO! */
         /* JWT: NOW HANDLE ANY VIDEO UI EVENTS SUCH AS RESIZE OR KILL VIDEO SCREEN (IF PLAYING VIDEO): */
         /*      IF WE'RE HERE, WE *ARE* STILL PLAYING VIDEO (BUT THAT MAY CHANGE WITHIN THIS LOOP)! */
         while (SDL_PollEvent (&event))
         {
             switch (event.type) {
                 case SDL_MOUSEBUTTONDOWN: // if the event is mouse click
-                    if (playing_a_menu || menuawaitingclick)
+                    if (playing_a_menu)
                     {
                         /* USER PRESSED A MENU BUTTON, SEE WHICH ONE AND ACTIVATE IT: */
                         for (int mbtn = 0; mbtn < menubuttons.len (); mbtn ++)
@@ -2203,7 +2206,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                                         menubuttons_adjusted = adjust_menubuttons (last_requested_width, (uint32_t)video_width,
                                                 last_requested_height, (uint32_t)video_height);
 
-                                    SDL_RenderCopy (renderer.get (), bmpptr, nullptr, nullptr);
+                                    SDL_RenderCopy (renderer.get (), bmp, nullptr, nullptr);
                                     draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
                                 }
                                 else
@@ -2224,7 +2227,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                     }
             }
         }
-        if (! last_resized)  /* IF WINDOW CHANGED SIZE (SINCE LAST RE-ASPECTING: */
+        if (! last_resized)  /* IF WINDOW CHANGED SIZE (SINCE LAST RE-ASPECTING): */
         {
             /* RE-ASPECT ONLY IF IT'S BEEN AT LEAST 1 SECOND SINCE LAST RESIZE EVENT (USER STOPPED DRAGGING
                WINDOW CORNER!  PBM. IS WE DON'T KNOW WHEN USER'S DONE DRAGGING THE MOUSE, SO WE GET 
@@ -2304,7 +2307,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 if (playing_a_menu)
                 {
                     SDL_RenderClear (renderer.get ());
-                    SDL_RenderCopy (renderer.get (), bmpptr, nullptr, nullptr);
+                    SDL_RenderCopy (renderer.get (), bmp, nullptr, nullptr);
                     menubuttons_adjusted = adjust_menubuttons (last_requested_width,
                             (uint32_t) new_video_width, last_requested_height, (uint32_t) new_video_height);
 
@@ -2352,13 +2355,6 @@ AUDDBG("---INPUT PIPE OPENED!\n");
             }
             needWinSzFudge = false;
         }
-        if (codec_opened && check_stop ())  //check_stop NO WORKEE IF WE'RE A VIDEO-ONLY STREAM!
-        {
-            stop_playback = true;
-            checkcodecs = false;
-            readblock = false;
-            AUDDBG ("USER PRESSED STOP BUTTON!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-        }
     }  // END PACKET-PROCESSING LOOP.
 
     }  // END OF SUBSCOPE FOR DECLARING SDL2 TEXTURE AS SCOPED SMARTPOINTER (FREES TEXTURE).
@@ -2399,7 +2395,8 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
         AUDINFO ("DEMUXER: CODEC CHECK, RESTART!......\n");
         checkcodecs = false;
         playback_thread_running = false;
-        goto startover;
+        if (! stop_playback)
+            goto startover;
     }
 #ifdef _WIN32
     CloseHandle (input_fd_p);
@@ -2602,6 +2599,11 @@ bool DVD::play (const char * name, VFSFile & file)
                     {
                         if (dvdnav_priv->wakeup)
                             break;
+                        if (stop_playback)
+                        {
+                            AUDINFO ("CHECK_STOP: STOP_PLAYBACK\n");
+                            goto GETMEOUTTAHERE;
+                        }
                         AUDDBG ("i:SLEEPING UNTIL %d...\n", dvdnav_priv->still_length);
                         sleep (1);
                     }
@@ -2729,10 +2731,6 @@ bool DVD::play (const char * name, VFSFile & file)
                 {
                     AUDINFO ("--------------- CHANNEL HOPPING! ------------------------\n");
                     checkcodecs = true;  // RESET READER/DEMUXER LOOP & RESCAN CODECS!
-#ifndef _WIN32
-                    // AUDDBG ("FLUSHING OUTPUT FIFO!\n");
-                    // fflush (output_fd);
-#endif
                     nanosleep ((const struct timespec[]){{0, 40000000L}}, NULL);
                     dvdnav_priv->freshhopped = true;
                 }
@@ -2927,8 +2925,6 @@ GETMEOUTTAHERE:
 
     pthread_mutex_unlock (& mutex);
 
-    hook_dissociate ("stopped by user", notify_playback2stop);
-
     aud_set_bool (nullptr, "eqpreset_nameonly", save_eqpreset_nameonly);
     AUDINFO ("WE HAVE EXITED THE PLAY LOOP, WAITING FOR READER THREAD TO STOP!...\n");
     if (pthread_join (rdmux_thread, NULL))
@@ -2945,6 +2941,8 @@ GETMEOUTTAHERE:
 #endif
     AUDINFO ("------------ END PLAY! -------------\n");
     playing = false;
+
+    hook_dissociate ("stopped by user", notify_playback2stop);
 
     return true;
 }
@@ -3010,14 +3008,11 @@ static dvdnav_priv_t * new_dvdnav_stream (const char * filename)
         return NULL;
     }
 
-//  if (1)  //from vlc: if not used dvdnav from cvs will fail
-//  {
     int len, event;
     uint8_t buf[IOBUF];
 
     dvdnav_get_next_block (priv->dvdnav, buf, & event, & len);
     dvdnav_sector_search (priv->dvdnav, 0, SEEK_SET);
-//  }
 
     /* FROM mplayer.stream_dvdnav.c: turn off dvdnav caching: */
     dvdnav_set_readahead_flag (priv->dvdnav, 0);
@@ -3411,17 +3406,14 @@ static bool scan_dvd ()
     }
 
     /* get track information from cdtext */
-    //x if (! aud_get_bool ("dvd", "title_track_only"))  //IF SET, ONLY ADD SINGLE TITLE TRACK TO PLAYLIST.
+    StringBuf titlebuf;
+    for (int trackno = firsttrackno; trackno <= lasttrackno; trackno++)  //ADD ALL TRACKS TO PLAYLIST:
     {
-        StringBuf titlebuf;
-        for (int trackno = firsttrackno; trackno <= lasttrackno; trackno++)  //ADD ALL TRACKS TO PLAYLIST:
-        {
-            //titlebuf.steal (str_printf ("%s%d", "dvd://?", trackno));
-            titlebuf = str_printf ("%s%d", "DVD Track ", trackno);
-            trackinfo[trackno].name = String (titlebuf);
-            trackinfo[trackno].title = trackinfo[trackno].name;
-            AUDINFO ("---ADDED TRACK# %d: name=%s=\n", trackno, (const char *)trackinfo[trackno].title);
-        }
+        //titlebuf.steal (str_printf ("%s%d", "dvd://?", trackno));
+        titlebuf = str_printf ("%s%d", "DVD Track ", trackno);
+        trackinfo[trackno].name = String (titlebuf);
+        trackinfo[trackno].title = trackinfo[trackno].name;
+        AUDINFO ("---ADDED TRACK# %d: name=%s=\n", trackno, (const char *)trackinfo[trackno].title);
     }
 
     return true;
