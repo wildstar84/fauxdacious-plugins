@@ -229,7 +229,6 @@ static bool play_video;  /* JWT: TRUE IF USER IS CURRENTLY PLAYING VIDEO (KILLIN
 static bool stop_playback;      /* SIGNAL FROM USER TO STOP PLAYBACK */
 static bool playback_thread_running;  /* TRUE IF READER/DEMUXER THREAD IS UP AND RUNNING */
 static bool playback_fifo_hasbeenopened; /* TRUE IF FIFO IS SUCCESSFULLY OPENED */
-static bool reader_please_die;  /* SIGNAL READER/DEMUXER THREAD TO TERMINATE */
 static bool playing_a_menu;     /* TRUE IF WE'RE PLAYING A "MENU" (VS. A "MOVIE") */
 static bool menubuttons_adjusted;  /* TRUE SIGNALS WINDOW HAS CHANGED SZ/RATIO & BUTTON COORD. NEED RECALCULATING. */
 static bool checkcodecs;        /* SIGNAL THAT WE NEED TO RELOAD THE CODECS (TRACK CHANGE, ETC.) */
@@ -1033,11 +1032,11 @@ readagain:
     /* SEE: http://avidinsight.uk/2012/03/introduction-to-win32-named-pipes-cpp/ */
     while (! PeekNamedPipe (input_fd_p, buf, size, &dwRead, NULL, NULL))
     {
-        if (! readblock || reader_please_die)
+        if (! readblock || stop_playback)
             return -1;
         AUDDBG ("-XXX- PEEK FAILED, BLOCKING, CONTINUE LOOPING.....\n");
     }
-    if (reader_please_die || (! dwRead && ! readblock))
+    if (stop_playback || (! dwRead && ! readblock))
         return -1;
 
     dwRead = 0;
@@ -1049,7 +1048,7 @@ readagain:
     while (poll ((struct pollfd *) input_fd_p, 1, 200) <= 0)
     {
         // if (readblock) AUDDBG ("----(BLOCK) READ WAITING ON POLL...\n"); else AUDDBG ("----(nonblocking) READ WAITING ON POLL...\n");
-        if (! readblock || reader_please_die)
+        if (! readblock || stop_playback)
             return -1;
         AUDDBG ("-XXX- PEEK FAILED, BLOCKING, CONTINUE LOOPING.....\n");
     }
@@ -1057,14 +1056,14 @@ readagain:
     if (red <= 0)
 #endif
     {
-        if (readblock && ! reader_please_die)
+        if (readblock && ! stop_playback)
             goto readagain;
         else
             return -1;
     }
 
     AUDDBG("--READ(%d) BYTES (sz=%d)\n", red, size);
-    return (reader_please_die ? -1 : red);
+    return (stop_playback ? -1 : red);
 }
 
 /* ADJUST MENU BUTTON COORDINATES WHEN MENU WINDOW CHANGES SIZE: */
@@ -1697,7 +1696,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
     menu_flushed = false;
     last_menuframe_time = time (nullptr);
     menuawaitingclick = false;
-    while (! reader_please_die)
+    while (! stop_playback)
     {
         if (codec_opened && check_stop ())  //check_stop NO WORKEE IF WE'RE A VIDEO-ONLY STREAM!
         {
@@ -2448,7 +2447,6 @@ bool DVD::play (const char * name, VFSFile & file)
     pthread_t rdmux_thread;
     playback_thread_running = false;
     playback_fifo_hasbeenopened = false;
-    reader_please_die = false;
     playing_a_menu = false;
     checkcodecs = false;
     AUDDBG ("OPENING FIFO (w+, should not block!)\n");
@@ -2921,8 +2919,6 @@ bool DVD::play (const char * name, VFSFile & file)
     }
 
 GETMEOUTTAHERE:
-    reader_please_die = true;
-
     pthread_mutex_unlock (& mutex);
 
     aud_set_bool (nullptr, "eqpreset_nameonly", save_eqpreset_nameonly);
