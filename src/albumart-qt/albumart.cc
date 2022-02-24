@@ -109,6 +109,7 @@ public:
         String coverart_file;
         Index<String> extlist = str_list_to_index ("jpg,png,gif,jpeg", ",");
 
+        aud_set_str (nullptr, "_cover_art_link", "");  // JWT:MAKE SURE THIS IS CLEARED, AS THREAD DOESN'T ALWAY SEEM TO DO SO?!:
         for (auto & ext : extlist)
         {
             coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
@@ -354,6 +355,8 @@ private:
                 const char * webfetch = ! skipweb && aud_get_bool ("albumart", "internet_coverartlookup")
                         ? aud_get_str (nullptr, "_cover_art_link") : "NOWEB";
 
+                aud_set_str (nullptr, "_cover_art_link", "");
+
                 if (! aud_get_bool (nullptr, "split_titles"))
                 {
                     /* ARTIST MAY BE IN TITLE INSTEAD (IE. "<ARTIST> - <TITLE>"): IF SO, USE THAT FOR ARTIST: */
@@ -388,8 +391,6 @@ private:
                         (const char *) artist_buf, "' '", (const char *) title_buf, "' ",
                         webfetch}));
 #endif
-
-                aud_set_str (nullptr, "_cover_art_link", "");
             }
         }
         else
