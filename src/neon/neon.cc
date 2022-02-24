@@ -28,6 +28,7 @@
 
 #include <libfauxdcore/preferences.h>
 #include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/interface.h>
 #include <libfauxdcore/plugin.h>
@@ -93,6 +94,8 @@ struct icy_metadata
     int stream_bitrate = 0;
 };
 
+static bool stop_playback = false;      /* SIGNAL FROM USER TO STOP PLAYBACK */
+
 static const char * const neon_schemes[] = {"http", "https"};
 
 static const ComboItem ignore_ssl_certs_choices[] = {
@@ -100,6 +103,11 @@ static const ComboItem ignore_ssl_certs_choices[] = {
     ComboItem (N_("Untrusted"), 1),           // (WINDOWS DEFAULT) CHECK BUT ALLOW UNTRUSTED CERTS. (M$ WINDOWS SEEMS TO NEED)?
     ComboItem (N_("All checks (risky!)"), 2)  // SKIP ALL SSL VALIDATION (RISKY) USER MUST TRUST STREAMING SITES!
 };
+
+static void notify_playback2stop (void *, void *)
+{
+    stop_playback = true;
+}
 
 class NeonTransport : public TransportPlugin
 {
@@ -142,12 +150,14 @@ bool NeonTransport::init ()
         AUDERR ("Could not initialize neon library: %d\n", ret);
         return false;
     }
+    hook_associate ("stopped by user", notify_playback2stop, nullptr);
 
     return true;
 }
 
 void NeonTransport::cleanup ()
 {
+    hook_dissociate ("stopped by user", notify_playback2stop);
     ne_sock_exit ();
 }
 
@@ -243,6 +253,7 @@ NeonFile::NeonFile (const char * url) :
         aud_set_str ("neon", "user_agent", user_agent);  // JWT:SET DEFAULTS DOESN'T SEEM TO DO THIS?!
     }
     buffer = (char *) malloc (neon_netblksize);
+    stop_playback = false;
 }
 
 NeonFile::~NeonFile ()
@@ -712,6 +723,15 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
             ne_ssl_trust_default_ca (m_session);
             ne_ssl_set_verify (m_session,
              neon_vfs_verify_environment_ssl_certs, m_session);
+        }
+
+        /* JWT:USER MAY TIRE OF WAITING TO CONNECT AND HIT STOP BUTTON, IF SO, WE MUST CLEAN UP!: */
+        if (stop_playback)
+        {
+            AUDERR ("i:[Stop] Buffering stopped by user.\n");
+            ne_session_destroy (m_session);
+            m_session = nullptr;
+            return -1;
         }
 
         AUDDBG ("<%p> Creating request\n", this);
