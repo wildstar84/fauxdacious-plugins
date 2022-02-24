@@ -335,7 +335,7 @@ static GtkWidget * item_get_parent (Item * item)
 static void item_add (Item * item)
 {
     g_return_if_fail (item->name && item->widget && item->vbox && ! item->paned
-     && ! item->window && item->dock < DOCKS);
+            && ! item->window && item->dock < DOCKS);
 
     if (item->dock < 0)
     {
@@ -512,7 +512,9 @@ void layout_add (PluginHandle * plugin, GtkWidget * widget, GtkWidget * window)
     g_signal_connect (item->vbox, "size-allocate", (GCallback) size_changed_cb, item);
 
     item_add (item);
-    gtk_window_set_transient_for ((GtkWindow *) item->window, (GtkWindow *) window);
+    /* JWT:DON'T MAKE MINI-FAUXD. TRANSIENT (ELSE ALWAYS ON TOP & M$-WINDOWS CAN'T MINIZE MAIN WINDOW W/O MINIMIZING)! */
+    if (! strstr (item->name, "Mini-Fauxdacious"))
+        gtk_window_set_transient_for ((GtkWindow *) item->window, (GtkWindow *) window);
 }
 
 static void layout_move (GtkWidget * widget, int dock)
