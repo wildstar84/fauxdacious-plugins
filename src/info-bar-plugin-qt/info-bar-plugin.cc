@@ -50,10 +50,22 @@ const char InfoBarPlugin::about[] =
     "Creates an InfoBar as a dockable window, which when main-\n"
     "window is minimized, provides a minimalist Fauxdacious!");
 
+static void widget_cleanup (QObject * widget)
+{
+    if (aud_get_bool ("qtui", "_infoarea_was_visible"))
+    {
+        aud_set_bool ("qtui", "infoarea_visible", true);
+        hook_call ("qtui toggle infoarea", nullptr);
+        aud_set_bool ("qtui", "infoarea_visible", true);
+    }
+}
+
 /* CALLED ON STARTUP (WIDGET CREATION): */
 void * InfoBarPlugin::get_qt_widget ()
 {
     audqt::InfoBar * widget = new audqt::InfoBar (nullptr);
+
+    QObject::connect (widget, &QObject::destroyed, widget_cleanup);
 
     /* JWT:HIDE EMBEDDED (CLASSIC) INFOBAR WHILE THIS PLUGIN IS ACTIVE: */
     bool show = aud_get_bool ("qtui", "infoarea_visible");
