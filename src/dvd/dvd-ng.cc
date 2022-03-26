@@ -1424,7 +1424,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
     }
     if (videoStream >= 0)
     {
-        AVCodec * vcodec = avcodec_find_decoder (c->streams[videoStream]->codecpar->codec_id);
+        AVCodec * vcodec = (AVCodec *) avcodec_find_decoder (c->streams[videoStream]->codecpar->codec_id);
         if (vcodec)
         {
             AUDINFO ("--HAVE A VIDEO CODEC!\n");
@@ -1455,7 +1455,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
 
     if (audioStream >= 0)
     {
-        AVCodec * codec = avcodec_find_decoder (c->streams[audioStream]->codecpar->codec_id);
+        AVCodec * codec = (AVCodec *) avcodec_find_decoder (c->streams[audioStream]->codecpar->codec_id);
         if (codec)
         {
             AUDDBG ("--HAVE AN AUDIO CODEC: AS=%d= LAST=%d=!\n", audioStream, dvdnav_priv->lastaudiostream);
@@ -1477,7 +1477,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
 //    for (unsigned int x=0; x<c->nb_streams; x++)  // JWT:HELPFUL FOR DEBUGGING CODEC ISSUES BUG SEGFAULTS IF RECEIVING NAV PACKETS?!:
 //    {
 //        AUDERR ("------STREAM (%d)\n", x);
-//        AVCodec * xcodec = avcodec_find_decoder (c->streams[x]->codecpar->codec_id);
+//        AVCodec * xcodec = (AVCodec *) avcodec_find_decoder (c->streams[x]->codecpar->codec_id);
 //        AVDictionaryEntry *language = av_dict_get ( c->streams[x]->metadata, "language", NULL, 0 );
 //        if ( language && language->value )
 //            AUDERR ("----------LANGUAGE=%s=\n", strdup ( language->value ));

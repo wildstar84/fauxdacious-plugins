@@ -31,7 +31,7 @@ static int read_cb (void * file, unsigned char * buf, int size)
     int res = ((VFSFile *) file)->fread (buf, 1, size);
     if (m_savefile && res > 0)
         ::fwrite (buf, res, 1, m_savefile);
-    return res;
+    return (res > 0) ? res : AVERROR_EOF;
 }
 
 static int64_t seek_cb (void * file, int64_t offset, int whence)
