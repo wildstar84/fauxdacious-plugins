@@ -88,7 +88,6 @@ static gboolean albumart_ready (gpointer widget)
     String coverart_file;
     Index<String> extlist = str_list_to_index ("jpg,png,gif,jpeg", ",");
 
-    aud_set_str (nullptr, "_cover_art_link", "");  // JWT:MAKE SURE THIS IS CLEARED, AS THREAD DOESN'T ALWAY SEEM TO DO SO?!:
     for (auto & ext : extlist)
     {
         coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
@@ -200,8 +199,6 @@ static void * album_helper_thread_fn (void * data)
 
             const char * webfetch = ! skipweb && aud_get_bool ("albumart", "internet_coverartlookup")
                     ? aud_get_str (nullptr, "_cover_art_link") : "NOWEB";
-
-            aud_set_str (nullptr, "_cover_art_link", "");
 
             if (! aud_get_bool (nullptr, "split_titles"))
             {
@@ -338,6 +335,7 @@ static void album_update (void *, GtkWidget * widget)
 /* JWT:CALLED WHEN SONG ENTRY CHANGES: */
 static void album_init (void *, GtkWidget * widget)
 {
+    aud_set_str (nullptr, "_cover_art_link", "");  // JWT:MAKE SURE THIS IS CLEARED, AS THREAD DOESN'T ALWAYS SEEM TO DO SO?!:
     resetthreads = true;
     fromsongstartup = true;
     album_update (nullptr, widget);  // JWT:CHECK FILES & DISKS (TUPLE DOESN'T CHANGE IN THESE) ONCE NOW ON PLAY START!
