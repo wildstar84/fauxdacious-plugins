@@ -340,23 +340,61 @@ bool SndfilePlugin::play (const char * filename, VFSFile & file)
     return true;
 }
 
+/* Function to see if WAV file contains embedded DTS format (contains a DTS header):
+   (Borrowed & modified from:  https://hydrogenaud.io/index.php?PHPSESSID=0r361d02rgjc1uo2evsr91acue&action=dlattach;topic=94988.0;attach=10766)
+   (See Reply# 19 in:  https://hydrogenaud.io/index.php?topic=94988.0)
+   Function returns FALSE if DTS header found (DTS-WAV file which libsndfile accepts but can't play).
+*/
+bool SearchForDTSHeader (VFSFile & file)
+{
+    unsigned int i;
+    unsigned char next6bytes[7];
+    unsigned long ScanSize = file.fsize () - 12;
+
+    if (ScanSize > 99999)
+        ScanSize = 99999;  /* Limit search to first 99999 bytes, per original program. */
+
+    for (i=0; i<ScanSize; i++)
+    {
+        if (file.fseek ((long)i, VFS_SEEK_SET) < 0)
+            return true;  /* Couldn't seek, so assume NOT DTS. */
+
+        if (file.fread (next6bytes, 6, 1))
+        {
+            if (next6bytes[0] == 0xFF && next6bytes[1] == 0x1F
+                    && next6bytes[2] == 0x00
+                    && next6bytes[3] == 0xE8
+                    && (next6bytes[4] & 0xF0) == 0xF0
+                    && next6bytes[5] == 0x07)
+                return false;  /* Header found (we're DTS format embedded in a WAV file), let ffaudio handle! */
+        }
+        else
+            return true;  /* Couldn't read enough, so assume NOT DTS. */
+    }
+    return true;  /* We're a standard WAV file, so accept. */
+}
+
 bool SndfilePlugin::is_our_file (const char * filename, VFSFile & file)
 {
+    bool ok = true;
     SF_INFO tmp_sfinfo {}; // must be zeroed before sf_open()
 
-    /* Have to open the file to see if libsndfile can handle it. */
+    /* Have to open the file virtually as a sndfile to see if libsndfile can handle it. */
     bool stream = (file.fsize () < 0);
     SNDFILE * tmp_sndfile = sf_open_virtual (stream ? & sf_virtual_io_stream :
      & sf_virtual_io, SFM_READ, & tmp_sfinfo, & file);
 
-    if (!tmp_sndfile)
+    if (! tmp_sndfile)
         return false;
 
-    /* It can so close file and return true. */
+    if (file.fsize () > 12)  /* We're not a stream, so check if DTS, if so, punt to ffaudio!: */
+        ok = SearchForDTSHeader (file);
+
+    /* It can so close file and return true (unless embedded DTS). */
     sf_close (tmp_sndfile);
     tmp_sndfile = nullptr;
 
-    return true;
+    return ok;
 }
 
 const char SndfilePlugin::about[] =
