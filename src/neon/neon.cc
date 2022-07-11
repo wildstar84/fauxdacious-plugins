@@ -259,25 +259,12 @@ NeonFile::NeonFile (const char * url) :
 NeonFile::~NeonFile ()
 {
     if (m_reader_status.reading)
-    {
-        pthread_mutex_unlock (& m_reader_status.mutex);
         kill_reader ();
-    }
 
     if (m_request)
-    {
         ne_request_destroy (m_request);
-        m_request = nullptr;
-    }
     if (m_session)
-    {
-        try {  /* JWT:CURRENT libtasn1.so.6 (_asn1_delete_structure() CAN SEGFAULT?!): */
-            ne_session_destroy (m_session);
-        } catch (...) {
-            AUDERR ("e:FAILED TO DESTROY SESSION! (libtasn1 bug: would have caused Fauxdacious crash!\n");
-        }
-        m_session = nullptr;
-    }
+        ne_session_destroy (m_session);
 
     user_agent = String ();
     if (buffer)
