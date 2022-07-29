@@ -237,65 +237,55 @@ bool CueLoader::save (const char * filename, VFSFile & file, const char * title,
     String actual_filename;
     for (auto & item : items)
     {
-        if (strncmp ((const char *) item.filename, "file://", 7))  // ONLY SAVE "FILE" ENTRIES, NOT URLS, ETC.
-        {
-            AUDWARN ("Skipping adding non-file entry (%s) from playlist (%s).\n", 
-             (const char *) item.filename, filename);
-        }
-        else
-        {
-            from_cuesheet = strstr_nocase ((const char *) item.filename, ".cue?") ? true : false;
-            /* FOR CUESHEET ENTRIES, SAVE ACTUAL AUDIO-FILE (NO CUESHEETS EMBEDDED IN CUE FILES)! */
-            actual_filename = from_cuesheet ? item.tuple.get_str (Tuple::AudioFile) : item.filename;
-            if (! actual_filename || ! actual_filename[0])
-                continue;
+        from_cuesheet = strstr_nocase ((const char *) item.filename, ".cue?") ? true : false;
+        /* FOR CUESHEET ENTRIES, SAVE ACTUAL AUDIO-FILE (NO CUESHEETS EMBEDDED IN CUE FILES)! */
+        actual_filename = from_cuesheet ? item.tuple.get_str (Tuple::AudioFile) : item.filename;
+        if (! actual_filename || ! actual_filename[0])
+            continue;
 
-            StringBuf path = uri_deconstruct (actual_filename, filename);
-            if (item.tuple.valid ())
+        StringBuf path = uri_deconstruct (actual_filename, filename);
+        if (item.tuple.valid ())
+        {
+            String songTitle = item.tuple.get_str (Tuple::Title);
+            if (songTitle)
             {
-                String songTitle = item.tuple.get_str (Tuple::Title);
-                if (! songTitle)
-                    songTitle = String (filename_get_base (actual_filename));
-                else
-                {
-                    StringBuf songTitleBuff = str_copy (songTitle);
-                    str_replace_char (songTitleBuff, '"', '\'');  // SOME TITLES HAVE DOUBLE-QUOTES¡
-                    songTitle = String (songTitleBuff);
-                }
-                int start_time;
-                int start_time_frames= 0;
-                int start_time_sec = 0;
-                int start_time_min = 0;
-                String songArtist = item.tuple.get_str (Tuple::Artist);
-                if (item.tuple.is_set (Tuple::StartTime)
-                        && (start_time = item.tuple.get_int (Tuple::StartTime)) > 0)
-                {
-                    start_time_frames = ((start_time % 1000) * 75) / 1000;
-                    start_time_sec = start_time / 1000;
-                    start_time_min = start_time_sec / 60;
-                    start_time_sec %= 60;
-                }
-                str_append_printf (linesBuf, "FILE \"%s\" MP3\n  TRACK 01 AUDIO\n    TITLE \"%s\"\n    PERFORMER \"%s\"\n    INDEX 01 %02d:%02d:%02d\n", 
-                        (const char *) path, (const char *) songTitle, (const char *) songArtist,
-                        start_time_min, start_time_sec, start_time_frames);
+                StringBuf songTitleBuff = str_copy (songTitle);
+                str_replace_char (songTitleBuff, '"', '\'');  // SOME TITLES HAVE DOUBLE-QUOTES¡
+                songTitle = String (songTitleBuff);
+            }
+            else
+                songTitle = String (filename_get_base (actual_filename));
 
-                if (! haveAlbumInfo)
-                {
-                    String songAlbum = item.tuple.get_str (Tuple::Album);
-                    if (songAlbum && songAlbum[0])
-                    {
-                        cueTitle = songAlbum;
-                        String songAlbumArtist = item.tuple.get_str (Tuple::AlbumArtist);
-                        if (songAlbumArtist && songAlbumArtist[0])
-                            cuePerformer = songAlbumArtist;
+            int start_time;
+            int start_time_frames= 0;
+            int start_time_sec = 0;
+            int start_time_min = 0;
+            String songArtist = item.tuple.get_str (Tuple::Artist);
+            if (! songArtist)
+                songArtist = String ("");
+            if (item.tuple.is_set (Tuple::StartTime)
+                    && (start_time = item.tuple.get_int (Tuple::StartTime)) > 0)
+            {
+                start_time_frames = ((start_time % 1000) * 75) / 1000;
+                start_time_sec = start_time / 1000;
+                start_time_min = start_time_sec / 60;
+                start_time_sec %= 60;
+            }
+            str_append_printf (linesBuf, "FILE \"%s\" MP3\n  TRACK 01 AUDIO\n    TITLE \"%s\"\n    PERFORMER \"%s\"\n    INDEX 01 %02d:%02d:%02d\n", 
+                    (const char *) path, (const char *) songTitle, (const char *) songArtist,
+                    start_time_min, start_time_sec, start_time_frames);
 
-                        haveAlbumInfo = true;
-                    }
-                }
+            if (! haveAlbumInfo)
+            {
+                String songAlbumArtist = item.tuple.get_str (Tuple::AlbumArtist);
+                if (songAlbumArtist && songAlbumArtist[0])
+                    cuePerformer = songAlbumArtist;
+
+                haveAlbumInfo = true;
             }
         }
     }
-    StringBuf toplineBuf = str_printf ("PERFORMER \"%s\"\nTITLE \"%s\"\n", (const char *) cuePerformer, (const char *) cueTitle);
+    StringBuf toplineBuf = str_printf ("PERFORMER \"%s\"\nTITLE \"%s\"\n", (const char *) cuePerformer, title);
     if (file.fwrite (toplineBuf, 1, toplineBuf.len ()) != toplineBuf.len ())
         return false;
     if (file.fwrite (linesBuf, 1, linesBuf.len ()) != linesBuf.len ())
