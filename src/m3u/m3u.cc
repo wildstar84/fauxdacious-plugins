@@ -30,8 +30,6 @@
 
 static const char * const m3u_exts[] = {"m3u", "m3u8", "txt", "ls"};  // JWT:ACCEPT .txt & "ls * |"
 
-enum extDataType {NA, ALB, ART, GENRE, INF};
-
 class M3ULoader : public PlaylistPlugin
 {
 public:
@@ -47,13 +45,9 @@ public:
     constexpr M3ULoader () : PlaylistPlugin (info, m3u_exts, true) {}
 
     bool load (const char * filename, VFSFile & file, String & title,
-     Index<PlaylistAddItem> & items);
+            Index<PlaylistAddItem> & items);
     bool save (const char * filename, VFSFile & file, const char * title,
-     const Index<PlaylistAddItem> & items);
-
-private:
-    bool Extended_m3u = false;
-    Tuple tuple;
+            const Index<PlaylistAddItem> & items);
 };
 
 EXPORT M3ULoader aud_plugin_instance;
@@ -73,12 +67,8 @@ static char * split_line (char * line)
 }
 
 bool M3ULoader::load (const char * filename, VFSFile & file, String & title,
- Index<PlaylistAddItem> & items)
+        Index<PlaylistAddItem> & items)
 {
-    Extended_m3u = false;
-    bool HLS_firstentryonly = aud_get_bool ("m3u", "HLS_firstentryonly");
-    tuple = Tuple ();
-
     Index<char> text = file.read_all ();
     if (! text.len ())
         return false;
@@ -89,8 +79,13 @@ bool M3ULoader::load (const char * filename, VFSFile & file, String & title,
     if (! strncmp (parse, "\xef\xbb\xbf", 3)) /* byte order mark */
         parse += 3;
 
+    enum extDataType {NA, ALB, ART, GENRE, INF};
+    bool Extended_m3u = false;
     bool firstline = true;
     bool refreshTuple = true;
+    bool HLS_firstentryonly = aud_get_bool ("m3u", "HLS_firstentryonly");
+    Tuple tuple = Tuple ();
+
     while (parse)
     {
         char * next = split_line (parse);
@@ -121,14 +116,14 @@ bool M3ULoader::load (const char * filename, VFSFile & file, String & title,
                     if (Extended_m3u)
                     {
                         tuple.set_filename (s);
-                        items.append (String (s), std::move (tuple));  // NOTE:NEVER SET TUPLE VALID (FORCE RESCAN)!
+                        items.append (s, std::move (tuple));  // NOTE:NEVER SET TUPLE VALID (FORCE RESCAN)!
                         if (HLS_firstentryonly && strstr_nocase (s, ".ts"))
                             break;
 
                         refreshTuple = true;
                     }
                     else
-                        items.append (String (s));
+                        items.append (s);
                 }
             }
             else if (Extended_m3u)
@@ -219,9 +214,10 @@ bool M3ULoader::load (const char * filename, VFSFile & file, String & title,
 }
 
 bool M3ULoader::save (const char * filename, VFSFile & file, const char * title,
- const Index<PlaylistAddItem> & items)
+        const Index<PlaylistAddItem> & items)
 {
-    Extended_m3u = aud_get_bool ("m3u", "saveas_extended_m3u");
+    bool Extended_m3u = aud_get_bool ("m3u", "saveas_extended_m3u");
+
     if (Extended_m3u && file.fwrite (str_copy("#EXTM3U\n"), 1, 8) != 8)
         return false;
 
@@ -234,6 +230,7 @@ bool M3ULoader::save (const char * filename, VFSFile & file, const char * title,
             if (tuplen >= 0)
                 tuplen /= 1000;
 
+            // BRACES NEEDED FOR SCOPING:
             {
                 String tupstr = item.tuple.get_str (Tuple::Title);
                 if (! tupstr)

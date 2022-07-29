@@ -111,7 +111,7 @@ private:
                     tuple.set_int (field, atoi (value));
 
                 /* state is implicitly Valid if any field is present */
-                tuple.set_state (Tuple::Valid);
+                /* JWT:Fauxdacious REQUIRES THIS NOT BE SET NOW!:  tuple.set_state (Tuple::Valid); */
             }
         }
         else
