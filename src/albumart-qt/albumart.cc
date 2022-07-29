@@ -107,7 +107,7 @@ public:
     void ready_art ()
     {
         String coverart_file;
-        Index<String> extlist = str_list_to_index ("jpg,png,gif,jpeg", ",");
+        Index<String> extlist = str_list_to_index ("jpg,png,gif,jpeg,webp", ",");
 
         for (auto & ext : extlist)
         {
