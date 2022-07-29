@@ -210,7 +210,7 @@ void * InfoBarPlugin::get_gtk_widget ()
     show_hide_infoarea_vis ();
 
     gtk_widget_set_can_focus (widget, true);
-    gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nAlt-Q: Quit\nB: next\nC: pause\nX: play\nZ: previous");
+    gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nAlt-Q: Quit\nB: next\nC: pause\nV: stop\nX: play\nZ: previous");
 
     return widget;
 }
