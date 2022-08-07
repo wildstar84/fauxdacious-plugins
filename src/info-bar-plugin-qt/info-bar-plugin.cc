@@ -56,7 +56,6 @@ static void widget_cleanup (QObject * widget)
     {
         aud_set_bool ("qtui", "infoarea_visible", true);
         hook_call ("qtui toggle infoarea", nullptr);
-        aud_set_bool ("qtui", "infoarea_visible", true);
     }
 }
 
@@ -74,7 +73,6 @@ void * InfoBarPlugin::get_qt_widget ()
     {
         aud_set_bool ("qtui", "infoarea_visible", false);
         hook_call ("qtui toggle infoarea", nullptr);
-        aud_set_bool ("qtui", "infoarea_visible", false);
     }
     widget->setToolTip ("Space: pause\nEsc: close\nUp|Down: volume\nCtrl-Q: Quit\nB: next\nC: pause\nV: stop\nX: play\nZ: previous");
 
