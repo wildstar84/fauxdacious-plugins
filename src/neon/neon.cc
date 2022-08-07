@@ -627,7 +627,7 @@ int NeonFile::open_request (int64_t startbyte, String * error)
     if (error)
         * error = String (ne_error ? ne_error : _("Unknown HTTP error"));
 
-    AUDERR ("<%p> Could not open URL: %d (%d)\n", this, ret, status->code);
+    AUDERR ("<%p> Could not open URL (%s): %d (%d)\n", this, (const char *) m_url, ret, status->code);
 
     if (ne_error)
         AUDERR ("<%p> neon error string: %s\n", this, ne_error);
