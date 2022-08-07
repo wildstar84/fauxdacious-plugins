@@ -86,7 +86,7 @@ static gboolean albumart_ready (gpointer widget)
 {
     AudguiPixbuf pixbuf;
     String coverart_file;
-    Index<String> extlist = str_list_to_index ("jpg,png,gif,jpeg,webm", ",");
+    Index<String> extlist = str_list_to_index ("jpg,png,gif,jpeg,webp", ",");
 
     for (auto & ext : extlist)
     {
