@@ -91,6 +91,7 @@ struct icy_metadata
     String stream_title;
     String stream_url;
     String stream_contenttype;
+    String stream_genre;
     int stream_bitrate = 0;
 };
 
@@ -345,7 +346,7 @@ static void parse_icy (struct icy_metadata * m, char * metadata, int len)
 
             break;
 
-        case STATE_READ_VALUE:
+        case STATE_READ_VALUE:  /* THESE TAGS CAN CHANGE DYNAMICALLY WITH EACH SONG-CHANGE: */
 
             /* Reading value */
             if (p[0] == '\'' && p[1] == ';')
@@ -353,7 +354,7 @@ static void parse_icy (struct icy_metadata * m, char * metadata, int len)
                 /* End of value */
                 p[0] = 0;
                 g_strlcpy (value, tstart, NEON_ICY_BUFSIZE);
-                AUDDBG ("Found tag value: %s\n", value);
+                AUDINFO ("Found tag name: %s, value: %s\n", name, value);
                 add_icy (m, name, value);
                 state = STATE_WAIT_NAME;
             }
@@ -432,7 +433,7 @@ void NeonFile::handle_headers ()
 
     while ((cursor = ne_response_header_iterate (m_request, cursor, & name, & value)))
     {
-        AUDDBG ("HEADER: %s: %s\n", name, value);
+        AUDINFO ("HEADER: %s: %s\n", name, value);  /* THESE TAGS SET ONLY AT START OF PLAY: */
 
         if (neon_strcmp (name, "accept-ranges"))
         {
@@ -491,6 +492,12 @@ void NeonFile::handle_headers ()
             /* The server sent us a bitrate. We might want to use it. */
             AUDDBG ("ICY bitrate: %d\n", atoi (value));
             m_icy_metadata.stream_bitrate = atoi (value);
+        }
+        else if (neon_strcmp (name, "icy-genre"))
+        {
+            /* The server sent us a genre. We might want to use it. */
+            AUDDBG ("ICY genre: %s\n", value);
+            m_icy_metadata.stream_genre = String (value);
         }
     }
 }
@@ -1217,6 +1224,9 @@ String NeonFile::get_metadata (const char * field)
 
     if (! strcmp (field, "stream-url"))
         return m_icy_metadata.stream_url;
+
+    if (! strcmp (field, "stream-genre"))
+        return m_icy_metadata.stream_genre;
 
     return String ();
 }
