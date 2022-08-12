@@ -713,8 +713,9 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
         if (cinfo.stream->metadata)
             read_metadata_dict (tuple, cinfo.stream->metadata);
 
-        if (! file.fseek (0, VFS_SEEK_SET))
-            audtag::read_tag (file, tuple, image);
+        if (! file.fseek (0, VFS_SEEK_SET) && ! audtag::read_tag (file, tuple, image)
+                && tuple.fetch_stream_info (file))
+            set_playback_tuple (tuple.ref ());  /* JWT:NO STANDARD TAGS, BUT HAVE ICY-DATA! */
 
 #if CHECK_LIBAVFORMAT_VERSION (54, 2, 100, 54, 2, 0)
         if (image && ! image->len ())
