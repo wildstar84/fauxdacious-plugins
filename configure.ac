@@ -66,7 +66,7 @@ dnl ======================
 
 INPUT_PLUGINS="aud_adplug metronom psf tonegen vtx xsf"
 OUTPUT_PLUGINS=""
-EFFECT_PLUGINS="compressor crossfade crystalizer mixer silence-removal stereo_plugin voice_removal echo_plugin"
+EFFECT_PLUGINS="bitcrusher compressor crossfade crystalizer mixer silence-removal stereo_plugin voice_removal echo_plugin"
 GENERAL_PLUGINS=""
 VISUALIZATION_PLUGINS=""
 CONTAINER_PLUGINS="asx asx3 audpl m3u pls xspf"
@@ -797,6 +797,7 @@ echo
 echo "  Effects"
 echo "  -------"
 echo "  Bauer stereophonic-to-binaural (bs2b):  $have_bs2b"
+echo "  Bitcrusher:                             yes"
 echo "  Channel Mixer:                          yes"
 echo "  Crystalizer:                            yes"
 echo "  Dynamic Range Compressor:               yes"
