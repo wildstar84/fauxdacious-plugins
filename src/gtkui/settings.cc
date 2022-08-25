@@ -33,7 +33,7 @@ static void redisplay_playlists ()
 
 static const PreferencesWidget gtkui_widgets[] = {
     WidgetLabel (N_("<b>Playlist Tabs</b>")),
-    WidgetCheck (N_("Always show tabs"),
+    WidgetCheck (N_("Always show tabs (even if just 1)"),
         WidgetBool ("gtkui", "playlist_tabs_visible", show_hide_playlist_tabs)),
     WidgetCheck (N_("Show entry counts"),
         WidgetBool ("gtkui", "entry_count_visible", redisplay_playlists)),
