@@ -27,6 +27,7 @@
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/plugins.h>
 #include <libfauxdcore/audstrings.h>
+#include <libfauxdcore/hook.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "layout.h"
@@ -535,6 +536,7 @@ static void layout_move (GtkWidget * widget, int dock)
     item_add (item);
 
     g_object_unref (item->vbox);
+    hook_call ("plugin dock status changed", item->plugin);
 }
 
 void layout_remove (PluginHandle * plugin)

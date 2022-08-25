@@ -81,7 +81,7 @@ bool AlbumArtPlugin::init ()
     return true;
 }
 
-/* CALLED BY g_idle_add() TO UPDATE LYRIC WIDGET FROM THREAD: */
+/* CALLED BY g_idle_add() TO UPDATE ALBUMART WIDGET FROM THREAD: */
 static gboolean albumart_ready (gpointer widget)
 {
     AudguiPixbuf pixbuf;
@@ -112,14 +112,9 @@ static gboolean albumart_ready (gpointer widget)
             if (pixbuf)
             {
                 audgui_scaled_image_set ((GtkWidget *) widget, pixbuf.get ());
-                if (aud_get_bool ("albumart", "hide_dup_art_icon")
-                        && ! aud_get_bool ("gtkui", "infoarea_show_art")
-                        && aud_get_bool ("albumart", "_infoarea_show_art_saved"))
-                {
-                    /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
-                    aud_set_bool ("gtkui", "infoarea_show_art", true);
-                    hook_call ("gtkui toggle infoarea_art", nullptr);
-                }
+                /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
+                aud_set_bool ("albumart", "_infoarea_hide_art", false);
+                hook_call ("gtkui toggle infoarea_art", nullptr);
                 last_image_from_web = true;
             }
 
@@ -278,25 +273,8 @@ static void album_update (void *, GtkWidget * widget)
 
     if (aud_get_bool ("albumart", "hide_dup_art_icon"))
     {
-        if (aud_get_bool ("gtkui", "infoarea_show_art"))
-        {
-            if (! aud_get_bool ("albumart", "_have_channel_art"))
-            {
-                /* JWT:HIDE INFOBAR ART ICON (DUP?) IF DISPLAYING THE IMAGE IN THE ALBUMART BOX! */
-                /* BUT WE'LL RESHOW IT IF WE FETCH A CUSTOM ALBUM COVER FROM THE WEB (NOT A DUP!) */
-                aud_set_bool ("gtkui", "infoarea_show_art", false);
-                hook_call ("gtkui toggle infoarea_art", nullptr);
-            }
-        }
-        else if (aud_get_bool ("albumart", "_infoarea_show_art_saved"))
-        {
-            if (aud_get_bool ("albumart", "_have_channel_art"))
-            {
-                /* JWT:WE QUIT HIDDEN DUE TO DUP. ICONS, BUT CAME UP W/CHANNEL ICON, SO SHOW IT! */
-                aud_set_bool ("gtkui", "infoarea_show_art", true);
-                hook_call ("gtkui toggle infoarea_art", nullptr);
-            }
-        }
+        aud_set_bool ("albumart", "_infoarea_hide_art", ! aud_get_bool ("albumart", "_have_channel_art"));
+        hook_call ("gtkui toggle infoarea_art", nullptr);
     }
     last_image_from_web = false;
     if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP FURTHER ART SEARCH! */
@@ -361,40 +339,15 @@ static void album_clear (void *, GtkWidget * widget)
 /* THE PLUGIN'S "LOOK FOR ALBUM ART ON THE WEB" OPTIONS ARE BOTH ON)! */
 static void hide_dup_art_icon_toggle_fn ()
 {
-    bool infoarea_show_art = aud_get_bool ("gtkui", "infoarea_show_art");
-
     aud_set_bool ("albumart", "hide_dup_art_icon", hide_dup_art_icon);
-    if (hide_dup_art_icon)
-    {
-        if (infoarea_show_art && ! last_image_from_web)
-        {
-            aud_set_bool ("gtkui", "infoarea_show_art", false);
-            hook_call ("gtkui toggle infoarea_art", nullptr);
-        }
-    }
-    else
-    {
-        bool infoarea_show_art_saved = aud_get_bool ("albumart", "_infoarea_show_art_saved");
-        if (infoarea_show_art_saved)  /* WAS ON, NOT NOW, SO TURN BACK ON (SHOW) */
-        {
-            aud_set_bool ("gtkui", "infoarea_show_art", true);
-            hook_call ("gtkui toggle infoarea_art", nullptr);
-        }
-    }
+    hook_call ("gtkui toggle infoarea_art", nullptr);
 }
 
 static void album_cleanup (GtkWidget * widget)
 {
     resetthreads = true;
     aud_set_bool ("albumart", "_isactive", false);
-    if (aud_get_bool ("albumart", "hide_dup_art_icon")
-            && ! aud_get_bool ("gtkui", "infoarea_show_art")
-            && aud_get_bool ("albumart", "_infoarea_show_art_saved"))
-    {
-        /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
-        aud_set_bool ("gtkui", "infoarea_show_art", true);
-        hook_call ("gtkui toggle infoarea_art", nullptr);
-    }
+    hook_call ("gtkui toggle infoarea_art", nullptr);
 
     hook_dissociate ("playback stop", (HookFunction) album_clear, widget);
     hook_dissociate ("tuple change", (HookFunction) album_tuplechg, widget);

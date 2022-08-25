@@ -133,15 +133,8 @@ public:
                 origSize = origPixmap.size ();
                 drawArt ();
 
-                if (aud_get_bool ("albumart", "hide_dup_art_icon")
-                        && ! aud_get_bool ("qtui", "infoarea_show_art")
-                        && aud_get_bool ("albumart", "_infoarea_show_art_saved"))
-                {
-                    /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
-                    aud_set_bool ("qtui", "infoarea_show_art", true);
-                    hook_call ("qtui toggle infoarea_art", nullptr);
-                    aud_set_bool ("qtui", "infoarea_show_art", true);  // JWT:DUPING THESE SEEMS TO BE NECESSARY (GETS TOGGLED IN HOOK)!
-                }
+                /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
+                aud_set_bool ("albumart", "_infoarea_hide_art", false);
                 last_image_from_web = true;
                 return;
             }
@@ -169,29 +162,8 @@ public:
         }
 
         if (aud_get_bool ("albumart", "hide_dup_art_icon"))
-        {
-            if (aud_get_bool ("qtui", "infoarea_show_art"))
-            {
-                if (! aud_get_bool ("albumart", "_have_channel_art"))
-                {
-                    /* JWT:HIDE INFOBAR ART ICON (DUP?) IF DISPLAYING THE IMAGE IN THE ALBUMART BOX! */
-                    /* BUT WE'LL RESHOW IT IF WE FETCH A CUSTOM ALBUM COVER FROM THE WEB (NOT A DUP!) */
-                    aud_set_bool ("qtui", "infoarea_show_art", false);
-                    hook_call ("qtui toggle infoarea_art", nullptr);
-                    aud_set_bool ("qtui", "infoarea_show_art", false);
-                }
-            }
-            else if (aud_get_bool ("albumart", "_infoarea_show_art_saved"))
-            {
-                if (aud_get_bool ("albumart", "_have_channel_art"))
-                {
-                    /* JWT:WE QUIT HIDDEN DUE TO DUP. ICONS, BUT CAME UP W/CHANNEL ICON, SO SHOW IT! */
-                    aud_set_bool ("qtui", "infoarea_show_art", true);
-                    hook_call ("qtui toggle infoarea_art", nullptr);
-                    aud_set_bool ("qtui", "infoarea_show_art", true);
-                }
-            }
-        }
+            aud_set_bool ("albumart", "_infoarea_hide_art", ! aud_get_bool ("albumart", "_have_channel_art"));
+
         last_image_from_web = false;
         if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP INTERNET ART SEARCH! */
         {
@@ -452,44 +424,13 @@ static void clear (void *, ArtLabel * widget)
 /* THE PLUGIN'S "LOOK FOR ALBUM ART ON THE WEB" OPTIONS ARE BOTH ON)! */
 static void hide_dup_art_icon_toggle_fn ()
 {
-    bool infoarea_show_art = aud_get_bool ("qtui", "infoarea_show_art");
-
     aud_set_bool ("albumart", "hide_dup_art_icon", hide_dup_art_icon);
-    if (hide_dup_art_icon)
-    {
-        if (infoarea_show_art && ! last_image_from_web)
-        {
-            aud_set_bool ("qtui", "infoarea_show_art", false);
-            hook_call ("qtui toggle infoarea_art", nullptr);
-            aud_set_bool ("qtui", "infoarea_show_art", false);
-        }
-    }
-    else
-    {
-        bool infoarea_show_art_saved = aud_get_bool ("albumart", "_infoarea_show_art_saved");
-        if (infoarea_show_art_saved && ! infoarea_show_art)  /* WAS ON, NOT NOW, SO TURN BACK ON (SHOW) */
-        {
-            aud_set_bool ("qtui", "infoarea_show_art", true);
-            hook_call ("qtui toggle infoarea_art", nullptr);
-            aud_set_bool ("qtui", "infoarea_show_art", true);
-        }
-    }
 }
 
 static void widget_cleanup (QObject * widget)
 {
     resetthreads = true;
     aud_set_bool ("albumart", "_isactive", false);
-    if (aud_get_bool ("albumart", "hide_dup_art_icon")
-            && ! aud_get_bool ("qtui", "infoarea_show_art")
-            && aud_get_bool ("albumart", "_infoarea_show_art_saved"))
-    {
-        /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
-        aud_set_bool ("qtui", "infoarea_show_art", true);
-        hook_call ("qtui toggle infoarea_art", nullptr);
-        aud_set_bool ("qtui", "infoarea_show_art", true);
-    }
-
     hook_dissociate ("playback stop", (HookFunction) clear, widget);
     hook_dissociate ("tuple change", (HookFunction) tuple_update, widget);
     hook_dissociate ("playback ready", (HookFunction) init_update, widget);
