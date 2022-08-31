@@ -44,6 +44,7 @@
 #include <libfauxdcore/vfs_async.h>
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/preferences.h>
+#include <libfauxdcore/playlist.h>
 
 #ifdef S_IRGRP
 #define DIRMODE (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
@@ -62,6 +63,7 @@ typedef struct {
     String shotitle;       /* JWT:NEXT 3 FOR THREAD TO SAVE LYRIC DATA UNTIL MAIN THREAD CAN DISPLAY IT: */
     String shoartist;
     String sholyrics;
+    int current_playlist;  /* JWT:SAVE THE PLAYLIST CURRENT WHEN ENTRY STARTS PLAYING! */
 } LyricsState;
 
 class LyricWiki : public GeneralPlugin
@@ -72,7 +74,7 @@ public:
     static const PluginPreferences prefs;
 
     static constexpr PluginInfo info = {
-        N_("LyricWiki Plugin"),
+        N_("Lyrics"),
         PACKAGE,
         nullptr, // about
         & prefs, // prefs
@@ -751,7 +753,8 @@ static void save_lyrics_in_embedded_tag ()
             if (lyrics)
             {
                 String error;
-                Tuple tuple = aud_drct_get_tuple ();
+                /* JWT:EMPTY TUPLE, FETCH "CURRENT"/LAST-PLAYING ENTRY'S TUPLE (SHOULD "ALWAYS" WORK): */
+                Tuple tuple = aud_playlist_entry_get_tuple (state.current_playlist, aud_playlist_get_position (state.current_playlist));
                 tuple.set_str (Tuple::Lyrics, String (str_copy (lyrics + state.startlyrics, sz)));
                 g_free (lyrics);
                 VFSFile file (state.filename, "r");
@@ -954,6 +957,7 @@ static void lyricwiki_playback (bool force_refresh)
     }
 
     Tuple tuple = aud_drct_get_tuple ();
+    state.current_playlist = aud_playlist_get_active ();
     state.title = tuple.get_str (Tuple::Title);
     state.artist = tuple.get_str (Tuple::Artist);
     state.album = tuple.get_str (Tuple::Album);
