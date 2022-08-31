@@ -135,6 +135,7 @@ public:
 
                 /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
                 aud_set_bool ("albumart", "_infoarea_hide_art", false);
+                hook_call ("qtui toggle infoarea_art", nullptr);
                 last_image_from_web = true;
                 return;
             }
@@ -299,6 +300,10 @@ private:
             String Title = tuple.get_str (Tuple::Title);
             String Artist = tuple.get_str (Tuple::Artist);
             String Album = tuple.get_str (Tuple::Album);
+            String audio_fn = tuple.get_str (Tuple::AudioFile);
+            if (! audio_fn || ! audio_fn[0])
+                audio_fn = aud_drct_get_filename ();
+
             const char * album = (const char *) Album;
             ((ArtLabel *) data)->origPixmap = QPixmap ();
 
@@ -307,7 +312,8 @@ private:
                 bool skipweb = false;
                 if (album && album[0])  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
                 {
-                    if (strstr (album, "://"))  // ALBUM FIELD IS A URI (PBLY A PODCAST/VIDEO FROM STREAMFINDER!):
+                    const char * album_uri = strstr (album, "://");  // FOR URI, WE'LL ASSUME LONGEST IS "stdin" (5 chars)
+                    if (album_uri && (album_uri-album) < 6)  // ALBUM FIELD IS A URI (PBLY A PODCAST/VIDEO FROM STREAMFINDER!):
                     {
                         Album = String ("_");
                         skipweb = true;
@@ -324,7 +330,10 @@ private:
                     Album = String ("_");
 
                 const char * webfetch = ! skipweb && aud_get_bool ("albumart", "internet_coverartlookup")
-                        ? aud_get_str (nullptr, "_cover_art_link") : "NOWEB";
+                        ? (! strncmp (audio_fn, "file://", 7)
+                                && aud_get_bool ("albumart", "save_by_songfile")
+                                ? audio_fn : aud_get_str (nullptr, "_cover_art_link"))
+                        : "NOWEB";
 
                 if (! aud_get_bool (nullptr, "split_titles"))
                 {
@@ -459,6 +468,7 @@ EXPORT AlbumArtQt aud_plugin_instance;
 const char * const AlbumArtQt::defaults[] = {
     "internet_coverartlookup", "FALSE",
     "scale_to_fill", "FALSE",
+    "save_by_songfile", "FALSE",
     nullptr
 };
 
@@ -477,6 +487,8 @@ const PreferencesWidget AlbumArtQt::widgets[] = {
         WidgetBool (hide_dup_art_icon, hide_dup_art_icon_toggle_fn)),
     WidgetCheck (N_("Scale small images to fill."),
         WidgetBool ("albumart", "scale_to_fill")),
+    WidgetCheck (N_("Try to save by song file-name first?"),
+        WidgetBool ("albumart", "save_by_songfile")),
 };
 
 const PluginPreferences AlbumArtQt::prefs = {{widgets}};
