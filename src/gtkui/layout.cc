@@ -514,7 +514,7 @@ void layout_add (PluginHandle * plugin, GtkWidget * widget, GtkWidget * window)
 
     item_add (item);
     /* JWT:DON'T MAKE MINI-FAUXD. TRANSIENT (ELSE ALWAYS ON TOP & M$-WINDOWS CAN'T MINIZE MAIN WINDOW W/O MINIMIZING)! */
-    if (! strstr (item->name, "Mini-Fauxdacious"))
+    if (item->dock == -1 && ! strstr (item->name, "Mini-Fauxdacious"))
         gtk_window_set_transient_for ((GtkWindow *) item->window, (GtkWindow *) window);
 }
 
