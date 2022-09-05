@@ -40,7 +40,7 @@ bool FLACng::init()
 
     if ((decoder = FLAC__stream_decoder_new()) == nullptr)
     {
-        AUDERR("Could not create the main FLAC decoder instance!\n");
+        AUDERR ("Could not create the main FLAC decoder instance!\n");
         return false;
     }
 
@@ -56,7 +56,7 @@ bool FLACng::init()
         error_callback,
         cinfo)))
     {
-        AUDERR("Could not initialize the main FLAC decoder: %s(%d)\n",
+        AUDERR ("Could not initialize the main FLAC decoder: %s(%d)\n",
             FLAC__StreamDecoderInitStatusString[ret], ret);
         return false;
     }
@@ -96,7 +96,17 @@ bool FLACng::is_our_file(const char *filename, VFSFile &file)
     if (file.fread (buf, 1, sizeof buf) != sizeof buf)
         return false;
 
-    return ! strncmp (buf, "fLaC", sizeof buf);
+    if (! strncmp (buf, "fLaC", sizeof buf))
+        return true;
+    else if (FLAC_API_SUPPORTS_OGG_FLAC && ogg_decoder)
+    {
+        /* WE'RE NOT FLAC, BUT WE CAN PLAY OGG, SO SEE IF WE'RE OGG-FLAC: */
+        char buf[33];
+        if (! file.fseek (0, VFS_SEEK_SET) && file.fread (buf, 1, sizeof buf) == sizeof buf
+                && ! strncasecmp (buf+29, "FLAC", 4))
+            return true;  // WILL USE FLAC PLUGIN.
+    }
+    return false;
 }
 
 static void squeeze_audio(int32_t* src, void* dst, unsigned count, unsigned res)
@@ -125,7 +135,7 @@ static void squeeze_audio(int32_t* src, void* dst, unsigned count, unsigned res)
             break;
 
         default:
-            AUDERR("Can not convert to %u bps\n", res);
+            AUDERR ("Can not convert to %u bps\n", res);
     }
 }
 
@@ -153,7 +163,7 @@ bool FLACng::play(const char *filename, VFSFile &file)
 
     if (read_metadata(which_decoder, cinfo) == false)
     {
-        AUDERR("Could not prepare file for playing!\n");
+        AUDERR ("Could not prepare file for playing!\n");
         error = true;
         goto ERR_NO_CLOSE;
     }
@@ -180,7 +190,7 @@ bool FLACng::play(const char *filename, VFSFile &file)
         /* Try to decode a single frame of audio */
         if (FLAC__stream_decoder_process_single(which_decoder) == false)
         {
-            AUDERR("Error while decoding!\n");
+            AUDERR ("Error while decoding!\n");
             error = true;
             break;
         }
@@ -200,7 +210,7 @@ ERR_NO_CLOSE:
     cinfo->reset();
 
     if (FLAC__stream_decoder_flush(which_decoder) == false)
-        AUDERR("Could not flush decoder state!\n");
+        AUDERR ("Could not flush decoder state!\n");
 
     return ! error;
 }
