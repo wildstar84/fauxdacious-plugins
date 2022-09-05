@@ -862,6 +862,12 @@ void DVD::write_audioframe (CodecInfo * cinfo, AVPacket * pkt, int out_fmt, bool
     int len = 0;
 #endif
 
+#if CHECK_LIBAVCODEC_VERSION(59, 37, 100, 59, 37, 100)
+    int channels = cinfo->context->ch_layout.nb_channels;
+#else
+    int channels = cinfo->context->channels;
+#endif
+
     while (pkt->size > 0)
     {
         ScopedFrame frame;
@@ -888,14 +894,14 @@ void DVD::write_audioframe (CodecInfo * cinfo, AVPacket * pkt, int out_fmt, bool
             break;
         }
 #endif
-        size = FMT_SIZEOF (out_fmt) * cinfo->context->channels * frame->nb_samples;
+        size = FMT_SIZEOF (out_fmt) * channels * frame->nb_samples;
         if (planar)
         {
             if (size > buf.len ())
                 buf.resize (size);
 
             audio_interlace ((const void * *) frame->data, out_fmt,
-                    cinfo->context->channels, buf.begin (), frame->nb_samples);
+                    channels, buf.begin (), frame->nb_samples);
             write_audio (buf.begin (), size);
         }
         else
@@ -1131,8 +1137,14 @@ AUDDBG("PLAY:opening input0!!!!!!!!...\n");
         av_free (buf);
         return nullptr;
     }
+    /* JWT:YET ANOTHER STUPID API-BREAKAGE BY FFMPEG v5.1!: :-/ */
+#if CHECK_LIBAVCODEC_VERSION(59, 37, 100, 59, 37, 100)
+    const AVInputFormat * mpegfmt = av_find_input_format ("mpeg");
+    // JWT:CAN'T DO NOW (const)!:  mpegfmt->flags &= AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK;
+#else
     AVInputFormat * mpegfmt = av_find_input_format ("mpeg");
     mpegfmt->flags &= AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK;
+#endif
     //c->skip_initial_bytes = 0;
 
     AVIOContext * io = avio_alloc_context ((unsigned char *) buf, IOBUF, 0, input_fd_p, read_cb, nullptr, nullptr);
@@ -1534,8 +1546,13 @@ AUDDBG("---INPUT PIPE OPENED!\n");
     set_stream_bitrate (c->bit_rate);
     if (codec_opened)
     {
+#if CHECK_LIBAVCODEC_VERSION(59, 37, 100, 59, 37, 100)
+        AUDINFO ("---OPEN_AUDIO(%d, %d, %d)\n", out_fmt, cinfo.context->sample_rate, cinfo.context->ch_layout.nb_channels);
+        open_audio (out_fmt, cinfo.context->sample_rate, cinfo.context->ch_layout.nb_channels);
+#else
         AUDINFO ("---OPEN_AUDIO(%d, %d, %d)\n", out_fmt, cinfo.context->sample_rate, cinfo.context->channels);
         open_audio (out_fmt, cinfo.context->sample_rate, cinfo.context->channels);
+#endif
     }
 
     checkcodecs = false;  //WE JUST CHECKED 'EM!

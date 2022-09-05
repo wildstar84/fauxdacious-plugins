@@ -703,7 +703,11 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
             tuple.set_int (Tuple::Length, ic->duration / 1000);
 
         tuple.set_int (Tuple::Bitrate, ic->bit_rate / 1000);
+#if CHECK_LIBAVCODEC_VERSION(59, 37, 100, 59, 37, 100)
+        tuple.set_int (Tuple::Channels, cinfo.context->ch_layout.nb_channels);
+#else
         tuple.set_int (Tuple::Channels, cinfo.context->channels);
+#endif
 
         if (cinfo.codec->long_name)
             tuple.set_str (Tuple::Codec, cinfo.codec->long_name);
@@ -789,6 +793,12 @@ void FFaudio::write_audioframe (CodecInfo * cinfo, AVPacket * pkt, int out_fmt, 
     int len = 0;
 #endif
 
+#if CHECK_LIBAVCODEC_VERSION(59, 37, 100, 59, 37, 100)
+    int channels = cinfo->context->ch_layout.nb_channels;
+#else
+    int channels = cinfo->context->channels;
+#endif
+
     while (pkt->size > 0)
     {
         ScopedFrame frame;
@@ -815,7 +825,7 @@ void FFaudio::write_audioframe (CodecInfo * cinfo, AVPacket * pkt, int out_fmt, 
             break;
         }
 #endif
-        size = FMT_SIZEOF (out_fmt) * cinfo->context->channels * frame->nb_samples;
+        size = FMT_SIZEOF (out_fmt) * channels * frame->nb_samples;
 
         if (planar)
         {
@@ -823,7 +833,7 @@ void FFaudio::write_audioframe (CodecInfo * cinfo, AVPacket * pkt, int out_fmt, 
                 buf.resize (size);
 
             audio_interlace ((const void * *) frame->data, out_fmt,
-                    cinfo->context->channels, buf.begin (), frame->nb_samples);
+                    channels, buf.begin (), frame->nb_samples);
             write_audio (buf.begin (), size);
         }
         else
@@ -1137,7 +1147,11 @@ bool FFaudio::play (const char * filename, VFSFile & file)
             tuple.unset (Tuple::Length);
 
         tuple.set_int (Tuple::Bitrate, TD.ic->bit_rate / 1000);
+#if CHECK_LIBAVCODEC_VERSION(59, 37, 100, 59, 37, 100)
+        tuple.set_int (Tuple::Channels, TD.cinfo.context->ch_layout.nb_channels);
+#else
         tuple.set_int (Tuple::Channels, TD.cinfo.context->channels);
+#endif
 
         if (TD.cinfo.codec->long_name)
             tuple.set_str (Tuple::Codec, TD.cinfo.codec->long_name);
@@ -1294,7 +1308,11 @@ breakout1:
     AUDDBG ("opening audio output - bitrate=%ld=\n", (long) TD.ic->bit_rate);
 
     set_stream_bitrate (TD.ic->bit_rate);
+#if CHECK_LIBAVCODEC_VERSION(59, 37, 100, 59, 37, 100)
+    open_audio (out_fmt, TD.cinfo.context->sample_rate, TD.cinfo.context->ch_layout.nb_channels);
+#else
     open_audio (out_fmt, TD.cinfo.context->sample_rate, TD.cinfo.context->channels);
+#endif
 
     int seek_value;
     /* JWT:video_qsize:  MAX # PACKETS TO QUEUE UP FOR INTERLACING TO SMOOTH VIDEO

@@ -11,5 +11,3 @@
 5)  Add subtitles.  I took a brief stab at this, but due to the way we do video / audio queueing (from ffaudio), this is going to be a serious and time-consuming challenge.
 
 6)  Better timing and seek interface.  I've looked into this and found that I am very limited by Audacious's static setting of the song length prior to playback outside the reach of the plugins (Updating Tuple::Length in the plugin does not affect the slider and the dynamic elapsed time display).  HOWEVER, if you select and play one of the subsequent "movie" tracks directly through Faudacious (ie. the "longest track"), the timing slider should work SOMEWHAT as expected.  I say "subsequent" because the "title track" usually contains menus, previews (multiple subtracks) all bundled together and the "length" will be the sum of everything.
-
-7)  Get QT to play nice w/SDL2 so that it won't spew useless warning messages when Fauxdacious -Q is shut down.
