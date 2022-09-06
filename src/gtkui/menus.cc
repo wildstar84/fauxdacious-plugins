@@ -225,12 +225,15 @@ static const AudguiMenuItem view_items[] = {
 };
 
 static const AudguiMenuItem main_items[] = {
-    MenuSub (N_("_File"), nullptr, {file_items}),
-    MenuSub (N_("_Playback"), nullptr, {playback_items}),
-    MenuSub (N_("P_laylist"), nullptr, {playlist_items}),
-    MenuSub (N_("_Services"), nullptr, get_services_main),
+    MenuSub (N_("_File"), "document-open", {file_items}),
+    MenuSub (N_("_Playback"), "media-playback-start", {playback_items}),
+    MenuSub (N_("P_laylist"), "audio-x-generic", {playlist_items}),
+    MenuSub (N_("_Services"), "media-optical", get_services_main),
+    MenuCommand (N_("_Settings ..."), "preferences-system", NONE, audgui_show_prefs_window),
     MenuSub (N_("_Output"), nullptr, {output_items}),
-    MenuSub (N_("_View"), nullptr, {view_items})
+    MenuSub (N_("_View"), nullptr, {view_items}),
+    MenuSep (),
+    MenuCommand (N_("_Quit"), "application-exit", NONE, aud_quit)
 };
 
 static const AudguiMenuItem rclick_items[] = {
