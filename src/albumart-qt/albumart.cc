@@ -147,6 +147,8 @@ public:
     void update_art ()
     {
         bool haveartalready = false;
+        bool have_channel_art = aud_get_bool ("albumart", "_have_channel_art");
+        String filename = aud_drct_get_filename ();
 
         if (skipArtReInit)
             skipArtReInit = false;
@@ -154,7 +156,52 @@ public:
         {
             origPixmap = QPixmap (audqt::art_request_current (0, 0));
             if (origPixmap.isNull ())
-                origPixmap = QPixmap (audqt::art_request_fallback (0, 0));
+            {
+                bool have_dir_icon_art = false;
+                if (! strncmp (filename, "file://", 7)
+                        && aud_get_bool ("albumart", "seek_default_cover_file"))
+                {
+                    /* FOR LOCAL FILES W/O CHANNEL ART, LOOK FOR A DIRECTORY CHANNEL ART ICON FILE: */
+                    String dir_channel_icon = aud_get_str ("albumart", "directory_channel_art");
+                    if (dir_channel_icon && dir_channel_icon[0])
+                    {
+                        struct stat statbuf;
+                        StringBuf icon_path = str_concat ({filename_get_parent (uri_to_filename (filename)), "/"});
+                        StringBuf icon_fid = str_concat ({icon_path, dir_channel_icon});
+                        const char * filename;
+                        const char * ext;
+                        int isub_p;
+                        uri_parse (icon_fid, & filename, & ext, nullptr, & isub_p);
+                        if (! ext || ! ext[0])
+                        {
+                            Index<String> extlist = str_list_to_index ("jpg,png,jpeg", ",");
+                            for (auto & ext : extlist)
+                            {
+                                dir_channel_icon = String (str_concat ({icon_fid, ".", (const char *) ext}));
+                                struct stat statbuf;
+                                if (stat ((const char *) dir_channel_icon, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
+                                    dir_channel_icon = String ("");
+                                else
+                                    break;
+                            }
+                        }
+                        else
+                            dir_channel_icon = String (icon_fid);
+
+                        if (dir_channel_icon && dir_channel_icon[0] && stat ((const char *) dir_channel_icon, & statbuf) == 0)
+                        {
+                            origPixmap = QPixmap (audqt::art_request ((const char *) dir_channel_icon, 0, 0));
+                            if (! origPixmap.isNull ())
+                            {
+                                have_dir_icon_art = true;
+                                have_channel_art = false;
+                            }
+                        }
+                    }
+                }
+                if (! have_dir_icon_art)
+                    origPixmap = QPixmap (audqt::art_request_fallback (0, 0));
+            }
             else
                 haveartalready = true;
 
@@ -163,12 +210,11 @@ public:
         }
 
         if (aud_get_bool ("albumart", "hide_dup_art_icon"))
-            aud_set_bool ("albumart", "_infoarea_hide_art", ! aud_get_bool ("albumart", "_have_channel_art"));
+            aud_set_bool ("albumart", "_infoarea_hide_art", ! have_channel_art);
 
         last_image_from_web = false;
         if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP INTERNET ART SEARCH! */
         {
-            String filename = aud_drct_get_filename ();
             if (! strncmp (filename, "file://", 7)
                     || (! strncmp (filename, "cdda://", 7) && ! aud_get_bool ("CDDA", "seek_albumart_for_cds"))
                     || ! strncmp (filename, "dvd://", 6))
