@@ -277,7 +277,7 @@ static void album_update (void *, GtkWidget * widget)
         {
             bool have_dir_icon_art = false;
             if (! strncmp (filename, "file://", 7)
-                    && aud_get_bool ("albumart", "seek_default_cover_file"))
+                    && aud_get_bool ("albumart", "seek_directory_channel_art"))
             {
                 /* FOR LOCAL FILES W/O CHANNEL ART, LOOK FOR A DIRECTORY CHANNEL ART ICON FILE: */
                 String dir_channel_icon = aud_get_str ("albumart", "directory_channel_art");
