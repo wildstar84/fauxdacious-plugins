@@ -211,16 +211,21 @@ QMenuBar * qtui_build_menubar (QWidget * parent)
         audqt::MenuCommand ({N_("_Visualizations ..."), "preferences-system"}, configure_visualizations)
     };
 
+    /* JWT:FIXME:Qt BUG PREVENTS ADDING ICONS TO THE MAIN MENU-BAR ITEMS SINCE IF THE MENU-BAR IS VISIBLE,
+       ONLY THE ICON IS SHOWN UNTIL ONE HOVERS OVER IT (WHEN DISPLAYED HORIZONTALLY ACROSS TOP)?
+       WORKING AROUND APPEARS TO BE VERY DIFFICULT!
+       SEE:  https://www.anycodings.com/1questions/1706047/how-to-display-icon-and-text-together-in-pyqt5-menubar
+    */
     static const audqt::MenuItem main_items[] = {
-        audqt::MenuSub ({N_("_File"), "document-open"}, file_items),
-        audqt::MenuSub ({N_("_Playback"), "media-playback-start"}, playback_items),
-        audqt::MenuSub ({N_("P_laylist"), "audio-x-generic"}, playlist_items),
-        audqt::MenuSub ({N_("_Services"), "media-optical"}, services_menu),
-        audqt::MenuCommand ({N_("Se_ttings ..."), "preferences-system"}, aud_ui_show_prefs_window),
+        audqt::MenuSub ({N_("_File")}, file_items),
+        audqt::MenuSub ({N_("_Playback")}, playback_items),
+        audqt::MenuSub ({N_("P_laylist")}, playlist_items),
+        audqt::MenuSub ({N_("_Services")}, services_menu),
+        audqt::MenuCommand ({N_("Se_ttings ...")}, aud_ui_show_prefs_window),
         audqt::MenuSub ({N_("_Output")}, output_items),
         audqt::MenuSub ({N_("_View")}, view_items),
         audqt::MenuSep (),
-        audqt::MenuCommand ({N_("_Quit"), "application-exit"}, aud_quit)
+        audqt::MenuCommand ({N_("_Quit")}, aud_quit)
     };
 
     return audqt::menubar_build (main_items, parent);
