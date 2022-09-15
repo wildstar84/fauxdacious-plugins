@@ -879,6 +879,13 @@ int64_t NeonFile::try_fread (void * ptr, int64_t size, int64_t nmemb, bool & dat
             break;
 
         AUDDBG ("  --- RETRY %d OF %d!\n", retries, neon_retry_count);
+        /* JWT:USER MAY TIRE OF WAITING TO CONNECT AND HIT STOP BUTTON, IF SO, WE MUST STOP ASAP!: */
+        if (stop_playback)
+        {
+            pthread_mutex_unlock (& m_reader_status.mutex);
+            return 0;
+        }
+
         pthread_cond_broadcast (& m_reader_status.cond);
         pthread_cond_wait (& m_reader_status.cond, & m_reader_status.mutex);
     }
