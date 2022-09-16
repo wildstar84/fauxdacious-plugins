@@ -531,7 +531,7 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                         const char * filenamechar = coverart_file + 7;
                         struct stat statbuf;
                         if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
-                            coverart_file = String (_(""));
+                            coverart_file = String ("");
                         else
                             break;
                     }
@@ -550,7 +550,7 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                         const char * filenamechar = coverart_file + 7;
                         struct stat statbuf;
                         if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
-                            coverart_file = String (_(""));
+                            coverart_file = String ("");
                         else
                             break;
                     }
@@ -596,7 +596,7 @@ bool CDAudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
                             const char * filenamechar = coverart_file + 7;
                             struct stat statbuf;
                             if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
-                                coverart_file = String (_(""));
+                                coverart_file = String ("");
                             else
                                 break;
                         }

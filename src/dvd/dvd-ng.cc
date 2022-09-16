@@ -3293,7 +3293,7 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
                                 const char * filenamechar = coverart_file + 7;
                                 struct stat statbuf;
                                 if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
-                                    coverart_file = String (_(""));
+                                    coverart_file = String ("");
                                 else
                                 {
                                     coverart_file = String (filename_to_uri (filenamechar));
@@ -3323,7 +3323,7 @@ bool DVD::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<
                                         const char * filenamechar = coverart_file + 7;
                                         struct stat statbuf;
                                         if (stat (filenamechar, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
-                                            coverart_file = String (_(""));
+                                            coverart_file = String ("");
                                         else
                                         {
                                             coverart_file = String (filename_to_uri (filenamechar));
