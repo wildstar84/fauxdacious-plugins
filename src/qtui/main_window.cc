@@ -449,11 +449,14 @@ void MainWindow::update_toggles ()
 void MainWindow::update_visibility ()
 {
     bool menu_visible = aud_get_bool ("qtui", "menu_visible");
-    m_menubar->setVisible (menu_visible);
-    m_menu_action->setVisible (!menu_visible);
-
-    m_infobar->setVisible (aud_get_bool ("qtui", "infoarea_visible"));
-    m_statusbar->setVisible (aud_get_bool ("qtui", "statusbar_visible"));
+    if (m_menubar)
+        m_menubar->setVisible (menu_visible);
+    if (m_menu_action)
+        m_menu_action->setVisible (!menu_visible);
+    if (m_infobar)
+        m_infobar->setVisible (aud_get_bool ("qtui", "infoarea_visible"));
+    if (m_statusbar)
+        m_statusbar->setVisible (aud_get_bool ("qtui", "statusbar_visible"));
 }
 
 void MainWindow::update_play_pause ()
