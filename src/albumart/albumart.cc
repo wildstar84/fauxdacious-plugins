@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <utime.h>
 #include <glib.h>
 
 #ifdef _WIN32
@@ -91,25 +92,13 @@ static gboolean albumart_ready (gpointer widget)
 
     for (auto & ext : extlist)
     {
-        coverart_file = String (str_concat ({"file://", aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
-#ifdef _WIN32
-        const char * filenamechar = coverart_file + 7;
-#else
+        coverart_file = String (str_concat ({aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
         const char * filenamechar = coverart_file;
-#endif
         struct stat statbuf;
-#ifdef _WIN32
         if (stat (filenamechar, &statbuf) >= 0)  // ART IMAGE FILE EXISTS:
-#else
-        if (stat (filenamechar+7, &statbuf) >= 0)  // ART IMAGE FILE EXISTS:
-#endif
         {
-#ifdef _WIN32
             coverart_file = String (filename_to_uri (filenamechar));
             pixbuf = audgui_pixbuf_request ((const char *) coverart_file);
-#else
-            pixbuf = audgui_pixbuf_request (filenamechar);
-#endif
             if (pixbuf)
             {
                 audgui_scaled_image_set ((GtkWidget *) widget, pixbuf.get ());
@@ -118,7 +107,6 @@ static gboolean albumart_ready (gpointer widget)
                 hook_call ("gtkui toggle infoarea_art", nullptr);
                 last_image_from_web = true;
             }
-
             return false;
         }
     }
@@ -178,15 +166,11 @@ static void * album_helper_thread_fn (void * data)
         const char * album = (const char *) Album;
         if (Title && Title[0])
         {
-            bool skipweb = false;
             if (album && album[0])  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
             {
                 const char * album_uri = strstr (album, "://");  // FOR URI, WE'LL ASSUME LONGEST IS "stdin" (5 chars)
                 if (album_uri && (album_uri-album) < 6)  // ALBUM FIELD IS A URI (PBLY A PODCAST/VIDEO FROM STREAMFINDER!):
-                {
                     Album = String ("_");
-                    skipweb = true;
-                }
                 else if (aud_get_bool (nullptr, "split_titles"))
                 {
                     /* ALBUM MAY ALSO CONTAIN THE STREAM NAME (IE. "<ALBUM> - <STREAM NAME>"): STRIP THAT OFF: */
@@ -198,11 +182,9 @@ static void * album_helper_thread_fn (void * data)
             else
                 Album = String ("_");
 
-            const char * webfetch = ! skipweb && aud_get_bool ("albumart", "internet_coverartlookup")
-                    ? (! strncmp (audio_fn, "file://", 7)
-                            && aud_get_bool ("albumart", "save_by_songfile")
-                            ? audio_fn : aud_get_str (nullptr, "_cover_art_link"))
-                    : "NOWEB";
+            const char * webfetch = (! strncmp (audio_fn, "file://", 7)
+                            && aud_get_bool ("albumart", "save_by_songfile"))
+                            ? audio_fn : aud_get_str (nullptr, "_cover_art_link");
 
             if (! aud_get_bool (nullptr, "split_titles"))
             {
@@ -331,35 +313,150 @@ static void album_update (void *, GtkWidget * widget)
         hook_call ("gtkui toggle infoarea_art", nullptr);
     }
     last_image_from_web = false;
-    if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP FURTHER ART SEARCH! */
+    if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP INTERNET ART SEARCH! */
     {
         if (! strncmp (filename, "file://", 7)
                 || (! strncmp (filename, "cdda://", 7) && ! aud_get_bool ("CDDA", "seek_albumart_for_cds"))
-                || ! strncmp (filename, "dvd://", 6))
+                || (! strncmp (filename, "dvd://", 6) && aud_get_bool ("dvd", "skip_coverartlookup")))
             return;
     }
-    if (aud_get_str ("audacious", "cover_helper"))
+
+    /* JWT:NOW CHECK THE ALBUM-ART CACHE: */
+    Tuple tuple = aud_drct_get_tuple ();
+    String Title = tuple.get_str (Tuple::Title);
+    String Artist = tuple.get_str (Tuple::Artist);
+    String Album = tuple.get_str (Tuple::Album);
+    String audio_fn = tuple.get_str (Tuple::AudioFile);
+    if (! audio_fn || ! audio_fn[0])
+        audio_fn = aud_drct_get_filename ();
+
+    const char * album = (const char *) Album;
+
+    if (Title && Title[0])
     {
-        pthread_attr_t thread_attrs;
-        if (! pthread_attr_init (& thread_attrs))
+        bool split_titles = aud_get_bool (nullptr, "split_titles");
+        bool skipweb = false;
+        if (album && album[0])  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
         {
-            if (! pthread_attr_setdetachstate (& thread_attrs, PTHREAD_CREATE_DETACHED)
-                    || ! pthread_attr_setscope (& thread_attrs, PTHREAD_SCOPE_PROCESS))
+            const char * album_uri = strstr (album, "://");  // FOR URI, WE'LL ASSUME LONGEST IS "stdin" (5 chars)
+            if (album_uri && (album_uri-album) < 6)  // ALBUM FIELD IS A URI (PBLY A PODCAST/VIDEO FROM STREAMFINDER!):
             {
-                pthread_t album_helper_thread;
-
-                resetthreads = false;
-                if (pthread_create (&album_helper_thread, nullptr, album_helper_thread_fn, widget))
-                    AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
+                Album = String ("_");
+                String s = aud_get_str (nullptr, "_cover_art_link");
+                if (! s || ! s[0])
+                    skipweb = true;
             }
-            else
-                AUDERR ("s:Error detatching helper thread: %s!\n", strerror (errno));
-
-            if (pthread_attr_destroy (& thread_attrs))
-                AUDERR ("s:Error destroying helper thread attributes: %s!\n", strerror (errno));
+            else if (split_titles)
+            {
+                /* ALBUM MAY ALSO CONTAIN THE STREAM NAME (IE. "<ALBUM> - <STREAM NAME>"): STRIP THAT OFF: */
+                const char * throwaway = strstr (album, " - ");
+                int albumlen = throwaway ? throwaway - album : -1;
+                Album = String (str_copy (album, albumlen));
+            }
         }
         else
-            AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
+            Album = String ("_");
+
+        if (! split_titles)
+        {
+            /* ARTIST MAY BE IN TITLE INSTEAD (IE. "<ARTIST> - <TITLE>"): IF SO, USE THAT FOR ARTIST: */
+            const char * title = (const char *) Title;
+            if (title)
+            {
+                const char * artistlen = strstr (title, " - ");
+                if (artistlen)
+                {
+                    Artist = String (str_copy (title, artistlen - title));
+                    const char * titleoffset = artistlen+3;
+                    if (titleoffset)
+                        Title = String (str_copy (artistlen+3, -1));
+                }
+            }
+        }
+
+        StringBuf albart_FN;
+        StringBuf album_buf = str_copy (Album);
+        str_replace_char (album_buf, ' ', '/');  // JWT:PROTECT SPACES, WHICH I STUPIDLY DIDN'T ENCODE IN ALBUMART!
+        if (Artist && Artist[0])
+        {
+            StringBuf artist_buf = str_copy (Artist);
+            str_replace_char (artist_buf, ' ', '/');
+            albart_FN = str_concat ({(const char *) str_encode_percent (album_buf), "__",
+                    (const char *) str_encode_percent (artist_buf)});
+        }
+        else
+        {
+            if (Album == String ("_"))
+                return;   /* JWT:NO ALBUM OR ARTIST, PUNT! */
+            else if (Title && Title[0])
+            {
+                StringBuf title_buf = str_copy (Title);
+                str_replace_char (title_buf, ' ', '/');
+                albart_FN = str_concat ({(const char *) str_encode_percent (album_buf), "__",
+                        (const char *) str_encode_percent (title_buf)});
+            }
+            else
+                albart_FN = str_encode_percent (album_buf);
+        }
+        str_replace_char (albart_FN, '/', ' ');  // JWT:UNPROTECT SPACES!
+
+        String coverart_file;
+        Index<String> extlist = str_list_to_index ("jpg,png,gif,jpeg", ",");
+        AudguiPixbuf pixbuf;
+        for (auto & ext : extlist)
+        {
+            coverart_file = String (str_concat ({aud_get_path (AudPath::UserDir),
+                    "/albumart/", (const char *) albart_FN, ".", (const char *) ext}));
+            const char * filenamechar = coverart_file;
+            struct stat statbuf;
+            if (stat (filenamechar, &statbuf) >= 0)  // ART IMAGE FILE EXISTS:
+            {
+                String coverart_uri = String (filename_to_uri (filenamechar));
+                pixbuf = audgui_pixbuf_request ((const char *) coverart_uri);
+                if (pixbuf)  /* FOUND ART IN CACHE, RETURN. */
+                {
+                    audgui_scaled_image_set ((GtkWidget *) widget, pixbuf.get ());
+                    /* MAKE FILE NEWEST FOR EASIER USER-LOOKUP IN SONG-EDIT!: */
+                    if (utime (filenamechar, nullptr) < 0)
+                        AUDWARN ("i:Failed to update art-file time (for easier user-lookup)!\n");
+
+                    /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
+                    aud_set_bool ("albumart", "_infoarea_hide_art", false);
+                    hook_call ("gtkui toggle infoarea_art", nullptr);
+                    last_image_from_web = true;
+
+                    return;
+                }
+                else
+                    break;
+            }
+        }
+
+        /* JWT:NO CACHED ART, CALL HELPER: */
+        if (! skipweb && aud_get_bool ("albumart", "internet_coverartlookup")
+                && aud_get_str ("audacious", "cover_helper"))
+        {
+            pthread_attr_t thread_attrs;
+            if (! pthread_attr_init (& thread_attrs))
+            {
+                if (! pthread_attr_setdetachstate (& thread_attrs, PTHREAD_CREATE_DETACHED)
+                        || ! pthread_attr_setscope (& thread_attrs, PTHREAD_SCOPE_PROCESS))
+                {
+                    pthread_t album_helper_thread;
+
+                    resetthreads = false;
+                    if (pthread_create (&album_helper_thread, nullptr, album_helper_thread_fn, widget))
+                        AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
+                }
+                else
+                    AUDERR ("s:Error detatching helper thread: %s!\n", strerror (errno));
+
+                if (pthread_attr_destroy (& thread_attrs))
+                    AUDERR ("s:Error destroying helper thread attributes: %s!\n", strerror (errno));
+            }
+            else
+                AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
+        }
     }
 }
 
