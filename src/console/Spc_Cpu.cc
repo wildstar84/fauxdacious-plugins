@@ -5,7 +5,6 @@
 #include "Snes_Spc.h"
 
 #include <string.h>
-#include <libfauxdcore/runtime.h>
 
 /* Copyright (C) 2004-2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -502,7 +501,6 @@ int Snes_Spc::cpu_read( int addr, rel_time_t time )
 			{
 				// this branch would cause an assertion failure in the
 				// original.  not really sure what to do here ...
-				AUDERR ("w:Unexpected branch, report audio file to Audacious & reference bug#1135!");
 			}
 		}
 	}
