@@ -184,7 +184,7 @@ static const AudguiMenuItem playlist_remove_items[] = {
 };
 
 static const AudguiMenuItem playlist_select_items[] = {
-    MenuCommand (N_("Search and Select"), "edit-find", 'f', CTRL, action_playlist_search_and_select),
+    MenuCommand (N_("Search and Select"), "edit-find", 'f', CTRL, playlist_search_and_select),
     MenuSep (),
     MenuCommand (N_("Invert Selection"), nullptr, NO_KEY, pl_select_invert),
     MenuCommand (N_("Select None"), nullptr, 'a', SHIFT_CTRL, pl_select_none),

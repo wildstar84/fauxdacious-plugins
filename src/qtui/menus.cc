@@ -170,6 +170,7 @@ QMenuBar * qtui_build_menubar (QWidget * parent)
         audqt::MenuCommand ({N_("_Refresh"), "view-refresh", "F5"}, pl_refresh),
         audqt::MenuSep (),
         audqt::MenuCommand ({N_("_Find ..."), "edit-find", "Ctrl+F"}, pl_find),
+        audqt::MenuCommand ({N_("Search and Select"), "edit-find"}, audqt::playlist_search_and_select),
         audqt::MenuSep (),
         audqt::MenuSub ({N_("_Sort"), "view-sort-ascending"}, sort_items),
         audqt::MenuSub ({N_("Sort Se_lected"), "view-sort-ascending"}, sort_selected_items),
@@ -245,6 +246,7 @@ QMenu * qtui_build_pl_menu (QWidget * parent)
         audqt::MenuCommand ({N_("_Paste"), "edit-paste", "Ctrl+V"}, pl_paste),
         audqt::MenuCommand ({N_("Paste at _End"), "edit-paste", "Shift+Ctrl+V"}, pl_paste_end),
         audqt::MenuCommand ({N_("Select _All"), "edit-select-all"}, pl_select_all),
+        audqt::MenuCommand ({N_("Select _None"), "edit-clear"}, pl_select_none),
         audqt::MenuSep (),
         audqt::MenuSub ({N_("_Services")}, services_menu_pl)
     };

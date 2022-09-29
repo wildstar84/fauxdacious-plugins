@@ -22,9 +22,6 @@
 
 void action_playlist_rename ();
 void action_playlist_delete ();
-
-void action_playlist_search_and_select ();
-
 void action_playlist_add_url ();
 void action_playlist_add_files ();
 

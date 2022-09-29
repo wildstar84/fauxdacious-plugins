@@ -184,6 +184,8 @@ static const AudguiMenuItem playlist_items[] = {
     MenuCommand (N_("_Play/Resume"), "media-playback-start", GDK_KEY_Return, SHIFT, pl_play),
     MenuCommand (N_("_Refresh"), "view-refresh", GDK_KEY_F5, (GdkModifierType) 0, pl_refresh),
     MenuSep (),
+    MenuCommand (N_("Search and Select"), "edit-find", NONE, playlist_search_and_select),
+    MenuSep (),
     MenuSub (N_("_Sort"), "view-sort-ascending", {sort_items}),
     MenuSub (N_("Sort Se_lected"), "view-sort-ascending", {sort_sel_items}),
     MenuSub (N_("Remove _Duplicates"), "edit-copy", {dupe_items}),
@@ -248,6 +250,7 @@ static const AudguiMenuItem rclick_items[] = {
     MenuCommand (N_("_Paste"), "edit-paste", NONE, pl_paste),
     MenuCommand (N_("Paste at _End"), "edit-paste", 'v', SHIFT_CTRL, pl_paste_end),
     MenuCommand (N_("Select _All"), "edit-select-all", NONE, pl_select_all),
+    MenuCommand (N_("Select _None"), "edit-clear", NONE, pl_select_none),
     MenuSep (),
     MenuSub (N_("_Services"), nullptr, get_services_pl)
 };
