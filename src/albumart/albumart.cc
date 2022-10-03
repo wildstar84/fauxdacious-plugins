@@ -376,11 +376,11 @@ static void album_update (void *, GtkWidget * widget)
 
         StringBuf albart_FN;
         StringBuf album_buf = str_copy (Album);
-        str_replace_char (album_buf, ' ', '/');  // JWT:PROTECT SPACES, WHICH I STUPIDLY DIDN'T ENCODE IN ALBUMART!
+        str_replace_char (album_buf, ' ', '~');  // JWT:PROTECT SPACES, WHICH I STUPIDLY DIDN'T ENCODE IN ALBUMART!
         if (Artist && Artist[0])
         {
             StringBuf artist_buf = str_copy (Artist);
-            str_replace_char (artist_buf, ' ', '/');
+            str_replace_char (artist_buf, ' ', '~');
             albart_FN = str_concat ({(const char *) str_encode_percent (album_buf), "__",
                     (const char *) str_encode_percent (artist_buf)});
         }
@@ -391,14 +391,14 @@ static void album_update (void *, GtkWidget * widget)
             else if (Title && Title[0])
             {
                 StringBuf title_buf = str_copy (Title);
-                str_replace_char (title_buf, ' ', '/');
+                str_replace_char (title_buf, ' ', '~');
                 albart_FN = str_concat ({(const char *) str_encode_percent (album_buf), "__",
                         (const char *) str_encode_percent (title_buf)});
             }
             else
                 albart_FN = str_encode_percent (album_buf);
         }
-        str_replace_char (albart_FN, '/', ' ');  // JWT:UNPROTECT SPACES!
+        str_replace_char (albart_FN, '~', ' ');  // JWT:UNPROTECT SPACES!
 
         String coverart_file;
         Index<String> extlist = str_list_to_index ("jpg,png,gif,jpeg", ",");
