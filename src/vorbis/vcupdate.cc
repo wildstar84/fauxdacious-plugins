@@ -77,6 +77,15 @@ static void insert_str_tuple_field_to_dictionary (const Tuple & tuple,
         dict.remove (String (key));
 }
 
+/* JWT:ADDED FUNCTION TO WRITE A RAW (NON TUPLE-SUPPLIED VALUE) STRING: */
+static void insert_string_to_dictionary (const char * val, Dictionary & dict, const char * key)
+{
+    if (val && val[0])
+        dict.add (String (key), String (val));
+    else
+        dict.remove (String (key));
+}
+
 static void insert_int_tuple_field_to_dictionary (const Tuple & tuple,
  Tuple::Field field, Dictionary & dict, const char * key)
 {
@@ -166,7 +175,11 @@ bool VorbisPlugin::write_tuple (const char * filename, VFSFile & file, const Tup
     bool wrote_art = false;
     if (comment && comment[0] && ! strncmp ((const char *) comment, "file://", 7))
     {
-        VFSFile file (comment, "r");  /* JWT:ASSUME COMMENT IS AN IMAGE FILE FROM SONG-INFO EDITS!: */
+        const char * comment_ptr = (const char *) comment;
+        const char * sep = strstr (comment_ptr, ";file://");
+        String main_imageuri = sep ? String (str_printf ("%.*s", (int)(sep - comment_ptr), comment_ptr))
+                : comment;
+        VFSFile file (main_imageuri, "r");  /* JWT:ASSUME COMMENT IS AN IMAGE FILE FROM SONG-INFO EDITS!: */
         if (file)
         {
             Index<char> data = file.read_all ();
@@ -175,7 +188,12 @@ bool VorbisPlugin::write_tuple (const char * filename, VFSFile & file, const Tup
                 wrote_art = write_artimage_item (data, uri_get_extension (comment),
                         "METADATA_BLOCK_PICTURE", dict);
                 if (wrote_art)
+                {
+                    if (sep)  // WE MAY HAVE A SECOND (CHANNEL) ART IMAGE, WRITE THAT TO COMMENT FIELD (";file:.."):
+                        insert_string_to_dictionary (sep, dict, "COMMENT");
+
                     aud_set_bool (nullptr, "_user_tag_skipthistime", true);  /* JWT:SKIP DUP. TO user_tag_data. */
+                }
             }
         }
     }
