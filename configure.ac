@@ -375,14 +375,12 @@ ENABLE_PLUGIN_WITH_DEP(pulse,
     PULSE,
     libpulse >= 0.9.5)
 
-test_sndio () {
-    AC_CHECK_LIB(sndio, sio_open, have_sndio=yes, have_sndio=no)
-}
-
-ENABLE_PLUGIN_WITH_TEST(sndio,
+ENABLE_PLUGIN_WITH_DEP(sndio,
     Sndio output,
     auto,
-    OUTPUT)
+    OUTPUT,
+    SNDIO,
+    sndio)
 
 test_cue () {
     PKG_CHECK_MODULES(CUE, libcue >= 2.0, [
@@ -473,7 +471,9 @@ ENABLE_PLUGIN_WITH_DEP(scrobbler2,
     libcurl >= 7.9.7)
 
 test_glspectrum () {
-    if test $HAVE_MSWINDOWS = yes ; then
+    if test $HAVE_DARWIN = yes ; then
+        have_glspectrum=no
+    elif test $HAVE_MSWINDOWS = yes ; then
         have_glspectrum=yes
         GL_LIBS="-lopengl32"
     else
