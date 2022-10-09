@@ -975,7 +975,7 @@ static void lyricwiki_playback (bool force_refresh)
         bool need_lyrics = true;
         String lyricsFromTuple = tuple.get_str (Tuple::Lyrics);
 
-        if (lyricsFromTuple && lyricsFromTuple[0])
+        if (! force_refresh && lyricsFromTuple && lyricsFromTuple[0])
         {
             AUDDBG ("i:Lyrics found in embedded tag.\n");
             update_lyrics (state.title, state.artist, (const char *) lyricsFromTuple);
@@ -985,6 +985,7 @@ static void lyricwiki_playback (bool force_refresh)
             state.Wasok2saveTag = true;
             AUDINFO ("i:Lyrics came from embedded tag!\n");
             need_lyrics = false;
+            gtk_widget_set_sensitive (refresh_button, true);
         }
         if (state.title)
         {

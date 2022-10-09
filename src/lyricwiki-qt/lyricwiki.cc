@@ -74,7 +74,7 @@ typedef struct {
     bool ok2saveTag;       /* JWT:SET TO TRUE IF GOT LYRICS FROM LYRICWIKI && LOCAL MP3 FILE */
     bool Wasok2saveTag;    /* JWT:SET TO TRUE AFTER SAVE TO TAGS, FOR RESETTING IF USER EDITS THEM */
     bool ok2edit;          /* JWT:DEPRECIATED:  SET TO TRUE IF USER CAN EDIT LYRICS (SITE) */
-    bool usedCacheName;    /* JWT:TRUE IF LYRICS CAME FROM CACHE OR HELPER (ALLOW USER TO FORCE REFRESH) */
+    bool allowRefresh;     /* JWT:ENABLE [Refresh] BUTTON IF TRUE */
     bool force_refresh;    /* JWT:TRUE IF USER FORCED REFRESH VIA [Refresh] BUTTON (DON'T WAIT FOR ALBUMART! */
     String shotitle;       /* JWT:NEXT 3 FOR THREAD TO SAVE LYRIC DATA UNTIL MAIN THREAD CAN DISPLAY IT: */
     String shoartist;
@@ -585,7 +585,7 @@ static void * lyric_helper_thread_fn (void * data)
                     {
                         save_lyrics_locally (false);
                         if (aud_get_bool ("lyricwiki", "search_internet"))
-                            state.usedCacheName = true;
+                            state.allowRefresh = true;
                     }
                     AUDINFO ("i:Lyrics came from HELPER!\n");
                     /* JWT:ALLOW 'EM TO EMBED IN TAG, IF POSSIBLE. */
@@ -811,7 +811,7 @@ static void lyricwiki_playback (bool force_refresh)
     state.filename = aud_drct_get_filename ();
     state.uri = String ();
     state.ok2edit = false;
-    state.usedCacheName = false;
+    state.allowRefresh = false;
     state.local_filename = String ("");
     state.force_refresh = force_refresh;
 
@@ -897,7 +897,7 @@ static void lyricwiki_playback (bool force_refresh)
         bool need_lyrics = true;
         String lyricsFromTuple = tuple.get_str (Tuple::Lyrics);
 
-        if (lyricsFromTuple && lyricsFromTuple[0])
+        if (! force_refresh && lyricsFromTuple && lyricsFromTuple[0])
         {
             AUDDBG ("i:Lyrics found in embedded tag.\n");
             update_lyrics (state.title, state.artist, (const char *) lyricsFromTuple);
@@ -908,6 +908,7 @@ static void lyricwiki_playback (bool force_refresh)
 
             AUDINFO ("i:Lyrics came from embedded tag!\n");
             need_lyrics = false;
+            state.allowRefresh = true;
         }
         if (state.title)
         {
@@ -963,7 +964,7 @@ static void lyricwiki_playback (bool force_refresh)
                     AUDINFO ("i:Global lyric file found by artist/title (%s).\n", (const char *) lyricStr);
                     vfs_async_file_get_contents (lyricStr, get_lyrics_step_0, nullptr);
                     lyricStr = String ();
-                    state.usedCacheName = true;
+                    state.allowRefresh = true;
                     if (save_by_songfile)
                         state.ok2save = true;
 
@@ -1037,7 +1038,7 @@ static void lyricwiki_playback_changed ()
 /* CALLED WHEN PLAYBACK IS STOPPED, MAKE SURE NO DANGLING THREADS HAVE LOCAL EVENT LOOP RUNNING!: */
 static void kill_thread_eventloop ()
 {
-    state.usedCacheName = false;
+    state.allowRefresh = false;
     resetthreads = true;
 }
 
@@ -1109,7 +1110,7 @@ void TextEdit::contextMenuEvent (QContextMenuEvent * event)
             save_lyrics_in_embedded_tag ();
         });
     }
-    if (state.usedCacheName && aud_get_bool ("lyricwiki", "cache_lyrics")
+    if (state.allowRefresh && aud_get_bool ("lyricwiki", "cache_lyrics")
             && aud_get_bool ("lyricwiki", "search_internet"))
     {
         QAction * refresh = menu->addAction (_("Refresh"));
