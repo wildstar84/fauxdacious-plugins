@@ -52,7 +52,7 @@ public:
     static const PluginPreferences prefs;
 
     static constexpr PluginInfo info = {
-        N_("Alarm"),
+        N_("Alarm (Depreciated)"),
         PACKAGE,
         about,
         & prefs,
