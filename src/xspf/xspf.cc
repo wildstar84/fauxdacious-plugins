@@ -58,6 +58,9 @@ static const xspf_entry_t xspf_entries[] = {
 
     {Tuple::Composer, "composer", true},
     {Tuple::Performer, "performer", true},
+    {Tuple::Publisher, "publisher", true},
+    {Tuple::CatalogNum, "catalognum", true},
+    {Tuple::Description, "description", true},
     {Tuple::Copyright, "copyright", true},
     {Tuple::Date, "date", true},
 

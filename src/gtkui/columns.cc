@@ -46,11 +46,13 @@ const char * const pw_col_names[PW_COLS] = {
     N_("File name"),
     N_("Custom title"),
     N_("Bitrate"),
-    N_("Comment")
+    N_("Comment"),
+    N_("Publisher"),
+    N_("Catalog number")
 };
 
 const char * const pw_col_headers[PW_COLS] = {
-    N_("Entry#"),
+    N_("#"),
     N_("Title"),
     N_("Artist"),
     N_("Year"),
@@ -64,7 +66,9 @@ const char * const pw_col_headers[PW_COLS] = {
     N_("File name"),
     N_("Custom title"),
     N_("BPS"),
-    N_("Comment")
+    N_("Comment"),
+    N_("Publisher"),
+    N_("Cat#")
 };
 
 int pw_num_cols;
@@ -86,7 +90,9 @@ static const char * const pw_col_keys[PW_COLS] = {
     "filename",
     "custom",
     "bitrate",
-    "comment"
+    "comment",
+    "publisher",
+    "catalog-number"
 };
 
 static const int pw_default_widths[PW_COLS] = {
@@ -104,7 +110,9 @@ static const int pw_default_widths[PW_COLS] = {
     275,  // filename
     275,  // custom title
     10,   // bitrate
-    275   // comment
+    275,  // comment
+    175,  // publisher
+    75    // catalog number
 };
 
 void pw_col_init ()

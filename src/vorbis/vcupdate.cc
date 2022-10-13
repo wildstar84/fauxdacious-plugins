@@ -1,5 +1,5 @@
 /* Audacious - Cross-platform multimedia player
- * Copyright (C) 2005-2007  Audacious development team
+ * Copyright (C) 2005-2022  Audacious development team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -170,6 +170,9 @@ bool VorbisPlugin::write_tuple (const char * filename, VFSFile & file, const Tup
 
     insert_int_tuple_field_to_dictionary (tuple, Tuple::Year, dict, "DATE");
     insert_int_tuple_field_to_dictionary (tuple, Tuple::Track, dict, "TRACKNUMBER");
+    insert_str_tuple_field_to_dictionary (tuple, Tuple::Publisher, dict, "publisher");
+    insert_str_tuple_field_to_dictionary (tuple, Tuple::CatalogNum, dict, "CATALOGNUMBER");
+    insert_str_tuple_field_to_dictionary (tuple, Tuple::Performer, dict, "PERFORMER");
 
     String comment = tuple.get_str (Tuple::Comment);
     bool wrote_art = false;

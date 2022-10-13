@@ -47,6 +47,8 @@ public:
         CustomTitle,
         Bitrate,
         Comment,
+        Publisher,
+        CatalogNum,
         n_cols
     };
 

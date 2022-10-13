@@ -45,7 +45,9 @@ const char * const PlaylistModel::labels[] = {
     N_("File Name"),
     N_("Custom Title"),
     N_("Bitrate"),
-    N_("Comment")
+    N_("Comment"),
+    N_("Publisher"),
+    N_("Catalog Number")
 };
 
 const char * const PlaylistModel::header_labels[] = {  // JWT:MAKE FIT IN DEFAULT COL. WIDTH!
@@ -64,7 +66,9 @@ const char * const PlaylistModel::header_labels[] = {  // JWT:MAKE FIT IN DEFAUL
     N_("File name"),
     N_("Custom title"),
     N_("Bitrate"),
-    N_("Comment")
+    N_("Comment"),
+    N_("Publisher"),
+    N_("Cat#")
 };
 
 static const Tuple::Field s_fields[] = {
@@ -83,7 +87,9 @@ static const Tuple::Field s_fields[] = {
     Tuple::Basename,
     Tuple::FormattedTitle,
     Tuple::Bitrate,
-    Tuple::Comment
+    Tuple::Comment,
+    Tuple::Publisher,
+    Tuple::CatalogNum
 };
 
 static_assert (aud::n_elems (PlaylistModel::labels) == PlaylistModel::n_cols, "update PlaylistModel::labels");

@@ -51,19 +51,21 @@ static const GType pw_col_types[PW_COLS] =
     G_TYPE_STRING,  // file name
     G_TYPE_STRING,  // custom title
     G_TYPE_STRING,  // bitrate
-    G_TYPE_STRING   // comment
+    G_TYPE_STRING,  // comment
+    G_TYPE_STRING,  // publisher
+    G_TYPE_STRING   // catalog number
 };
 
 static GtkTreeViewColumn * s_sortedbycol = nullptr;
 
 static const int pw_col_min_widths[PW_COLS] = {
-    7,   // entry number
+    3,   // entry number
     10,  // title
     10,  // artist
     4,   // year
     10,  // album
     10,  // album artist
-    2,   // track
+    3,   // track
     10,  // genre
     3,   // queue position
     7,   // length
@@ -71,7 +73,9 @@ static const int pw_col_min_widths[PW_COLS] = {
     10,  // file name
     10,  // custom title
     3,   // bitrate
-    10   // comment
+    10,  // comment,
+    10,  // publisher
+    3    // catalog number
 };
 
 //static const bool pw_col_label[PW_COLS] = {
@@ -89,7 +93,10 @@ static const int pw_col_min_widths[PW_COLS] = {
 //    true,   // file name
 //    true,   // custom title
 //    false,  // bitrate
-//    true    // comment
+//    true,   // comment
+//    true,   // comment
+//    true,   // publisher
+//    false   // catalog number
 //};
 
 static const Playlist::SortType pw_col_sort_types[PW_COLS] = {
@@ -107,7 +114,9 @@ static const Playlist::SortType pw_col_sort_types[PW_COLS] = {
     Playlist::Filename,        // file name
     Playlist::FormattedTitle,  // custom title
     Playlist::Bitrate,         // bitrate
-    Playlist::Comment          // comment
+    Playlist::Comment,         // comment
+    Playlist::Publisher,       // publisher
+    Playlist::CatalogNum       // catalog number
 };
 
 struct PlaylistWidgetData
@@ -220,6 +229,12 @@ static void get_value (void * user, int row, int column, GValue * value)
         break;
     case PW_COL_COMMENT:
         set_string_from_tuple (value, tuple, Tuple::Comment);
+        break;
+    case PW_COL_PUBLISHER:
+        set_string_from_tuple (value, tuple, Tuple::Publisher);
+        break;
+    case PW_COL_CATALOG_NUM:
+        set_string_from_tuple (value, tuple, Tuple::CatalogNum);
         break;
     }
 }
