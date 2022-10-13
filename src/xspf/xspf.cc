@@ -111,6 +111,8 @@ static void xspf_add_file (xmlNode * track, const char * filename,
     String location;
     Tuple tuple;
 
+    String CommentData = String ();
+    String ImgData = String ();
     for (nptr = track->children; nptr != nullptr; nptr = nptr->next) {
         if (nptr->type == XML_ELEMENT_NODE) {
             if (!xmlStrcmp(nptr->name, (xmlChar *)"location")) {
@@ -136,6 +138,16 @@ static void xspf_add_file (xmlNode * track, const char * filename,
                          (int) (slash + 1 - base), base, str));
                 }
 
+                xmlFree(str);
+            } else if (!xmlStrcmp(nptr->name, (xmlChar *)"annotation")) {
+                /* JWT:JUST GRAB VALUE NOW, WE'RE COMBINING LATER!: */
+                xmlChar *str = xmlNodeGetContent(nptr);
+                CommentData = String ((char *)str);
+                xmlFree(str);
+            } else if (!xmlStrcmp(nptr->name, (xmlChar *)"image")) {
+                /* JWT:JUST GRAB VALUE NOW, WE'RE COMBINING LATER INTO Tuple::Comment!: */
+                xmlChar *str = xmlNodeGetContent(nptr);
+                ImgData = String ((char *)str);
                 xmlFree(str);
             } else {
                 /* Rest of the nodes are handled here */
@@ -179,6 +191,19 @@ static void xspf_add_file (xmlNode * track, const char * filename,
 
     if (location != nullptr)
     {
+        /* JWT:WE MERGE "image"+"annotation" FIELDS INTO Tuple::Comment FOR FAUXDACIOUS COVER-ART USAGE: */
+        if (ImgData && ImgData[0]) {
+            if (CommentData && CommentData[0]) {
+                const char * fmt = strncmp ((const char *) CommentData, ";file://", 8)
+                        ? "%s - %s" : "%s%s";  /* FREE COMMENT vs 2ND (CHANNEL) IMAGE */
+                tuple.set_str (Tuple::Comment,
+                        String (str_printf (fmt, (const char *) ImgData, (const char *) CommentData)));
+            }
+            else
+                tuple.set_str(Tuple::Comment, ImgData);
+        } else if (CommentData && CommentData[0])
+            tuple.set_str (Tuple::Comment, CommentData);
+
         if (tuple.valid ())
             tuple.set_filename (location);
 
@@ -382,8 +407,30 @@ bool XSPFLoader::save (const char * filename, VFSFile & file,
             switch (tuple.get_value_type (entry.tupleField))
             {
             case Tuple::String:
-                xspf_add_node (track, entry.isMeta, entry.xspfName,
-                 tuple.get_str (entry.tupleField));
+                if (entry.tupleField == Tuple::Comment)
+                {
+                    /* JWT:WE SPLIT OUT LEADING IMAGE URI INTO SEPARATE "image" FIELD PER XSPF SPECS: */
+                    /* (SEE:  https://www.xspf.org/spec#4112141117-image) */
+                    String val = tuple.get_str (entry.tupleField);
+                    const char * val_ptr = (const char *) val;
+                    if (val && val[0] && ! strncmp (val_ptr, "file://", 7))
+                    {
+                        const char * sep = strstr (val_ptr, ";file://");
+                        if (sep)
+                        {
+                            xspf_add_node (track, entry.isMeta, entry.xspfName, sep);
+                            xspf_add_node (track, false, "image",
+                                    str_printf ("%.*s", (int)(sep - val_ptr), val_ptr));
+                        }
+                        else
+                            xspf_add_node (track, false, "image", val);
+                    }
+                    else
+                        xspf_add_node (track, entry.isMeta, entry.xspfName, val);
+                }
+                else
+                    xspf_add_node (track, entry.isMeta, entry.xspfName,
+                     tuple.get_str (entry.tupleField));
                 break;
             case Tuple::Int:
                 xspf_add_node (track, entry.isMeta, entry.xspfName,
