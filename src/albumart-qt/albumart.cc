@@ -143,7 +143,11 @@ public:
     {
         bool haveartalready = false;
         bool have_channel_art = aud_get_bool ("albumart", "_have_channel_art");
+        bool skip_web_art_search = aud_get_bool (nullptr, "_skip_web_art_search");
         String filename = aud_drct_get_filename ();
+
+        if (skip_web_art_search)
+        aud_set_bool (nullptr, "_skip_web_art_search", false);
 
         if (skipArtReInit)
             skipArtReInit = false;
@@ -328,7 +332,7 @@ public:
             }
 
             /* JWT:NO CACHED ART, CALL HELPER: */
-            if (! skipweb && aud_get_bool ("albumart", "internet_coverartlookup")
+            if (! skip_web_art_search && ! skipweb && aud_get_bool ("albumart", "internet_coverartlookup")
                     && aud_get_str ("audacious", "cover_helper"))
             {
                 pthread_attr_t thread_attrs;
