@@ -103,7 +103,7 @@ static gboolean albumart_ready (gpointer widget)
             {
                 audgui_scaled_image_set ((GtkWidget *) widget, pixbuf.get ());
                 /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
-                aud_set_bool ("albumart", "_infoarea_hide_art", false);
+                aud_set_int ("albumart", "_infoarea_hide_art_gtk", 0);
                 hook_call ("gtkui toggle infoarea_art", nullptr);
                 last_image_from_web = true;
             }
@@ -244,7 +244,7 @@ static void * album_helper_thread_fn (void * data)
 static void album_update (void *, GtkWidget * widget)
 {
     bool haveartalready = false;
-    bool have_channel_art = aud_get_bool ("albumart", "_have_channel_art");
+    int hide_channel_art = aud_get_bool ("albumart", "_have_channel_art") ? 0 : 1;
     bool skip_web_art_search = aud_get_bool (nullptr, "_skip_web_art_search");
     String filename = aud_drct_get_filename ();
 
@@ -298,7 +298,7 @@ static void album_update (void *, GtkWidget * widget)
                         if (pixbuf)
                         {
                             have_dir_icon_art = true;
-                            have_channel_art = false;  // FORCE HIDE, SINCE CAN'T HAVE CHANNEL ART IF DIR ART'S THE MAIN IMAGE!
+                            hide_channel_art = 2;  // FORCE HIDE, SINCE CAN'T HAVE CHANNEL ART IF DIR ART'S THE MAIN IMAGE!
                         }
                     }
                 }
@@ -313,9 +313,10 @@ static void album_update (void *, GtkWidget * widget)
 
     if (aud_get_bool ("albumart", "hide_dup_art_icon"))
     {
-        aud_set_bool ("albumart", "_infoarea_hide_art", ! have_channel_art);
+        aud_set_int ("albumart", "_infoarea_hide_art_gtk", hide_channel_art);
         hook_call ("gtkui toggle infoarea_art", nullptr);
     }
+
     last_image_from_web = false;
     if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP INTERNET ART SEARCH! */
     {
@@ -425,7 +426,7 @@ static void album_update (void *, GtkWidget * widget)
                         AUDWARN ("i:Failed to update art-file time (for easier user-lookup)!\n");
 
                     /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
-                    aud_set_bool ("albumart", "_infoarea_hide_art", false);
+                    aud_set_int ("albumart", "_infoarea_hide_art_gtk", 0);
                     hook_call ("gtkui toggle infoarea_art", nullptr);
                     last_image_from_web = true;
 
