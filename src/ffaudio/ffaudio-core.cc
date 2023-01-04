@@ -954,10 +954,10 @@ void save_window_xy (SDL_Window * sdl_window, int video_window_x, int video_wind
     }
     x += video_fudge_x;  /* APPLY CALCULATED FUDGE-FACTOR */
     if (x < 0 || x > 9999)
-        x = 1;
+        x = video_window_x;
     y += video_fudge_y;
     if (y < 0 || x > 9999)
-        y = 1;
+        y = video_window_y;
     aud_set_int ("ffaudio", "video_window_x", x);
     aud_set_int ("ffaudio", "video_window_y", y);
     aud_set_int ("ffaudio", "video_window_w", w);
@@ -1554,7 +1554,7 @@ breakout1:
             /* (SDL2): WE HAVE TO WAIT UNTIL HERE FOR SDL_GetWindowPosition() TO RETURN THE CORRECT POSITION
                SO WE CAN CALCULATE A "FUDGE FACTOR" SINCE:
                1) SDL_SetWindowPosition(x, y) FOLLOWED BY SDL_GetWindowPosition() DOES *NOT*
-               RETURN (x, y) BUT x+<windowdecorationwidth>, y+windowdecorationheight!
+               RETURN (x, y) BUT x+<windowdecorationwidth>, y+windowdecorationheight, AT LEAST FOR AFTERSTEP!
                (THIS IS B/C THE WINDOW IS PLACED W/IT'S UPPER LEFT CORNER AT THE SPECIFIED POSITION, *BUT* THE
                COORDINATES RETURNED REFER TO THE UPPER LEFT CORNER OF THE ACTUAL (UNDECORATED) VIDEO SCREEN!!)
                2) SDL_GetWindowPosition() SEEMS TO RETURN PSUEDO-RANDOMLY *DIFFERENT* COORDINATES AFTER THE FIRST
@@ -1573,11 +1573,19 @@ breakout1:
                 video_fudge_x = video_window_x - x;
                 video_fudge_y = video_window_y - y;
                 AUDDBG ("FUDGE SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x, video_window_y, video_fudge_x, video_fudge_y);
-                if ((video_fudge_x || video_fudge_y) && ! aud_get_bool ("audacious", "afterstep"))
+                if ((video_fudge_x || video_fudge_y)
+                        && (! aud_get_bool ("audacious", "afterstep") || SDL_COMPILEDVERSION >= 4601))
                 {
-                    /* JWT:FOR SOME REASON AFTERSTEP DOESN'T SEEM TO NEED NOR WORK WITH THIS!: */
+                    /* JWT:FOR RECENT SDL2 VSNS (SEE ABOVE), AFTERSTEP NEEDS THIS TOO!
+                       MOST WMS PLACE WINDOWS BASED ON THE RAW WINDOW EXCLUDING DECORATIONS, BUT
+                       AFTERSTEP, AND PERHAPS SOME OTHERS?, INCLUDE DECORATIONS, RESULTING IN WINDOWS
+                       BEING PLACED A BIT LOWER AND TO RIGHT (RESULTING IN THIS RECALCULATED FUDGE-FACTOR
+                       BEING THE WxH OF THE WINDOW'S DECORATIONS - NORMALLY WILL BE 0, 0 FOR MOST WMS)!:
+                    */
                     SDL_SetWindowPosition (sdl_window, x+video_fudge_x, y+video_fudge_y);
-                    video_fudge_x = video_fudge_y = 0;
+                    SDL_GetWindowPosition (sdl_window, &x, &y);
+                    video_fudge_x = video_window_x - x;
+                    video_fudge_y = video_window_y - y;
                     AUDDBG ("WINDOW MOVED BY FUDGE AND FUDGE RESET TO 0,0 (WERE NOT RUNNING AFTERSTEP)!\n");
                 }
                 needWinSzFudge = false;
