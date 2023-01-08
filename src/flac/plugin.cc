@@ -104,7 +104,23 @@ bool FLACng::is_our_file(const char *filename, VFSFile &file)
         char buf[33];
         if (! file.fseek (0, VFS_SEEK_SET) && file.fread (buf, 1, sizeof buf) == sizeof buf
                 && ! strncasecmp (buf+29, "FLAC", 4))
+        {
+            /* JWT: THIS HACK NEEDED TO PREVENT SOME "BAD" FLAC(OGG) STREAMS FROM ATTEMPTING TO READ
+                THE ENTIRE FILE (STREAM) SEARCHING FOR NON-EXISTENT METADATA CAUSING THE USER-INTERFACE
+                TO "HANG" FOR INTOLERABLE TIME BEFORE GIVING UP (METADATA SHOULD BE NEAR THE BEGINNING
+                OF THE FILE/STREAM) - I'M LOOKING AT YOU https://dancewave.online/dance.flag.ogg)!
+                WE FORCE THE TEST HERE TO PREVENT flac FROM GRABBING THESE "BAD" ONES THUS PASSING THEM
+                ON DOWN TO FFmpeg PLUGIN, WHICH SEEMS TO HANDLE THEM PROPERLY!
+                (SEE ALSO PARTS OF THIS IN metadata.cc)
+            */
+            Tuple dummy_tuple;
+            if (! FLACng::read_tag (filename, file, dummy_tuple, nullptr))
+            {
+                AUDWARN("w:OGG/FLAC: metadata test failed, so pass on to ffmpeg? for (%s)!...\n", filename);
+                return false;
+            }
             return true;  // WILL USE FLAC PLUGIN.
+        }
     }
     return false;
 }

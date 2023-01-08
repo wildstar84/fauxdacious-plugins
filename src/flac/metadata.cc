@@ -303,8 +303,20 @@ bool FLACng::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Ind
     String mime = file.get_metadata ("content-type");
     if (FLAC_API_SUPPORTS_OGG_FLAC && mime && strstr (mime, "ogg"))
     {
+        /* JWT: THIS HACK NEEDED TO PREVENT SOME "BAD" FLAC(OGG) STREAMS FROM ATTEMPTING TO READ
+           THE ENTIRE FILE (STREAM) SEARCHING FOR NON-EXISTENT METADATA CAUSING THE USER-INTERFACE
+           TO "HANG" FOR INTOLERABLE TIME BEFORE GIVING UP (METADATA SHOULD BE NEAR THE BEGINNING
+           OF THE FILE/STREAM) - I'M LOOKING AT YOU https://dancewave.online/dance.flag.ogg)!
+           (SEE ALSO PARTS OF THIS IN plugin.cc)
+        */
+        file.set_limit_to_buffer(true);   // JWT:PREVENT "BAD" STREAMS FROM PROBING FOREVER!
         if (! FLAC__metadata_chain_read_ogg_with_callbacks(chain, &file, io_callbacks))
-            goto ERR;
+        {
+            AUDWARN ("w:OGG/FLAC: Timed out fetching (%s)'s tag metadata, but will try to play anyway...\n", filename);
+            file.set_limit_to_buffer(false);
+            goto ERR;  // FAILURE HERE WILL PREVENT flac FROM HANDLING, LEAVING FFmpeg TO HANDLE THESE.
+        }
+        file.set_limit_to_buffer(false);  // RESTORE FULL LENGTH FOR PLAYING.
     }
     else
     {
@@ -387,7 +399,7 @@ bool FLACng::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Ind
                     {
                         AUDDBG ("FLAC__STREAM_METADATA_PICTURE_TYPE_FRONT_COVER found.");
                         image->insert((const char *) metadata->data.picture.data, 0,
-                         metadata->data.picture.data_length);
+                                metadata->data.picture.data_length);
                     }
                 }
                 break;
