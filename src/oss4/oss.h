@@ -27,11 +27,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 
-#ifdef HAVE_SYS_SOUNDCARD_H
 #include <sys/soundcard.h>
-#else
-#include <soundcard.h>
-#endif
 
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/plugin.h>

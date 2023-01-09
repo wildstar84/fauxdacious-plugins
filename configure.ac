@@ -5,8 +5,8 @@ dnl ***
 dnl Initialize
 dnl ==========
 AC_PREREQ([2.59])
-AC_INIT([fauxdacious-plugins], [4.2.1-final])
-AC_COPYRIGHT([Copyright (C) 2001-2022 Audacious developers and others])
+AC_INIT([fauxdacious-plugins], [4.2.2-beta1])
+AC_COPYRIGHT([Copyright (C) 2001-2023 Jim Turner, Audacious developers and others])
 
 AC_DEFINE_UNQUOTED([PACKAGE], "$PACKAGE_NAME", [Name of package])
 AC_DEFINE_UNQUOTED([VERSION], "$PACKAGE_VERSION", [Version number of package])
@@ -356,7 +356,7 @@ test_oss4 () {
     OLD_CPPFLAGS="$CPPFLAGS"
     CPPFLAGS="$CPPFLAGS $OSS_CFLAGS"
     have_oss4=no
-    AC_CHECK_HEADERS(sys/soundcard.h soundcard.h, [
+    AC_CHECK_HEADERS(sys/soundcard.h, [
         have_oss4=yes
         break
     ])
@@ -460,15 +460,15 @@ ENABLE_PLUGIN_WITH_TEST(songchange,
     auto,
     GENERAL)
 
-dnl Optional plugins (GTK-only)
-dnl ===========================
-
 ENABLE_PLUGIN_WITH_DEP(scrobbler2,
     Scrobbler 2,
     auto,
     GENERAL,
     CURL,
     libcurl >= 7.9.7)
+
+dnl Optional plugins (GTK-only)
+dnl ===========================
 
 test_glspectrum () {
     if test $HAVE_DARWIN = yes ; then
