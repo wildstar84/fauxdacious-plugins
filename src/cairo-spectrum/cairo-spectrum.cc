@@ -27,6 +27,7 @@
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/interface.h>
 #include <libfauxdcore/plugin.h>
+#include <libfauxdgui/gtk-compat.h>
 #include <libfauxdgui/libfauxdgui.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
@@ -213,6 +214,15 @@ static gboolean configure_event (GtkWidget * widget, GdkEventConfigure * event)
     return true;
 }
 
+#ifdef USE_GTK3
+static gboolean draw_event (GtkWidget * widget, cairo_t * cr, GtkWidget * area)
+{
+    draw_background (widget, cr);
+    draw_visualizer (widget, cr);
+
+    return true;
+}
+#else
 static gboolean draw_event (GtkWidget * widget)
 {
     cairo_t * cr = gdk_cairo_create (gtk_widget_get_window (widget));
@@ -223,13 +233,14 @@ static gboolean draw_event (GtkWidget * widget)
     cairo_destroy (cr);
     return true;
 }
+#endif
 
 void * CairoSpectrum::get_gtk_widget ()
 {
     GtkWidget *area = gtk_drawing_area_new();
     spect_widget = area;
 
-    g_signal_connect(area, "expose-event", (GCallback) draw_event, nullptr);
+    g_signal_connect(area, AUDGUI_DRAW_SIGNAL, (GCallback) draw_event, nullptr);
     g_signal_connect(area, "configure-event", (GCallback) configure_event, nullptr);
     g_signal_connect(area, "destroy", (GCallback) gtk_widget_destroyed, & spect_widget);
 

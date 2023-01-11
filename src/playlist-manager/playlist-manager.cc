@@ -24,6 +24,7 @@
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/runtime.h>
 
+#include <libfauxdgui/gtk-compat.h>
 #include <libfauxdgui/libfauxdgui.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 #include <libfauxdgui/list.h>
@@ -215,7 +216,7 @@ static void destroy_cb (GtkWidget * window)
 
 void * PlaylistManager::get_gtk_widget ()
 {
-    GtkWidget * playman_vbox = gtk_vbox_new (false, 6);
+    GtkWidget * playman_vbox = audgui_vbox_new (6);
 
     /* ListView */
     GtkWidget * playman_pl_lv = audgui_list_new (& callbacks, nullptr, aud_playlist_count ());
@@ -237,7 +238,7 @@ void * PlaylistManager::get_gtk_widget ()
     gtk_box_pack_start ((GtkBox *) playman_vbox, playman_pl_lv_sw, true, true, 0);
 
     /* ButtonBox */
-    GtkWidget * playman_button_hbox = gtk_hbox_new (false, 6);
+    GtkWidget * playman_button_hbox = audgui_hbox_new (6);
     GtkWidget * new_button = audgui_button_new (_("_New"), "document-new",
      (AudguiCallback) aud_playlist_new, nullptr);
     GtkWidget * delete_button = audgui_button_new (_("_Remove"), "edit-delete", delete_cb, nullptr);

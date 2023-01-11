@@ -244,7 +244,7 @@ bool PlWindow::button_press (GdkEventButton * event)
 
     if (event->button == 3 && event->type == GDK_BUTTON_PRESS)
     {
-        menu_popup (UI_MENU_PLAYLIST, event->x_root, event->y_root, false, false, 3, event->time);
+        menu_popup (UI_MENU_PLAYLIST, event->x_root, event->y_root, false, false, event);
         return true;
     }
 
@@ -325,8 +325,8 @@ static void button_add_cb (Button * button, GdkEventButton * event)
     int xpos, ypos;
     playlistwin->getPosition (& xpos, & ypos);
     menu_popup (UI_MENU_PLAYLIST_ADD, xpos + 12 * config.scale,
-     ypos + (config.playlist_height - 8) * config.scale, false, true,
-     event->button, event->time);
+            ypos + (config.playlist_height - 8) * config.scale, false, true,
+            event);
 }
 
 static void button_sub_cb (Button * button, GdkEventButton * event)
@@ -334,8 +334,8 @@ static void button_sub_cb (Button * button, GdkEventButton * event)
     int xpos, ypos;
     playlistwin->getPosition (& xpos, & ypos);
     menu_popup (UI_MENU_PLAYLIST_REMOVE, xpos + 40 * config.scale,
-     ypos + (config.playlist_height - 8) * config.scale, false, true,
-     event->button, event->time);
+            ypos + (config.playlist_height - 8) * config.scale, false, true,
+            event);
 }
 
 static void button_sel_cb (Button * button, GdkEventButton * event)
@@ -343,8 +343,8 @@ static void button_sel_cb (Button * button, GdkEventButton * event)
     int xpos, ypos;
     playlistwin->getPosition (& xpos, & ypos);
     menu_popup (UI_MENU_PLAYLIST_SELECT, xpos + 68 * config.scale,
-     ypos + (config.playlist_height - 8) * config.scale, false, true,
-     event->button, event->time);
+            ypos + (config.playlist_height - 8) * config.scale, false, true,
+            event);
 }
 
 static void button_misc_cb (Button * button, GdkEventButton * event)
@@ -352,8 +352,8 @@ static void button_misc_cb (Button * button, GdkEventButton * event)
     int xpos, ypos;
     playlistwin->getPosition (& xpos, & ypos);
     menu_popup (UI_MENU_PLAYLIST_SORT, xpos + 100 * config.scale,
-     ypos + (config.playlist_height - 8) * config.scale, false, true,
-     event->button, event->time);
+            ypos + (config.playlist_height - 8) * config.scale, false, true,
+            event);
 }
 
 static void button_list_cb (Button * button, GdkEventButton * event)
@@ -361,9 +361,9 @@ static void button_list_cb (Button * button, GdkEventButton * event)
     int xpos, ypos;
     playlistwin->getPosition (& xpos, & ypos);
     menu_popup (UI_MENU_PLAYLIST,
-     xpos + (config.playlist_width - 12) * config.scale,
-     ypos + (config.playlist_height - 8) * config.scale, true, true,
-     event->button, event->time);
+            xpos + (config.playlist_width - 12) * config.scale,
+            ypos + (config.playlist_height - 8) * config.scale, true, true,
+            event);
 }
 
 static void playlistwin_create_widgets ()

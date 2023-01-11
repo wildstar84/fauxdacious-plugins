@@ -25,6 +25,7 @@
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/index.h>
 #include <libfauxdcore/audstrings.h>
+#include <libfauxdgui/gtk-compat.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 #include <libfauxdgui/list.h>
 
@@ -327,7 +328,7 @@ void * pw_col_create_chooser ()
             avail.append (i, false);
     }
 
-    GtkWidget * hbox = gtk_hbox_new (false, 6);
+    GtkWidget * hbox = audgui_hbox_new (6);
     gtk_widget_set_size_request (hbox, -1, audgui_get_dpi () * 5 / 4);
 
     GtkWidget * scroll = gtk_scrolled_window_new (nullptr, nullptr);
@@ -341,7 +342,7 @@ void * pw_col_create_chooser ()
     audgui_list_add_column (avail_list, _("Available columns"), 0, G_TYPE_STRING, -1);
     gtk_container_add ((GtkContainer *) scroll, avail_list);
 
-    GtkWidget * vbox = gtk_vbox_new (false, 6);
+    GtkWidget * vbox = audgui_vbox_new (6);
     gtk_box_pack_start ((GtkBox *) hbox, vbox, false, false, 0);
 
     GtkWidget * button = gtk_button_new ();

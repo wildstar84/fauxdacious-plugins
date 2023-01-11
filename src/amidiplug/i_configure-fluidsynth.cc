@@ -35,6 +35,7 @@
 
 #ifdef USE_GTK
 
+#include <libfauxdgui/gtk-compat.h>
 #include <gtk/gtk.h>
 
 enum
@@ -221,7 +222,7 @@ void * create_soundfont_list ()
             g_strfreev (sffiles);
         }
 
-        soundfont_file_hbox = gtk_hbox_new (false, 2);
+        soundfont_file_hbox = audgui_hbox_new (2);
         soundfont_file_lv = gtk_tree_view_new_with_model (GTK_TREE_MODEL (soundfont_file_store));
         gtk_tree_view_set_rules_hint (GTK_TREE_VIEW (soundfont_file_lv), true);
         g_object_unref (soundfont_file_store);
@@ -246,7 +247,7 @@ void * create_soundfont_list ()
         gtk_container_add (GTK_CONTAINER (soundfont_file_lv_sw), soundfont_file_lv);
 
         /* soundfont settings - soundfont files - buttonbox */
-        soundfont_file_bbox_vbox = gtk_vbox_new (false, 0);
+        soundfont_file_bbox_vbox = audgui_vbox_new (0);
         soundfont_file_bbox_addbt = gtk_button_new();
         gtk_button_set_image (GTK_BUTTON (soundfont_file_bbox_addbt),
                               gtk_image_new_from_icon_name ("list-add", GTK_ICON_SIZE_MENU));

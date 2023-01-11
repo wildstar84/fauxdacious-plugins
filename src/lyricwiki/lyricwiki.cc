@@ -45,6 +45,7 @@
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/preferences.h>
 #include <libfauxdcore/playlist.h>
+#include <libfauxdgui/gtk-compat.h>
 
 #ifdef S_IRGRP
 #define DIRMODE (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
@@ -796,7 +797,7 @@ static GtkWidget * build_widget ()
     GtkWidget * scrollview = gtk_scrolled_window_new (nullptr, nullptr);
     gtk_scrolled_window_set_shadow_type ((GtkScrolledWindow *) scrollview, GTK_SHADOW_IN);
     gtk_scrolled_window_set_policy ((GtkScrolledWindow *) scrollview, GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    GtkWidget * vbox = gtk_vbox_new (false, 6);
+    GtkWidget * vbox = audgui_vbox_new (6);
 
     gtk_container_add ((GtkContainer *) scrollview, (GtkWidget *) textview);
     gtk_box_pack_start ((GtkBox *) vbox, scrollview, true, true, 0);
@@ -807,7 +808,7 @@ static GtkWidget * build_widget ()
     gtk_text_buffer_create_tag (textbuffer, "size_x_large", "scale", PANGO_SCALE_X_LARGE, nullptr);
     gtk_text_buffer_create_tag (textbuffer, "style_italic", "style", PANGO_STYLE_ITALIC, nullptr);
 
-    GtkWidget * hbox = gtk_hbox_new (false, 6);
+    GtkWidget * hbox = audgui_hbox_new (6);
     gtk_box_pack_start ((GtkBox *) vbox, hbox, false, false, 0);
 
     // DEPRECIATED: edit_button = gtk_button_new_with_mnemonic (_("Edit Lyricwiki"));
@@ -818,11 +819,16 @@ static GtkWidget * build_widget ()
     gtk_widget_set_sensitive (refresh_button, false);
     gtk_box_pack_end ((GtkBox *) hbox, refresh_button, false, false, 0);
 
+#ifdef USE_GTK3
+    save_button = gtk_button_new_with_mnemonic (_("Save"));
+    tag_save_button = gtk_button_new_with_mnemonic (_("Embed"));
+#else
     save_button = gtk_button_new_with_mnemonic (_("Save Locally"));
+    tag_save_button = gtk_button_new_with_mnemonic (_("Save Embedded"));
+#endif
     gtk_widget_set_sensitive (save_button, false);
     gtk_box_pack_end ((GtkBox *) hbox, save_button, false, false, 0);
 
-    tag_save_button = gtk_button_new_with_mnemonic (_("Save Embedded"));
     gtk_widget_set_sensitive (tag_save_button, false);
     state.Wasok2saveTag = false;
 

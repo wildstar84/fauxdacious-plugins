@@ -19,6 +19,7 @@
 
 #include <gtk/gtk.h>
 #include <libfauxdcore/i18n.h>
+#include <libfauxdgui/gtk-compat.h>
 #include <libfauxdgui/libfauxdgui.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
@@ -106,32 +107,32 @@ GtkWidget *create_reminder_dialog (const char *reminder_msg)
 GtkWidget *create_config_notebook ()
 {
     /* General */
-    GtkWidget *notebook;
-    GtkWidget *vbox, *hbox, *label, *frame, *grid;
-    GtkAdjustment *adjustment;
+    GtkWidget * notebook;
+    GtkWidget * vbox, * hbox, * label, * frame, * grid;
+    GtkAdjustment * adjustment;
 
     /* Page 1 */
-    GtkWidget *alarm_h_spin, *alarm_m_spin;
-    GtkWidget *stop_checkb, *stop_h_spin, *stop_m_spin;
+    GtkWidget * alarm_h_spin, * alarm_m_spin;
+    GtkWidget * stop_checkb, * stop_h_spin, * stop_m_spin;
 
     /* Page 2 */
     int i, j;
-    GtkWidget *checkbutton;
-    GtkWidget *widget[21];
+    GtkWidget * checkbutton;
+    GtkWidget * widget[21];
 
-    const char *weekdays[] = { N_("Monday"), N_("Tuesday"), N_("Wednesday"),
+    const char * weekdays[] = { N_("Monday"), N_("Tuesday"), N_("Wednesday"),
                                N_("Thursday"), N_("Friday"), N_("Saturday"), N_("Sunday") };
 
-    const char *day_cb[] = { "mon_cb", "tue_cb", "wed_cb", "thu_cb",
+    const char * day_cb[] = { "mon_cb", "tue_cb", "wed_cb", "thu_cb",
                               "fri_cb", "sat_cb", "sun_cb" };
 
-    const char *day_def[] = { "mon_def", "tue_def", "wed_def", "thu_def",
+    const char * day_def[] = { "mon_def", "tue_def", "wed_def", "thu_def",
                                "fri_def", "sat_def", "sun_def", };
 
-    const char *day_h[] = { "mon_h", "tue_h", "wed_h", "thu_h",
+    const char * day_h[] = { "mon_h", "tue_h", "wed_h", "thu_h",
                              "fri_h", "sat_h", "sun_h" };
 
-    const char *day_m[] = { "mon_m", "tue_m", "wed_m", "thu_m",
+    const char * day_m[] = { "mon_m", "tue_m", "wed_m", "thu_m",
                              "fri_m", "sat_m", "sun_m" };
 
     const GCallback cb_def[] = { G_CALLBACK (on_mon_def_toggled), G_CALLBACK (on_tue_def_toggled),
@@ -159,13 +160,12 @@ GtkWidget *create_config_notebook ()
     /* Page 1 */
     frame = gtk_frame_new (_("Time"));
     gtk_container_set_border_width (GTK_CONTAINER (frame), 6);
-    grid = gtk_table_new (0, 0, false);
-    gtk_table_set_col_spacings (GTK_TABLE (grid), 6);
-    gtk_table_set_row_spacings (GTK_TABLE (grid), 6);
+    grid = audgui_grid_new ();
+    audgui_grid_set_row_spacing (grid, 6);
+    audgui_grid_set_column_spacing (grid, 6);
     gtk_container_set_border_width (GTK_CONTAINER (grid), 6);
 
     label = gtk_label_new (_("Alarm at (default):"));
-    gtk_table_attach (GTK_TABLE (grid), label, 0, 1, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
 
     adjustment = (GtkAdjustment *) gtk_adjustment_new (6, 0, 23, 1, 10, 0);
     alarm_h_spin = gtk_spin_button_new (adjustment, 1, 0);
@@ -173,47 +173,69 @@ GtkWidget *create_config_notebook ()
     gtk_spin_button_set_update_policy (GTK_SPIN_BUTTON (alarm_h_spin), GTK_UPDATE_IF_VALID);
     gtk_spin_button_set_numeric (GTK_SPIN_BUTTON (alarm_h_spin), true);
     gtk_spin_button_set_wrap (GTK_SPIN_BUTTON (alarm_h_spin), true);
+#ifdef USE_GTK3
+    gtk_grid_attach ((GtkGrid *) grid, label, 0, 0, 1, 1);
+    gtk_grid_attach ((GtkGrid *) grid, alarm_h_spin, 1, 0, 1, 1);
+#else
+    gtk_table_attach (GTK_TABLE (grid), label, 0, 1, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
     gtk_table_attach (GTK_TABLE (grid), alarm_h_spin, 1, 2, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
+#endif
 
     label = gtk_label_new (":");
-    gtk_table_attach (GTK_TABLE (grid), label, 2, 3, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
-
     adjustment = (GtkAdjustment *) gtk_adjustment_new (30, 0, 59, 1, 10, 0);
     alarm_m_spin = gtk_spin_button_new (adjustment, 1, 0);
     g_object_set_data (G_OBJECT (notebook), "alarm_m_spin", alarm_m_spin);
     gtk_spin_button_set_update_policy (GTK_SPIN_BUTTON (alarm_m_spin), GTK_UPDATE_IF_VALID);
     gtk_spin_button_set_numeric (GTK_SPIN_BUTTON (alarm_m_spin), true);
     gtk_spin_button_set_wrap (GTK_SPIN_BUTTON (alarm_m_spin), true);
+#ifdef USE_GTK3
+    gtk_grid_attach ((GtkGrid *) grid, label, 2, 0, 1, 1);
+    gtk_grid_attach ((GtkGrid *) grid, alarm_m_spin, 3, 0, 1, 1);
+#else
+    gtk_table_attach (GTK_TABLE (grid), label, 2, 3, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
     gtk_table_attach (GTK_TABLE (grid), alarm_m_spin, 3, 4, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
+#endif
 
     label = gtk_label_new (_("h"));
-    gtk_table_attach (GTK_TABLE (grid), label, 4, 5, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
-
     stop_checkb = gtk_check_button_new_with_label (_("Quiet after:"));
     g_object_set_data (G_OBJECT (notebook), "stop_checkb", stop_checkb);
-    gtk_table_attach (GTK_TABLE (grid), stop_checkb, 0, 1, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
-
     adjustment = (GtkAdjustment *) gtk_adjustment_new (0, 0, 100, 1, 10, 0);
     stop_h_spin = gtk_spin_button_new (adjustment, 1, 0);
     g_object_set_data (G_OBJECT (notebook), "stop_h_spin", stop_h_spin);
     gtk_spin_button_set_update_policy (GTK_SPIN_BUTTON (stop_h_spin), GTK_UPDATE_IF_VALID);
     gtk_spin_button_set_numeric (GTK_SPIN_BUTTON (stop_h_spin), true);
     gtk_spin_button_set_wrap (GTK_SPIN_BUTTON (stop_h_spin), true);
+#ifdef USE_GTK3
+    gtk_grid_attach ((GtkGrid *) grid, label, 4, 0, 1, 1);
+    gtk_grid_attach ((GtkGrid *) grid, stop_checkb, 0, 1, 1, 1);
+    gtk_grid_attach ((GtkGrid *) grid, stop_h_spin, 1, 1, 1, 1);
+#else
+    gtk_table_attach (GTK_TABLE (grid), label, 4, 5, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
+    gtk_table_attach (GTK_TABLE (grid), stop_checkb, 0, 1, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
     gtk_table_attach (GTK_TABLE (grid), stop_h_spin, 1, 2, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
+#endif
 
     label = gtk_label_new (_("hours"));
-    gtk_table_attach (GTK_TABLE (grid), label, 2, 3, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
-
     adjustment = (GtkAdjustment *) gtk_adjustment_new (0, 0, 59, 1, 10, 0);
     stop_m_spin = gtk_spin_button_new (adjustment, 1, 0);
     g_object_set_data (G_OBJECT (notebook), "stop_m_spin", stop_m_spin);
     gtk_spin_button_set_update_policy (GTK_SPIN_BUTTON (stop_m_spin), GTK_UPDATE_IF_VALID);
     gtk_spin_button_set_numeric (GTK_SPIN_BUTTON (stop_m_spin), true);
     gtk_spin_button_set_wrap (GTK_SPIN_BUTTON (stop_m_spin), true);
+#ifdef USE_GTK3
+    gtk_grid_attach ((GtkGrid *) grid, label, 2, 1, 1, 1);
+    gtk_grid_attach ((GtkGrid *) grid, stop_m_spin, 3, 1, 1, 1);
+#else
+    gtk_table_attach (GTK_TABLE (grid), label, 2, 3, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
     gtk_table_attach (GTK_TABLE (grid), stop_m_spin, 3, 4, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
+#endif
 
     label = gtk_label_new (_("minutes"));
+#ifdef USE_GTK3
+    gtk_grid_attach ((GtkGrid *) grid, label, 4, 1, 1, 1);
+#else
     gtk_table_attach (GTK_TABLE (grid), label, 4, 5, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
+#endif
     gtk_container_add (GTK_CONTAINER (frame), grid);
 
     label = gtk_label_new (_("Time"));
@@ -223,23 +245,35 @@ GtkWidget *create_config_notebook ()
     /* Page 2 */
     frame = gtk_frame_new (_("Choose the days for the alarm to come on"));
     gtk_container_set_border_width (GTK_CONTAINER (frame), 6);
-    grid = gtk_table_new (0, 0, false);
-    gtk_table_set_col_spacings (GTK_TABLE (grid), 6);
-    gtk_table_set_row_spacings (GTK_TABLE (grid), 6);
+    grid = audgui_grid_new ();
+    audgui_grid_set_row_spacing (grid, 6);
+    audgui_grid_set_column_spacing (grid, 6);
     gtk_container_set_border_width (GTK_CONTAINER (grid), 6);
 
     label = gtk_label_new (_("Day"));
+#ifdef USE_GTK3
+    gtk_grid_attach ((GtkGrid *) grid, label, 0, 0, 1, 1);
+#else
     gtk_table_attach (GTK_TABLE (grid), label, 0, 1, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
+#endif
 
     label = gtk_label_new (_("Time"));
+#ifdef USE_GTK3
+    gtk_grid_attach ((GtkGrid *) grid, label, 2, 0, 3, 1);
+#else
     gtk_table_attach (GTK_TABLE (grid), label, 2, 5, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
+#endif
 
     for (i = 0; i < 7; i ++)
     {
         widget[i] = gtk_check_button_new_with_label (_(weekdays[i]));
         g_object_set_data (G_OBJECT (notebook), day_cb[i], widget[i]);
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget[i]), true);
+#ifdef USE_GTK3
+        gtk_grid_attach ((GtkGrid *) grid, widget[i], 0, i+1, 1, 1);
+#else
         gtk_table_attach (GTK_TABLE (grid), widget[i], 0, 1, i + 1, i + 2, GTK_FILL, GTK_FILL, 0, 0);
+#endif
     }
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget[6]), false);
 
@@ -249,7 +283,11 @@ GtkWidget *create_config_notebook ()
         g_object_set_data (G_OBJECT (notebook), day_def[i], checkbutton);
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (checkbutton), true);
         g_signal_connect (checkbutton, "toggled", G_CALLBACK (cb_def[i]), nullptr);
+#ifdef USE_GTK3
+        gtk_grid_attach ((GtkGrid *) grid, checkbutton, 1, i+1, 1, 1);
+#else
         gtk_table_attach (GTK_TABLE (grid), checkbutton, 1, 2, i + 1, i + 2, GTK_FILL, GTK_FILL, 0, 0);
+#endif
     }
 
     for (i = 7, j = 0; i < 14; i ++, j ++)
@@ -257,13 +295,21 @@ GtkWidget *create_config_notebook ()
         adjustment = (GtkAdjustment *) gtk_adjustment_new (6, 0, 23, 1, 10, 0);
         widget[i] = gtk_spin_button_new (adjustment, 1, 0);
         g_object_set_data (G_OBJECT (notebook), day_h[j], widget[i]);
+#ifdef USE_GTK3
+        gtk_grid_attach ((GtkGrid *) grid, widget[i], 2, j+1, 1, 1);
+#else
         gtk_table_attach (GTK_TABLE (grid), widget[i], 2, 3, j + 1, j + 2, GTK_FILL, GTK_FILL, 0, 0);
+#endif
     }
 
     for (i = 0; i < 7; i ++)
     {
         label = gtk_label_new (":");
+#ifdef USE_GTK3
+        gtk_grid_attach ((GtkGrid *) grid, label, 3, i+1, 1, 1);
+#else
         gtk_table_attach (GTK_TABLE (grid), label, 3, 4, i + 1, i + 2, GTK_FILL, GTK_FILL, 0, 0);
+#endif
     }
 
     for (i = 14, j = 0; i < 21; i ++, j ++)
@@ -271,7 +317,11 @@ GtkWidget *create_config_notebook ()
         adjustment = (GtkAdjustment *) gtk_adjustment_new (30, 0, 59, 1, 10, 0);
         widget[i] = gtk_spin_button_new (adjustment, 1, 0);
         g_object_set_data (G_OBJECT (notebook), day_m[j], widget[i]);
+#ifdef USE_GTK3
+        gtk_grid_attach ((GtkGrid *) grid, widget[i], 4, j+1, 1, 1);
+#else
         gtk_table_attach (GTK_TABLE (grid), widget[i], 4, 5, j + 1, j + 2, GTK_FILL, GTK_FILL, 0, 0);
+#endif
     }
 
     label = gtk_label_new (_("Days"));
@@ -280,8 +330,8 @@ GtkWidget *create_config_notebook ()
 
 
     /* Page 3 */
-    vbox = gtk_vbox_new (false, 6);
-    hbox = gtk_hbox_new (false, 6);
+    vbox = audgui_vbox_new (6);
+    hbox = audgui_hbox_new (6);
 
     frame = gtk_frame_new (_("Fading"));
     gtk_container_set_border_width (GTK_CONTAINER (frame), 6);
@@ -299,35 +349,37 @@ GtkWidget *create_config_notebook ()
     gtk_box_pack_start (GTK_BOX (vbox), frame, false, false, 0);
 
     frame = gtk_frame_new (_("Volume"));
-    vbox2 = gtk_vbox_new (false, 6);
+    vbox2 = audgui_vbox_new (6);
     gtk_container_set_border_width (GTK_CONTAINER (frame), 6);
     gtk_container_set_border_width (GTK_CONTAINER (vbox2), 6);
 
     label = gtk_label_new (_("Start at"));
     gtk_box_pack_start (GTK_BOX (vbox2), label, false, false, 0);
 
-    quiet_vol_scale = gtk_hscale_new ((GtkAdjustment *) gtk_adjustment_new (20, 0, 100, 1, 5, 0));
+    quiet_vol_scale = audgui_scale_new (GTK_ORIENTATION_HORIZONTAL,
+            (GtkAdjustment *) gtk_adjustment_new (20, 0, 100, 1, 5, 0));
     g_object_set_data (G_OBJECT (notebook), "quiet_vol_scale", quiet_vol_scale);
     gtk_scale_set_value_pos (GTK_SCALE (quiet_vol_scale), GTK_POS_RIGHT);
     gtk_scale_set_digits (GTK_SCALE (quiet_vol_scale), 0);
     label = gtk_label_new ("%");
-    hbox2 = gtk_hbox_new (false, 6);
+    hbox2 = audgui_hbox_new (6);
     gtk_box_pack_start (GTK_BOX (hbox2), quiet_vol_scale, true, true, 0);
     gtk_box_pack_start (GTK_BOX (hbox2), label, false, false, 0);
     gtk_box_pack_start (GTK_BOX (vbox2), hbox2, false, false, 0);
 
-    separator = gtk_hseparator_new ();
+    separator = audgui_separator_new (GTK_ORIENTATION_HORIZONTAL);
     gtk_box_pack_start (GTK_BOX (vbox2), separator, false, false, 0);
 
     label = gtk_label_new (_("Final"));
     gtk_box_pack_start (GTK_BOX (vbox2), label, false, false, 0);
 
-    vol_scale = gtk_hscale_new ((GtkAdjustment *) gtk_adjustment_new (80, 0, 100, 1, 5, 0));
+    vol_scale = audgui_scale_new (GTK_ORIENTATION_HORIZONTAL,
+            (GtkAdjustment *) gtk_adjustment_new (80, 0, 100, 1, 5, 0));
     g_object_set_data (G_OBJECT (notebook), "vol_scale", vol_scale);
     gtk_scale_set_value_pos (GTK_SCALE (vol_scale), GTK_POS_RIGHT);
     gtk_scale_set_digits (GTK_SCALE (vol_scale), 0);
     label = gtk_label_new ("%");
-    hbox2 = gtk_hbox_new (false, 6);
+    hbox2 = audgui_hbox_new (6);
     gtk_box_pack_start (GTK_BOX (hbox2), vol_scale, true, true, 0);
     gtk_box_pack_start (GTK_BOX (hbox2), label, false, false, 0);
     gtk_box_pack_start (GTK_BOX (vbox2), hbox2, false, false, 0);
@@ -344,9 +396,9 @@ GtkWidget *create_config_notebook ()
 
 
     /* Page 4 */
-    vbox = gtk_vbox_new (false, 6);
+    vbox = audgui_vbox_new (6);
     frame = gtk_frame_new (_("Additional Command"));
-    hbox = gtk_hbox_new (false, 6);
+    hbox = audgui_hbox_new (6);
     gtk_container_set_border_width (GTK_CONTAINER (frame), 6);
     gtk_container_set_border_width (GTK_CONTAINER (hbox), 6);
     cmd_entry = gtk_entry_new ();
@@ -359,7 +411,7 @@ GtkWidget *create_config_notebook ()
     gtk_box_pack_start (GTK_BOX (vbox), frame, false, false, 0);
 
     frame = gtk_frame_new (_("Playlist (optional)"));
-    hbox = gtk_hbox_new (false, 6);
+    hbox = audgui_hbox_new (6);
     gtk_container_set_border_width (GTK_CONTAINER (frame), 6);
     gtk_container_set_border_width (GTK_CONTAINER (hbox), 6);
     playlist_entry = audgui_file_entry_new (GTK_FILE_CHOOSER_ACTION_OPEN, _("Select a playlist"));
@@ -370,7 +422,7 @@ GtkWidget *create_config_notebook ()
     gtk_box_pack_start (GTK_BOX (vbox), frame, false, false, 0);
 
     frame = gtk_frame_new (_("Reminder"));
-    hbox = gtk_hbox_new (false, 6);
+    hbox = audgui_hbox_new (6);
     gtk_container_set_border_width (GTK_CONTAINER (frame), 6);
     gtk_container_set_border_width (GTK_CONTAINER (hbox), 6);
     reminder_text = gtk_entry_new ();

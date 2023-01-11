@@ -67,9 +67,11 @@ private:
         { delete me; }
     static void realize_cb (GtkWidget * widget, Widget * me)
         { me->realize (); }
-
+#ifdef USE_GTK3
+    static gboolean draw_cb (GtkWidget * widget, cairo_t * cr, Widget * me);
+#else
     static gboolean draw_cb (GtkWidget * widget, GdkEventExpose * event, Widget * me);
-
+#endif
     static gboolean keypress_cb (GtkWidget * widget, GdkEventKey * event, Widget * me)
         { return me->keypress (event); }
     static gboolean button_press_cb (GtkWidget * widget, GdkEventButton * event, Widget * me)

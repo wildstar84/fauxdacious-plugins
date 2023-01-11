@@ -28,6 +28,7 @@
 #include <libfauxdcore/plugins.h>
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/hook.h>
+#include <libfauxdgui/gtk-compat.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
 #include "layout.h"
@@ -100,8 +101,9 @@ static int item_by_name (Item * item, const char * name)
 GtkWidget * layout_new ()
 {
     g_return_val_if_fail (! layout, nullptr);
-    layout = gtk_alignment_new (0, 0, 1, 1);
-    gtk_alignment_set_padding ((GtkAlignment *) layout, 3, 3, 3, 3);
+    layout = gtk_frame_new (nullptr);
+    gtk_frame_set_shadow_type ((GtkFrame *) layout, GTK_SHADOW_NONE);
+    gtk_container_set_border_width ((GtkContainer *) layout, 3);
     NULL_ON_DESTROY (layout);
     return layout;
 }
@@ -181,7 +183,12 @@ static gboolean menu_cb (GtkWidget * widget, GdkEventButton * event)
     }
 
     gtk_widget_show_all (menu);
+
+#ifdef USE_GTK3
+    gtk_menu_popup_at_pointer ((GtkMenu *) menu, (const GdkEvent *) event);
+#else
     gtk_menu_popup ((GtkMenu *) menu, nullptr, nullptr, nullptr, nullptr, event->button, event->time);
+#endif
 
     return true;
 }
@@ -190,7 +197,7 @@ static GtkWidget * vbox_new (GtkWidget * widget, const char * name)
 {
     g_return_val_if_fail (widget && name, nullptr);
 
-    GtkWidget * vbox = gtk_vbox_new (false, 2);
+    GtkWidget * vbox = audgui_vbox_new (2);
 
     GtkWidget * ebox = gtk_event_box_new ();
     gtk_box_pack_start ((GtkBox *) vbox, ebox, false, false, 0);
@@ -200,9 +207,14 @@ static GtkWidget * vbox_new (GtkWidget * widget, const char * name)
     GtkWidget * label = gtk_label_new (nullptr);
     CharPtr markup (g_markup_printf_escaped ("<small><b>%s</b></small>", name));
     gtk_label_set_markup ((GtkLabel *) label, markup);
-    gtk_misc_set_alignment ((GtkMisc *) label, 0, 0);
-    gtk_container_add ((GtkContainer *) ebox, label);
 
+#ifdef USE_GTK3
+    gtk_widget_set_halign (label, GTK_ALIGN_START);
+#else
+    gtk_misc_set_alignment ((GtkMisc *) label, 0, 0);
+#endif
+
+    gtk_container_add ((GtkContainer *) ebox, label);
     gtk_box_pack_start ((GtkBox *) vbox, widget, true, true, 0);
 
     gtk_widget_show_all (vbox);
@@ -230,10 +242,11 @@ static void restore_size_cb (GtkPaned * paned, GdkRectangle *, RestoreSizeData *
 
 static GtkWidget * paned_new (bool vertical, bool after, int w, int h)
 {
-    GtkWidget * paned = vertical ? gtk_vpaned_new () : gtk_hpaned_new ();
+    GtkWidget * paned = audgui_paned_new (vertical ? GTK_ORIENTATION_VERTICAL :
+     GTK_ORIENTATION_HORIZONTAL);
 
-    GtkWidget * mine = gtk_alignment_new (0, 0, 1, 1);
-    GtkWidget * next = gtk_alignment_new (0, 0, 1, 1);
+    GtkWidget * mine = gtk_frame_new (nullptr);
+    GtkWidget * next = gtk_frame_new (nullptr);
     gtk_paned_pack1 ((GtkPaned *) paned, after ? next : mine, after, false);
     gtk_paned_pack2 ((GtkPaned *) paned, after ? mine : next, ! after, false);
 
