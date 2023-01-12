@@ -52,6 +52,7 @@ typedef struct {
     PluginHandle * plugin;
     GtkWidget * widget, * vbox, * paned, * window;
     int dock, x, y, w, h;
+    int wprev, hprev, rszcnt;     // JWT:REMEMBER PREV. WxH WHEN UNDOCKED.
 } Item;
 
 static GList * items = nullptr;
@@ -72,6 +73,7 @@ static Item * item_new (const char * name)
     item->dock = item->x = item->y = -1;
     item->w = 3 * dpi;
     item->h = 2 * dpi;
+    item->rszcnt = 0;
 
     if (! strcmp (name, _("Search Tool")))
     {
@@ -351,6 +353,7 @@ static void item_add (Item * item)
     g_return_if_fail (item->name && item->widget && item->vbox && ! item->paned
             && ! item->window && item->dock < DOCKS);
 
+    item->rszcnt = 0;
     if (item->dock < 0)
     {
         item->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
@@ -378,7 +381,7 @@ static void item_add (Item * item)
         if (item->x >= 0 && item->y >= 0)
             gtk_window_move ((GtkWindow *) item->window, item->x, item->y);
         if (item->w > 0 && item->h > 0)
-            gtk_window_set_default_size ((GtkWindow *) item->window, item->w, item->h);
+            gtk_window_set_default_size ((GtkWindow *) item->window, item->wprev, item->hprev);
 
         gtk_container_add ((GtkContainer *) item->window, item->vbox);
         gtk_widget_show_all (item->window);
@@ -495,7 +498,12 @@ static void size_changed_cb (GtkWidget * widget, GdkRectangle * rect, Item * ite
     {
         g_return_if_fail (item->window);
         gtk_window_get_position ((GtkWindow *) item->window, & item->x, & item->y);
+        gtk_window_get_size ((GtkWindow *) item->window, & item->w, & item->h);
+        item->wprev = item->w;  // JWT:WE'RE UNDOCKED, SO REMEMBER NEW SIZE:
+        item->hprev = item->h;
     }
+    else
+        item->rszcnt++;
 }
 
 void layout_add (PluginHandle * plugin, GtkWidget * widget, GtkWidget * window)
@@ -598,12 +606,19 @@ void layout_save ()
         snprintf (key, sizeof key, "item%d_name", i);
         aud_set_str ("gtkui-layout", key, item->name);
 
-        int temp_w = audgui_to_portable_dpi (item->w);
-        int temp_h = audgui_to_portable_dpi (item->h);
+        /* JWT:IF EXITING DOCKED, SAVE PREV. UNDOCKED SIZED INSTEAD OF CURRENT DOCKED SIZE:
+           WHEN RESTARTED (DOCKED), THE DOCKED SIZED REMAINS CORRECT, BUT WE NEED THE PREV.
+           UNDOCKED SIZE IF USER LATER UNDOCKS!:
+        */
+        int temp_w = (item->rszcnt > 2) ? audgui_to_portable_dpi (item->w) : item->wprev;
+        int temp_h = (item->rszcnt > 2) ? audgui_to_portable_dpi (item->h) : item->hprev;
+
+        if (item->window)
+            gtk_window_get_position ((GtkWindow *) item->window, & item->x, & item->y);
 
         snprintf (key, sizeof key, "item%d_pos", i);
         snprintf (value, sizeof value, "%d,%d,%d,%d,%d", item->dock, item->x,
-         item->y, temp_w, temp_h);
+                item->y, temp_w, temp_h);
         aud_set_str ("gtkui-layout", key, value);
 
         i ++;
@@ -632,6 +647,8 @@ void layout_load ()
         String pos = aud_get_str ("gtkui-layout", key);
         sscanf (pos, "%d,%d,%d,%d,%d", & item->dock, & item->x, & item->y, & temp_w, & temp_h);
 
+        item->wprev = temp_w;  // JWT:REMEMBER UNDOCKED SIZE WE STARTED WITH INCASE USER DOCKS:
+        item->hprev = temp_h;
         if (temp_w)
             item->w = audgui_to_native_dpi (temp_w);
         if (temp_h)
