@@ -476,7 +476,7 @@ void *make_config_widget ()
     hbox = audgui_hbox_new (0);
     gtk_box_pack_start (GTK_BOX (main_vbox), hbox, false, true, 0);
 
-    button_box = gtk_hbutton_box_new ();
+    button_box = audgui_button_box_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_box_pack_start (GTK_BOX (hbox), button_box, false, true, 0);
     gtk_button_box_set_layout (GTK_BUTTON_BOX (button_box), GTK_BUTTONBOX_START);
     gtk_box_set_spacing (GTK_BOX (button_box), 4);
