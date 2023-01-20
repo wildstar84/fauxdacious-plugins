@@ -95,14 +95,14 @@ static gboolean albumart_ready (gpointer widget)
         coverart_file = String (str_concat ({aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
         const char * filenamechar = coverart_file;
         struct stat statbuf;
-        if (stat (filenamechar, &statbuf) >= 0)  // ART IMAGE FILE EXISTS:
+        if (stat (filenamechar, &statbuf) >= 0)  // ART IMAGE FILE FROM WEB EXISTS (THUS NOT A DUP.):
         {
             coverart_file = String (filename_to_uri (filenamechar));
             pixbuf = audgui_pixbuf_request ((const char *) coverart_file);
             if (pixbuf)
             {
                 audgui_scaled_image_set ((GtkWidget *) widget, pixbuf.get ());
-                /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
+                /* INFOBAR ICON POSSIBLY HIDDEN BY HIDE DUP. OPTION, SO FORCE "SHOW" IN INFOBAR: */
                 aud_set_int ("albumart", "_infoarea_hide_art_gtk", 0);
                 hook_call ("gtkui toggle infoarea_art", nullptr);
                 last_image_from_web = true;
@@ -244,7 +244,8 @@ static void * album_helper_thread_fn (void * data)
 static void album_update (void *, GtkWidget * widget)
 {
     bool haveartalready = false;
-    int hide_channel_art = aud_get_bool ("albumart", "_have_channel_art") ? 0 : 1;
+    bool hookalreadycalled = false;  // ONLY CALL HOOK ONCE BEFORE SEARCHING CACHE/WEB FOR ALBUM-COVER.
+    int hide_channel_art = 0;
     bool skip_web_art_search = aud_get_bool (nullptr, "_skip_web_art_search");
     String filename = aud_drct_get_filename ();
 
@@ -255,78 +256,99 @@ static void album_update (void *, GtkWidget * widget)
         skipArtReInit = false;
     else
     {
+        bool have_dir_icon_art = false;  // TRUE IF/WHEN WE FIND A DIRECTORY "CHANNEL-ICON".
+
         AudguiPixbuf pixbuf = audgui_pixbuf_request_current ();
-
         if (pixbuf)
-            haveartalready = true;
-        else
         {
-            bool have_dir_icon_art = false;
-            if (! strncmp (filename, "file://", 7)
-                    && aud_get_bool ("albumart", "seek_directory_channel_art"))
+            haveartalready = true;  // WE DO HAVE AN ART IMAGE!
+            hide_channel_art = 1;   // TELL infoarea TO HIDE DUPS (UNLESS WE LATER FIND ONE ON THE WEB).
+        }
+        if (! strncmp (filename, "file://", 7)
+                && aud_get_bool ("albumart", "seek_directory_channel_art"))
+        {
+            /* FOR LOCAL FILES W/O CHANNEL ART, LOOK FOR A DIRECTORY CHANNEL ICON FILE: */
+            String dir_channel_icon = aud_get_str ("albumart", "directory_channel_art");
+            if (dir_channel_icon && dir_channel_icon[0])
             {
-                /* FOR LOCAL FILES W/O CHANNEL ART, LOOK FOR A DIRECTORY CHANNEL ART ICON FILE: */
-                String dir_channel_icon = aud_get_str ("albumart", "directory_channel_art");
-                if (dir_channel_icon && dir_channel_icon[0])
+                struct stat statbuf;
+                StringBuf icon_path = str_concat ({filename_get_parent (uri_to_filename (filename)), "/"});
+                StringBuf icon_fid = str_concat ({icon_path, dir_channel_icon});
+                const char * filename;
+                const char * ext;
+                int isub_p;
+                uri_parse (icon_fid, & filename, & ext, nullptr, & isub_p);
+                if (! ext || ! ext[0])
                 {
-                    struct stat statbuf;
-                    StringBuf icon_path = str_concat ({filename_get_parent (uri_to_filename (filename)), "/"});
-                    StringBuf icon_fid = str_concat ({icon_path, dir_channel_icon});
-                    const char * filename;
-                    const char * ext;
-                    int isub_p;
-                    uri_parse (icon_fid, & filename, & ext, nullptr, & isub_p);
-                    if (! ext || ! ext[0])
+                    Index<String> extlist = str_list_to_index ("jpg,png,jpeg", ",");
+                    for (auto & ext : extlist)
                     {
-                        Index<String> extlist = str_list_to_index ("jpg,png,jpeg", ",");
-                        for (auto & ext : extlist)
-                        {
-                            dir_channel_icon = String (str_concat ({icon_fid, ".", (const char *) ext}));
-                            struct stat statbuf;
-                            if (stat ((const char *) dir_channel_icon, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
-                                dir_channel_icon = String ("");
-                            else
-                                break;
-                        }
+                        dir_channel_icon = String (str_concat ({icon_fid, ".", (const char *) ext}));
+                        struct stat statbuf;
+                        if (stat ((const char *) dir_channel_icon, &statbuf) < 0)  // ART IMAGE FILE DOESN'T EXIST:
+                            dir_channel_icon = String ("");
+                        else
+                            break;
                     }
-                    else
-                        dir_channel_icon = String (icon_fid);
+                }
+                else
+                    dir_channel_icon = String (icon_fid);
 
-                    if (dir_channel_icon && dir_channel_icon[0] && stat ((const char *) dir_channel_icon, & statbuf) == 0)
+                if (! pixbuf && dir_channel_icon && dir_channel_icon[0]
+                        && stat ((const char *) dir_channel_icon, & statbuf) == 0)
+                {
+                    pixbuf = audgui_pixbuf_request ((const char *) dir_channel_icon);
+                    if (pixbuf)
                     {
-                        pixbuf = audgui_pixbuf_request ((const char *) dir_channel_icon);
-                        if (pixbuf)
-                        {
-                            have_dir_icon_art = true;
-                            hide_channel_art = 2;  // FORCE HIDE, SINCE CAN'T HAVE CHANNEL ART IF DIR ART'S THE MAIN IMAGE!
-                        }
+                        /* JWT:WE HAVE A DIRECTORY ICON, BUT TREAT DIRECTORY ICON AS PRIMARY ART SINCE
+                           IT'S THE *ONLY* IMAGE (THUS A DUP.), BUT WE MAY FIND ONE LATER ON THE WEB,
+                           WHICH WILL CAUSE IT TO BE SHOWN AS A "CHANNEL-ART" IMAGE IN THAT CASE):
+                        */
+                        have_dir_icon_art = true;
+                        hide_channel_art = 2;  // FORCE HIDE, SINCE CAN'T HAVE CHANNEL ART IF DIR ART'S THE MAIN IMAGE!
                     }
                 }
             }
-            if (! have_dir_icon_art)
-                pixbuf = audgui_pixbuf_fallback ();
         }
+        if (! pixbuf && ! have_dir_icon_art)
+            pixbuf = audgui_pixbuf_fallback ();
 
         if (pixbuf)
             audgui_scaled_image_set (widget, pixbuf.get ());
     }
 
-    if (aud_get_bool ("albumart", "hide_dup_art_icon"))
+    if (aud_get_bool ("albumart", "hide_dup_art_icon") && (! strncmp (filename, "http://", 7)
+            || ! strncmp (filename, "https://", 8)))  // WE'RE A STREAM (THAT CAN CHANGE TITLES/ART LATER)!:
     {
-        aud_set_int ("albumart", "_infoarea_hide_art_gtk", hide_channel_art);
+        /* HOOK TO HIDE (ASSUME WE HAVE NO ART - YET - ANY EXISTING ART IS PBLY FROM PREV. TITLE):
+           WE WILL SEARCH CACHE, AND WEB. LATER IF NEEDED, AHD HOOK AGAIN TO SHOW IF ART FOUND:
+        */
+        aud_set_int ("albumart", "_infoarea_hide_art_gtk", 1);
         hook_call ("gtkui toggle infoarea_art", nullptr);
+        hookalreadycalled = true;
     }
 
     last_image_from_web = false;
-    if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP INTERNET ART SEARCH! */
+    if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP FURTHER ART SEARCH! */
     {
         if (! strncmp (filename, "file://", 7)
                 || (! strncmp (filename, "cdda://", 7) && ! aud_get_bool ("CDDA", "seek_albumart_for_cds"))
                 || (! strncmp (filename, "dvd://", 6) && aud_get_bool ("dvd", "skip_coverartlookup")))
+        {
+            if (aud_get_bool ("albumart", "hide_dup_art_icon"))
+            {
+                aud_set_int ("albumart", "_infoarea_hide_art_gtk", hide_channel_art);
+                hook_call ("gtkui toggle infoarea_art", nullptr);
+            }
             return;
+        }
     }
 
-    /* JWT:NOW CHECK THE ALBUM-ART CACHE: */
+    /* JWT:NOW CHECK THE ALBUM-ART CACHE
+       (ANY ART FOUND BELOW HERE IS UNIQUE TO TITLE AND THUS NOT A DUP.)
+       NOTE:  IF HERE, WE'RE A STREAM (OR A LOCAL FILE WITH NO ART, B/C THE CACHE HAS ALREADY BEEN
+       CHECKED FOR LOCAL FILES):
+    */
     Tuple tuple = aud_drct_get_tuple ();
     String Title = tuple.get_str (Tuple::Title);
     String Artist = tuple.get_str (Tuple::Artist);
@@ -392,7 +414,15 @@ static void album_update (void *, GtkWidget * widget)
         else
         {
             if (Album == String ("_"))
-                return;   /* JWT:NO ALBUM OR ARTIST, PUNT! */
+            {
+                if (! hookalreadycalled)
+                {
+                    /* IF HERE, WE'RE A FILE W/NO ART, SO HOOK TO HIDE REGARDLESS OF DIRECTORY-ICON OR NOT: */
+                    aud_set_int ("albumart", "_infoarea_hide_art_gtk", 3);
+                    hook_call ("gtkui toggle infoarea_art", nullptr);
+                }
+                return;   /* JWT:NO ALBUM OR ARTIST, PUNT (MAY BE STREAM OR FILE)! */
+            }
             else if (Title && Title[0])
             {
                 StringBuf title_buf = str_copy (Title);
@@ -418,14 +448,14 @@ static void album_update (void *, GtkWidget * widget)
             {
                 String coverart_uri = String (filename_to_uri (filenamechar));
                 pixbuf = audgui_pixbuf_request ((const char *) coverart_uri);
-                if (pixbuf)  /* FOUND ART IN CACHE, RETURN. */
+                if (pixbuf)  /* FOUND ART IN CACHE (THUS NOT A DUP.), RETURN: */
                 {
                     audgui_scaled_image_set ((GtkWidget *) widget, pixbuf.get ());
                     /* MAKE FILE NEWEST FOR EASIER USER-LOOKUP IN SONG-EDIT!: */
                     if (utime (filenamechar, nullptr) < 0)
                         AUDWARN ("i:Failed to update art-file time (for easier user-lookup)!\n");
 
-                    /* INFOBAR ICON WAS HIDDEN BY HIDE DUP. OPTION, SO TOGGLE IT BACK OFF ("SHOW" IN INFOBAR): */
+                    /* INFOBAR ICON POSSIBLY HIDDEN BY HIDE DUP. OPTION, SO FORCE "SHOW" IN INFOBAR: */
                     aud_set_int ("albumart", "_infoarea_hide_art_gtk", 0);
                     hook_call ("gtkui toggle infoarea_art", nullptr);
                     last_image_from_web = true;
@@ -490,11 +520,17 @@ static void album_clear (void *, GtkWidget * widget)
 
 /* JWT:CALLED WHEN USER TOOGLES THE hide_dup_art_icon CHECKBOX: */
 /* IF ON, WE HIDE THE "DUPLICATE" IMG. IN INFOBAR, UNLESS WE FETCHED AN IMG. FROM THE WEB! */
-/* (THIS OPTION HAS NO EFFECT UNLESS BOTH THE "VIEW - SHOW INFOBAR ALBUM ART" -AND THE - */
+/* (THIS OPTION HAS NO EFFECT UNLESS BOTH THE "VIEW - SHOW INFOBAR ALBUM ART" -AND- */
 /* THE PLUGIN'S "LOOK FOR ALBUM ART ON THE WEB" OPTIONS ARE BOTH ON)! */
 static void hide_dup_art_icon_toggle_fn ()
 {
     aud_set_bool ("albumart", "hide_dup_art_icon", hide_dup_art_icon);
+    if (hide_dup_art_icon)
+    {
+        int infoarea_hide_art_gtk_prev = aud_get_int ("albumart", "_infoarea_hide_art_gtk_prev");
+        if (infoarea_hide_art_gtk_prev >= 0)
+            aud_set_int ("albumart", "_infoarea_hide_art_gtk", infoarea_hide_art_gtk_prev);
+    }
     hook_call ("gtkui toggle infoarea_art", nullptr);
 }
 
