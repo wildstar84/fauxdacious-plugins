@@ -40,12 +40,38 @@
 #include <libfauxdgui/libfauxdgui.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
+/* JWT:"Duplicate Images" - When Fauxdacious plays most streaming radio stations, the default cover-
+   art image displayed will usually be an icon image associated with the station and retrieved by the
+   URL-helper script.  This image will always display by default in the Infobar, info-popup window, and
+   the Mini-Fauxdacious plugin.  When the Album-art plugin is active, it will also initially display in
+   the plugin window.  This is also true for any cover-art image associated with a song or video entry
+   stored in a local file.  This results in the same image being displayed simultaniously in both the
+   Album-art plugin and the infobar, and is referred to here as a "duplicate image".  Some users may find
+   this annoying and wish to hide duplicate entries in the Infobar or Mini-Fauxdacious plugin, when
+   "docked" (in the main playlist window, as is the Infobar).  A "non-duplicate" image occurs when the
+   AlbumArt plugin fetches a separate song/video specific cover-art image from the web tied to the song's
+   specific title/artist/album combination (which will very likely be a much different image from the
+   station's icon).  Another case of a "non-duplicate" image is when a local file song/video entry is
+   playing and there is a "directory-icon" image file stored in the same directory (applying to all
+   playable files in that directory), and the specific entry has a cover-art image associated with it
+   either embedded in metatags, in the Album-art cache, or fetched by the Album-art plugin from the web.
+   The Album-art plugin has a user option to "Hide info bar art icon unless separate album cover fetched."
+   which, if checked, will cause "duplicate images" to be hidden in the infobar, or the Mini-Fauxdacious
+   plugin (if docked).  Non-duplicate images will be always be shown (the station icon, ie. the "channel
+   icon" (streams) / "directory icon" (files) in the Info-bar or Mini-Fauxdacious plugin) and the main
+   (entry-specific) album-art image fetched by the Album-art plugin displayed in the Album-art plugin
+   window.  Most web-based videos will come with both a video-specific image and an artist/"channel" icon.
+   These are treated as "non-duplicate".  The overarching purpose of the "Hide info bar art icon unless
+   separate..." option is to prevent the same image from being displayed in both the Album-art plugin and
+   the playlist window at the same time while enabling both images (if not the same) to be shown at the
+   same time.
+*/
+
 static bool fromsongstartup = false;  // TRUE WHEN THREAD STARTED BY SONG CHANGE (album_init()).
 static bool skipArtReInit = false;    // JWT:TRUE:SKIP RESETTING ART (ALREADY RESET BY THREAD NOW SLEEPING).
 static bool resetthreads = false;     // JWT:TRUE STOP ANY THREADS RUNNING ON SONG CHANGE OR SHUTDOWN.
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool hide_dup_art_icon;   /* JWT:TOGGLE TO TRUE TO HIDE (DUPLICATE) ART ICON IN INFOBAR IF A WEB IMAGE FETCHED. */
-static bool last_image_from_web; /* JWT:TRUE IF LAST IMAGE CAME FROM WEB ("Look for album art on the web" OPTION). */
 
 class AlbumArtPlugin : public GeneralPlugin
 {
@@ -105,7 +131,6 @@ static gboolean albumart_ready (gpointer widget)
                 /* INFOBAR ICON POSSIBLY HIDDEN BY HIDE DUP. OPTION, SO FORCE "SHOW" IN INFOBAR: */
                 aud_set_int ("albumart", "_infoarea_hide_art_gtk", 0);
                 hook_call ("gtkui toggle infoarea_art", nullptr);
-                last_image_from_web = true;
             }
             return false;
         }
@@ -240,7 +265,7 @@ static void * album_helper_thread_fn (void * data)
     return nullptr;
 }
 
-/* JWT:UPDATE THE ALBUM-COVER IMAGE (CALL THREAD IF DYNAMIC ALBUM-ART OPTION IN EFFECT): */
+/* JWT:UPDATE THE ALBUM-COVER IMAGE (CALL THREAD IF NEEDED & DYNAMIC ALBUM-ART OPTION IN EFFECT): */
 static void album_update (void *, GtkWidget * widget)
 {
     bool haveartalready = false;
@@ -328,26 +353,21 @@ static void album_update (void *, GtkWidget * widget)
         hookalreadycalled = true;
     }
 
-    last_image_from_web = false;
-    if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP FURTHER ART SEARCH! */
+    /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP FURTHER ART SEARCH: */
+    if (haveartalready && (! strncmp (filename, "file://", 7)
+            || (! strncmp (filename, "cdda://", 7) && ! aud_get_bool ("CDDA", "seek_albumart_for_cds"))
+            || (! strncmp (filename, "dvd://", 6) && aud_get_bool ("dvd", "skip_coverartlookup"))))
     {
-        if (! strncmp (filename, "file://", 7)
-                || (! strncmp (filename, "cdda://", 7) && ! aud_get_bool ("CDDA", "seek_albumart_for_cds"))
-                || (! strncmp (filename, "dvd://", 6) && aud_get_bool ("dvd", "skip_coverartlookup")))
+        if (aud_get_bool ("albumart", "hide_dup_art_icon"))
         {
-            if (aud_get_bool ("albumart", "hide_dup_art_icon"))
-            {
-                aud_set_int ("albumart", "_infoarea_hide_art_gtk", hide_channel_art);
-                hook_call ("gtkui toggle infoarea_art", nullptr);
-            }
-            return;
+            aud_set_int ("albumart", "_infoarea_hide_art_gtk", hide_channel_art);
+            hook_call ("gtkui toggle infoarea_art", nullptr);
         }
+        return;
     }
 
-    /* JWT:NOW CHECK THE ALBUM-ART CACHE
-       (ANY ART FOUND BELOW HERE IS UNIQUE TO TITLE AND THUS NOT A DUP.)
-       NOTE:  IF HERE, WE'RE A STREAM (OR A LOCAL FILE WITH NO ART, B/C THE CACHE HAS ALREADY BEEN
-       CHECKED FOR LOCAL FILES):
+    /* JWT:NOW CHECK THE ALBUM-ART CACHE (IF NOT SEARCHED ALREADY):
+       (ANY ART FOUND BELOW HERE IS UNIQUE TO TITLE/ARTIST|ALBUM AND THUS NOT A DUP.)
     */
     Tuple tuple = aud_drct_get_tuple ();
     String Title = tuple.get_str (Tuple::Title);
@@ -357,117 +377,128 @@ static void album_update (void *, GtkWidget * widget)
     if (! audio_fn || ! audio_fn[0])
         audio_fn = aud_drct_get_filename ();
 
-    const char * album = (const char *) Album;
-
-    if (Title && Title[0])
+    if (Title && Title[0] && ((Artist && Artist[0]) || (Album && Album[0])))
     {
-        bool split_titles = aud_get_bool (nullptr, "split_titles");
         bool skipweb = false;
-        if (album && album[0])  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
+        /* DON'T BOTHER SEARCHING CACHE IF FILE AND WE'VE ALREADY SEARCHED CACHE IN art-search.cc!: */
+        if (! strncmp (filename, "http://", 7) || ! strncmp (filename, "https://", 8)
+                || ! aud_get_bool (nullptr, "search_albumart_cache"))
         {
-            const char * album_uri = strstr (album, "://");  // FOR URI, WE'LL ASSUME LONGEST IS "stdin" (5 chars)
-            if (album_uri && (album_uri-album) < 6)  // ALBUM FIELD IS A URI (PBLY A PODCAST/VIDEO FROM STREAMFINDER!):
+            /* IF HERE, WE'RE EITHER A STREAM, OR A FILE W/NO ART & CACHE ALREADY SEARCHED: */
+            bool split_titles = aud_get_bool (nullptr, "split_titles");
+            const char * album = (const char *) Album;
+            if (album && album[0])  // ALBUM FIELD NOT BLANK AND NOT A FILE/URL:
             {
-                Album = String ("_");
-                String s = aud_get_str (nullptr, "_cover_art_link");
-                if (! s || ! s[0])
-                    skipweb = true;
-            }
-            else if (split_titles)
-            {
-                /* ALBUM MAY ALSO CONTAIN THE STREAM NAME (IE. "<ALBUM> - <STREAM NAME>"): STRIP THAT OFF: */
-                const char * throwaway = strstr (album, " - ");
-                int albumlen = throwaway ? throwaway - album : -1;
-                Album = String (str_copy (album, albumlen));
-            }
-        }
-        else
-            Album = String ("_");
-
-        if (! split_titles)
-        {
-            /* ARTIST MAY BE IN TITLE INSTEAD (IE. "<ARTIST> - <TITLE>"): IF SO, USE THAT FOR ARTIST: */
-            const char * title = (const char *) Title;
-            if (title)
-            {
-                const char * artistlen = strstr (title, " - ");
-                if (artistlen)
+                const char * album_uri = strstr (album, "://");  // FOR URI, WE'LL ASSUME LONGEST IS "stdin" (5 chars)
+                if (album_uri && (album_uri-album) < 6)  // ALBUM FIELD IS A URI (PBLY A PODCAST/VIDEO FROM STREAMFINDER!):
                 {
-                    Artist = String (str_copy (title, artistlen - title));
-                    const char * titleoffset = artistlen+3;
-                    if (titleoffset)
-                        Title = String (str_copy (artistlen+3, -1));
+                    Album = String ("_");
+                    String s = aud_get_str (nullptr, "_cover_art_link");
+                    if (! s || ! s[0])
+                        skipweb = true;
                 }
-            }
-        }
-
-        StringBuf albart_FN;
-        StringBuf album_buf = str_copy (Album);
-        str_replace_char (album_buf, ' ', '~');  // JWT:PROTECT SPACES, WHICH I STUPIDLY DIDN'T ENCODE IN ALBUMART!
-        if (Artist && Artist[0])
-        {
-            StringBuf artist_buf = str_copy (Artist);
-            str_replace_char (artist_buf, ' ', '~');
-            albart_FN = str_concat ({(const char *) str_encode_percent (album_buf), "__",
-                    (const char *) str_encode_percent (artist_buf)});
-        }
-        else
-        {
-            if (Album == String ("_"))
-            {
-                if (! hookalreadycalled)
+                else if (split_titles)
                 {
-                    /* IF HERE, WE'RE A FILE W/NO ART, SO HOOK TO HIDE REGARDLESS OF DIRECTORY-ICON OR NOT: */
-                    aud_set_int ("albumart", "_infoarea_hide_art_gtk", 3);
-                    hook_call ("gtkui toggle infoarea_art", nullptr);
+                    /* ALBUM MAY ALSO CONTAIN THE STREAM NAME (IE. "<ALBUM> - <STREAM NAME>"): STRIP THAT OFF: */
+                    const char * throwaway = strstr (album, " - ");
+                    int albumlen = throwaway ? throwaway - album : -1;
+                    Album = String (str_copy (album, albumlen));
                 }
-                return;   /* JWT:NO ALBUM OR ARTIST, PUNT (MAY BE STREAM OR FILE)! */
-            }
-            else if (Title && Title[0])
-            {
-                StringBuf title_buf = str_copy (Title);
-                str_replace_char (title_buf, ' ', '~');
-                albart_FN = str_concat ({(const char *) str_encode_percent (album_buf), "__",
-                        (const char *) str_encode_percent (title_buf)});
             }
             else
-                albart_FN = str_encode_percent (album_buf);
-        }
-        str_replace_char (albart_FN, '~', ' ');  // JWT:UNPROTECT SPACES!
+                Album = String ("_");
 
-        String coverart_file;
-        Index<String> extlist = str_list_to_index ("jpg,png,gif,jpeg", ",");
-        AudguiPixbuf pixbuf;
-        for (auto & ext : extlist)
-        {
-            coverart_file = String (str_concat ({aud_get_path (AudPath::UserDir),
-                    "/albumart/", (const char *) albart_FN, ".", (const char *) ext}));
-            const char * filenamechar = coverart_file;
-            struct stat statbuf;
-            if (stat (filenamechar, &statbuf) >= 0)  // ART IMAGE FILE EXISTS:
+            if (! split_titles)
             {
-                String coverart_uri = String (filename_to_uri (filenamechar));
-                pixbuf = audgui_pixbuf_request ((const char *) coverart_uri);
-                if (pixbuf)  /* FOUND ART IN CACHE (THUS NOT A DUP.), RETURN: */
+                /* ARTIST MAY BE IN TITLE INSTEAD (IE. "<ARTIST> - <TITLE>"): IF SO, USE THAT FOR ARTIST: */
+                const char * title = (const char *) Title;
+                if (title)
                 {
-                    audgui_scaled_image_set ((GtkWidget *) widget, pixbuf.get ());
-                    /* MAKE FILE NEWEST FOR EASIER USER-LOOKUP IN SONG-EDIT!: */
-                    if (utime (filenamechar, nullptr) < 0)
-                        AUDWARN ("i:Failed to update art-file time (for easier user-lookup)!\n");
+                    const char * artistlen = strstr (title, " - ");
+                    if (artistlen)
+                    {
+                        Artist = String (str_copy (title, artistlen - title));
+                        const char * titleoffset = artistlen+3;
+                        if (titleoffset)
+                            Title = String (str_copy (artistlen+3, -1));
+                    }
+                }
+            }
 
-                    /* INFOBAR ICON POSSIBLY HIDDEN BY HIDE DUP. OPTION, SO FORCE "SHOW" IN INFOBAR: */
-                    aud_set_int ("albumart", "_infoarea_hide_art_gtk", 0);
-                    hook_call ("gtkui toggle infoarea_art", nullptr);
-                    last_image_from_web = true;
-
-                    return;
+            StringBuf albart_FN;
+            StringBuf album_buf = str_copy (Album);
+            str_replace_char (album_buf, ' ', '~');  // JWT:PROTECT SPACES!
+            if (Artist && Artist[0])
+            {
+                StringBuf artist_buf = str_copy (Artist);
+                str_replace_char (artist_buf, ' ', '~');
+                albart_FN = str_concat ({(const char *) str_encode_percent (album_buf), "__",
+                        (const char *) str_encode_percent (artist_buf)});
+            }
+            else
+            {
+                if (Album == String ("_"))
+                {
+                    if (! hookalreadycalled)
+                    {
+                        /* IF HERE, WE'RE A FILE W/NO ART, SO HOOK TO HIDE REGARDLESS OF DIRECTORY-ICON OR NOT: */
+                        aud_set_int ("albumart", "_infoarea_hide_art_gtk", 3);
+                        hook_call ("gtkui toggle infoarea_art", nullptr);
+                    }
+                    return;   /* JWT:NO ALBUM OR ARTIST, PUNT (MAY BE STREAM OR FILE)! */
+                }
+                else if (Title && Title[0])
+                {
+                    StringBuf title_buf = str_copy (Title);
+                    str_replace_char (title_buf, ' ', '~');
+                    albart_FN = str_concat ({(const char *) str_encode_percent (album_buf), "__",
+                            (const char *) str_encode_percent (title_buf)});
                 }
                 else
-                    break;
+                    albart_FN = str_encode_percent (album_buf);
+            }
+            str_replace_char (albart_FN, '~', ' ');  // JWT:UNPROTECT SPACES!
+
+            String coverart_file;
+            Index<String> extlist = str_list_to_index ("jpg,png,gif,jpeg", ",");
+            AudguiPixbuf pixbuf;
+            for (auto & ext : extlist)
+            {
+                coverart_file = String (str_concat ({aud_get_path (AudPath::UserDir),
+                        "/albumart/", (const char *) albart_FN, ".", (const char *) ext}));
+                const char * filenamechar = coverart_file;
+                struct stat statbuf;
+                if (stat (filenamechar, &statbuf) >= 0)  // ART IMAGE FILE EXISTS:
+                {
+                    String coverart_uri = String (filename_to_uri (filenamechar));
+                    pixbuf = audgui_pixbuf_request ((const char *) coverart_uri);
+                    if (pixbuf)  /* FOUND ART IN CACHE (THUS NOT A DUP.), RETURN: */
+                    {
+                        audgui_scaled_image_set ((GtkWidget *) widget, pixbuf.get ());
+                        /* MAKE FILE NEWEST FOR EASIER USER-LOOKUP IN SONG-EDIT!: */
+                        if (utime (filenamechar, nullptr) < 0)
+                            AUDWARN ("i:Failed to update art-file time (for easier user-lookup)!\n");
+
+                        /* INFOBAR ICON POSSIBLY HIDDEN BY HIDE DUP. OPTION, SO FORCE "SHOW" IN INFOBAR: */
+                        aud_set_int ("albumart", "_infoarea_hide_art_gtk", 0);
+                        hook_call ("gtkui toggle infoarea_art", nullptr);
+
+                        return;
+                    }
+                    else
+                        break;
+                }
             }
         }
+        if (! hookalreadycalled)
+        {
+            /* IF HERE, WE'RE A FILE W/NO ART, SO HOOK TO HIDE BUT STILL (MAYBE) SEARCH WEB: */
+            aud_set_int ("albumart", "_infoarea_hide_art_gtk", 3);
+            hook_call ("gtkui toggle infoarea_art", nullptr);
+            hookalreadycalled = 1;
+        }
 
-        /* JWT:NO CACHED ART, CALL HELPER: */
+        /* JWT:NO CACHED ART, CALL HELPER TO SEARCH WEB: */
         if (! skip_web_art_search && ! skipweb && aud_get_bool ("albumart", "internet_coverartlookup")
                 && aud_get_str ("audacious", "cover_helper"))
         {
@@ -492,6 +523,12 @@ static void album_update (void *, GtkWidget * widget)
             else
                 AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
         }
+    }
+    if (! hookalreadycalled)
+    {
+        /* IF HERE, WE'RE A FILE W/NO ART, SO HOOK TO HIDE REGARDLESS OF DIRECTORY-ICON OR NOT: */
+        aud_set_int ("albumart", "_infoarea_hide_art_gtk", 3);
+        hook_call ("gtkui toggle infoarea_art", nullptr);
     }
 }
 
@@ -566,12 +603,6 @@ void * AlbumArtPlugin::get_gtk_widget ()
 
     return widget;
 }
-
-/*  DEPRECIATED: JWT:FIXME: THIS IS MARKED "EXPERIMENTAL" IN WINDOWS SINCE GUI-INTERACTION CAN
-    BECOME INVISIBLE AFTER A TIME UNTIL PLAY STOPPED & RESTARTED LEADING TO A BAD
-    USER-EXPERIENCE, AND I HAVEN'T BEEN ABLE TO FIGURE OUT WHY?!?!?!
-    UPDATE:  AS OF v4.1.2-final, THIS ISSUE SEEMS TO BE RESOLVED!
-*/
 
 const PreferencesWidget AlbumArtPlugin::widgets[] = {
     WidgetLabel(N_("<b>Albumart Configuration</b>")),
