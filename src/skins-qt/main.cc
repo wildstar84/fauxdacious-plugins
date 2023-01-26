@@ -40,6 +40,7 @@
 #include <libfauxdqt/libfauxdqt.h>
 
 #include "../ui-common/dialogs-qt.h"
+#include "../ui-common/qt-compat.h"
 
 #include "actions-mainwin.h"
 #include "actions-playlist.h"
@@ -534,7 +535,7 @@ bool MainWindow::button_press (QMouseEvent * event)
 {
     if (event->button () == Qt::LeftButton &&
             event->type () == QEvent::MouseButtonDblClick &&
-            event->y () < 14 * config.scale)
+            QtCompat::y (event) < 14 * config.scale)
     {
         mainwin_shade_toggle ();
         return true;
@@ -542,7 +543,7 @@ bool MainWindow::button_press (QMouseEvent * event)
 
     if (event->button () == Qt::RightButton && event->type () == QEvent::MouseButtonPress)
     {
-        menu_popup (UI_MENU_MAIN, event->globalX (), event->globalY (), false, false);
+        menu_popup (UI_MENU_MAIN, QtCompat::globalX (event), QtCompat::globalY (event), false, false);
         return true;
     }
 
@@ -560,8 +561,8 @@ void MainWindow::enterEvent (QEvent * event)  // JWT:FUNCTION ADDED FOR POPUP SO
     if (! is_shaded() || ! aud_get_bool (nullptr, "show_filepopup_for_tuple"))
         return;
 
-    if (enterEvent->x () > 77 * config.scale &&
-        enterEvent->x () < 165 * config.scale)
+    if (QtCompat::x (enterEvent) > 77 * config.scale &&
+        QtCompat::x (enterEvent) < 165 * config.scale)
     {
         audqt::infopopup_show_current ();
     }
@@ -569,7 +570,7 @@ void MainWindow::enterEvent (QEvent * event)  // JWT:FUNCTION ADDED FOR POPUP SO
 
 static void mainwin_playback_rpress (Button * button, QMouseEvent * event)
 {
-    menu_popup (UI_MENU_PLAYBACK, event->globalX (), event->globalY (), false, false);
+    menu_popup (UI_MENU_PLAYBACK, QtCompat::globalX (event), QtCompat::globalY (event), false, false);
 }
 
 bool Window::keypress (QKeyEvent * event)
@@ -897,7 +898,7 @@ void mainwin_mr_release (MenuRowItem i, QMouseEvent * event)
     switch (i)
     {
         case MENUROW_OPTIONS:
-            menu_popup (UI_MENU_VIEW, event->globalX (), event->globalY (), false, false);
+            menu_popup (UI_MENU_VIEW, QtCompat::globalX (event), QtCompat::globalY (event), false, false);
             break;
         case MENUROW_ALWAYS:
             view_set_on_top (! aud_get_bool ("skins", "always_on_top"));
@@ -931,7 +932,7 @@ static bool mainwin_info_button_press (QMouseEvent * event)
 {
     if (event->type () == QEvent::MouseButtonPress && event->button () == Qt::RightButton)
     {
-        menu_popup (UI_MENU_PLAYBACK, event->globalX (), event->globalY (), false, false);
+        menu_popup (UI_MENU_PLAYBACK, QtCompat::globalX (event), QtCompat::globalY (event), false, false);
         return true;
     }
 

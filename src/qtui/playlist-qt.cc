@@ -33,6 +33,7 @@
 #include "playlist_model.h"
 
 #include "../ui-common/menu-ops.h"
+#include "../ui-common/qt-compat.h"
 
 PlaylistWidget::PlaylistWidget (QWidget * parent, int playlist) :
     audqt::TreeView (parent),
@@ -251,7 +252,7 @@ void PlaylistWidget::keyPressEvent (QKeyEvent * event)
 
 void PlaylistWidget::mouseDoubleClickEvent (QMouseEvent * event)
 {
-    QModelIndex index = indexAt (event->pos ());
+    QModelIndex index = indexAt (QtCompat::pos (event));
     if (! index.isValid ())
         return;
 
@@ -261,7 +262,7 @@ void PlaylistWidget::mouseDoubleClickEvent (QMouseEvent * event)
 
 void PlaylistWidget::mouseMoveEvent (QMouseEvent * event)
 {
-    int row = indexToRow (indexAt (event->pos ()));
+    int row = indexToRow (indexAt (QtCompat::pos (event)));
 
     if (row < 0)
         hidePopup ();
@@ -304,8 +305,8 @@ void PlaylistWidget::dropEvent (QDropEvent * event)
     int to;
     switch (dropIndicatorPosition ())
     {
-        case AboveItem: to = indexToRow (indexAt (event->pos ())); break;
-        case BelowItem: to = indexToRow (indexAt (event->pos ())) + 1; break;
+        case AboveItem: to = indexToRow (indexAt (QtCompat::pos (event))); break;
+        case BelowItem: to = indexToRow (indexAt (QtCompat::pos (event))) + 1; break;
         case OnViewport: to = aud_playlist_entry_count (m_playlist); break;
         default: return;
     }

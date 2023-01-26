@@ -453,7 +453,7 @@ void MainWindow::update_visibility ()
         m_menubar->setVisible (menu_visible);
     if (m_menu_action)
         m_menu_action->setVisible (!menu_visible);
-    if (m_infobar)
+    if (m_infobar && aud_get_bool("audqt", "_dock_host_registered"))
         m_infobar->setVisible (aud_get_bool ("qtui", "infoarea_visible"));
     if (m_statusbar)
         m_statusbar->setVisible (aud_get_bool ("qtui", "statusbar_visible"));

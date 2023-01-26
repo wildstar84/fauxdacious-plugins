@@ -33,6 +33,8 @@
 #include "playlist-widget.h"
 #include "playlist-slider.h"
 
+#include "../ui-common/qt-compat.h"
+
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/drct.h>
 #include <libfauxdcore/hook.h>
@@ -591,7 +593,7 @@ int PlaylistWidget::hover_end ()
 
 bool PlaylistWidget::button_press (QMouseEvent * event)
 {
-    int position = calc_position (event->y ());
+    int position = calc_position (QtCompat::y (event));
     int state = event->modifiers () & (Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier);
 
     cancel_all ();
@@ -641,7 +643,7 @@ bool PlaylistWidget::button_press (QMouseEvent * event)
             }
 
             menu_popup ((position == -1) ? UI_MENU_PLAYLIST :
-             UI_MENU_PLAYLIST_CONTEXT, event->globalX (), event->globalY (),
+             UI_MENU_PLAYLIST_CONTEXT, QtCompat::globalX (event), QtCompat::globalY (event),
              false, false);
             break;
           default:
@@ -693,7 +695,7 @@ void PlaylistWidget::scroll_timeout ()
 
 bool PlaylistWidget::motion (QMouseEvent * event)
 {
-    int position = calc_position (event->y ());
+    int position = calc_position (QtCompat::y (event));
 
     if (m_drag)
     {
@@ -750,7 +752,7 @@ void PlaylistWidget::dragMoveEvent (QDragMoveEvent * event)
 
     if (event->proposedAction () == Qt::CopyAction && mimedata->hasUrls ())
     {
-        auto p = event->pos ();
+        auto p = QtCompat::pos (event);
         hover (p.x (), p.y ());
         event->acceptProposedAction ();
     }
@@ -767,7 +769,7 @@ void PlaylistWidget::dropEvent (QDropEvent * event)
 
     if (event->proposedAction () == Qt::CopyAction && mimedata->hasUrls ())
     {
-        auto p = event->pos ();
+        auto p = QtCompat::pos (event);
         hover (p.x (), p.y ());
 
         Index<PlaylistAddItem> files;
