@@ -34,6 +34,8 @@
 #include <libfauxdqt/libfauxdqt.h>
 #include <libfauxdqt/treeview.h>
 
+#include "../ui-common/qt-compat.h"
+
 class PlaylistManagerQt : public GeneralPlugin
 {
 public:
@@ -291,8 +293,8 @@ void PlaylistsView::dropEvent (QDropEvent * event)
     int to;
     switch (dropIndicatorPosition ())
     {
-        case AboveItem: to = indexAt (event->pos ()).row (); break;
-        case BelowItem: to = indexAt (event->pos ()).row () + 1; break;
+        case AboveItem: to = indexAt (QtCompat::pos (event)).row (); break;
+        case BelowItem: to = indexAt (QtCompat::pos (event)).row () + 1; break;
         case OnViewport: to = aud_playlist_count (); break;
         default: return;
     }
