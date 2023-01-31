@@ -176,7 +176,8 @@ bool VorbisPlugin::write_tuple (const char * filename, VFSFile & file, const Tup
 
     String comment = tuple.get_str (Tuple::Comment);
     bool wrote_art = false;
-    if (comment && comment[0] && ! strncmp ((const char *) comment, "file://", 7))
+    if (comment && comment[0] && ! strncmp ((const char *) comment, "file://", 7)
+            && ! aud_get_bool (nullptr, "dont_embed_images"))
     {
         const char * comment_ptr = (const char *) comment;
         const char * sep = strstr (comment_ptr, ";file://");
@@ -192,9 +193,7 @@ bool VorbisPlugin::write_tuple (const char * filename, VFSFile & file, const Tup
                         "METADATA_BLOCK_PICTURE", dict);
                 if (wrote_art)
                 {
-                    if (sep)  // WE MAY HAVE A SECOND (CHANNEL) ART IMAGE, WRITE THAT TO COMMENT FIELD (";file:.."):
-                        insert_string_to_dictionary (sep, dict, "COMMENT");
-
+                    insert_string_to_dictionary (sep, dict, "COMMENT");  // EAT 1ST IMG. URI, BUT SAVE THE 2ND ONE (CHANNEL IMG) IF ANY.
                     aud_set_bool (nullptr, "_user_tag_skipthistime", true);  /* JWT:SKIP DUP. TO user_tag_data. */
                 }
             }
