@@ -62,10 +62,6 @@ static void widget_cleanup (QObject * widget)
 /* CALLED ON STARTUP (WIDGET CREATION): */
 void * InfoBarPlugin::get_qt_widget ()
 {
-    audqt::InfoBar * widget = new audqt::InfoBar (nullptr);
-
-    QObject::connect (widget, &QObject::destroyed, widget_cleanup);
-
     /* JWT:HIDE EMBEDDED (CLASSIC) INFOBAR WHILE THIS PLUGIN IS ACTIVE: */
     bool show = aud_get_bool ("qtui", "infoarea_visible");
     aud_set_bool ("qtui", "_infoarea_was_visible", show);
@@ -74,6 +70,11 @@ void * InfoBarPlugin::get_qt_widget ()
         aud_set_bool ("qtui", "infoarea_visible", false);
         hook_call ("qtui toggle infoarea", nullptr);
     }
+
+    audqt::InfoBar * widget = new audqt::InfoBar (nullptr);
+
+    QObject::connect (widget, &QObject::destroyed, widget_cleanup);
+
     widget->setToolTip ("Space: pause\nEsc: close\nUp|Down: volume\nCtrl-Q: Quit\nB: next\nC: pause\nV: stop\nX: play\nZ: previous");
 
     return widget;
