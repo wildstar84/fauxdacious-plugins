@@ -131,8 +131,11 @@ public:
     bool event (QEvent*);
 
     /* JWT:CALLED BY ALBUMART FETCHING THREAD WHEN IT HAS FINISHED SEARCHING/FETCHING ALBUM-COVER IMAGE */
-    void ready_art ()
+    void ready_art (ArtLabel * label)
     {
+        if (! label)
+            return;
+
         String coverart_file;
         Index<String> extlist = str_list_to_index ("jpg,png,gif,jpeg,webp", ",");
 
@@ -579,7 +582,7 @@ bool ArtLabel::event(QEvent* event) {
         // Do whatever your idle callback would do
         // Optional: Post event again to self if this should be repeated
         //           implementing behaviour of returning TRUE from g_idle_add callback
-        ready_art ();
+        ready_art (this);
 
         return true;
     }
@@ -615,6 +618,7 @@ static void clear (void *, ArtLabel * widget)
 static void hide_dup_art_icon_toggle_fn ()
 {
     aud_set_bool ("albumart", "hide_dup_art_icon", hide_dup_art_icon);
+    hook_call ("qtui toggle infoarea_art", nullptr);
 }
 
 static void widget_cleanup (QObject * widget)
