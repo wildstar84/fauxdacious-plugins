@@ -3041,7 +3041,7 @@ static dvdnav_priv_t * new_dvdnav_stream (const char * filename)
         AUDERR ("e:stream_dvdnav, failed to set PGC positioning\n");
 
     /* JWT:THIS DOESN'T SEEM TO DO ANYTHING, BUT LEAVE HERE SINCE DOCS SAY IT *SHOULD* MAYBE WORK?! */
-    String langstr = aud_get_str ("dvd", "language");
+    String langstr = aud_get_str ("audacious", "language");
     if (langstr && langstr[0] && langstr[1])
     {
         char lang[4];   // JWT:THESE STUPID FNS TAKE A char* NOT A const char*:
