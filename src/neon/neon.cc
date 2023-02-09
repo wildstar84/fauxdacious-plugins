@@ -151,14 +151,14 @@ bool NeonTransport::init ()
         AUDERR ("Could not initialize neon library: %d\n", ret);
         return false;
     }
-    hook_associate ("stopped by user", notify_playback2stop, nullptr);
+    hook_associate ("stopped by user", (HookFunction) notify_playback2stop, nullptr);
 
     return true;
 }
 
 void NeonTransport::cleanup ()
 {
-    hook_dissociate ("stopped by user", notify_playback2stop);
+    hook_dissociate ("stopped by user", (HookFunction) notify_playback2stop);
     ne_sock_exit ();
 }
 
@@ -354,7 +354,7 @@ static void parse_icy (struct icy_metadata * m, char * metadata, int len)
                 /* End of value */
                 p[0] = 0;
                 g_strlcpy (value, tstart, NEON_ICY_BUFSIZE);
-                AUDINFO ("Found tag name: %s, value: %s\n", name, value);
+                AUDDBG ("Found tag name: %s, value: %s\n", name, value);
                 add_icy (m, name, value);
                 state = STATE_WAIT_NAME;
             }
@@ -433,7 +433,7 @@ void NeonFile::handle_headers ()
 
     while ((cursor = ne_response_header_iterate (m_request, cursor, & name, & value)))
     {
-        AUDINFO ("HEADER: %s: %s\n", name, value);  /* THESE TAGS SET ONLY AT START OF PLAY: */
+        AUDDBG ("HEADER: %s: %s\n", name, value);  /* THESE TAGS SET ONLY AT START OF PLAY: */
 
         if (neon_strcmp (name, "accept-ranges"))
         {
@@ -714,9 +714,10 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
 
         if (! strcmp ("https", m_purl.scheme))
         {
+            AUDDBG ("<%p> Verifying certificate\n", this);
             ne_ssl_trust_default_ca (m_session);
             ne_ssl_set_verify (m_session,
-             neon_vfs_verify_environment_ssl_certs, m_session);
+                    neon_vfs_verify_environment_ssl_certs, m_session);
         }
 
         /* JWT:USER MAY TIRE OF WAITING TO CONNECT AND HIT STOP BUTTON, IF SO, WE MUST CLEAN UP!: */
