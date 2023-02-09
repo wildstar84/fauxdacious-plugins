@@ -191,7 +191,7 @@ static void xspf_add_file (xmlNode * track, const char * filename,
         }
     }
 
-    if (location != nullptr)
+    if (location && location[0])
     {
         /* JWT:WE MERGE "image"+"annotation" FIELDS INTO Tuple::Comment FOR FAUXDACIOUS COVER-ART USAGE: */
         if (ImgData && ImgData[0]) {

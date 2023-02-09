@@ -148,8 +148,9 @@ static void set_string_from_tuple (GValue * value, const Tuple & tuple, Tuple::F
 */
 static void set_string_from_tuple_oneline (GValue * value, const Tuple & tuple, Tuple::Field field)
 {
-    if (tuple.get_str (field) != nullptr)  //JWT:NEEDED FOR OVERRUN IF ADD CD W/NO DISK IN GTK INTERFACE (SEGFAULT)?!
-        g_value_set_string (value, (const char *) str_get_first_line (tuple.get_str (field)));
+    String fieldval = tuple.get_str (field);
+    if (fieldval && fieldval[0])  //JWT:NEEDED FOR OVERRUN IF ADD CD W/NO DISK IN GTK INTERFACE (SEGFAULT)?!
+        g_value_set_string (value, (const char *) str_get_first_line (fieldval));
 }
 
 static void set_queued (GValue * value, int list, int row)
