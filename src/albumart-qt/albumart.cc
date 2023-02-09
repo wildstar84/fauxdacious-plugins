@@ -144,12 +144,16 @@ public:
             coverart_file = String (str_concat ({aud_get_path (AudPath::UserDir), "/_tmp_albumart.", (const char *) ext}));
             const char * filenamechar = coverart_file;
             struct stat statbuf;
+
+            if (resetthreads)
+                break;
+
             if (stat (filenamechar, &statbuf) >= 0)  // ART IMAGE FILE FROM WEB EXISTS (THUS NOT A DUP.):
             {
                 coverart_file = String (filename_to_uri (filenamechar));
                 origPixmap = QPixmap (audqt::art_request ((const char *) coverart_file, 0, 0));
                 origSize = origPixmap.size ();
-                if (origSize.width () > 10)
+                if (! resetthreads && origSize.width () > 10)
                 {
                     drawArt ();
 
@@ -515,7 +519,7 @@ private:
                 else
                     Album = String ("_");
 
-                const char * webfetch = (! strncmp (audio_fn, "file://", 7)
+                String webfetch = (! strncmp (audio_fn, "file://", 7)
                                 && aud_get_bool ("albumart", "save_by_songfile"))
                                 ? audio_fn : aud_get_str (nullptr, "_cover_art_link");
 
@@ -546,12 +550,12 @@ private:
                 WinExec ((const char *) str_concat ({cover_helper, " ALBUM '",
                         (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
                         (const char *) artist_buf, "' '", (const char *) title_buf, "' ",
-                        webfetch}), SW_HIDE);
+                        (const char *) webfetch}), SW_HIDE);
 #else
                 system ((const char *) str_concat ({cover_helper, " ALBUM '",
                         (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
                         (const char *) artist_buf, "' '", (const char *) title_buf, "' ",
-                        webfetch}));
+                        (const char *) webfetch}));
 #endif
             }
         }
