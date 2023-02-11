@@ -33,6 +33,15 @@
 #include <adplug/adplug.h>
 #include <adplug/emuopl.h>
 #include <adplug/silentopl.h>
+#ifdef HAVE_ADPLUG_NEMUOPL_H
+# include <adplug/nemuopl.h>
+#endif
+#ifdef HAVE_ADPLUG_WEMUOPL_H
+# include <adplug/wemuopl.h>
+#endif
+#ifdef HAVE_ADPLUG_KEMUOPL_H
+# include <adplug/kemuopl.h>
+#endif
 #include <adplug/players.h>
 
 #include <libfauxdcore/audstrings.h>
@@ -43,10 +52,18 @@
 
 #include "adplug-xmms.h"
 
-#define MIN_RATE 8000
-#define MAX_RATE 192000
-#define RATE_STEP 50
-#define CFG_VERSION "AdPlug"
+#define CFG_ID "AdPlug"
+
+#define ADPLUG_MAME  0
+#ifdef HAVE_ADPLUG_NEMUOPL_H
+# define ADPLUG_NUKED 1
+#endif
+#ifdef HAVE_ADPLUG_WEMUOPL_H
+# define ADPLUG_WOODY 2
+#endif
+#ifdef HAVE_ADPLUG_KEMUOPL_H
+# define ADPLUG_KS    3
+#endif
 
 class AdPlugXMMS : public InputPlugin
 {
@@ -64,8 +81,7 @@ public:
         & prefs
     };
 
-    constexpr AdPlugXMMS () : InputPlugin (info, InputInfo ()
-        .with_exts (exts)) {}
+    constexpr AdPlugXMMS () : InputPlugin (info, InputInfo ().with_exts (exts)) {}
 
     bool init ();
     void cleanup ();
@@ -113,9 +129,8 @@ const char * const AdPlugXMMS::exts[] = {
 // Sound buffer size in samples
 #define SNDBUFSIZE	512
 
-// AdPlug's 8 and 16 bit audio formats
-#define FORMAT_8	FMT_U8
-#define FORMAT_16	FMT_S16_NE
+// 4 byte sample size (16 bit depth & stereo)
+#define SAMPLESIZE 4
 
 // Default file name of AdPlug's database file
 #define ADPLUGDB_FILE		"adplug.db"
@@ -125,16 +140,10 @@ const char * const AdPlugXMMS::exts[] = {
 
 /***** Global variables *****/
 
-// Configuration (and defaults)
-static struct {
-  int freq = 44100l;
-  bool bit16 = true, stereo = false, endless = false;
-} conf;
-
 // Player variables
 static struct {
-  CPlayer *p = nullptr;
-  CAdPlugDatabase *db = nullptr;
+  SmartPtr<CPlayer> p;
+  SmartPtr<CAdPlugDatabase> db;
   unsigned int subsong = 0, songlength = 0;
   String filename;
 } plr;
@@ -164,14 +173,14 @@ dbg_printf (const char *fmt, ...)
 bool AdPlugXMMS::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
  Index<char> * image)
 {
-  CSilentopl tmpopl;
 
-  CFileVFSProvider fp (file);
-
-  /* JWT:FIXME: FUSE ADDED B/C FOLLOWING LINE *SEGFAULTS* IF .dll FILE PIPED IN VIA STDIN?! */
+  /* JWT:FIXME: FUSE ADDED B/C FOLLOWING LINE *SEGFAULTS* IF .d00 FILE PIPED IN VIA STDIN?! */
   if (! strncmp (filename, "stdin://-.d00", 13))
       return false;
 
+  CSilentopl tmpopl;
+
+  CFileVFSProvider fp (file);
   CPlayer *p = CAdPlug::factory (filename, &tmpopl, CAdPlug::players, fp);
 
   if (! p)
@@ -199,21 +208,42 @@ bool AdPlugXMMS::play (const char * filename, VFSFile & fd)
 {
   dbg_printf ("adplug_play(\"%s\"): ", filename);
 
-  conf.bit16 = aud_get_bool (CFG_VERSION, "16bit");
-  conf.stereo = aud_get_bool (CFG_VERSION, "Stereo");
-  conf.freq = aud_get_int (CFG_VERSION, "Frequency");
-  conf.endless = aud_get_bool (CFG_VERSION, "Endless");
+  int emulator = aud_get_int (CFG_ID, "Emulator");
+  int freq = aud_get_int (CFG_ID, "Frequency");
+  bool endless = aud_get_bool (CFG_ID, "Endless");
 
   // Set XMMS main window information
-  int sampsize = (conf.bit16 ? 2 : 1) * (conf.stereo ? 2 : 1);
-  dbg_printf ("xmms, samplerate=%d, bitrate=%d.\n", sampsize, (conf.freq * sampsize * 8));
-  set_stream_bitrate (conf.freq * sampsize * 8);
+  dbg_printf ("xmms, ");
+  set_stream_bitrate (freq * SAMPLESIZE * 8);
 
   // open output plugin
   dbg_printf ("open, ");
-  open_audio (conf.bit16 ? FORMAT_16 : FORMAT_8, conf.freq, conf.stereo ? 2 : 1);
+  open_audio (FMT_S16_NE, freq, 2);
 
-  CEmuopl opl (conf.freq, conf.bit16, conf.stereo);
+  SmartPtr<Copl> opl;
+  switch (emulator) {
+#ifdef HAVE_ADPLUG_NEMUOPL_H
+    case ADPLUG_NUKED:
+      opl.capture(new CNemuopl (freq));
+      break;
+#endif
+#ifdef HAVE_ADPLUG_WEMUOPL_H
+    case ADPLUG_WOODY:
+      opl.capture(new CWemuopl (freq, true, true));
+      break;
+#endif
+#ifdef HAVE_ADPLUG_KEMUOPL_H
+    case ADPLUG_KS:
+      opl.capture(new CKemuopl (freq, true, true));
+      break;
+#endif
+    case ADPLUG_MAME:
+    default:
+      opl.capture(new CEmuopl (freq, true, true));
+      // otherwise sound only comes out of left
+      static_cast<CEmuopl *>(opl.get())->settype(Copl::TYPE_OPL2);
+  }
+
   long toadd = 0, i, towrite;
   char *sndbuf, *sndbufpos;
   bool playing = true;  // Song self-end indicator.
@@ -221,7 +251,9 @@ bool AdPlugXMMS::play (const char * filename, VFSFile & fd)
   // Try to load module
   dbg_printf ("factory, ");
   CFileVFSProvider fp (fd);
-  if (!(plr.p = CAdPlug::factory (filename, &opl, CAdPlug::players, fp)))
+  // JWT:NOT CURRENTLY SUPPORTED IN FAUXDACIOUS (REPLACED W/NEXT 2):  if (!(plr.p.capture(CAdPlug::factory (filename, opl.get (), CAdPlug::players, fp))))
+  plr.p.capture(CAdPlug::factory (filename, opl.get (), CAdPlug::players, fp));
+  if (! plr.p)
   {
     dbg_printf ("error!\n");
     // MessageBox("AdPlug :: Error", "File could not be opened!", "Ok");
@@ -238,7 +270,8 @@ bool AdPlugXMMS::play (const char * filename, VFSFile & fd)
 
   // Allocate audio buffer
   dbg_printf ("buffer, ");
-  sndbuf = (char *) malloc (SNDBUFSIZE * sampsize);
+  // 4 byte sample size
+  sndbuf = (char *) malloc (SNDBUFSIZE * 4);
 
   // Rewind player to right subsong
   dbg_printf ("rewind, ");
@@ -248,7 +281,7 @@ bool AdPlugXMMS::play (const char * filename, VFSFile & fd)
 
   // main playback loop
   dbg_printf ("loop.\n");
-  while ((playing || conf.endless))
+  while ((playing || endless))
   {
     if (check_stop ())
       break;
@@ -277,32 +310,28 @@ bool AdPlugXMMS::play (const char * filename, VFSFile & fd)
     {
       while (toadd < 0)
       {
-        toadd += conf.freq;
+        toadd += freq;
         playing = plr.p->update ();
         if (playing)
           time += (int) (1000 / plr.p->getrefresh ());
       }
       i = std::min (towrite, (long) (toadd / plr.p->getrefresh () + 4) & ~3);
-      opl.update ((short *) sndbufpos, i);
-      sndbufpos += i * sampsize;
+      opl->update ((short *) sndbufpos, i);
+      sndbufpos += i * SAMPLESIZE;
       towrite -= i;
       toadd -= (long) (plr.p->getrefresh () * i);
     }
 
-    write_audio (sndbuf, SNDBUFSIZE * sampsize);
+    write_audio (sndbuf, SNDBUFSIZE * SAMPLESIZE);
   }
 
   // free everything and exit
   dbg_printf ("free");
-  delete plr.p;
-  plr.p = 0;
+  plr.p.clear ();
   free (sndbuf);
   dbg_printf (".\n");
   return true;
 }
-
-// sampsize macro not useful anymore.
-#undef sampsize
 
 /***** Informational *****/
 
@@ -328,36 +357,44 @@ bool AdPlugXMMS::is_our_file (const char * filename, VFSFile & fd)
 
 /***** Configuration file handling *****/
 
-static const char * const adplug_defaults[] = {
- "16bit", "TRUE",
- "Stereo", "FALSE",
+const char * const AdPlugXMMS::defaults[] = {
  "Frequency", "44100",
  "Endless", "FALSE",
+ "Emulator", "0",
  nullptr};
 
+/***** Configuration UI *****/
+
+static const ComboItem plugin_combo[] = {
+  ComboItem ("Tatsuyuki Satoh 0.72 (MAME, 2003)", ADPLUG_MAME),
+#ifdef HAVE_ADPLUG_NEMUOPL_H
+  ComboItem ("Nuked OPL3 (Nuke.YKT, 2018)", ADPLUG_NUKED),
+#endif
+#ifdef HAVE_ADPLUG_WEMUOPL_H
+  ComboItem ("WoodyOPL (DOSBox, 2016)", ADPLUG_WOODY),
+#endif
+#ifdef HAVE_ADPLUG_KEMUOPL_H
+  ComboItem ("Ken Silverman (2001)", ADPLUG_KS),
+#endif
+};
+
 const PreferencesWidget AdPlugXMMS::widgets[] = {
-    WidgetLabel (N_("<b>Advanced</b>")),
-    WidgetCheck (N_("16 Bit Format (vs. 8 Bit)?"),
-        WidgetBool (CFG_VERSION, "16bit")),
-    WidgetCheck (N_("Stereo?"),
-        WidgetBool (CFG_VERSION, "Stereo")),
-    WidgetSpin (N_("Frequency (Rate)"),
-        WidgetInt (CFG_VERSION, "Frequency"), {MIN_RATE, MAX_RATE, RATE_STEP, N_("Hz")}),
-    WidgetCheck (N_("Repeat song in continuous loop?"),
-        WidgetBool (CFG_VERSION, "Endless")),
-    WidgetLabel (N_("<b>(Changes take effect after restarting play)</b>"))
+    WidgetLabel (N_("<b>Output</b>")),
+    WidgetCombo (N_("OPL Emulator:"),
+        WidgetInt (CFG_ID, "Emulator"),
+        {{plugin_combo}}),
+    WidgetSpin (N_("Sample rate:"),
+        WidgetInt (CFG_ID, "Frequency"), {8000, 192000, 50, N_("Hz")}),
+    WidgetLabel (N_("<b>Miscellaneous</b>")),
+    WidgetCheck (N_("Repeat song in endless loop"),
+        WidgetBool (CFG_ID, "Endless"))
 };
 
 const PluginPreferences AdPlugXMMS::prefs = {{widgets}};
 
 bool AdPlugXMMS::init ()
 {
-  aud_config_set_defaults (CFG_VERSION, adplug_defaults);
-
-  conf.bit16 = aud_get_bool (CFG_VERSION, "16bit");
-  conf.stereo = aud_get_bool (CFG_VERSION, "Stereo");
-  conf.freq = aud_get_int (CFG_VERSION, "Frequency");
-  conf.endless = aud_get_bool (CFG_VERSION, "Endless");
+  aud_config_set_defaults (CFG_ID, defaults);
 
   // Load database from disk and hand it to AdPlug
   dbg_printf ("database");
@@ -371,10 +408,10 @@ bool AdPlugXMMS::init ()
 
       if (VFSFile::test_file (userdb.c_str (), VFS_EXISTS))
       {
-        plr.db = new CAdPlugDatabase;
+        plr.db.capture(new CAdPlugDatabase);
         plr.db->load (userdb);    // load user's database
         dbg_printf (" (userdb=\"%s\")", userdb.c_str());
-        CAdPlug::set_database (plr.db);
+        CAdPlug::set_database (plr.db.get ());
       }
     }
   }
@@ -387,13 +424,6 @@ void AdPlugXMMS::cleanup ()
 {
   // Close database
   dbg_printf ("db, ");
-  if (plr.db)
-    delete plr.db;
-
+  plr.db.clear ();
   plr.filename = String ();
-
-  aud_set_bool (CFG_VERSION, "16bit", conf.bit16);
-  aud_set_bool (CFG_VERSION, "Stereo", conf.stereo);
-  aud_set_int (CFG_VERSION, "Frequency", conf.freq);
-  aud_set_bool (CFG_VERSION, "Endless", conf.endless);
 }
