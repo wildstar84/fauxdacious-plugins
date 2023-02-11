@@ -76,7 +76,11 @@ class GtkUI : public IfacePlugin
 {
 public:
     static constexpr PluginInfo info = {
-        N_("GTK Interface"),
+#ifdef USE_GTK3
+        N_("GTK3 Interface"),
+#else
+        N_("GTK2 Interface"),
+#endif
         PACKAGE,
         nullptr,
         & gtkui_prefs,
