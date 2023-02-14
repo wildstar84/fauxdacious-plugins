@@ -163,10 +163,12 @@ static void hsv_to_rgb (float h, float s, float v, float * r, float * g, float *
 
 static void get_color (GtkWidget * widget, int i, float * r, float * g, float * b)
 {
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     GdkColor * c = (gtk_widget_get_style (widget))->base + GTK_STATE_SELECTED;
     float h, s, v;
 
     rgb_to_hsv (c->red / 65535.0, c->green / 65535.0, c->blue / 65535.0, & h, & s, & v);
+G_GNUC_END_IGNORE_DEPRECATIONS
 
     if (s < 0.1) /* monochrome theme? use blue instead */
         h = 4.6;
