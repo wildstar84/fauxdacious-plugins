@@ -251,9 +251,7 @@ bool AdPlugXMMS::play (const char * filename, VFSFile & fd)
   // Try to load module
   dbg_printf ("factory, ");
   CFileVFSProvider fp (fd);
-  // JWT:NOT CURRENTLY SUPPORTED IN FAUXDACIOUS (REPLACED W/NEXT 2):  if (!(plr.p.capture(CAdPlug::factory (filename, opl.get (), CAdPlug::players, fp))))
-  plr.p.capture(CAdPlug::factory (filename, opl.get (), CAdPlug::players, fp));
-  if (! plr.p)
+  if (!(plr.p.capture(CAdPlug::factory (filename, opl.get (), CAdPlug::players, fp))))
   {
     dbg_printf ("error!\n");
     // MessageBox("AdPlug :: Error", "File could not be opened!", "Ok");
