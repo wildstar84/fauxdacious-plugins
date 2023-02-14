@@ -55,6 +55,8 @@ static const char * const gtkui_defaults[] = {
     "statusbar_visible", "TRUE",
     "entry_count_visible", "FALSE",
     "close_button_visible", "TRUE",
+    /* JWT:FIXME - DOESN'T SEEM TO GET INITIALIZED IN TIME, SO MUST MANUALLY ADD TO config FILE?! */
+    "restore_floating_dockapps_late", "TRUE",
 
     "autoscroll", "TRUE",
     "playlist_columns", "title artist album queued length",
@@ -130,6 +132,7 @@ static PluginHandle * search_tool;
 static GtkWidget * volume;
 static bool volume_slider_is_moving = false;
 static unsigned long volume_change_handler_id;
+static void add_dock_plugins ();
 
 static GtkAccelGroup * accel;
 
@@ -238,6 +241,12 @@ void GtkUI::show (bool show)
             restore_window_size ();
 
         gtk_window_present ((GtkWindow *) window);
+        if (aud_get_bool ("audgui", "restore_floating_dockapps_late")
+                && ! aud_get_bool ("audqui", "_dockapps_restored"))
+        {
+            add_dock_plugins ();
+            aud_set_bool ("audqui", "_dockapps_restored", true);
+        }
     }
     else
     {
@@ -860,6 +869,7 @@ bool GtkUI::init ()
     search_tool = aud_plugin_lookup_basename ("search-tool");
 
     aud_config_set_defaults ("gtkui", gtkui_defaults);
+    aud_set_bool ("audqui", "_dockapps_restored", false);
 
     pw_col_init ();
 
@@ -1019,7 +1029,8 @@ bool GtkUI::init ()
     menu_rclick = make_menu_rclick (accel);
     menu_tab = make_menu_tab (accel);
 
-    add_dock_plugins ();
+    if (! aud_get_bool ("audgui", "restore_floating_dockapps_late"))
+        add_dock_plugins ();
 
     return true;
 }
