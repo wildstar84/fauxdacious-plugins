@@ -224,7 +224,9 @@ void * create_soundfont_list ()
 
         soundfont_file_hbox = audgui_hbox_new (2);
         soundfont_file_lv = gtk_tree_view_new_with_model (GTK_TREE_MODEL (soundfont_file_store));
+#ifndef USE_GTK3
         gtk_tree_view_set_rules_hint (GTK_TREE_VIEW (soundfont_file_lv), true);
+#endif
         g_object_unref (soundfont_file_store);
         soundfont_file_lv_text_rndr = gtk_cell_renderer_text_new();
         soundfont_file_lv_fname_col = gtk_tree_view_column_new_with_attributes (
@@ -285,6 +287,7 @@ void * create_soundfont_list ()
 #ifdef USE_QT
 
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QVBoxLayout>
 #include <QAbstractListModel>
 #include <QTreeView>
@@ -360,35 +363,16 @@ void SoundFontListModel::append (const char * filename)
 void SoundFontListModel::update ()
 {
     String soundfont_file = aud_get_str ("amidiplug", "fsyn_soundfont_file");
+    Index<String> sffiles = str_list_to_index (soundfont_file, ";");
 
-    if (soundfont_file[0])
-    {
-        char ** sffiles = g_strsplit (soundfont_file, ";", 0);
-        int i = 0;
-
-        while (sffiles[i] != nullptr)
-        {
-            append (sffiles[i]);
-            i++;
-        }
-
-         g_strfreev (sffiles);
-        }
+    for (const char * sffile : sffiles)
+        append (sffile);
 }
 
 void SoundFontListModel::commit ()
 {
-    std::string sflist_string;
-
-    for (auto str : m_file_names)
-    {
-        if (sflist_string[0])
-            sflist_string.append (";");
-
-        sflist_string.append (str);
-    }
-
-    aud_set_str ("amidiplug", "fsyn_soundfont_file", sflist_string.c_str ());
+    aud_set_str ("amidiplug", "fsyn_soundfont_file",
+                 index_to_str_list (m_file_names, ";"));
 
     /* reset backend at beginning of next song to apply changes */
     __sync_bool_compare_and_swap (& backend_settings_changed, false, true);
@@ -513,10 +497,10 @@ SoundFontWidget::SoundFontWidget (QWidget * parent) :
     m_button_sf_up (new QPushButton (m_bbox)),
     m_button_sf_down (new QPushButton (m_bbox))
 {
-    m_button_sf_add->setIcon (audqt::get_icon ("list-add"));
-    m_button_sf_del->setIcon (audqt::get_icon ("list-remove"));
-    m_button_sf_up->setIcon (audqt::get_icon ("go-up"));
-    m_button_sf_down->setIcon (audqt::get_icon ("go-down"));
+    m_button_sf_add->setIcon (QIcon::fromTheme ("list-add"));
+    m_button_sf_del->setIcon (QIcon::fromTheme ("list-remove"));
+    m_button_sf_up->setIcon (QIcon::fromTheme ("go-up"));
+    m_button_sf_down->setIcon (QIcon::fromTheme ("go-down"));
 
     m_bbox_layout->addWidget (m_button_sf_add);
     m_bbox_layout->addWidget (m_button_sf_del);
@@ -527,6 +511,12 @@ SoundFontWidget::SoundFontWidget (QWidget * parent) :
 
     m_view->setModel (m_model);
     m_view->setRootIsDecorated (false);
+    m_view->setUniformRowHeights (true);
+
+    QHeaderView * header = m_view->header ();
+    header->setSectionResizeMode (0, QHeaderView::Stretch);
+    header->setSectionResizeMode (1, QHeaderView::Fixed);
+    header->setStretchLastSection (false);
 
     m_vbox_layout->addWidget (m_view);
     m_vbox_layout->addWidget (m_bbox);

@@ -174,7 +174,9 @@ bool i_fileinfo_gui (const char * filename_uri, VFSFile & file)
     title_icon_pixbuf = gdk_pixbuf_new_from_xpm_data ((const char **) amidiplug_xpm_midiicon);
     title_icon_image = gtk_image_new_from_pixbuf (title_icon_pixbuf);
     g_object_unref (title_icon_pixbuf);
+#ifndef USE_GTK3
     gtk_misc_set_alignment (GTK_MISC (title_icon_image), 0, 0);
+#endif
     gtk_box_pack_start (GTK_BOX (title_hbox), title_icon_image, false, false, 0);
 
     title_name_f_label = gtk_label_new (_("Name:"));
