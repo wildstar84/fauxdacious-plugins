@@ -244,8 +244,10 @@ void GtkUI::show (bool show)
         if (aud_get_bool ("audgui", "restore_floating_dockapps_late")
                 && ! aud_get_bool ("audqui", "_dockapps_restored"))
         {
+            aud_set_bool ("gtkui", "_nofocusgrab", true);  // JWT:DON'T LET DOCK WIDGETS GRAB FOCUS FROM MAIN WINDOW!
             add_dock_plugins ();
             aud_set_bool ("audqui", "_dockapps_restored", true);
+            aud_set_bool ("gtkui", "_nofocusgrab", false);
         }
     }
     else
