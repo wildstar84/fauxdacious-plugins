@@ -51,6 +51,7 @@ typedef struct {
     String name;
     PluginHandle * plugin;
     GtkWidget * widget, * vbox, * paned, * window;
+    GtkWindow * parentwin;
     int dock, x, y, w, h;
     int wprev, hprev, rszcnt;     // JWT:REMEMBER PREV. WxH WHEN UNDOCKED.
 } Item;
@@ -70,6 +71,7 @@ static Item * item_new (const char * name)
     item->name = String (name);
     item->plugin = nullptr;
     item->widget = item->vbox = item->paned = item->window = nullptr;
+    item->parentwin = nullptr;
     item->dock = item->x = item->y = -1;
     item->w = 3 * dpi;
     item->h = 2 * dpi;
@@ -359,23 +361,36 @@ static void item_add (Item * item)
         item->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
         NULL_ON_DESTROY (item->window);
 
-        /* JWT:THIS KLUDGEY BLOCK ALLOWS AfterStep & SOME OTHER WMS TO SKIP INITIAL FOCUS-ON-MAP
-           ON FLOATING DOCK WINDOWS WHEN "restore_floating_dockapps_late" IS SET:
-           (AfterStep database NEEDS LINE:
-               'Style "Fauxdacious_NF" NoFocusOnMap, HonorPPosition, HonorExtWMHints')!
+        /* JWT:THIS KLUDGEY CODE-BLOCK ALLOWS AfterStep & SOME OTHER WMS TO SKIP INITIAL
+           FOCUS-ON-MAP ON FLOATING DOCK WINDOWS WHEN "restore_floating_dockapps_late" IS SET
+           SO THAT THE MAIN WINDOW (THOUGH MAPPED BEFORE DOCK WINDOWS) WILL STILL GET FOCUS
+           (INSTEAD OF THE LAST DOCK WINDOW OPENED GETTING IT):
+           NOTE:  AfterStep database file NEEDS THIS LINE ADDED:
+               'Style "Fauxdacious_NF" NoFocusOnMap, HonorPPosition, HonorGroupHints, HonorTransientHints, HonorExtWMHints'
         */
         if (aud_get_bool ("gtkui", "_nofocusgrab"))
         {
 G_GNUC_BEGIN_IGNORE_DEPRECATIONS
             /* JWT:YES I KNOW IT'S DEPRECIATED, BUT WE NEED THIS FOR ANCIENT AfterStep
                WM TO NOT FOCUS DOCK WINDOWS ON STARTUP B/C MANWINDOW SHOULD GET FOCUS),
-               (WE'LL JUST REMOVE IF BECOMES AN ERROR LATER!):
+               (WE'LL JUST REMOVE AND LIVE WITHOUT IT IF BECOMES AN ERROR LATER!):
             */
             if (aud_get_bool ("audacious", "afterstep"))
                 gtk_window_set_wmclass((GtkWindow *) item->window, "fauxdacious", "Fauxdacious_NF");
 G_GNUC_END_IGNORE_DEPRECATIONS
             gtk_window_set_focus_on_map ((GtkWindow *) item->window, false);
         }
+
+        /* JWT:MAKE FLOATING DOCK WINDOWS "TRANSIENT" (EXCEPT MINI-FAUXDACIOUS ON M$-WINDOWS): */
+#ifdef _WIN32
+        /* JWT:DON'T MAKE MINI-FAUXD. TRANSIENT ON M$-WINDOWS (ELSE ALWAYS ON TOP & M$-WINDOWS
+           CAN'T ICONIZE MAIN WINDOW W/O ICONIZING MINI-FAUXD. TOGETHER (DEFEATS PURPOSE OF MINI-FAUXD)!
+        */
+        if (item->parentwin && ! strstr (item->name, "Mini-Fauxdacious"))
+#else
+        if (item->parentwin)
+#endif
+            gtk_window_set_transient_for ((GtkWindow *) item->window, item->parentwin);
 
         /* JWT:APPEND THE FAUXDACIOUS INSTANCE-NAME (IF NOT DEFAULT) 'CASE WE'RE RUNNING MULTIPLE INSTANCES!: */
         if (strstr (item->name, "Mini-Fauxdacious"))  /* ONLY NEED THIS ON MINI-FAUXDACIOUS PLUGIN. */
@@ -547,20 +562,12 @@ void layout_add (PluginHandle * plugin, GtkWidget * widget, GtkWidget * window)
     item->widget = widget;
     NULL_ON_DESTROY (item->widget);
     item->vbox = vbox_new (widget, name);
+    item->parentwin = (GtkWindow *) window;
     NULL_ON_DESTROY (item->vbox);
 
     g_signal_connect (item->vbox, "size-allocate", (GCallback) size_changed_cb, item);
 
     item_add (item);
-#ifdef _WIN32
-    /* JWT:DON'T MAKE MINI-FAUXD. TRANSIENT ON M$-WINDOWS (ELSE ALWAYS ON TOP & M$-WINDOWS
-       CAN'T ICONIZE MAIN WINDOW W/O ICONIZING MINI-FAUXD. TOGETHER (DEFEATS PURPOSE OF MINI-FAUXD)!
-    */
-    if (item->dock == -1 && ! strstr (item->name, "Mini-Fauxdacious"))
-#else
-    if (item->dock == -1 && aud_get_bool ("audacious", "afterstep"))  // ONLY SEEMS TO WORK ON AfterStep?!
-#endif
-        gtk_window_set_transient_for ((GtkWindow *) item->window, (GtkWindow *) window);
 }
 
 static void layout_move (GtkWidget * widget, int dock)
