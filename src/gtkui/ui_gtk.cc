@@ -242,11 +242,11 @@ void GtkUI::show (bool show)
 
         gtk_window_present ((GtkWindow *) window);
         if (aud_get_bool ("audgui", "restore_floating_dockapps_late")
-                && ! aud_get_bool ("audqui", "_dockapps_restored"))
+                && ! aud_get_bool ("gtkui", "_dockapps_restored"))
         {
             aud_set_bool ("gtkui", "_nofocusgrab", true);  // JWT:DON'T LET DOCK WIDGETS GRAB FOCUS FROM MAIN WINDOW!
             add_dock_plugins ();
-            aud_set_bool ("audqui", "_dockapps_restored", true);
+            aud_set_bool ("gtkui", "_dockapps_restored", true);
             aud_set_bool ("gtkui", "_nofocusgrab", false);
         }
     }
@@ -871,7 +871,7 @@ bool GtkUI::init ()
     search_tool = aud_plugin_lookup_basename ("search-tool");
 
     aud_config_set_defaults ("gtkui", gtkui_defaults);
-    aud_set_bool ("audqui", "_dockapps_restored", false);
+    aud_set_bool ("gtkui", "_dockapps_restored", false);
 
     pw_col_init ();
 
