@@ -390,7 +390,7 @@ G_GNUC_END_IGNORE_DEPRECATIONS
 #else
         if (item->parentwin)
 #endif
-            gtk_window_set_transient_for ((GtkWindow *) item->window, item->parentwin);
+            gtk_window_set_transient_for ((GtkWindow *) item->window, (GtkWindow *) item->parentwin);
 
         /* JWT:APPEND THE FAUXDACIOUS INSTANCE-NAME (IF NOT DEFAULT) 'CASE WE'RE RUNNING MULTIPLE INSTANCES!: */
         if (strstr (item->name, "Mini-Fauxdacious"))  /* ONLY NEED THIS ON MINI-FAUXDACIOUS PLUGIN. */
