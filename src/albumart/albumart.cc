@@ -135,6 +135,7 @@ static gboolean albumart_ready (gpointer widget)
                 /* INFOBAR ICON POSSIBLY HIDDEN BY HIDE DUP. OPTION, SO FORCE "SHOW" IN INFOBAR: */
                 aud_set_int ("albumart", "_infoarea_hide_art_gtk", 0);
                 hook_call ("gtkui toggle infoarea_art", nullptr);
+                pixbuf = AudguiPixbuf ();
             }
             return false;
         }
@@ -343,7 +344,10 @@ static void album_update (void *, GtkWidget * widget)
             pixbuf = audgui_pixbuf_fallback ();
 
         if (pixbuf)
+        {
             audgui_scaled_image_set (widget, pixbuf.get ());
+            pixbuf = AudguiPixbuf ();
+        }
     }
 
     if (aud_get_bool ("albumart", "hide_dup_art_icon") && (! strncmp (filename, "http://", 7)
@@ -486,6 +490,7 @@ static void album_update (void *, GtkWidget * widget)
                         /* INFOBAR ICON POSSIBLY HIDDEN BY HIDE DUP. OPTION, SO FORCE "SHOW" IN INFOBAR: */
                         aud_set_int ("albumart", "_infoarea_hide_art_gtk", 0);
                         hook_call ("gtkui toggle infoarea_art", nullptr);
+                        pixbuf = AudguiPixbuf ();
 
                         return;
                     }
