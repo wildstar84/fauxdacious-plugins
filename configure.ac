@@ -233,7 +233,7 @@ ENABLE_PLUGIN_WITH_DEP(vorbis,
 
 ENABLE_PLUGIN_WITH_DEP(opus,
     Opus support,
-    yes,
+    auto,
     INPUT,
     OPUS,
     opus >= 1.0.1 opusfile >= 0.4)
