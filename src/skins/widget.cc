@@ -104,6 +104,7 @@ void Widget::draw_now ()
     if (! m_drawable || ! gtk_widget_is_drawable (m_drawable))
         return;
 
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     cairo_t * cr = gdk_cairo_create (gtk_widget_get_window (m_drawable));
 
     if (! gtk_widget_get_has_window (m_drawable))
@@ -118,6 +119,7 @@ void Widget::draw_now ()
     draw_cb (m_drawable, cr, this);
 
     cairo_destroy (cr);
+G_GNUC_END_IGNORE_DEPRECATIONS
 }
 
 gboolean Widget::draw_cb (GtkWidget * widget, cairo_t * cr, Widget * me)
