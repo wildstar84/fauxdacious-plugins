@@ -879,7 +879,7 @@ void FFaudio::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
                 SDL_UpdateYUVTexture (bmp, nullptr, vframe->data[0], vframe->linesize[0], 
                     vframe->data[1], vframe->linesize[1], vframe->data[2], vframe->linesize[2]);
                 SDL_RenderCopy (renderer, bmp, nullptr, nullptr);  // USE NULL TO GET IMAGE TO FIT WINDOW!
-                SDL_RenderPresent (renderer);
+                SDL_RenderPresent (renderer);  // JWT:NOTE, WILL SEGFAULT HERE IF SQL IS ALREADY SHUT DOWN!
                 (*windowIsStable) = true;
             }
             return;
@@ -1062,9 +1062,6 @@ static void * reader_thread_fn (void * data)
     }
 
 THREAD_EXIT:
-    if (! thread_exit)
-        thread_exit = -1;  // ERROR? (SHOULDN'T HAPPEN)!
-
     pthread_mutex_unlock (& queue_mutex);
     pthread_mutex_unlock (& read_mutex);
 
@@ -1408,6 +1405,9 @@ breakout1:
                     }
                 }
             }
+            if (thread_exit == 2)  //abUser MAY HAVE KILLED FAUXDACIOUS (& SDL) WHILST WRITING AUDIO-FRAMES!:
+                break;             //IF SO, WE BREAK HERE B4 WRITING VIDEO FRAMES LEST WE SEGFAULT!
+
             if (TD.pktQ->size > 0)
             {   // PROCESS NEXT VIDEO FRAME(S) IN QUEUE:
                 write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, TD.pktQ->elements[TD.pktQ->front],
