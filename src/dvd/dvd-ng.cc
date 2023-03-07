@@ -1450,6 +1450,13 @@ AUDDBG("---INPUT PIPE OPENED!\n");
 #else
             vcinfo.context = c->streams[videoStream]->codec;  // AVCodecContext *
 #endif
+
+#if CHECK_LIBAVCODEC_VERSION(58, 9, 100, 255, 255, 255)
+            vcinfo.context->pkt_timebase = vcinfo.stream->time_base;
+#else
+            av_codec_set_pkt_timebase (vcinfo.context, vcinfo.stream->time_base);
+#endif
+
             //JWT:AS/OF v3.8, LOW-QUALITY VIDEOS SEEM BETTER W/O THIS, BUT WE LEAVE IT AS A CONFIG. OPTION - YMMV:
             if (aud_get_bool ("dvd", "video_codec_flag_truncated") && vcodec->capabilities&AV_CODEC_CAP_TRUNCATED)
                 vcinfo.context->flags |= AV_CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
@@ -1481,6 +1488,13 @@ AUDDBG("---INPUT PIPE OPENED!\n");
 #else
             cinfo.context = c->streams[audioStream]->codec;  // AVCodecContext *
 #endif
+
+#if CHECK_LIBAVCODEC_VERSION(58, 9, 100, 255, 255, 255)
+            cinfo.context->pkt_timebase = cinfo.stream->time_base;
+#else
+            av_codec_set_pkt_timebase (cinfo.context, cinfo.stream->time_base);
+#endif
+
             codec_opened = true;
             AUDINFO ("got AUDIO codec %s for stream index %d, opening...\n", cinfo.codec->name, cinfo.stream_idx);
         }
