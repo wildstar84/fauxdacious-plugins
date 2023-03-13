@@ -93,6 +93,9 @@ DataShared2Thread;
 static int thread_exit;  // INDICATES READER-THREAD EXIT AND STATUS (0=RUNNING, 1=EOF, 2=STOPPED, -1=ERROR.
 static int as_decor_fudge_x = 0; // MUST CAPTURE WxH OF WINDOW-DECORATIONS FOR AfterStep WM FOR PROPER WINDOW PLACEMENT!
 static int as_decor_fudge_y = 0;
+#if SDL_COMPILEDVERSION > 4600
+static bool as_decor_fudge_set = false;
+#endif
 static pthread_mutex_t read_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -953,7 +956,7 @@ static SDL_Texture * createSDL2Texture (SDL_Window * sdl_window, SDL_Renderer * 
 
 /* WHEN EXITING PLAY, WE SAVE THE WINDOW-POSITION & SIZE SO WINDOW CAN POP UP IN SAME POSITION NEXT TIME! */
 void save_window_xy (SDL_Window * sdl_window, int video_window_x, int video_window_y,
-        bool video_display_at_startup)
+        int init_window_x, int init_window_y, bool video_display_at_startup)
 {
     int x, y, w, h;
 
@@ -961,64 +964,57 @@ void save_window_xy (SDL_Window * sdl_window, int video_window_x, int video_wind
     if (w < 1 || h < 1 || w > 9999 || h > 9999)  /* SDL RETURNED BAD WINDOW INFO, DON'T SAVE! */
         return;
 
-    SDL_GetWindowPosition (sdl_window, &x, &y);
+    /* JWT:NOTE:  FETCH WINDOW'S CURRENT COORDS, BUT LATEST SDL VERSION RETURNS SDL COORDINATES
+       *ONLY* IF WINDOW WAS "MOVED" (EITHER BY USER OR BY INITIAL (RE)PLACEMENT ON 1ST VIDEO PLAY),
+       OTHERWISE, IT NOW (IN LATEST SDL) SEEMS TO RETURN WM COORDINATES?!
+       (PREV. SDL VSNS RETURNED SDL COORDINATES ALWAYS)!
+    */
+    SDL_GetWindowPosition (sdl_window, &x, &y);  /* FETCH WINDOW'S CURRENT (SDL) COORDS: */
+    AUDDBG ("--SAVING: WINDOW AT (%d, %d), FUDGE=(%d, %d) VW=(%d, %d)\n", x, y, as_decor_fudge_x, as_decor_fudge_y, video_window_x, video_window_y);
 
+#if SDL_COMPILEDVERSION > 4600
+    /* IF WINDOW "MOVED", WE'LL HAVE SDL COORDS, SO CONVERT TO WM COORDS, (OTHERWISE */
+    /* WE ALREADY HAVE WM COORDS): NOTE:  OLDER SDL VSNS ALWAYS RETURNED SDL COORDS): */
+    if (! video_display_at_startup)
+    {
+        if (! as_decor_fudge_set && aud_get_bool ("audacious", "video_display"))
+        {
+            /* STARTED OUT W/VIDEO OFF, BUT TURNED ON, NOW NEED TO CALCULATE FUDGE NOW: */
+            as_decor_fudge_x = video_window_x - x;
+            as_decor_fudge_y = video_window_y - y;
+            AUDDBG ("--FUDGE SET IN SAVE (%d, %d) B/C VIDEO TOGGLED ON DURING PLAY B4 FUDGE CALCULATED.\n", as_decor_fudge_x, as_decor_fudge_y);
+            as_decor_fudge_set = true;
+        }
+        x = video_window_x;  // NO VIDEO AT STARTUP, BUT WE HAVE WM COORDS ALREADY (NOT MOVED):
+        y = video_window_y;
+    }
+    else if (x != init_window_x || y != init_window_y  // WE HAVE "SDL" COORDS. IF ANY OF THIS IS TRUE:
+            || (! video_display_at_startup && aud_get_bool ("audacious", "video_display")))
+#else
     if (! video_display_at_startup && aud_get_bool ("audacious", "video_display"))
     {
         /* JWT:MUST RECALCULATE FUDGE HERE IFF WINDOW STARTED PLAY HIDDEN (UNDECORATED), */
         /* BUT FINISNED SHOWN (DECORATED?) (WE ACTIVATED VIDEO VISUALIZATION DURING PLAY)!: */
         as_decor_fudge_x = video_window_x - x;
         as_decor_fudge_y = video_window_y - y;
-        AUDDBG ("FUDGE RE-SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x, video_window_y, as_decor_fudge_x, as_decor_fudge_y);
+        AUDDBG ("FUDGE RE-SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x,
+                video_window_y, as_decor_fudge_x, as_decor_fudge_y);
     }
-    x += as_decor_fudge_x;  /* APPLY CALCULATED FUDGE-FACTOR */
-    if (x < 0 || x > 9999)
-        x = 0;
-    y += as_decor_fudge_y;
-    if (y < 0 || x > 9999)
-        y = 0;
-    aud_set_int ("ffaudio", "video_window_x", x);
+#endif
+    {
+        AUDDBG ("--MOVED?  ADD FUDGE!  init=(%d, %d)\n", init_window_x, init_window_y);
+        x += as_decor_fudge_x;  /* APPLY CALCULATED FUDGE-FACTOR (WE HAVE SDL COORDS): */
+        if (x < 0 || x > 9999)
+            x = 0;              // DON'T ALLOW WEIRD OR OFF LEFT/TOP OF SCREEN!
+        y += as_decor_fudge_y;
+        if (y < 0 || x > 9999)
+            y = 0;
+    }
+    aud_set_int ("ffaudio", "video_window_x", x);  // SAVE TO CONFIG-FILE AS WM COORDS!:
     aud_set_int ("ffaudio", "video_window_y", y);
     aud_set_int ("ffaudio", "video_window_w", w);
     aud_set_int ("ffaudio", "video_window_h", h);
     AUDDBG ("--save_window_xy(%d, %d)\n", x, y);
-}
-
-/* JWT:FN TO CALCULATE "FUDGE-FACTOR" OFFSET AND PLACE WINDOW ACCORDINGLY. (CALLED FROM 2 PLACES) */
-void place_window_with_fudge (SDL_Window * sdl_window, int video_window_x, int video_window_y)
-{
-    int x, y, sdl_init_fudge_x, sdl_init_fudge_y;
-    SDL_GetWindowPosition (sdl_window, &x, &y);
-    /* JWT:FOR RECENT SDL2 VSNS (SEE ABOVE), AFTERSTEP NEEDS THIS TOO!
-       MOST WMS PLACE WINDOWS BASED ON THE RAW WINDOW EXCLUDING DECORATIONS, BUT
-       AFTERSTEP, AND PERHAPS SOME OTHERS?, INCLUDE DECORATIONS, RESULTING IN WINDOWS
-       BEING PLACED A BIT LOWER AND TO RIGHT (RESULTING IN THIS RECALCULATED FUDGE-FACTOR
-       BEING THE WxH OF THE WINDOW'S DECORATIONS - NORMALLY WILL BE 0, 0 FOR MOST WMS)!:
-       NOTE:  THERE ARE ACTUALLY 2 "FUDGE" FACTORS (OFFSETS) WE HAVE TO ACCOUNT FOR:
-       1)  SDL / WINDOW-MANAGER RETURNING RANDOM COORDINATES BEFORE 1ST BLIT (as_decor_fudge_*), AND
-       2)  THE WxH OF WINDOW-DECORATIONS (FOR AfterStep & PERHAPS SOME OTHER WMs) THAT
-       PLACE WINDOWS BASED TON UPPER-LEFT CORNER OF THE TITALBAR AND SDL, WHICH USES THE
-       UPPER-LEFT CORNER OF THE UNDECORATED WINDOW! (sdl_init_*).
-       THE FORMER ONLY APPLIES ON INITIAL PLACEMENT, THE OTHER, AFFECTS EVERY Get/SetWindowPosition().
-    */
-    if (as_decor_fudge_x == 0 && as_decor_fudge_y == 0)
-    {
-        sdl_init_fudge_x = video_window_x - x;
-        sdl_init_fudge_y = video_window_y - y;
-    }
-    else
-    {
-        sdl_init_fudge_x = as_decor_fudge_x;
-        sdl_init_fudge_y = as_decor_fudge_y;
-    }
-    SDL_SetWindowPosition (sdl_window, x+sdl_init_fudge_x, y+sdl_init_fudge_y);
-    SDL_Delay (50);
-    SDL_GetWindowPosition (sdl_window, &x, &y);
-    if (as_decor_fudge_x == 0 && as_decor_fudge_y == 0) // SAVE WINDOW-DECORATION W/H (FOR AfterStep, etc.):
-    {
-        as_decor_fudge_x = video_window_x - x;
-        as_decor_fudge_y = video_window_y - y;
-    }
 }
 
 static void * reader_thread_fn (void * data)
@@ -1156,10 +1152,12 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     bool last_resized = true;      // TRUE IF VIDEO-WINDOW HAS BEEN RE-ASPECTED SINCE LAST RESIZE EVENT (HAS CORRECT ASPECT RATIO).
     SDL_Event       event;         // SDL EVENTS, IE. RESIZE, KILL WINDOW, ETC.
     bool needWinSzFudge = true;    // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
-    SDL_Window * sdl_window = nullptr;  /* JWT: MUST DECLARE VIDEO SCREEN-WINDOW HERE */
-    bool video_display_at_startup = aud_get_bool ("audacious", "video_display"); // TRUE IF VIDIO VISUALIZATION ON AT PLAY START.
+    SDL_Window * sdl_window = nullptr;  // JWT: MUST DECLARE VIDEO SCREEN-WINDOW HERE
+    bool video_display_at_startup = aud_get_bool ("audacious", "video_display"); // TRUE IF VIDEO VISUALIZATION ON AT PLAY START.
+    int init_window_x = 0;         // INITIAL (SDL) COORDINATES OF WINDOW FIRST PLACED (BEFORE USER CAN MOVE IT):
+    int init_window_y = 0;
     int video_resizedelay = 1;     // MIN. TIME TO WAIT AFTER USER RESIZES VIDEO WINDOW BEFORE RE-ASPECTING (SEC.)
-    time_t last_resizeevent_time = time (nullptr);  // TIME OF LAST RESIZE EVENT, SO WE CAN DETERMINE WHEN SAFE TO RE-ASPECT.
+    time_t last_resizeevent_time = time (nullptr); // TIME OF LAST RESIZE EVENT, SO WE CAN DETERMINE WHEN SAFE TO RE-ASPECT.
 #ifdef _WIN32
     SDL_Texture * bmp = nullptr;   // CAN'T USE SMARTPTR HERE IN WINDOWS - renderer.get() FAILS IF VIDEO PLAY NOT TURNED ON?!
 #endif
@@ -1510,7 +1508,7 @@ breakout1:
                                     /* DISABLE "video_display" VISUALIZATION PLUGIN (WHICH WILL HIDE THE VIDEO WINDOW! */
                                     /* (THIS IS HOW ALL OTHER VISUALIZATION PLUGINS WORK) */
                                     save_window_xy (sdl_window, video_window_x, video_window_y,
-                                            video_display_at_startup);
+                                            init_window_x, init_window_y, video_display_at_startup);
                                     PluginHandle * visHandle = aud_plugin_lookup_basename ("video_display");
                                     aud_plugin_enable (visHandle, false);  // DISABLE VIDEO VISUALIZATION PLUGIN!
                                 }
@@ -1543,36 +1541,6 @@ breakout1:
                                 if (! aud_get_bool ("audacious", "video_display"))
                                     SDL_HideWindow (sdl_window);
                                 break;
-#if SDL_COMPILEDVERSION > 4600
-                            case SDL_WINDOWEVENT_MOVED:  /* ONLY SEEMS TO BE CALLED IF INITIAL WINDOW-PLACEMT REQUIRES MOVE, & UNRELIABLE! */
-                                /* (SDL2): WE HAVE TO WAIT UNTIL HERE FOR SDL_GetWindowPosition() TO RETURN THE CORRECT POSITION
-                                   SO WE CAN CALCULATE A "FUDGE FACTOR" SINCE:
-                                   1) SDL_SetWindowPosition(x, y) FOLLOWED BY SDL_GetWindowPosition() DOES *NOT*
-                                   RETURN (x, y) BUT x+<windowdecorationwidth>, y+windowdecorationheight, AT LEAST FOR AFTERSTEP!
-                                   (THIS IS B/C THE WINDOW IS PLACED W/IT'S UPPER LEFT CORNER AT THE SPECIFIED POSITION, *BUT* THE
-                                   COORDINATES RETURNED REFER TO THE UPPER LEFT CORNER OF THE ACTUAL (UNDECORATED) VIDEO SCREEN!!)
-                                   2) SDL_GetWindowPosition() SEEMS TO RETURN PSUEDO-RANDOMLY *DIFFERENT* COORDINATES AFTER THE FIRST
-                                   BLIT THAN THOSE WHERE THE WINDOW WAS ORIGINALLY PLACED, BUT IS CONSISTANT AFTER THAT, SO WE WAIT
-                                   UNTIL NOW (AFTER FIRST BLIT BUT BEFORE USER CAN MOVE THE WINDOW) TO GET THE WINDOW-POSITION AND
-                                   COMPARE WITH WHAT WE INITIALLY SET THE WINDOW TO TO DETERMINE THE NECESSARY "FUDGE FACTOR" IN
-                                   ORDER TO ADJUST THE COORDINATES WHEN WE'RE READY TO SAVE THE WINDOW-POSITION WHEN EXITING PLAY!
-                                   (VERY ANNOYING, ISN'T IT!)  FOR SDL-1, THE FUDGE-FACTOR IS ONLY THE WxH OF WINDOW-DECORATIONS.
-                                   (WE MARK THE WINDOW AS "STABLE" FOR THIS PURPOSE AFTER BLITTING A FRAME)
-                                   NOTE:  THE WINDOW DOESN'T *MOVE* AFTER INITIAL PLACEMENT, JUST THE RETURNED COORDINATES DIFFER!
-                                */
-                                if (needWinSzFudge)
-                                {
-                                    if (windowIsStable)
-                                    {
-                                        /* WE NEED TO CALL THIS AS SOON AS POSSIBLE AFTER 1ST BLIT: */
-                                        place_window_with_fudge (sdl_window, video_window_x, video_window_y);
-                                        needWinSzFudge = false;
-                                    }
-                                    else if (noresize_optimizations)  // jwm, ETC. SEEM TO NEED IT FORCED.
-                                        SDL_SetWindowPosition (sdl_window, video_window_x, video_window_y);
-                                }
-                                break;
-#endif
                         }
                     }
                 } while (SDL_PollEvent (& event));
@@ -1647,6 +1615,7 @@ breakout1:
 #if SDL_COMPILEDVERSION < 4601
                 int x, y;
 
+                /* FETCH UNDECORATED WINDOW'S (SDL) COORDS AFTER (RANDOM?) INITIAL W/M PLACEMENT: */
                 SDL_GetWindowPosition (sdl_window, &x, &y);
                 as_decor_fudge_x = video_window_x - x;
                 as_decor_fudge_y = video_window_y - y;
@@ -1667,10 +1636,65 @@ breakout1:
                     AUDDBG ("WINDOW MOVED BY FUDGE AND FUDGE RESET TO 0,0 (WERE NOT RUNNING AFTERSTEP)!\n");
                 }
 #else
-                /* INITIAL WINDOW-MOVE CAME BEFORE 1ST BLIT (WINDOW WAS STABLE), SO CALL ASAP HERE: */
-                place_window_with_fudge (sdl_window, video_window_x, video_window_y);
+                int x, y, sdl_init_fudge_x, sdl_init_fudge_y;
+                /* FETCH UNDECORATED WINDOW'S (SDL) COORDS AFTER (RANDOM?) INITIAL W/M PLACEMENT: */
+                SDL_GetWindowPosition (sdl_window, &x, &y);
+                /* JWT:FOR RECENT SDL2 VSNS (SEE ABOVE), AFTERSTEP NEEDS THIS TOO (BUT WILL HAVE A FUDGE
+                   FOR DECORATIONS)!
+                   MOST WMS PLACE WINDOWS BASED ON THE RAW WINDOW EXCLUDING DECORATIONS, BUT AFTERSTEP,
+                   AND PERHAPS SOME OTHER OLDER ONES, INCLUDE DECORATIONS, RESULTING IN WINDOWS
+                   BEING PLACED A BIT LOWER AND TO RIGHT (RESULTING IN THIS RECALCULATED FUDGE-FACTOR
+                   BEING THE WxH OF THE WINDOW'S DECORATIONS - NORMALLY WILL BE 0, 0 FOR MOST WMS)!:
+                   NOTE:  THERE ARE ACTUALLY 2 "FUDGE" FACTORS (OFFSETS) WE HAVE TO ACCOUNT FOR:
+                   1)  SDL / WINDOW-MANAGER RETURNING RANDOM COORDINATES BEFORE 1ST BLIT (as_decor_fudge_*), AND
+                   2)  THE WxH OF WINDOW-DECORATIONS (FOR AfterStep & PERHAPS SOME OTHER WMs) THAT
+                   PLACE WINDOWS BASED TON UPPER-LEFT CORNER OF THE TITALBAR AND SDL, WHICH USES THE
+                   UPPER-LEFT CORNER OF THE UNDECORATED WINDOW! (sdl_init_*).
+                   THE FORMER ONLY APPLIES ON INITIAL PLACEMENT, THE OTHER, AFFECTS EVERY Get/SetWindowPosition().
+                */
+                if (as_decor_fudge_set)  // CONVERT WM'S COORDS TO SDL'S (UNDECORATED WINDOW) COORDS:
+                {
+                    if (video_display_at_startup)
+                    {
+                        sdl_init_fudge_x = as_decor_fudge_x;  // USUALLY 0,0 (SAME) FOR MODERN WMs BUT NOT Afterstep!
+                        sdl_init_fudge_y = as_decor_fudge_y;
+                    }
+                    else
+                        sdl_init_fudge_x = sdl_init_fudge_y = 0;  // USUALLY 0,0 (SAME) FOR MODERN WMs BUT NOT Afterstep!
+
+                    AUDDBG ("--ASD FUDGE IS SET: (%d, %d) VW(%d, %d) - FETCHEDxy(%d, %d)\n",
+                            sdl_init_fudge_x, sdl_init_fudge_y, video_window_x, video_window_y, x,y);
+                }
+                else  // CALCULATE HOW FAR WINDOW WILL BE "MOVED" WHEN WE PLACE IT (ONLY HAPPENS ON 1ST VIDEO PLAYED):
+                {
+                    sdl_init_fudge_x = video_window_x - x;  // WHERE WE WANT IT - WHERE IT WAS INITIALLY PLACED.
+                    sdl_init_fudge_y = video_window_y - y;
+                    AUDDBG ("--ASD FUDGE NOT SET: VW(%d, %d) - FETCHEDxy(%d, %d)\n", video_window_x,
+                            video_window_y, x,y);
+                }
+                /* PLACE IT WHERE WE WANT IT. (SDL COORDINATES MATCHING  SAVED IN CONFIG FILE): */
+                AUDDBG ("--SET WINDOW TO (%d, %d) USING INIT FUDGE (%d, %d):\n", x+sdl_init_fudge_x,
+                        y+sdl_init_fudge_y, sdl_init_fudge_x, sdl_init_fudge_y);
+                SDL_SetWindowPosition (sdl_window, x+sdl_init_fudge_x, y+sdl_init_fudge_y);
+                SDL_Delay (50);
+                /* NOW FETCH BACK THE COORDINATES (WILL BE SDL COORDINATES (UNDECORATED WINDOW)): */
+                SDL_GetWindowPosition (sdl_window, & init_window_x, & init_window_y);
+                if (! as_decor_fudge_set) // 1ST VIDEO: SAVE WINDOW-DECORATION W/H (FOR AfterStep, etc.):
+                {
+                    as_decor_fudge_x = video_window_x - init_window_x;  // DECORATION W,H FOR AfterStep,
+                    as_decor_fudge_y = video_window_y - init_window_y;  // OR 0,0 FOR (MOST) OTHER WMs.
+                    if (video_display_at_startup)
+                        as_decor_fudge_set = true;
+
+                    AUDDBG ("---SET ASDECOR FUDGE:=VW(%d, %d) - FETCHED INITxy(%d, %d)\n", video_window_x,
+                            video_window_y, init_window_x, init_window_y);
+                    init_window_x += as_decor_fudge_x;  // CONVERT SET SDL COORDS BACK TO WM COORDINATES
+                    init_window_y += as_decor_fudge_y;  // USED WHEN SAVING TO SEE IF WINDOW MOVED BY USER:
+                }
+                AUDDBG ("--PLACED WINDOW REQ(%d, %d) INIT=(%d, %d)\n", video_window_x, video_window_y,
+                        init_window_x, init_window_y);
 #endif
-                needWinSzFudge = false;
+                needWinSzFudge = false;  // WE HAVE OUR DECORATION FUDGE-FACTOR (IF ANY)!
             }
         }
         else if (TD.apktQ->size > 0)
@@ -1763,7 +1787,7 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
     {
         AUDDBG ("i:ffaudio: QUITTING VIDEO!\n");
         save_window_xy (sdl_window, video_window_x, video_window_y,
-                video_display_at_startup);
+                init_window_x, init_window_y, video_display_at_startup);
         SDL_HideWindow (sdl_window);
         /* NOTIFY video_display VISUALIZATION PLUGIN WE'RE NOT DEMUXING VIDEO. */
         aud_set_bool ("audacious", "_video_playing", false);
