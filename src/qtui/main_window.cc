@@ -555,6 +555,19 @@ void MainWindow::add_dock_item (audqt::DockItem * item)
         String instancename = aud_get_instancename ();
         if (instancename != String ("fauxdacious"))
             w->setWindowTitle (QString ("%1 (%2)").arg (w->windowTitle()).arg ((const char *) instancename));
+
+        /* JWT:FOR MINI-FAUXDACIOUS - RESTORE THE WINDOW-SIZE/POSITION (DEFAULTS TOO SMALL)
+           AND/OR USER PBLY. WANTS TO USE THIS STAND-ALONE MUCH LIKE THE MAIN WINDOW): */
+        if (w->isFloating ())
+        {
+            int x = aud_get_int ("qtui", "mini_fauxdacious_x");
+            int y = aud_get_int ("qtui", "mini_fauxdacious_y");
+            int width = aud_get_int ("qtui", "mini_fauxdacious_w");
+            if (x < 0)  x = 0;
+            if (y < 0)  y = 0;
+            w->move (x, y);
+            w->resize (width, w->geometry ().height ());
+        }
     }
 
     /* workaround for QTBUG-89144 to make sure wm can manage the window! */
@@ -575,5 +588,17 @@ void MainWindow::focus_dock_item (audqt::DockItem * item)
 void MainWindow::remove_dock_item (audqt::DockItem * item)
 {
     auto w = (DockWidget *) item->host_data ();
+    /* JWT:FOR MINI-FAUXDACIOUS - SAVE THE WINDOW-SIZE/POSITION (SINCE DEFAULT WIDTH TOO SMALL)!: */
+    if (strstr (w->windowTitle().toUtf8().constData(), "Mini-Fauxdacious"))
+    {
+        String instancename = aud_get_instancename ();
+        if (w->isFloating ())
+        {
+            aud_set_int ("qtui", "mini_fauxdacious_x", w->geometry ().x ());
+            aud_set_int ("qtui", "mini_fauxdacious_y", w->geometry ().y ());
+            aud_set_int ("qtui", "mini_fauxdacious_w", w->geometry ().width ());
+            /* NOTE:HEIGHT IS FIXED IN THIS WIDGET AT 80(px). */
+        }
+    }
     w->destroy ();
 }
