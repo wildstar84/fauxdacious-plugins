@@ -42,7 +42,10 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QString>
 #include <QtCore/QTimer>
+#include <QtGui/QGuiApplication>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QtX11Extras/QX11Info>
+#endif
 
 #include <libfauxdcore/drct.h>
 #include <libfauxdcore/hook.h>
@@ -95,6 +98,7 @@ static GlobalHotkeysEventFilter event_filter;
 static PluginConfig plugin_cfg;
 
 static int grabbed = 0;
+static Display * xdisplay = nullptr;
 unsigned int numlock_mask = 0;
 unsigned int scrolllock_mask = 0;
 unsigned int capslock_mask = 0;
@@ -124,17 +128,7 @@ bool handle_keyevent(Event event)
     /* get current volume */
     current_volume = aud_drct_get_volume_main();
     old_volume = current_volume;
-
-    if (current_volume)
-    {
-        /* volume is not mute */
-        mute = false;
-    }
-    else
-    {
-        /* volume is mute */
-        mute = true;
-    }
+    mute = (current_volume) ? false : true;
 
     switch (event)
     {
@@ -168,14 +162,10 @@ bool handle_keyevent(Event event)
         }
 
         if ((current_volume -= aud_get_int("audacious", "volume_delta")) < 0)
-        {
             current_volume = 0;
-        }
 
         if (current_volume != old_volume)
-        {
             aud_drct_set_volume_main(current_volume);
-        }
 
         old_volume = current_volume;
         return true;
@@ -193,14 +183,10 @@ bool handle_keyevent(Event event)
         }
 
         if ((current_volume += aud_get_int("audacious", "volume_delta")) > 100)
-        {
             current_volume = 100;
-        }
 
         if (current_volume != old_volume)
-        {
             aud_drct_set_volume_main(current_volume);
-        }
 
         old_volume = current_volume;
         return true;
@@ -332,15 +318,11 @@ void add_hotkey(QList<HotkeyConfiguration> & hotkeys_list, KeySym keysym,
     HotkeyConfiguration hotkey;
 
     if (keysym == 0)
-    {
         return;
-    }
 
-    keycode = XKeysymToKeycode(QX11Info::display(), keysym);
+    keycode = XKeysymToKeycode(xdisplay, keysym);
     if (keycode == 0)
-    {
         return;
-    }
 
     hotkey.key = static_cast<int>(keycode);
     hotkey.mask = mask;
@@ -368,9 +350,7 @@ void load_config()
 {
     int max = aud_get_int("globalHotkey", "NumHotkeys");
     if (max == 0)
-    {
         load_defaults();
-    }
     else
     {
         for (int i = 0; i < max; ++i)
@@ -436,12 +416,32 @@ bool GlobalHotkeys::init()
 {
     audqt::init();
 
-    if (!QX11Info::isPlatformX11())
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0) && defined(Q_OS_UNIX)
+    auto * x11_interface =
+        qApp->nativeInterface<QNativeInterface::QX11Application>();
+    bool has_x11 = x11_interface != nullptr;
+#elif QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    // the interface is not implemented
+    bool has_x11 = false;
+#else
+    bool has_x11 = QX11Info::isPlatformX11();
+#endif
+
+    if (!has_x11)
     {
         AUDERR("Global Hotkey plugin only supports X11.\n");
         audqt::cleanup();
         return false;
     }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0)
+    xdisplay = reinterpret_cast<Display *>(x11_interface->display());
+#elif QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    Q_UNREACHABLE();
+    xdisplay = nullptr;
+#else
+    xdisplay = QX11Info::display();
+#endif
 
     load_config();
     grab_keys();
@@ -467,16 +467,12 @@ bool GlobalHotkeysEventFilter::nativeEventFilter(const QByteArray & eventType,
     Q_UNUSED(result);
 
     if (!grabbed)
-    {
         return false;
-    }
 
     xcb_generic_event_t * e = static_cast<xcb_generic_event_t *>(message);
 
     if (e->response_type != XCB_KEY_PRESS)
-    {
         return false;
-    }
 
     xcb_key_press_event_t * ke = (xcb_key_press_event_t *)e;
 
@@ -484,13 +480,9 @@ bool GlobalHotkeysEventFilter::nativeEventFilter(const QByteArray & eventType,
     {
         if ((hotkey.key == ke->detail) &&
             (hotkey.mask ==
-             (ke->state & ~(scrolllock_mask | numlock_mask | capslock_mask))))
-        {
-            if (handle_keyevent(hotkey.event))
-            {
-                return true;
-            }
-        }
+                (ke->state & ~(scrolllock_mask | numlock_mask | capslock_mask)))
+            && handle_keyevent(hotkey.event))
+            return true;
     }
 
     return false;
@@ -519,22 +511,16 @@ static void get_offending_modifiers(Display * dpy)
         for (int i = 0; i < 8 * modmap->max_keypermod; ++i)
         {
             if ((modmap->modifiermap[i] == nlock) && (nlock != 0))
-            {
                 numlock_mask = mask_table[i / modmap->max_keypermod];
-            }
             else if ((modmap->modifiermap[i] == slock) && (slock != 0))
-            {
                 scrolllock_mask = mask_table[i / modmap->max_keypermod];
-            }
         }
     }
 
     capslock_mask = LockMask;
 
     if (modmap)
-    {
         XFreeModifiermap(modmap);
-    }
 }
 
 static int x11_error_handler(Display * dpy, XErrorEvent * error) { return 0; }
@@ -547,62 +533,44 @@ static void grab_key(const HotkeyConfiguration & hotkey, Display * xdisplay,
         hotkey.mask & ~(numlock_mask | capslock_mask | scrolllock_mask);
 
     if (hotkey.key == 0)
-    {
         return;
-    }
 
     XGrabKey(xdisplay, hotkey.key, modifier, x_root_window, False,
              GrabModeAsync, GrabModeAsync);
 
     if (modifier == AnyModifier)
-    {
         return;
-    }
 
     if (numlock_mask)
-    {
         XGrabKey(xdisplay, hotkey.key, modifier | numlock_mask, x_root_window,
                  False, GrabModeAsync, GrabModeAsync);
-    }
 
     if (capslock_mask)
-    {
         XGrabKey(xdisplay, hotkey.key, modifier | capslock_mask, x_root_window,
                  False, GrabModeAsync, GrabModeAsync);
-    }
 
     if (scrolllock_mask)
-    {
         XGrabKey(xdisplay, hotkey.key, modifier | scrolllock_mask,
                  x_root_window, False, GrabModeAsync, GrabModeAsync);
-    }
 
     if (numlock_mask && capslock_mask)
-    {
         XGrabKey(xdisplay, hotkey.key, modifier | numlock_mask | capslock_mask,
                  x_root_window, False, GrabModeAsync, GrabModeAsync);
-    }
 
     if (numlock_mask && scrolllock_mask)
-    {
         XGrabKey(xdisplay, hotkey.key,
                  modifier | numlock_mask | scrolllock_mask, x_root_window,
                  False, GrabModeAsync, GrabModeAsync);
-    }
 
     if (capslock_mask && scrolllock_mask)
-    {
         XGrabKey(xdisplay, hotkey.key,
                  modifier | capslock_mask | scrolllock_mask, x_root_window,
                  False, GrabModeAsync, GrabModeAsync);
-    }
 
     if (numlock_mask && capslock_mask && scrolllock_mask)
-    {
         XGrabKey(xdisplay, hotkey.key,
                  modifier | numlock_mask | capslock_mask | scrolllock_mask,
                  x_root_window, False, GrabModeAsync, GrabModeAsync);
-    }
 }
 
 void grab_keys()
@@ -610,12 +578,9 @@ void grab_keys()
     PluginConfig * plugin_cfg = get_config();
 
     XErrorHandler old_handler = nullptr;
-    Display * xdisplay = QX11Info::display();
 
     if (grabbed || (!xdisplay))
-    {
         return;
-    }
 
     XSync(xdisplay, False);
     old_handler = XSetErrorHandler(x11_error_handler);
@@ -644,72 +609,50 @@ static void ungrab_key(const HotkeyConfiguration & hotkey, Display * xdisplay,
         hotkey.mask & ~(numlock_mask | capslock_mask | scrolllock_mask);
 
     if (hotkey.key == 0)
-    {
         return;
-    }
 
     XUngrabKey(xdisplay, hotkey.key, modifier, x_root_window);
 
     if (modifier == AnyModifier)
-    {
         return;
-    }
 
     if (numlock_mask)
-    {
         XUngrabKey(xdisplay, hotkey.key, modifier | numlock_mask,
                    x_root_window);
-    }
 
     if (capslock_mask)
-    {
         XUngrabKey(xdisplay, hotkey.key, modifier | capslock_mask,
                    x_root_window);
-    }
 
     if (scrolllock_mask)
-    {
         XUngrabKey(xdisplay, hotkey.key, modifier | scrolllock_mask,
                    x_root_window);
-    }
 
     if (numlock_mask && capslock_mask)
-    {
         XUngrabKey(xdisplay, hotkey.key,
                    modifier | numlock_mask | capslock_mask, x_root_window);
-    }
 
     if (numlock_mask && scrolllock_mask)
-    {
         XUngrabKey(xdisplay, hotkey.key,
                    modifier | numlock_mask | scrolllock_mask, x_root_window);
-    }
 
     if (capslock_mask && scrolllock_mask)
-    {
         XUngrabKey(xdisplay, hotkey.key,
                    modifier | capslock_mask | scrolllock_mask, x_root_window);
-    }
 
     if (numlock_mask && capslock_mask && scrolllock_mask)
-    {
         XUngrabKey(xdisplay, hotkey.key,
                    modifier | numlock_mask | capslock_mask | scrolllock_mask,
                    x_root_window);
-    }
 }
 
 void ungrab_keys()
 {
     PluginConfig * plugin_cfg = get_config();
-
     XErrorHandler old_handler = nullptr;
-    Display * xdisplay = QX11Info::display();
 
     if ((!grabbed) || (!xdisplay))
-    {
         return;
-    }
 
     XSync(xdisplay, False);
     old_handler = XSetErrorHandler(x11_error_handler);

@@ -40,11 +40,14 @@
 
 #include <QtCore/QMap>
 #include <QtCore/QStringList>
+#include <QtGui/QGuiApplication>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QMouseEvent>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QStyle>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QtX11Extras/QX11Info>
+#endif
 
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/preferences.h>
@@ -93,9 +96,7 @@ public:
         QString text;
 
         if ((key == 0) && (mask == 0))
-        {
             text = audqt::translate_str("(none)");
-        }
         else
         {
             static const char * modifier_string[] = {
@@ -106,29 +107,28 @@ public:
 
             QStringList strings;
 
-            KeySym keysym;
-            keysym = XkbKeycodeToKeysym(QX11Info::display(), key, 0, 0);
-            if (keysym == 0 || keysym == NoSymbol)
-            {
-                text = QString::fromLocal8Bit("#%1").arg(key);
-            }
-            else
-            {
-                text = QString::fromLocal8Bit(XKeysymToString(keysym));
-            }
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0)
+            Display * xdisplay = reinterpret_cast<Display *>(qApp
+                ->nativeInterface<QNativeInterface::QX11Application>()
+                ->display());
+#elif QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            // should never be reached
+            Display * xdisplay = nullptr;
+#else
+            Display * xdisplay = QX11Info::display();
+#endif
+            KeySym keysym = XkbKeycodeToKeysym(xdisplay, key, 0, 0);
+            text = (keysym == 0 || keysym == NoSymbol) ? QString::fromLocal8Bit("#%1").arg(key)
+                    : QString::fromLocal8Bit(XKeysymToString(keysym));
 
             for (int j = 0; j < aud::n_elems(modifiers); ++j)
             {
                 if (mask & modifiers[j])
-                {
                     strings.push_back(QString::fromLatin1(modifier_string[j]));
-                }
             }
 
             if (key != 0)
-            {
                 strings.push_back(text);
-            }
 
             text = strings.join(QLatin1String(" + "));
         }
@@ -225,9 +225,7 @@ PrefWidget::~PrefWidget()
     controls_list.clear();
 
     if (last_instance == this)
-    {
         last_instance = nullptr;
-    }
 }
 
 void PrefWidget::add_event_control(const HotkeyConfiguration * hotkey)
@@ -241,9 +239,7 @@ void PrefWidget::add_event_control(const HotkeyConfiguration * hotkey)
         control->hotkey.event = hotkey->event;
 
         if (control->hotkey.key == 0)
-        {
             control->hotkey.mask = 0;
-        }
     }
     else
     {
@@ -260,17 +256,13 @@ void PrefWidget::add_event_control(const HotkeyConfiguration * hotkey)
     }
 
     if (hotkey != nullptr)
-    {
         control->combobox->setCurrentIndex(static_cast<int>(hotkey->event));
-    }
 
     control->keytext = new LineKeyEdit(group_box, control->hotkey);
     control->keytext->setFocus(Qt::OtherFocusReason);
 
     if (hotkey != nullptr)
-    {
         control->keytext->set_keytext(hotkey->key, hotkey->mask);
-    }
 
     control->button = new QToolButton(group_box);
     control->button->setIcon(audqt::get_icon("edit-delete"));
