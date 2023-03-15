@@ -234,6 +234,11 @@ static bool menubuttons_adjusted;  /* TRUE SIGNALS WINDOW HAS CHANGED SZ/RATIO &
 static bool checkcodecs;        /* SIGNAL THAT WE NEED TO RELOAD THE CODECS (TRACK CHANGE, ETC.) */
 static bool readblock;          /* PREVENT READER/DEMUXER THREAD FROM CONTINUING UNTIL DATA READY TO READ */
 static bool initted = false;    /* JWT:TRUE AFTER libav/ffaudio stuff initialized. */
+static int as_decor_fudge_x = 0; // MUST CAPTURE WxH OF WINDOW-DECORATIONS FOR AfterStep WM FOR PROPER WINDOW PLACEMENT!
+static int as_decor_fudge_y = 0;
+#if SDL_COMPILEDVERSION > 4600
+static bool as_decor_fudge_set = false;
+#endif
 
 #ifdef _WIN32
 static HANDLE output_fd;        /* OUTPUT FILE-HANDLE TO PIPE */
@@ -819,7 +824,7 @@ static SDL_Texture * createSDL2Texture (SDL_Window * sdl_window, SDL_Renderer * 
 
 /* WHEN EXITING PLAY, WE SAVE THE WINDOW-POSITION & SIZE SO WINDOW CAN POP UP IN SAME POSITION NEXT TIME! */
 void save_window_xy (SDL_Window * sdl_window, int video_window_x, int video_window_y,
-        int video_fudge_x, int video_fudge_y, int video_display_at_startup)
+        int init_window_x, int init_window_y, int video_display_at_startup)
 {
     int x, y, w, h;
 
@@ -827,22 +832,52 @@ void save_window_xy (SDL_Window * sdl_window, int video_window_x, int video_wind
     if (w < 1 || h < 1 || w > 9999 || h > 9999)  /* SDL RETURNED BAD WINDOW INFO, DON'T SAVE! */
         return;
 
-    SDL_GetWindowPosition (sdl_window, &x, &y);
+    /* JWT:NOTE:  FETCH WINDOW'S CURRENT COORDS, BUT LATEST SDL VERSION RETURNS SDL COORDINATES
+       *ONLY* IF WINDOW WAS "MOVED" (EITHER BY USER OR BY INITIAL (RE)PLACEMENT ON 1ST VIDEO PLAY),
+       OTHERWISE, IT NOW (IN LATEST SDL) SEEMS TO RETURN WM COORDINATES?!
+       (PREV. SDL VSNS RETURNED SDL COORDINATES ALWAYS)!
+    */
+    SDL_GetWindowPosition (sdl_window, &x, &y);  /* FETCH WINDOW'S CURRENT (SDL) COORDS: */
+    AUDDBG ("--SAVING: WINDOW AT (%d, %d), FUDGE=(%d, %d) VW=(%d, %d)\n", x, y, as_decor_fudge_x, as_decor_fudge_y, video_window_x, video_window_y);
+
+#if SDL_COMPILEDVERSION > 4600
+    /* IF WINDOW "MOVED", WE'LL HAVE SDL COORDS, SO CONVERT TO WM COORDS, (OTHERWISE */
+    /* WE ALREADY HAVE WM COORDS): NOTE:  OLDER SDL VSNS ALWAYS RETURNED SDL COORDS): */
+    if (! video_display_at_startup)
+    {
+        if (! as_decor_fudge_set && aud_get_bool ("audacious", "video_display"))
+        {
+            /* STARTED OUT W/VIDEO OFF, BUT TURNED ON, NOW NEED TO CALCULATE FUDGE NOW: */
+            as_decor_fudge_x = video_window_x - x;
+            as_decor_fudge_y = video_window_y - y;
+            AUDDBG ("--FUDGE SET IN SAVE (%d, %d) B/C VIDEO TOGGLED ON DURING PLAY B4 FUDGE CALCULATED.\n", as_decor_fudge_x, as_decor_fudge_y);
+            as_decor_fudge_set = true;
+        }
+        x = video_window_x;  // NO VIDEO AT STARTUP, BUT WE HAVE WM COORDS ALREADY (NOT MOVED):
+        y = video_window_y;
+    }
+    else if (x != init_window_x || y != init_window_y  // WE HAVE "SDL" COORDS. IF ANY OF THIS IS TRUE:
+            || (! video_display_at_startup && aud_get_bool ("audacious", "video_display")))
+#else
     if (! video_display_at_startup && aud_get_bool ("audacious", "video_display"))
     {
         /* JWT:MUST RECALCULATE FUDGE HERE IFF WINDOW STARTED PLAY HIDDEN (UNDECORATED), */
-        /* BUT FINISNED SHOWN (DECORATED?) (WE ACTIVATED VIDEO VISUALIZATION DURING PLAY)!: */
-        video_fudge_x = video_window_x - x;
-        video_fudge_y = video_window_y - y;
-        AUDDBG ("FUDGE RE-SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x, video_window_y, video_fudge_x, video_fudge_y);
+        as_decor_fudge_x = video_window_x - x;
+        as_decor_fudge_y = video_window_y - y;
+        AUDDBG ("FUDGE RE-SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x,
+                video_window_y, as_decor_fudge_x, as_decor_fudge_y);
     }
-    x += video_fudge_x;  /* APPLY CALCULATED FUDGE-FACTOR */
-    if (x < 0 || x > 9999)
-        x = video_window_x;
-    y += video_fudge_y;
-    if (y < 0 || y > 9999)
-        y = video_window_y;
-    aud_set_int ("dvd", "video_window_x", x);
+#endif
+    {
+        AUDDBG ("--MOVED?  ADD FUDGE!  init=(%d, %d)\n", init_window_x, init_window_y);
+        x += as_decor_fudge_x;  /* APPLY CALCULATED FUDGE-FACTOR (WE HAVE SDL COORDS): */
+        if (x < 0 || x > 9999)
+            x = 0;              // DON'T ALLOW WEIRD OR OFF LEFT/TOP OF SCREEN!
+        y += as_decor_fudge_y;
+        if (y < 0 || x > 9999)
+            y = 0;
+    }
+    aud_set_int ("dvd", "video_window_x", x);  // SAVE TO CONFIG-FILE AS WM COORDS!:
     aud_set_int ("dvd", "video_window_y", y);
     aud_set_int ("dvd", "video_window_w", w);
     aud_set_int ("dvd", "video_window_h", h);
@@ -1117,7 +1152,6 @@ AVFormatContext * DVD::open_input_file (HANDLE input_fd_p)
 AVFormatContext * DVD::open_input_file (struct pollfd * input_fd_p)
 #endif
 {
-AUDDBG("PLAY:opening input0!!!!!!!!...\n");
     if (playback_thread_running)
         return nullptr;
     playback_thread_running = true;
@@ -1190,16 +1224,23 @@ void DVD::reader_demuxer ()
     int video_window_y = 0;
     int video_window_w = 0;
     int video_window_h = 0;
-    int video_xmove;
+    int video_xmove = 1;
     int video_resizedelay = 1;     // MIN. TIME TO WAIT AFTER USER RESIZES VIDEO WINDOW BEFORE RE-ASPECTING (SEC.)
     uint32_t video_default_width = 720;   // WINDOW-SIZE REQUESTED BY VIDEO STREAM ITSELF (just initialize for sanity).
     uint32_t video_default_height = 480;
     int video_doreset_width = 0;   // WINDOW-SIZE BELOW WHICH WINDOW WILL SNAP BACK TO SIZE REQUESTED BY VIDEO STREAM:
     int video_doreset_height = 0;
-    int video_fudge_x = 0; int video_fudge_y = 0;  // FUDGE-FACTOR TO MAINTAIN VIDEO SCREEN LOCN. BETWEEN RUNS.
     bool needWinSzFudge = true;    // TRUE UNTIL A FRAME HAS BEEN BLITTED & WE'RE NOT LETTING VIDEO DECIDE WINDOW SIZE.
     SDL_Window * sdl_window = nullptr; // JWT: MUST DECLARE VIDEO SCREEN-WINDOW HERE
     bool video_display_at_startup = aud_get_bool ("audacious", "video_display"); // TRUE IF VIDIO VISUALIZATION ON AT PLAY START.
+    int init_window_x = 0;         // INITIAL (SDL) COORDINATES OF WINDOW FIRST PLACED (BEFORE USER CAN MOVE IT):
+    int init_window_y = 0;
+    bool noresize_optimizations = aud_get_bool ("ffaudio", "noresize_optimizations");
+
+#if SDL_COMPILEDVERSION < 4601
+    as_decor_fudge_x = 0;
+    as_decor_fudge_y = 0;
+#endif
 
     /* SET UP THE VIDEO SCREEN */
     play_video = aud_get_bool ("dvd", "play_video");   /* JWT:RESET PLAY-VIDEO, CASE TURNED OFF ON PREV. PLAY. */
@@ -1210,10 +1251,13 @@ void DVD::reader_demuxer ()
         String song_title;
         // song_title = trackinfo[dvdnav_priv->track].title;
         song_title = trackinfo[0].title;
-        /* JWT: time in seconds to wait for user to stop dragging before resetting window aspect */
-        video_resizedelay = aud_get_int ("ffaudio", "video_resizedelay");
-        if (video_resizedelay <= 0 or video_resizedelay > 9)
-            video_resizedelay = 1;
+        if (noresize_optimizations)
+        {
+            /* JWT: time in seconds to wait for user to stop dragging before resetting window aspect */
+            video_resizedelay = aud_get_int ("ffaudio", "video_resizedelay");
+            if (video_resizedelay <= 0 or video_resizedelay > 9)
+                video_resizedelay = 1;
+        }
         /* JWT: size below which window is reset to video's original requested size. */
         video_doreset_width = aud_get_int ("ffaudio", "video_doreset_width");
         if ( video_doreset_width <= 0)
@@ -1256,14 +1300,11 @@ void DVD::reader_demuxer ()
             IF BOTH ARE SPECIFIED AS "-1", USE PREVIOUSLY-SAVED WINDOW SIZE REGUARDLESS OF ASPECT RATIO.
         */
         video_xmove = aud_get_int ("dvd", "video_xmove");
-        /*  -1:always let windowmanager place (random); 0(DEPRECIATED/SDL1):place window via
-            SDL_putenv() - may work with Windows?; 1(default):relocate window via SDL; 
-            2:(both 0, then 1).  This is sometimes useful for multiple X
-            desktops where the default of placing the window via SDL_putenv will ALWAYS
-            place the window in the same desktop that Fauxdacious is in.  By setting to 1,
-            the window will be moved to the proper location relative to the current
-            desktop, and Fauxdacious is treated as "sticky" by the window manager.  Setting
-            to 2 MAY be useful IF for some reason, neither 0 nor 1 work properly.
+        if (video_xmove == 0)
+            video_xmove = 1;
+        /*  -1: Always let windowmanager place (random);
+            0(UNSPECIFIED): DEFAULT to 1.
+            1(default): Relocate window via SDL;
         */
         /* GET SAVED PREV. VIDEO WINDOW LOCN. AND SIZE AND TRY TO PLACE NEW WINDOW ACCORDINGLY: */
         /* JWT: I ADDED THIS TO AVOID NEW VID. WINDOW RANDOMLY POPPING UP IN NEW LOCN., IE. WHEN REPEATING A VIDEO. */
@@ -1273,14 +1314,10 @@ void DVD::reader_demuxer ()
         video_window_h = aud_get_int ("dvd", "video_window_h");
         if (video_xmove == -1)
             needWinSzFudge = false;  // NO FUDGING NEEDED IF WINDOW TO BE PLACED RANDOMLY BY WINDOWMANAGER!
-        else if (video_xmove >= 0 && video_xmove != 1)  // (0 or 2)
-        {
-            char video_windowpos[40];
-            sprintf (video_windowpos, "SDL_VIDEO_WINDOW_POS=%d, %d", video_window_x, video_window_y);
-            putenv (video_windowpos);
-        }
-        if (video_xmove > 0)  // (1 or 2)
+#if SDL_COMPILEDVERSION < 4601
+        if (video_xmove > 0)
             SDL_SetWindowPosition (sdl_window, video_window_x, video_window_y);
+#endif
     }
 
 breakout1:
@@ -1606,15 +1643,15 @@ AUDDBG("---INPUT PIPE OPENED!\n");
         video_requested_height = vcinfo.context->height;
         last_requested_width = vcinfo.context->width;
         last_requested_height = vcinfo.context->height;
-        if (vx && !vy)   /* User specified (or saved) width only, calc. height based on aspect: */
-        {
-            video_width = (vx == -1) ? (video_window_w ? video_window_w : video_default_width) : vx;
-            video_height = (int)((float)video_width / video_aspect_ratio);
-        }
-        else if (!vx && vy)     /* User specified (or saved) height only, calc. width based on aspect: */
+        if (!vx && vy)     /* User specified (or saved) height only, calc. width based on aspect: */
         {
             video_height = (vy == -1) ? (video_window_h ? video_window_h : video_default_height) : vy;
             video_width = (int)((float)video_height * video_aspect_ratio);
+        }
+        else if (vx && !vy)   /* User specified (or saved) width only, calc. height based on aspect: */
+        {
+            video_width = (vx == -1) ? (video_window_w ? video_window_w : video_default_width) : vx;
+            video_height = (int)((float)video_width / video_aspect_ratio);
         }
         else if (vx && vy)      /* User specified fixed width and height: */
         {
@@ -1623,17 +1660,17 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 video_width = video_window_w ? video_window_w : video_default_width;
                 video_height = video_window_h ? video_window_h : video_default_height;
             }
-            else if (vx == -1)  /* Use same (saved) height & calculate new width based on aspect: */
-            {
-                video_height = vy;
-                video_width = (int)((float)video_height * video_aspect_ratio);
-                //video_default_width = (int)((float)video_default_height * video_aspect_ratio);
-            }
             else if (vy == -1)  /* Use same (saved) width & calculate new height based on aspect: */
             {
                 video_width = vx;
                 video_height = (int)((float)video_width / video_aspect_ratio);
                 //video_default_height = (int)((float)video_default_width / video_aspect_ratio);
+            }
+            else if (vx == -1)  /* Use same (saved) height & calculate new width based on aspect: */
+            {
+                video_height = vy;
+                video_width = (int)((float)video_height * video_aspect_ratio);
+                //video_default_width = (int)((float)video_default_height * video_aspect_ratio);
             }
             else  /* User specified window size (SCREW THE ASPECT)! */
             {
@@ -1776,8 +1813,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
         }
 
         /* READ AND PROCESS NEXT FRAME: */
-        pkt = av_packet_alloc ();
-        if (! pkt)
+        if (! (pkt = av_packet_alloc ()))
         {
             dvdnav_priv->nochannelhop = false;
             AUDERR ("s:FFMpeg error: could not allocate memory for packet, giving up.\n");
@@ -2204,7 +2240,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                                 /* DISABLE "video_display" VISUALIZATION PLUGIN (WHICH WILL HIDE THE VIDEO WINDOW! */
                                 /* (THIS IS HOW ALL OTHER VISUALIZATION PLUGINS WORK) */
                                 save_window_xy (sdl_window, video_window_x, video_window_y,
-                                        video_fudge_x, video_fudge_y, video_display_at_startup);
+                                        init_window_x, init_window_y, video_display_at_startup);
                                 PluginHandle * visHandle = aud_plugin_lookup_basename ("video_display");
                                 aud_plugin_enable (visHandle, false);  // DISABLE VIDEO VISUALIZATION PLUGIN!
                             }
@@ -2219,8 +2255,10 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                             resized_window_width = event.window.data1;  // window's reported new size
                             resized_window_height = event.window.data2;
                             last_resized = false;  // false means now we'll need re-aspecting, so stop blitting!
-                            last_resizeevent_time = time (nullptr);  // reset the wait counter for when to assume user's done dragging window corner.
+                            if (noresize_optimizations)
+                                last_resizeevent_time = time (nullptr);  // reset the wait counter for when to assume user's done dragging window corner.
                             // menubuttons_adjusted = false;
+
                             break;
                         // NOTE: ON LINUX, AT LEAST, MOVING OR RESIZING WINDOW SPEWS "EXPOSED" EVENTS WHILST CHANGING!:
                         case SDL_WINDOWEVENT_MOVED:  // USER MOVED WINDOW.
@@ -2259,14 +2297,8 @@ AUDDBG("---INPUT PIPE OPENED!\n");
         }
         if (! last_resized)  /* IF WINDOW CHANGED SIZE (SINCE LAST RE-ASPECTING): */
         {
-            /* RE-ASPECT ONLY IF IT'S BEEN AT LEAST 1 SECOND SINCE LAST RESIZE EVENT (USER STOPPED DRAGGING
-               WINDOW CORNER!  PBM. IS WE DON'T KNOW WHEN USER'S DONE DRAGGING THE MOUSE, SO WE GET 
-               A CONTINUOUS SPEWAGE OF "RESIZED" EVENTS AND WE WON'T BOTHER RE-ASPECTING THE WINDOW UNTIL
-               WE'RE (PRETTY) SURE HE'S DONE! (RE-CALCULATING THE ASPECT RATIO AND RESIZING WINDOW TO 
-               MATCH THAT WHILST THE WINDOW IS CHANGING SIZE IS *EXTREMELY* INEFFICIENT AND COCKS
-               UP THE DISPLAY AND PLAYBACK!)
-            */
-            if (! windowIsStable || difftime (time (nullptr), last_resizeevent_time) > video_resizedelay)
+            if (! noresize_optimizations  // OPTIMIZE MOSTLY MEANS NOT NEEDING TIMER/DELAY:
+                    || ! windowIsStable || difftime (time (nullptr), last_resizeevent_time) > video_resizedelay)
             {
                 AUDDBG ("----RESIZE THE WINDOW!----\n");
                 float new_aspect_ratio;  // ASPECT (for comparing), W, & H OF WINDOW AFTER USER DONE RESIZING:
@@ -2283,9 +2315,16 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                     AUDINFO ("---RESIZE(videohasnowh): NEW RATIO=%f=\n", video_aspect_ratio);
                     videohasnowh = false;
                 }
-                // NOW MANUALLY ADJUST EITHER THE WIDTH OR HEIGHT BASED ON USER'S CONFIG. TO RESTORE 
-                // THE NEW WINDOW TO THE PROPER ASPECT RATIO FOR THE CURRENTLY-PLAYING VIDEO:
-                if (vy == -1)  // USER SAYS ADJUST HEIGHT TO MATCH WIDTH:
+                /* NOW MANUALLY ADJUST EITHER THE WIDTH OR HEIGHT BASED ON USER'S CONFIG. TO RESTORE
+                   THE NEW WINDOW TO THE PROPER ASPECT RATIO FOR THE CURRENTLY-PLAYING VIDEO:
+                */
+                /* USER SHRANK THE WINDOW BELOW "DORESET" THRESHOLD (user-configurable) SO RESIZE TO VIDEO'S ORIGINALLY REQUESTED (IDEAL) SIZE: */
+                if (resized_window_width <  video_doreset_width && resized_window_height <  video_doreset_height)
+                {
+                    new_video_width = video_requested_width;
+                    new_video_height = video_requested_height;
+                }
+                else if (vy == -1)  // USER SAYS ADJUST HEIGHT TO MATCH WIDTH:
                 {
                     new_video_height = resized_window_height;
                     new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
@@ -2295,89 +2334,53 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                     new_video_width = resized_window_width;
                     new_video_height = (int)((float)new_video_width / video_aspect_ratio);
                 }
-                else  // USER DOESN'T CARE, SO WE DECIDE WHICH TO ADJUST:
+                /* USER DOESN'T CARE, SO WE DECIDE WHICH TO ADJUST: */
+                else if (resized_window_width < video_width || resized_window_height < video_height)
                 {
-                    if (resized_window_width < video_width || resized_window_height < video_height)
+                    if (new_aspect_ratio > video_aspect_ratio)  // WINDOW SHRANK & BECAME MORE HORIZONTAL - ADJUST WIDTH TO NEW HEIGHT:
                     {
-                        if (new_aspect_ratio > video_aspect_ratio)  // WINDOW SHRANK & BECAME MORE HORIZONTAL - ADJUST WIDTH TO NEW HEIGHT:
-                        {
-                            new_video_height = resized_window_height;
-                            new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
-                        }
-                        else  // WINDOW SHRANK & BECAME MORE VERTICAL - ADJUST HEIGHT TO NEW WIDTH:
-                        {
-                            new_video_width = resized_window_width;
-                            new_video_height = (int)((float)new_video_width / video_aspect_ratio);
-                        }
+                        new_video_height = resized_window_height;
+                        new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
                     }
-                    else
+                    else  // WINDOW SHRANK & BECAME MORE VERTICAL - ADJUST HEIGHT TO NEW WIDTH:
                     {
-                        if (new_aspect_ratio > video_aspect_ratio)  // WINDOW GREW & BECAME MORE HORIZONTAL - ADJUST HEIGHT TO NEW WIDTH:
-                        {
-                            new_video_width = resized_window_width;
-                            new_video_height = (int)((float)new_video_width / video_aspect_ratio);
-                        }
-                        else  // WINDOW GREW & BECAME MORE VERTICAL - ADJUST WIDTH TO NEW HEIGHT:
-                        {
-                            new_video_height = resized_window_height;
-                            new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
-                        }
+                        new_video_width = resized_window_width;
+                        new_video_height = (int)((float)new_video_width / video_aspect_ratio);
                     }
                 }
-                /* USER SHRANK THE WINDOW BELOW "DORESET" THRESHOLD (user-configurable) SO RESIZE TO VIDEO'S ORIGINALLY REQUESTED (IDEAL) SIZE: */
-                if (resized_window_width <  video_doreset_width && resized_window_height <  video_doreset_height)
+                else if (new_aspect_ratio > video_aspect_ratio)  // WINDOW GREW & BECAME MORE HORIZONTAL - ADJUST HEIGHT TO NEW WIDTH:
                 {
-                    new_video_width = video_default_width;
-                    new_video_height = video_default_height;
+                    new_video_width = resized_window_width;
+                    new_video_height = (int)((float)new_video_width / video_aspect_ratio);
                 }
-                AUDINFO (" ----RESIZED TO(%d, %d)\n", new_video_width, new_video_height);
-                /* NOW MANUALLY RESIZE (RE-ASPECT) WINDOW BASED ON VIDEO'S ORIGINALLY-CALCULATED ASPECT RATIO: */
-                SDL_SetWindowSize (sdl_window, new_video_width, new_video_height);
-                SDL_Delay (50);
-                if (playing_a_menu)
+                else  // WINDOW GREW & BECAME MORE VERTICAL - ADJUST WIDTH TO NEW HEIGHT:
                 {
-                    SDL_RenderClear (renderer.get ());
-                    SDL_RenderCopy (renderer.get (), bmp, nullptr, nullptr);
-                    menubuttons_adjusted = adjust_menubuttons (last_requested_width,
-                            (uint32_t) new_video_width, last_requested_height, (uint32_t) new_video_height);
-
-                    draw_highlight_buttons (renderer.get (), highlightbuttons, 0);
+                    new_video_height = resized_window_height;
+                    new_video_width = (int)(video_aspect_ratio * (float)new_video_height);
                 }
                 video_width = new_video_width;
                 video_height = new_video_height;
-                video_window_w = video_width;
-                video_window_h = video_height;
-                last_resizeevent_time = time (nullptr);
-                last_resized = true;  // WE'VE RE-ASPECTED, SO ALLOW BLITTING TO RESUME!
-                windowNowExposed = true;
+                /* NOW MANUALLY RESIZE (RE-ASPECT) WINDOW BASED ON VIDEO'S ORIGINALLY-CALCULATED ASPECT RATIO: */
+                SDL_SetWindowSize (sdl_window, video_width, video_height);
                 SDL_Delay (50);
+                last_resized = true;  // WE'VE RE-ASPECTED, SO ALLOW BLITTING TO RESUME!
                 SDL_RenderPresent (renderer.get ());  // only blit a single frame at startup will get refreshed!
+                windowNowExposed = true;
             }
         }
-        /* (SDL2): WE HAVE TO WAIT UNTIL HERE FOR SDL_GetWindowPosition() TO RETURN THE CORRECT POSITION
-           SO WE CAN CALCULATE A "FUDGE FACTOR" SINCE:  
-           1) SDL_SetWindowPosition(x, y) FOLLOWED BY SDL_GetWindowPosition() DOES *NOT* 
-           RETURN (x, y) BUT x+<windowdecorationwidth>, y+windowdecorationheight, AT LEAST FOR AFTERSTEP!
-           (THIS IS B/C THE WINDOW IS PLACED W/IT'S UPPER LEFT CORNER AT THE SPECIFIED POSITION, *BUT* THE 
-           COORDINATES RETURNED REFER TO THE UPPER LEFT CORNER OF THE ACTUAL (UNDECORATED) VIDEO SCREEN!!)
-           2) SDL_GetWindowPosition() SEEMS TO RETURN PSUEDO-RANDOMLY *DIFFERENT* COORDINATES AFTER THE FIRST 
-           BLIT THAN THOSE WHERE THE WINDOW WAS ORIGINALLY PLACED, BUT IS CONSISTANT AFTER THAT, SO WE WAIT 
-           UNTIL NOW (AFTER FIRST BLIT BUT BEFORE USER CAN MOVE THE WINDOW) TO GET THE WINDOW-POSITION AND 
-           COMPARE WITH WHAT WE INITIALLY SET THE WINDOW TO TO DETERMINE THE NECESSARY "FUDGE FACTOR" IN 
-           ORDER TO ADJUST THE COORDINATES WHEN WE'RE READY TO SAVE THE WINDOW-POSITION WHEN EXITING PLAY!
-           (VERY ANNOYING, ISN'T IT!)  FOR SDL-1, THE FUDGE-FACTOR IS ONLY THE WxH OF WINDOW-DECORATIONS.
-           (WE MARK THE WINDOW AS "STABLE" FOR THIS PURPOSE AFTER BLITTING A FRAME)
-           NOTE:  THE WINDOW DOESN'T *MOVE* AFTER INITIAL PLACEMENT, JUST THE RETURNED COORDINATES DIFFER!
-        */
         if (needWinSzFudge && windowIsStable)
         {
+#if SDL_COMPILEDVERSION < 4601
             int x, y;
+
+            /* FETCH UNDECORATED WINDOW'S (SDL) COORDS AFTER (RANDOM?) INITIAL W/M PLACEMENT: */
             SDL_GetWindowPosition (sdl_window, &x, &y);
-            video_fudge_x = video_window_x - x;
-            video_fudge_y = video_window_y - y;
-            AUDDBG ("FUDGE SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x, video_window_y, video_fudge_x, video_fudge_y);
-            if ((video_fudge_x || video_fudge_y)
-                    && (! aud_get_bool ("audacious", "afterstep") || SDL_COMPILEDVERSION >= 4601))
+            as_decor_fudge_x = video_window_x - x;
+            as_decor_fudge_y = video_window_y - y;
+            AUDDBG ("FUDGE SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x,
+                    video_window_y, init_window_x, init_window_y);
+            if ((as_decor_fudge_x || as_decor_fudge_y)
+                    && (! aud_get_bool ("audacious", "afterstep")))
             {
                 /* JWT:FOR RECENT SDL2 VSNS (SEE ABOVE), AFTERSTEP NEEDS THIS TOO!
                    MOST WMS PLACE WINDOWS BASED ON THE RAW WINDOW EXCLUDING DECORATIONS, BUT
@@ -2385,13 +2388,71 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                    BEING PLACED A BIT LOWER AND TO RIGHT (RESULTING IN THIS RECALCULATED FUDGE-FACTOR
                    BEING THE WxH OF THE WINDOW'S DECORATIONS - NORMALLY WILL BE 0, 0 FOR MOST WMS)!:
                 */
-                SDL_SetWindowPosition (sdl_window, x+video_fudge_x, y+video_fudge_y);
+                SDL_SetWindowPosition (sdl_window, x+as_decor_fudge_x, y+as_decor_fudge_y);
                 SDL_GetWindowPosition (sdl_window, &x, &y);
-                video_fudge_x = video_window_x - x;
-                video_fudge_y = video_window_y - y;
+                as_decor_fudge_x = video_window_x - x;
+                as_decor_fudge_y = video_window_y - y;
                 AUDDBG ("WINDOW MOVED BY FUDGE AND FUDGE RESET TO 0,0 (WERE NOT RUNNING AFTERSTEP)!\n");
             }
-            needWinSzFudge = false;
+#else
+            int x, y, sdl_init_fudge_x, sdl_init_fudge_y;
+            /* FETCH UNDECORATED WINDOW'S (SDL) COORDS AFTER (RANDOM?) INITIAL W/M PLACEMENT: */
+            SDL_GetWindowPosition (sdl_window, &x, &y);
+            /* JWT:FOR RECENT SDL2 VSNS (SEE ABOVE), AFTERSTEP NEEDS THIS TOO (BUT WILL HAVE A FUDGE
+               FOR DECORATIONS)!
+               MOST WMS PLACE WINDOWS BASED ON THE RAW WINDOW EXCLUDING DECORATIONS, BUT AFTERSTEP,
+               AND PERHAPS SOME OTHER OLDER ONES, INCLUDE DECORATIONS, RESULTING IN WINDOWS
+               BEING PLACED A BIT LOWER AND TO RIGHT (RESULTING IN THIS RECALCULATED FUDGE-FACTOR
+               BEING THE WxH OF THE WINDOW'S DECORATIONS - NORMALLY WILL BE 0, 0 FOR MOST WMS)!:
+               NOTE:  THERE ARE ACTUALLY 2 "FUDGE" FACTORS (OFFSETS) WE HAVE TO ACCOUNT FOR:
+               1)  SDL / WINDOW-MANAGER RETURNING RANDOM COORDINATES BEFORE 1ST BLIT (as_decor_fudge_*), AND
+               2)  THE WxH OF WINDOW-DECORATIONS (FOR AfterStep & PERHAPS SOME OTHER WMs) THAT
+               PLACE WINDOWS BASED TON UPPER-LEFT CORNER OF THE TITALBAR AND SDL, WHICH USES THE
+               UPPER-LEFT CORNER OF THE UNDECORATED WINDOW! (sdl_init_*).
+               THE FORMER ONLY APPLIES ON INITIAL PLACEMENT, THE OTHER, AFFECTS EVERY Get/SetWindowPosition().
+            */
+            if (as_decor_fudge_set)  // CONVERT WM'S COORDS TO SDL'S (UNDECORATED WINDOW) COORDS:
+            {
+                if (video_display_at_startup)
+                {
+                    sdl_init_fudge_x = as_decor_fudge_x;  // USUALLY 0,0 (SAME) FOR MODERN WMs BUT NOT Afterstep!
+                    sdl_init_fudge_y = as_decor_fudge_y;
+                }
+                else
+                    sdl_init_fudge_x = sdl_init_fudge_y = 0;  // USUALLY 0,0 (SAME) FOR MODERN WMs BUT NOT Afterstep!
+
+                AUDDBG ("--ASD FUDGE IS SET: (%d, %d) VW(%d, %d) - FETCHEDxy(%d, %d)\n",
+                        sdl_init_fudge_x, sdl_init_fudge_y, video_window_x, video_window_y, x,y);
+            }
+            else  // CALCULATE HOW FAR WINDOW WILL BE "MOVED" WHEN WE PLACE IT (ONLY HAPPENS ON 1ST VIDEO PLAYED):
+            {
+                sdl_init_fudge_x = video_window_x - x;  // WHERE WE WANT IT - WHERE IT WAS INITIALLY PLACED.
+                sdl_init_fudge_y = video_window_y - y;
+                AUDDBG ("--ASD FUDGE NOT SET: VW(%d, %d) - FETCHEDxy(%d, %d)\n", video_window_x,
+                        video_window_y, x,y);
+            }
+            /* PLACE IT WHERE WE WANT IT. (SDL COORDINATES MATCHING  SAVED IN CONFIG FILE): */
+            AUDDBG ("--SET WINDOW TO (%d, %d) USING INIT FUDGE (%d, %d):\n", x+sdl_init_fudge_x,
+                    y+sdl_init_fudge_y, sdl_init_fudge_x, sdl_init_fudge_y);
+            SDL_Delay (50);
+            /* NOW FETCH BACK THE COORDINATES (WILL BE SDL COORDINATES (UNDECORATED WINDOW)): */
+            SDL_GetWindowPosition (sdl_window, & init_window_x, & init_window_y);
+            if (! as_decor_fudge_set) // 1ST VIDEO: SAVE WINDOW-DECORATION W/H (FOR AfterStep, etc.):
+            {
+                as_decor_fudge_x = video_window_x - init_window_x;  // DECORATION W,H FOR AfterStep,
+                as_decor_fudge_y = video_window_y - init_window_y;  // OR 0,0 FOR (MOST) OTHER WMs.
+                if (video_display_at_startup)
+                    as_decor_fudge_set = true;
+
+                AUDDBG ("---SET ASDECOR FUDGE:=VW(%d, %d) - FETCHED INITxy(%d, %d)\n", video_window_x,
+                        video_window_y, init_window_x, init_window_y);
+                init_window_x += as_decor_fudge_x;  // CONVERT SET SDL COORDS BACK TO WM COORDINATES
+                init_window_y += as_decor_fudge_y;  // USED WHEN SAVING TO SEE IF WINDOW MOVED BY USER:
+            }
+            AUDDBG ("--PLACED WINDOW REQ(%d, %d) INIT=(%d, %d)\n", video_window_x, video_window_y,
+                    init_window_x, init_window_y);
+#endif
+            needWinSzFudge = false;  // WE HAVE OUR DECORATION FUDGE-FACTOR (IF ANY)!
         }
     }  // END PACKET-PROCESSING LOOP.
 
@@ -2449,7 +2510,7 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
     {
         if (! needWinSzFudge)
             save_window_xy (sdl_window, video_window_x, video_window_y,
-                    video_fudge_x, video_fudge_y, video_display_at_startup);
+                    init_window_x, init_window_y, video_display_at_startup);
 
         SDL_HideWindow (sdl_window);
         /* NOTIFY video_display VISUALIZATION PLUGIN WE'RE NOT DEMUXING VIDEO. */

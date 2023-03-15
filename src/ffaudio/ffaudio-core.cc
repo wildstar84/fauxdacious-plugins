@@ -1125,8 +1125,6 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 {
     AUDDBG ("FFaudio::play(%s).\n", filename);
 
-    AUDDBG ("FFaudio::play () -----------------Playing %s.\n", filename);
-
     int out_fmt;
     int vx = 0;
     int vy = 0;
@@ -1229,7 +1227,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     /* JWT: IF abUSER ALSO WANTS TO PLAY VIDEO THEN WE SET UP POP-UP VIDEO SCREEN: */
     if (myplay_video)
     {
-        int video_xmove = 1;
+        int video_xmove = aud_get_int ("ffaudio", "video_xmove");
         String video_windowtitle;
         String song_title;
         int current_playlist = aud_playlist_get_active ();
@@ -1250,15 +1248,11 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         if ( video_doreset_height <= 0)
             video_doreset_height = 149;
 
-        video_xmove = aud_get_int ("ffaudio", "video_xmove");
-        /*  -1:always let windowmanager place (random); 0(DEPRECIATED/SDL1):place window via
-            SDL_putenv() - may work with Windows?; 1(default):relocate window via SDL; 
-            2:(both 0, then 1).  This is sometimes useful for multiple X
-            desktops where the default of placing the window via SDL_putenv will ALWAYS
-            place the window in the same desktop that Fauxdacious is in.  By setting to 1,
-            the window will be moved to the proper location relative to the current
-            desktop, and Fauxdacious is treated as "sticky" by the window manager.  Setting
-            to 2 MAY be useful IF for some reason, neither 0 nor 1 work properly.
+        if (video_xmove == 0)
+            video_xmove = 1;
+        /*  -1: Always let windowmanager place (random);
+            0(UNSPECIFIED): DEFAULT to 1.
+            1(default): Relocate window via SDL;
         */
         video_window_x = video_window_y = video_window_w = video_window_h = 0;
         /* GET SAVED PREV. VIDEO WINDOW LOCN. AND SIZE AND TRY TO PLACE NEW WINDOW ACCORDINGLY: */
@@ -1269,12 +1263,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         video_window_h = aud_get_int ("ffaudio", "video_window_h");
         if (video_xmove == -1)
             needWinSzFudge = false;  // NO FUDGING NEEDED IF WINDOW TO BE PLACED RANDOMLY BY WINDOWMANAGER!
-        else if (video_xmove >= 0 && video_xmove != 1)  // (0 or 2)
-        {
-            char video_windowpos[40];
-            sprintf (video_windowpos, "SDL_VIDEO_WINDOW_POS=%d, %d", video_window_x, video_window_y);
-            putenv (video_windowpos);
-        }
+
         if (LOG (avcodec_open2, TD.vcinfo.context, TD.vcinfo.codec, nullptr) < 0)
             goto error_exit;
 
@@ -1351,7 +1340,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
         SDL_SetWindowSize (sdl_window, video_width, video_height);
 
 #if SDL_COMPILEDVERSION < 4601
-        if (video_xmove > 0)  // (1 or 2)
+        if (video_xmove > 0)
             SDL_SetWindowPosition (sdl_window, video_window_x, video_window_y);
 #endif
         if (aud_get_str ("ffaudio", "video_render_scale"))
@@ -1619,7 +1608,8 @@ breakout1:
                 SDL_GetWindowPosition (sdl_window, &x, &y);
                 as_decor_fudge_x = video_window_x - x;
                 as_decor_fudge_y = video_window_y - y;
-                AUDDBG ("FUDGE SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x, video_window_y, as_decor_fudge_x, as_decor_fudge_y);
+                AUDDBG ("FUDGE SET(x=%d y=%d) vw=(%d, %d) F=(%d, %d)\n", x, y, video_window_x,
+                        video_window_y, as_decor_fudge_x, as_decor_fudge_y);
                 if ((as_decor_fudge_x || as_decor_fudge_y)
                         && (! aud_get_bool ("audacious", "afterstep")))
                 {
