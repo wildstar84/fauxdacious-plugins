@@ -385,14 +385,18 @@ G_GNUC_END_IGNORE_DEPRECATIONS
 #ifdef _WIN32
         /* JWT:DON'T MAKE MINI-FAUXD. TRANSIENT ON M$-WINDOWS (ELSE ALWAYS ON TOP & M$-WINDOWS
            CAN'T ICONIZE MAIN WINDOW W/O ICONIZING MINI-FAUXD. TOGETHER (DEFEATS PURPOSE OF MINI-FAUXD)!
+           SEEMS THAT MOST LINUX WMS (AfterStep EXCEPTED) ALSO WANT OT MINIMIZE ALL TRANSIENTS
+           WHEN THE MAIN WINDOW IS MINIMIZED/HIDDEN (WE DON'T WANT TO MINIMIZE/HIDE MiniFauxdacious)!
         */
         if (item->parentwin && ! strstr (item->name, "Mini-Fauxdacious"))
 #else
-        if (item->parentwin)
+        if (item->parentwin &&  /* AfterStep CONFIGURABLE TO PROPERLY HANDLE TRANSIENTS, OTHERS, NOT SO MUCH. */
+                (! strstr (item->name, "Mini-Fauxdacious") || aud_get_bool ("audacious", "afterstep")))
 #endif
             gtk_window_set_transient_for ((GtkWindow *) item->window, (GtkWindow *) item->parentwin);
 
         /* JWT:APPEND THE FAUXDACIOUS INSTANCE-NAME (IF NOT DEFAULT) 'CASE WE'RE RUNNING MULTIPLE INSTANCES!: */
+        /* NOTE:  THIS ONLY CHANGES THE WM-DECORATION TITLE, *NOT* THE ONE IN THE DOCK-WINDOW'S HEADER!: */
         if (strstr (item->name, "Mini-Fauxdacious"))  /* ONLY NEED THIS ON MINI-FAUXDACIOUS PLUGIN. */
         {
             StringBuf title = str_copy (_("Mini-Fauxdacious"));
