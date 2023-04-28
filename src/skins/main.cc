@@ -235,12 +235,8 @@ void mainwin_show_status_message (const char * message)
 
 static void mainwin_set_song_title (const char * title)
 {
-    StringBuf buf;
-
-    if (title)
-        buf = str_printf (_("%s - Fauxdacious"), (const char *) str_get_first_line (title));
-    else
-        buf = str_copy (_("Fauxdacious"));
+    StringBuf buf = title ? str_printf (_("%s - Fauxdacious"), title)
+            : str_copy (_("Fauxdacious"));
 
 /* JWT:DON'T DO THIS!    int instance = aud_get_instance ();
     if (instance != 1)
@@ -250,7 +246,6 @@ static void mainwin_set_song_title (const char * title)
     if (instancename != String ("fauxdacious"))
         str_append_printf (buf, " (%s)", (const char *) instancename);
     mainwin->setWindowTitle ((const char *) buf);
-//    mainwin_set_info_text (title ? (const char *) str_get_first_line (title) : "");
     mainwin_set_info_text ((const char *) buf);
 }
 
@@ -258,9 +253,9 @@ static void title_change ()
 {
     if (aud_drct_get_ready ())
     {
-        String newtitle = aud_drct_get_title ();   /* JWT:ONLY CHANGE SONG TITLE IF NOT EMPTY! */
-        if (strlen(newtitle) > 0)
-            mainwin_set_song_title (aud_drct_get_title ());
+        String newtitle = aud_drct_get_title_one_line (true);   /* JWT:ONLY CHANGE SONG TITLE IF NOT EMPTY! */
+        if (newtitle && newtitle[0] && strlen(newtitle) > 0)
+            mainwin_set_song_title ((const char *) newtitle);
     }
     else
         mainwin_set_song_title ("Buffering ...");

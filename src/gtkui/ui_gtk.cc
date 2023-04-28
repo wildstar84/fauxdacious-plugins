@@ -220,7 +220,7 @@ static void title_change ()
     if (aud_drct_get_playing ())
     {
         if (aud_drct_get_ready ())
-            title = str_printf (_("%s - Fauxdacious"), (const char *) str_get_first_line (aud_drct_get_title ()));
+            title = str_printf (_("%s - Fauxdacious"), (const char *) aud_drct_get_title_one_line (false));
         else
             title = str_copy (_("Buffering ..."));
     }
@@ -541,7 +541,7 @@ static gboolean window_keypress_cb (GtkWidget *, GdkEventKey * event)
         }
 
         /* single-key shortcuts; must not interfere with text entry */
-        if (focused && GTK_IS_ENTRY (focused))
+        if (focused && (GTK_IS_ENTRY (focused) || GTK_IS_TEXT_VIEW (focused)))
             return false;
 
         switch (event->keyval)

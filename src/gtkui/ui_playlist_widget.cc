@@ -146,11 +146,13 @@ static void set_string_from_tuple (GValue * value, const Tuple & tuple, Tuple::F
 /* JWT:ADDED TO KEEP MULTI-LINE TITLES FROM GARBLING UP THE PLAYLIST ROWS.
    NOTE:WE DECIDED AGAINST CHANGING IT FOR THE "CUSTOM" TITLE FIELD.
 */
-static void set_string_from_tuple_oneline (GValue * value, const Tuple & tuple, Tuple::Field field)
+static void set_string_from_tuple_flattened (GValue * value, const Tuple & tuple, Tuple::Field field)
 {
     String fieldval = tuple.get_str (field);
     if (fieldval && fieldval[0])  //JWT:NEEDED FOR OVERRUN IF ADD CD W/NO DISK IN GTK INTERFACE (SEGFAULT)?!
-        g_value_set_string (value, (const char *) str_get_first_line (fieldval));
+        g_value_set_string (value, (const char *) str_get_one_line (fieldval, true));
+    else
+        g_value_set_string (value, "");
 }
 
 static void set_queued (GValue * value, int list, int row)
@@ -189,11 +191,11 @@ static void get_value (void * user, int row, int column, GValue * value)
     case PW_COL_NUMBER:
         g_value_set_int (value, 1 + row);
         break;
-    case PW_COL_TITLE:
-        set_string_from_tuple_oneline (value, tuple, Tuple::Title);
+    case PW_COL_TITLE:   // FLATTEN MULTILINE TITLES TO SINGLE, SPACE-SEPARATED LINE:
+        set_string_from_tuple_flattened (value, tuple, Tuple::Title);
         break;
-    case PW_COL_ARTIST:
-        set_string_from_tuple (value, tuple, Tuple::Artist);
+    case PW_COL_ARTIST:  // FLATTEN MULTILINE ARTISTS (MAY HAVE MULTIPLE ARTISTS, ONE PER LINE?):
+        set_string_from_tuple_flattened (value, tuple, Tuple::Artist);
         break;
     case PW_COL_YEAR:
         set_int_from_tuple (value, tuple, Tuple::Year);

@@ -477,8 +477,8 @@ void MainWindow::update_play_pause ()
 
 void MainWindow::title_change_cb ()
 {
-    auto title = (const char *) str_get_first_line (aud_drct_get_title ());
-    if (title)
+    String title = String (aud_drct_get_title_one_line (false));
+    if (title && title[0])
     {
         set_title (QString (title) + QString (" - Fauxdacious"));
         m_buffering_timer.stop ();

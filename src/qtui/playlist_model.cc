@@ -153,7 +153,12 @@ QVariant PlaylistModel::data (const QModelIndex &index, int role) const
             case Tuple::Empty:
                 return QVariant ();
             case Tuple::String:
-                return QString (tuple.get_str (s_fields[col]));
+                if (col == Title)       // FLATTEN MULTILINE TITLES TO SINGLE, SPACE-SEPARATED LINE:
+                    return QString ((const char *) str_get_one_line (tuple.get_str (Tuple::Title), true));
+                else if (col == Artist) // FLATTEN MULTILINE ARTISTS (MAY HAVE MULTIPLE ARTISTS, ONE PER LINE?):
+                    return QString ((const char *) str_get_one_line (tuple.get_str (Tuple::Artist), true));
+                else
+                    return QString (tuple.get_str (s_fields[col]));
             case Tuple::Int:
                 val = tuple.get_int (s_fields[col]);
                 break;

@@ -248,7 +248,7 @@ void PlaylistWidget::draw (QPainter & cr)
          SKIN_PLEDIT_CURRENT : SKIN_PLEDIT_NORMAL]));
         cr.drawText (left, m_offset + m_row_height * (i - m_first),
          m_width - left - right, m_row_height,
-         Qt::AlignLeft | Qt::AlignVCenter, (const char *) title);
+         Qt::AlignLeft | Qt::AlignVCenter, (const char *) str_get_one_line (title, true));
     }
 
     /* focus rectangle */
