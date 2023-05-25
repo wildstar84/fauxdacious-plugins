@@ -1,6 +1,8 @@
 PLUGIN = info-bar-plugin-qt${PLUGIN_SUFFIX}
 
-SRCS = info-bar-plugin.cc
+SRCS = info-bar-plugin.cc \
+    tool_bar.cc \
+    time_slider.cc
 
 include ../../buildsys.mk
 include ../../extra.mk

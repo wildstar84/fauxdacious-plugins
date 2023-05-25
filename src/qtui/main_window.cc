@@ -267,8 +267,8 @@ MainWindow::~MainWindow ()
     if (aud_get_bool ("audqt", "qt_mainwindow_walks"))
     {
         /* JWT:PREVENT WINDOW FROM "WALKING" UP BY THE HEIGHT OF THE WINDOW DECORATION!: */
-        aud_set_int ("qtui", "player_x", this->geometry().x());
-        aud_set_int ("qtui", "player_y", this->geometry().y());
+        aud_set_int ("qtui", "player_x", this->geometry ().x ());
+        aud_set_int ("qtui", "player_y", this->geometry ().y ());
     }
 
     /* JWT: Qt'S restoreState() DOESN'T PLAY NICE W/WINDOW-MANAGERS SINCE IT RESTORES ALL THE DOCK
@@ -597,7 +597,8 @@ void MainWindow::remove_dock_item (audqt::DockItem * item)
             aud_set_int ("qtui", "mini_fauxdacious_x", w->geometry ().x ());
             aud_set_int ("qtui", "mini_fauxdacious_y", w->geometry ().y ());
             aud_set_int ("qtui", "mini_fauxdacious_w", w->geometry ().width ());
-            /* NOTE:HEIGHT IS FIXED IN THIS WIDGET AT 80(px). */
+            /* NOTE:HEIGHT IS PRE-DETERMINED ON THIS WIDGET, & SEEMS TO NEED A 3px FUDGE-FACTOR! */
+            aud_set_int ("qtui", "mini_fauxdacious_h", w->geometry ().height () + 3);
         }
     }
     w->destroy ();
