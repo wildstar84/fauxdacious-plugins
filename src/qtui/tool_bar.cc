@@ -68,4 +68,5 @@ ToolBar::ToolBar (QWidget * parent, ArrayRef<ToolBarItem> items)
         if (item.action_ptr)
             *item.action_ptr = a;
     }
+    setFixedHeight(32);
 }
