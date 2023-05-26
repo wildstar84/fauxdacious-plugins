@@ -25,8 +25,6 @@
 
 #include <libfauxdcore/objects.h>
 
-//x namespace MiniFauxdacious {
-
 struct ToolBarItem
 {
     const char * icon_name;
@@ -46,7 +44,7 @@ struct ToolBarItem
 class ToolBar : public QToolBar
 {
 public:
-    ToolBar(QWidget * parent, ArrayRef<ToolBarItem> items);
+    ToolBar(QWidget * parent, ArrayRef<ToolBarItem> items, unsigned short itemcnt);
 };
 
 constexpr ToolBarItem ToolBarAction(const char * icon_name, const char * name,
@@ -76,7 +74,5 @@ constexpr ToolBarItem ToolBarSeparator()
 {
     return {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, true};
 }
-
-//x }
 
 #endif

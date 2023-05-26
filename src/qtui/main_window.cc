@@ -562,9 +562,12 @@ void MainWindow::add_dock_item (audqt::DockItem * item)
         {
             int x = aud_get_int ("qtui", "mini_fauxdacious_x");
             int y = aud_get_int ("qtui", "mini_fauxdacious_y");
-            int width = aud_get_int ("qtui", "mini_fauxdacious_w");
+            int width = aud_get_bool ("minifauxdacious", "show_toolbar")
+                    ? aud_get_int ("qtui", "mini_fauxdacious_w_tb")
+                    : aud_get_int ("qtui", "mini_fauxdacious_w");
             if (x < 0)  x = 0;
             if (y < 0)  y = 0;
+            if (width < 0)  width = 640;
             w->move (x, y);
             w->resize (width, w->geometry ().height ());
         }
@@ -596,7 +599,11 @@ void MainWindow::remove_dock_item (audqt::DockItem * item)
         {
             aud_set_int ("qtui", "mini_fauxdacious_x", w->geometry ().x ());
             aud_set_int ("qtui", "mini_fauxdacious_y", w->geometry ().y ());
-            aud_set_int ("qtui", "mini_fauxdacious_w", w->geometry ().width ());
+            if (aud_get_bool ("minifauxdacious", "show_toolbar"))
+                aud_set_int ("qtui", "mini_fauxdacious_w_tb", w->geometry ().width ());
+            else
+                aud_set_int ("qtui", "mini_fauxdacious_w", w->geometry ().width ());
+
             /* NOTE:HEIGHT IS PRE-DETERMINED ON THIS WIDGET, & SEEMS TO NEED A 3px FUDGE-FACTOR! */
             aud_set_int ("qtui", "mini_fauxdacious_h", w->geometry ().height () + 3);
         }

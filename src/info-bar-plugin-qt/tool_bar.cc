@@ -25,16 +25,19 @@
 #include <libfauxdcore/runtime.h>
 #include <libfauxdqt/libfauxdqt.h>
 
-//x namespace MiniFauxdacious {
-
-ToolBar::ToolBar(QWidget * parent, ArrayRef<ToolBarItem> items)
+ToolBar::ToolBar(QWidget * parent, ArrayRef<ToolBarItem> items, unsigned short itemcnt)
     : QToolBar(parent)
 {
     setContextMenuPolicy(Qt::PreventContextMenu);
     setMovable(false);
 
+    unsigned short i = 0;
     for (const ToolBarItem & item : items)
     {
+        if (i >= itemcnt)
+            break;
+
+        i++;
         if (item.widget)
             addWidget(item.widget);
         else if (item.sep)
@@ -65,7 +68,4 @@ ToolBar::ToolBar(QWidget * parent, ArrayRef<ToolBarItem> items)
 
     setIconSize(QSize(18, 18));
     setFixedHeight(24);
-//    setStyleSheet("QToolBar { background: rgba(255, 255, 255, 0.6); }");
 }
-
-//x }
