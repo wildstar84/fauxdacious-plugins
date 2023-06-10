@@ -356,8 +356,9 @@ static void item_add (Item * item)
             && ! item->window && item->dock < DOCKS);
 
     item->rszcnt = 0;
-    if (item->dock < 0)
+    if (item->dock < 0)  // isFloating:
     {
+        bool isMiniFauxd = false;
         item->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
         NULL_ON_DESTROY (item->window);
 
@@ -404,6 +405,20 @@ G_GNUC_END_IGNORE_DEPRECATIONS
             if (instancename != String ("fauxdacious"))
                 str_append_printf (title, " (%s)", (const char *) instancename);
             gtk_window_set_title ((GtkWindow *) item->window, (const char *) title);
+            int toolbar_height = aud_get_int ("minifauxdacious-gtk", "toolbar_height");
+            int fixed_height = 102;  /* JWT:FIXME SOMEHOW, SOMEDAY! */
+            if (aud_get_bool ("minifauxdacious-gtk", "show_toolbar") && toolbar_height > 1)
+                fixed_height += toolbar_height;
+
+            item->hprev = item->h = fixed_height;
+            if (fixed_height == 102)
+                isMiniFauxd = true;
+
+            int wtb = aud_get_bool ("minifauxdacious-gtk", "show_toolbar")
+                    ? aud_get_int ("gtkui-layout", "mini_fauxdacious_w_tb")
+                    : aud_get_int ("gtkui-layout", "mini_fauxdacious_w");
+            if (wtb > 100)
+                item->wprev = wtb;
         }
         else
             gtk_window_set_title ((GtkWindow *) item->window, item->name);
@@ -421,7 +436,10 @@ G_GNUC_END_IGNORE_DEPRECATIONS
             gtk_window_set_default_size ((GtkWindow *) item->window, item->wprev, item->hprev);
 
         gtk_container_add ((GtkContainer *) item->window, item->vbox);
-        gtk_widget_show_all (item->window);
+        if (isMiniFauxd)
+            gtk_widget_show (item->window);
+        else
+            gtk_widget_show_all (item->window);
     }
     else
     {
@@ -452,6 +470,21 @@ G_GNUC_END_IGNORE_DEPRECATIONS
             parent = dock_get_parent (item->dock);
             g_return_if_fail (parent);
 
+            if (strstr (item->name, "Mini-Fauxdacious"))  /* ONLY NEED THIS ON MINI-FAUXDACIOUS PLUGIN. */
+            {
+                int toolbar_height = aud_get_int ("minifauxdacious-gtk", "toolbar_height");
+                int fixed_height = 102;  /* JWT:FIXME SOMEHOW, SOMEDAY! */
+                if (aud_get_bool ("minifauxdacious-gtk", "show_toolbar") && toolbar_height > 1)
+                    fixed_height += toolbar_height;
+
+                item->hprev = item->h = fixed_height;
+
+                int wtb = aud_get_bool ("minifauxdacious-gtk", "show_toolbar")
+                        ? aud_get_int ("gtkui-layout", "mini_fauxdacious_w_tb")
+                        : aud_get_int ("gtkui-layout", "mini_fauxdacious_w");
+                if (wtb > 100)
+                    item->wprev = item->w = wtb;
+            }
             paned = paned_new (IS_VERTICAL (item->dock), IS_AFTER (item->dock), item->w, item->h);
             docks[item->dock] = paned;
             NULL_ON_DESTROY (docks[item->dock]);
@@ -647,6 +680,23 @@ void layout_save ()
         */
         int temp_w = (item->rszcnt > 2) ? audgui_to_portable_dpi (item->w) : item->wprev;
         int temp_h = (item->rszcnt > 2) ? audgui_to_portable_dpi (item->h) : item->hprev;
+
+        if (strstr (item->name, "Mini-Fauxdacious"))  /* ONLY NEED THIS ON MINI-FAUXDACIOUS PLUGIN. */
+        {
+            int toolbar_height = aud_get_int ("minifauxdacious-gtk", "toolbar_height");
+            int fixed_height = 102;  /* JWT:FIXME SOMEHOW, SOMEDAY! */
+            if (aud_get_bool ("minifauxdacious-gtk", "show_toolbar"))
+            {
+                if (toolbar_height > 1)
+                    fixed_height += toolbar_height;
+
+                aud_set_int ("gtkui-layout", "mini_fauxdacious_w_tb", temp_w);
+            }
+            else
+                aud_set_int ("gtkui-layout", "mini_fauxdacious_w", temp_w);
+
+            temp_h = fixed_height;
+        }
 
         if (item->window)
             gtk_window_get_position ((GtkWindow *) item->window, & item->x, & item->y);
