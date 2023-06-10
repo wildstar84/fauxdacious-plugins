@@ -155,7 +155,8 @@ MiniFauxdWin::MiniFauxdWin () :
         items[indx++] = ToolBarAction (
                 "media-record", N_("Record Stream"), N_("Record Stream"),
                 [](bool on) { aud_set_bool (nullptr, "record", on); }, &m_record_action);
-    if (indx > 0)
+
+    if (indx > 0 && aud_get_bool ("minifauxdacious", "separators"))
         items[indx++] = ToolBarSeparator ();
 
     if (aud_get_bool ("minifauxdacious", "slider-btn"))
@@ -164,6 +165,7 @@ MiniFauxdWin::MiniFauxdWin () :
         items[indx++] = ToolBarCustom (slider->label ());
     if (aud_get_bool ("minifauxdacious", "slider-btn")
             || aud_get_bool ("minifauxdacious", "time-label"))
+    if (aud_get_bool ("minifauxdacious", "separators"))
         items[indx++] = ToolBarSeparator ();
     if (aud_get_bool ("minifauxdacious", "repeat-btn"))
         items[indx++] = ToolBarAction (
@@ -176,8 +178,10 @@ MiniFauxdWin::MiniFauxdWin () :
     if (aud_get_bool ("minifauxdacious", "volume-btn"))
         items[indx++] = ToolBarCustom ((QWidget *)audqt::volume_button_new (main_window));
     if (aud_get_bool ("minifauxdacious", "quit-btn"))
+    {
         items[indx++] = ToolBarAction("application-exit", N_("Quit"), N_("Quit"),
                 aud_quit);
+    }
 
     setCentralWidget (main_window);
     toolbar_widget = new ToolBar (main_window, items, indx);
@@ -392,6 +396,7 @@ const char * const InfoBarPlugin::defaults[] = {
     "shuffle-btn",        "TRUE",
     "volume-btn",         "TRUE",
     "quit-btn",           "FALSE",
+    "seperators",         "FALSE",
     nullptr
 };
 
@@ -440,6 +445,8 @@ const PreferencesWidget InfoBarPlugin::widgets[] = {
         WidgetBool ("minifauxdacious", "volume-btn")),
     WidgetCheck (N_("Quit"),
         WidgetBool ("minifauxdacious", "quit-btn")),
+    WidgetCheck (N_("Separators"),
+        WidgetBool ("minifauxdacious", "separators")),
 };
 
 const PluginPreferences InfoBarPlugin::prefs = {{widgets}};
