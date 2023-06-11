@@ -249,6 +249,7 @@ void GtkUI::show (bool show)
             aud_set_bool ("gtkui", "_dockapps_restored", true);
             aud_set_bool ("gtkui", "_nofocusgrab", false);
         }
+        show_hide_infoarea_vis ();
     }
     else
     {
@@ -256,9 +257,15 @@ void GtkUI::show (bool show)
             save_window_size ();
 
         gtk_widget_hide (window);
-    }
 
-    show_hide_infoarea_vis ();
+        /* JWT:DON'T HIDE THE INFOAREA BOUNCY-BARS IF INFOAREA IS IN MINI-FAUXDACIOUS
+           SINCE THAT WINDOW IS NOT HIDDEN WHEN HIDING MAIN (PLAYLIST) WINDOW!
+           (THIS IS NOTICABLE WHEN HIDING VIA THE STATUSICON PLUGIN IN THE SYSTEM TRAY)
+        */
+        PluginHandle * adplugHandle = aud_plugin_lookup_basename ("info-bar-plugin-gtk");
+        if (adplugHandle && ! aud_plugin_get_enabled (adplugHandle))
+            show_hide_infoarea_vis ();
+    }
 }
 
 static void append_str (char * buf, int bufsize, const char * str)
