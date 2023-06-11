@@ -87,10 +87,14 @@ static GtkStatusIcon * si_create ()
 
     if (gtk_icon_theme_has_icon (theme, "fauxdacious-panel"))
         icon = gtk_status_icon_new_from_icon_name ("fauxdacious-panel");
-    else if (gtk_icon_theme_has_icon (theme, "fauxdacious"))
-        icon = gtk_status_icon_new_from_icon_name ("fauxdacious");
     else
-        icon = gtk_status_icon_new_from_file (aud_get_path (AudPath::IconFile));
+    {
+        StringBuf logo_path = filename_build ({aud_get_path (AudPath::DataDir), "images",
+                "fauxdacious24.png"});
+        icon = gtk_status_icon_new_from_file ((const char *) logo_path);
+        if (! icon)
+            icon = gtk_status_icon_new_from_file (aud_get_path (AudPath::IconFile));
+    }
 
     return icon;
 }
