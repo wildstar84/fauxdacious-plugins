@@ -61,13 +61,32 @@ static GtkToolItem * button_open, * button_add, * button_opendir, * button_adddi
 
 static void update_toggles (void *, void *);
 
-/* CALLED INTERNALLY BY PLUGIN-OPTIONS CHECKBOX (WHICH ALREADY PRETOGGLES B4 CALLING THIS): */
-static void show_toolbar_toggled_fn ()
+static bool is_floating ()
+{
+    bool floating = false;
+    GtkWidget * parent_window = gtk_widget_get_parent (main_window);
+    if (parent_window)
+    {
+        GdkWindow * gdktop = gtk_widget_get_window (main_window);
+        if (gdktop)
+        {
+            /* WE'RE SURE THAT WE'RE FLOATING, ALLOW TOOLBAR TOGGLE!: */
+            GdkWindow * gtkfloating = gdk_window_get_toplevel (gdktop);
+            if (gtkfloating && gtkfloating == gdktop)
+                floating = true;
+        }
+    }
+    return floating;
+}
+
+/* JWT:CALLED TO TOGGLE THE TOOLBAR (BY 2 OTHER FUNCTIONS) ONLY IF FLOATING!: */
+static void do_toolbar_toggle_fn ()
 {
     int w = 0;
     int h = 0;
     int fixed_height = 0;
     GtkWidget * plugin_window = gtk_widget_get_toplevel (main_window);
+
     if (GTK_IS_WINDOW (plugin_window))
     {
         gtk_window_get_size ((GtkWindow *) plugin_window, & w, & h);
@@ -117,11 +136,30 @@ static void show_toolbar_toggled_fn ()
     aud_set_bool ("minifauxdacious-gtk", "show_toolbar", show_toolbar);
 }
 
-/* CALLED BY info_bar (PRESSING "T") TO TOGGLE TOOLBAR SHADE: */
+/* CALLED INTERNALLY BY PLUGIN-OPTIONS CHECKBOX (WHICH ALREADY PRETOGGLES B4 CALLING THIS): */
+static void show_toolbar_toggled_fn ()
+{
+    /* JWT:ONLY ALLOW TOOLBAR TOGGLE IF FLOATING (UNDOCKED) - MESSES UP LAYOUT IF DOCKED!: */
+    if (is_floating ())
+        do_toolbar_toggle_fn ();
+    else  /* SO WE MUST INSTEAD PUT BACK HOW IT WAS SET (NO CHANGE)! */
+    {
+        show_toolbar = ! show_toolbar;  // PUT IT BACK (WE COULDN'T DO IT!
+        AUDWARN ("w:Mini-Fauxdacious must be undocked to toggle toolbar!\n");
+    }
+}
+
+/* CALLED BY info_bar (PRESSING "T" or DOUBLE-CLICK) TO TOGGLE TOOLBAR SHADE: */
 static void show_toolbar_toggle_fn ()
 {
-    show_toolbar = ! show_toolbar;
-    show_toolbar_toggled_fn ();
+    /* JWT:ONLY ALLOW TOOLBAR TOGGLE IF FLOATING (UNDOCKED) - MESSES UP LAYOUT IF DOCKED!: */
+    if (is_floating ())
+    {
+        show_toolbar = ! show_toolbar;
+        do_toolbar_toggle_fn ();
+    }
+    else
+        AUDWARN ("w:Mini-Fauxdacious must be undocked to toggle toolbar!\n");
 }
 
 static void toolbarstyle_init_fn ()
@@ -437,12 +475,10 @@ static void ui_hooks_associate ()
     hook_associate ("set shuffle", (HookFunction) update_toggles, nullptr);
     hook_associate ("set step_size", (HookFunction) update_step_size, nullptr);
     hook_associate ("set volume_delta", (HookFunction) update_volume_delta, nullptr);
-    hook_associate ("reverse minifauxd toolbar", (HookFunction) show_toolbar_toggle_fn, nullptr);
 }
 
 static void ui_hooks_disassociate ()
 {
-    hook_dissociate ("reverse minifauxd toolbar", (HookFunction) show_toolbar_toggle_fn, nullptr);
     hook_dissociate ("set volume_delta", (HookFunction) update_volume_delta, nullptr);
     hook_dissociate ("set step_size", (HookFunction) update_step_size, nullptr);
     hook_dissociate ("set shuffle", (HookFunction) update_toggles);
@@ -655,6 +691,14 @@ void show_hide_infoarea_vis ()
     ui_infoarea_show_vis (aud_get_bool ("gtkui", "infoarea_show_vis"));
 }
 
+static gboolean infobar_btnpress_cb (GtkWidget * widget, GdkEventKey * event)
+{
+    if (event->type == GDK_2BUTTON_PRESS)
+        show_toolbar_toggle_fn ();
+
+    return false;
+}
+
 static gboolean infobar_keypress_cb (GtkWidget *, GdkEventKey * event)
 {
     switch (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK))
@@ -665,12 +709,10 @@ static gboolean infobar_keypress_cb (GtkWidget *, GdkEventKey * event)
         {
         case GDK_KEY_Left:
             if (aud_drct_get_playing ())
-//                do_seek (aud_drct_get_time () - aud_get_int (0, "step_size") * 1000);
                 aud_drct_seek (aud_drct_get_time () - aud_get_int (0, "step_size") * 1000);
             break;
         case GDK_KEY_Right:
             if (aud_drct_get_playing ())
-//                do_seek (aud_drct_get_time () + aud_get_int (0, "step_size") * 1000);
                 aud_drct_seek (aud_drct_get_time () + aud_get_int (0, "step_size") * 1000);
             break;
         case GDK_KEY_Up:
@@ -809,7 +851,9 @@ void * InfoBarPlugin::get_gtk_widget ()
         aud_set_bool ("gtkui", "infoarea_visible", false);
         hook_call ("gtkui toggle infoarea", nullptr);
     }
+    GtkWidget * mouse_eventbox = gtk_event_box_new ();
     GtkWidget * widget = ui_infoarea_new ();
+    gtk_container_add ((GtkContainer *) mouse_eventbox, widget);
     GtkWidget * vbox_outer = audgui_vbox_new (0);
     main_window = vbox_outer;
     toolbar = gtk_toolbar_new ();
@@ -822,7 +866,7 @@ void * InfoBarPlugin::get_gtk_widget ()
     gtk_widget_set_name (toolbar, "minifauxd_toolbar");
     gtk_toolbar_set_style ((GtkToolbar *) toolbar, GTK_TOOLBAR_ICONS);
     gtk_toolbar_set_show_arrow ((GtkToolbar *) toolbar, false);
-    gtk_box_pack_start ((GtkBox *) vbox_outer, widget, false, false, 0);
+    gtk_box_pack_start ((GtkBox *) vbox_outer, mouse_eventbox, false, false, 0);
     gtk_box_pack_end ((GtkBox *) vbox_outer, toolbar, false, false, 0);
 
 #ifdef USE_GTK3
@@ -947,8 +991,10 @@ void * InfoBarPlugin::get_gtk_widget ()
     if (! show_toolbar)
         gtk_widget_set_no_show_all (toolbar, true);
 
+    gtk_widget_set_events (mouse_eventbox, GDK_BUTTON_PRESS_MASK);
     g_signal_connect (widget, "destroy", (GCallback) infobar_cleanup, nullptr);
     g_signal_connect (main_window, "key-press-event", (GCallback) infobar_keypress_cb, nullptr);
+    g_signal_connect (mouse_eventbox, "button_press_event", (GCallback) infobar_btnpress_cb, nullptr);
 
     gtk_widget_show (widget);
     plugin_running = true;
