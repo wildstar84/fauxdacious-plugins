@@ -65,17 +65,17 @@ static bool is_floating ()
 {
     bool floating = false;
     GtkWidget * parent_window = gtk_widget_get_parent (main_window);
-    if (parent_window)
+
+    /* JWT:FIXME:THERE'S GOTTA BE A BETTER WAY?!: */
+    int ancestors = 1;
+    while (parent_window)
     {
-        GdkWindow * gdktop = gtk_widget_get_window (main_window);
-        if (gdktop)
-        {
-            /* WE'RE SURE THAT WE'RE FLOATING, ALLOW TOOLBAR TOGGLE!: */
-            GdkWindow * gtkfloating = gdk_window_get_toplevel (gdktop);
-            if (gtkfloating && gtkfloating == gdktop)
-                floating = true;
-        }
+        parent_window = gtk_widget_get_parent (parent_window);
+        ancestors++;
     }
+    if (ancestors <= 5)
+        floating = true;  /* WE'RE SURE THAT WE'RE FLOATING, ALLOW TOOLBAR TOGGLE!: */
+
     return floating;
 }
 
@@ -360,15 +360,18 @@ static gboolean ui_volume_button_press_cb (GtkWidget *, GdkEvent * event)
 
     /* ignore double and triple clicks */
     if (button_event->type != GDK_BUTTON_PRESS)
-        return false;
+        return true;
     else if (button_event->button == 1)
+    {
         /* handle left mouse button */
         volume_slider_is_moving = true;
+        return false;
+    }
     else if (button_event->button == 2)
         /* (un)mute with middle mouse button */
         toggle_mute ();
 
-    return false;
+    return true;
 }
 
 /* JWT:THIS KLUDGE NEEDED TO RETAIN KEYBOARD FOCUS AFTER CLOSING VOLUME SLIDER "WINDOW"!: */
@@ -497,7 +500,6 @@ static void ui_hooks_associate ()
     hook_associate ("playback pause", (HookFunction) pause_cb, nullptr);
     hook_associate ("playback unpause", (HookFunction) pause_cb, nullptr);
     hook_associate ("playback stop", (HookFunction) ui_playback_stop, nullptr);
-//?    hook_associate ("set stop_after_current_song", (HookFunction) update_toggles, nullptr);
     hook_associate ("enable record", (HookFunction) update_toggles, nullptr);
     hook_associate ("set record", (HookFunction) update_toggles, nullptr);
     hook_associate ("set repeat", (HookFunction) update_toggles, nullptr);
@@ -514,7 +516,6 @@ static void ui_hooks_disassociate ()
     hook_dissociate ("set repeat", (HookFunction) update_toggles);
     hook_dissociate ("set record", (HookFunction) update_toggles);
     hook_dissociate ("enable record", (HookFunction) update_toggles);
-//?    hook_dissociate ("set stop_after_current_song", (HookFunction) update_toggles, nullptr);
     hook_dissociate ("playback stop", (HookFunction) ui_playback_stop);
     hook_dissociate ("playback unpause", (HookFunction) pause_cb);
     hook_dissociate ("playback pause", (HookFunction) pause_cb);
@@ -889,6 +890,9 @@ void * InfoBarPlugin::get_gtk_widget ()
     GtkWidget * vbox_outer = audgui_vbox_new (0);
     main_window = vbox_outer;
     toolbar = gtk_toolbar_new ();
+#ifndef USE_GTK3
+    gtk_toolbar_set_icon_size ((GtkToolbar *) toolbar, GTK_ICON_SIZE_SMALL_TOOLBAR);
+#endif
 
     GtkAllocation alloc;
     gtk_widget_get_allocation (toolbar, & alloc);
@@ -1036,8 +1040,6 @@ void * InfoBarPlugin::get_gtk_widget ()
 
     toolbarstyle_init_fn ();
     toolbarstyle_toggled_fn ();
-
-// NO IMPROVEMENT - JUST ADDS PADDING: gtk_toolbar_set_icon_size ((GtkToolbar *) toolbar, GTK_ICON_SIZE_SMALL_TOOLBAR);
     ui_hooks_associate ();
 
     if (show_slider)
@@ -1062,7 +1064,7 @@ void * InfoBarPlugin::get_gtk_widget ()
     update_toggles ();
 
     gtk_widget_set_can_focus (main_window, true);
-    gtk_widget_set_tooltip_text (main_window, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nAlt-Q: Quit\nB: next\nC: pause\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous");
+    gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nAlt-Q: Quit\nB: next\nC: pause\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous");
     gtk_widget_grab_focus (main_window);
 
     ui_playback_ready ();

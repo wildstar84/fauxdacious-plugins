@@ -414,14 +414,17 @@ static gboolean ui_volume_button_press_cb (GtkWidget *, GdkEvent * event)
 
     /* ignore double and triple clicks */
     if (button_event->type != GDK_BUTTON_PRESS)
-        return false;
+        return true;
     else if (button_event->button == 1)
+    {
         /* handle left mouse button */
         volume_slider_is_moving = true;
+        return false;
+    }
     else if (button_event->button == 2)
         toggle_mute ();
 
-    return false;
+    return true;
 }
 
 static gboolean ui_volume_button_release_cb (GtkWidget *, GdkEvent * event)
