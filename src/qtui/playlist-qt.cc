@@ -176,6 +176,19 @@ void PlaylistWidget::keyPressEvent (QKeyEvent * event)
           case Qt::Key_C:
             aud_drct_pause ();
             return;
+          case Qt::Key_M:
+            {
+                /* JWT:TOGGLE MUTE: */
+                int current_volume = aud_drct_get_volume_main ();
+                if (current_volume)
+                {
+                    aud_set_int ("audacious", "_premuted_volume", current_volume);
+                    aud_drct_set_volume_main (0);
+                }
+                else
+                    aud_drct_set_volume_main (aud_get_int ("audacious", "_premuted_volume"));
+            }
+            return;
           case Qt::Key_V:
             aud_drct_stop ();
             return;

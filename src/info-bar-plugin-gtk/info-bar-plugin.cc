@@ -342,9 +342,33 @@ static gboolean ui_volume_value_changed_cb (GtkButton *, double volume)
     return true;
 }
 
-static void ui_volume_pressed_cb (GtkButton *)
+static void toggle_mute ()
 {
-    volume_slider_is_moving = true;
+    int current_volume = aud_drct_get_volume_main ();
+    if (current_volume)
+    {
+        aud_set_int ("audacious", "_premuted_volume", current_volume);
+        aud_drct_set_volume_main (0);
+    }
+    else
+        aud_drct_set_volume_main (aud_get_int ("audacious", "_premuted_volume"));
+}
+
+static gboolean ui_volume_button_press_cb (GtkWidget *, GdkEvent * event)
+{
+    GdkEventButton * button_event = (GdkEventButton *) event;
+
+    /* ignore double and triple clicks */
+    if (button_event->type != GDK_BUTTON_PRESS)
+        return false;
+    else if (button_event->button == 1)
+        /* handle left mouse button */
+        volume_slider_is_moving = true;
+    else if (button_event->button == 2)
+        /* (un)mute with middle mouse button */
+        toggle_mute ();
+
+    return false;
 }
 
 /* JWT:THIS KLUDGE NEEDED TO RETAIN KEYBOARD FOCUS AFTER CLOSING VOLUME SLIDER "WINDOW"!: */
@@ -353,9 +377,14 @@ static void ui_volume_unmap_cb (GtkButton *)
     gtk_widget_grab_focus (main_window);
 }
 
-static void ui_volume_released_cb (GtkButton *)
+static gboolean ui_volume_button_release_cb (GtkWidget *, GdkEvent * event)
 {
-    volume_slider_is_moving = false;
+    GdkEventButton * button_event = (GdkEventButton *) event;
+
+    if (button_event->button == 1)
+        volume_slider_is_moving = false;
+
+    return false;
 }
 
 static void ui_volume_slider_update (void * button)
@@ -740,6 +769,9 @@ static gboolean infobar_keypress_cb (GtkWidget *, GdkEventKey * event)
         case 'b':
             aud_drct_pl_next ();
             break;
+        case 'm':
+            toggle_mute ();
+            break;
         }
 
         break;
@@ -1018,8 +1050,8 @@ void * InfoBarPlugin::get_gtk_widget ()
     if (show_volume)
     {
         volume_change_handler_id = g_signal_connect (volume, "value-changed", (GCallback) ui_volume_value_changed_cb, nullptr);
-        g_signal_connect (volume, "pressed", (GCallback) ui_volume_pressed_cb, nullptr);
-        g_signal_connect (volume, "released", (GCallback) ui_volume_released_cb, nullptr);
+        g_signal_connect (volume, "button-press-event", (GCallback) ui_volume_button_press_cb, nullptr);
+        g_signal_connect (volume, "button-release-event", (GCallback) ui_volume_button_release_cb, nullptr);
         if (volume_popup)  /* JWT:THIS KLUDGE NEEDED TO RETAIN KEYBOARD FOCUS AFTER CLOSING VOLUME SLIDER "WINDOW"!: */
             g_signal_connect (volume_popup, "hide", (GCallback) ui_volume_unmap_cb, nullptr);
 
@@ -1030,7 +1062,7 @@ void * InfoBarPlugin::get_gtk_widget ()
     update_toggles ();
 
     gtk_widget_set_can_focus (main_window, true);
-    gtk_widget_set_tooltip_text (main_window, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nAlt-Q: Quit\nB: next\nC: pause\nT: toggle toolbar\nV: stop\nX: play\nZ: previous");
+    gtk_widget_set_tooltip_text (main_window, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nAlt-Q: Quit\nB: next\nC: pause\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous");
     gtk_widget_grab_focus (main_window);
 
     ui_playback_ready ();
