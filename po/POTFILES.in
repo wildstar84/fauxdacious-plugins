@@ -132,6 +132,7 @@ src/notify/notify.cc
 src/notify/osd.cc
 src/openmpt/mpt.cc
 src/openmpt/mptwrap.h
+src/opus/opus.cc
 src/oss4/oss.h
 src/oss4/plugin.cc
 src/playlist-manager/playlist-manager.cc
@@ -183,7 +184,6 @@ src/skins-qt/playlistwin.cc
 src/skins-qt/plugin.cc
 src/skins-qt/skins_cfg.cc
 src/skins-qt/skinselector.cc
-src/skins/search-select.cc
 src/skins/skins_cfg.cc
 src/skins/skinselector.cc
 src/sndfile/plugin.cc
