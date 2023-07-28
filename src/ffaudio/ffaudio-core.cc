@@ -989,7 +989,7 @@ void save_window_xy (SDL_Window * sdl_window, int video_window_x, int video_wind
         y = video_window_y;
     }
     else if (x != init_window_x || y != init_window_y  // WE HAVE "SDL" COORDS. IF ANY OF THIS IS TRUE:
-            || (! video_display_at_startup && aud_get_bool ("audacious", "video_display")))
+            || aud_get_bool ("audacious", "video_display") || aud_get_bool ("audacious", "afterstep"))
 #else
     if (! video_display_at_startup && aud_get_bool ("audacious", "video_display"))
     {
