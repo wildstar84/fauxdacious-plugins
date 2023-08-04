@@ -645,9 +645,12 @@ static bool find_codec (AVFormatContext * c, CodecInfo * cinfo, CodecInfo * vcin
                 av_codec_set_pkt_timebase (vcinfo->context, vcinfo->stream->time_base);
 #endif
 
-                //JWT:AS/OF v3.8, LOW-QUALITY VIDEOS SEEM BETTER W/O THIS, BUT WE LEAVE IT AS A CONFIG. OPTION - YMMV:
+                //DEPRECIATED!:JWT:AS/OF v3.8, LOW-QUALITY VIDEOS SEEM BETTER W/O THIS, BUT WE LEAVE IT AS A CONFIG. OPTION - YMMV:
+#if CHECK_LIBAVCODEC_VERSION(60, 0, 0, 255, 255, 255)
+#else
                 if (aud_get_bool ("ffaudio", "video_codec_flag_truncated") && vcodec->capabilities&AV_CODEC_CAP_TRUNCATED)
                     vcinfo->context->flags |= AV_CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+#endif
                 if (aud_get_bool ("ffaudio", "video_codec_flag_gray"))
                     vcinfo->context->flags |= AV_CODEC_FLAG_GRAY; /* output in monochrome (REQUIRES FFMPEG COMPILED W/--enable-gray!) */
             }
