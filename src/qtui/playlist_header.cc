@@ -52,7 +52,8 @@ static const char * const s_col_keys[] = {
     "bitrate",
     "comment",
     "publisher",
-    "catalog-number"
+    "catalog-number",
+    "disc"
 };
 
 static int s_sortedbycol = -1;
@@ -77,7 +78,8 @@ static const int s_default_widths[] = {
     75,   // bitrate
     275,  // comment
     175,  // publisher
-    75    // catalog number
+    75,   // catalog number
+    25    // disc
 };
 
 static const Playlist::SortType s_sort_types[] = {
@@ -98,7 +100,8 @@ static const Playlist::SortType s_sort_types[] = {
     Playlist::Bitrate,         // bitrate
     Playlist::Comment,         // comment
     Playlist::Publisher,       // publisher
-    Playlist::CatalogNum       // catalog number
+    Playlist::CatalogNum,      // catalog number
+    Playlist::Disc            // disc
 };
 
 static_assert (aud::n_elems (s_col_keys) == PlaylistModel::n_cols, "update s_col_keys");

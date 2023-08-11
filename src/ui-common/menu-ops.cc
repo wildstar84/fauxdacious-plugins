@@ -39,6 +39,7 @@ void sort_path () { aud_playlist_sort_by_scheme (ACTIVE, Playlist::Path); }
 void sort_filename () { aud_playlist_sort_by_scheme (ACTIVE, Playlist::Filename); }
 void sort_custom_title () { aud_playlist_sort_by_scheme (ACTIVE, Playlist::FormattedTitle); }
 void sort_comment () { aud_playlist_sort_by_scheme (ACTIVE, Playlist::Comment); }
+void sort_disc () { aud_playlist_sort_by_scheme (ACTIVE, Playlist::Disc); }
 void sort_bitrate () { aud_playlist_sort_by_scheme (ACTIVE, Playlist::Bitrate); }
 void sort_reverse () { aud_playlist_reverse (ACTIVE); }
 void sort_random () { aud_playlist_randomize (ACTIVE); }
@@ -55,6 +56,7 @@ void sort_sel_path () { aud_playlist_sort_selected_by_scheme (ACTIVE, Playlist::
 void sort_sel_filename () { aud_playlist_sort_selected_by_scheme (ACTIVE, Playlist::Filename); }
 void sort_sel_custom_title () { aud_playlist_sort_selected_by_scheme (ACTIVE, Playlist::FormattedTitle); }
 void sort_sel_comment () { aud_playlist_sort_selected_by_scheme (ACTIVE, Playlist::Comment); }
+void sort_sel_disc () { aud_playlist_sort_selected_by_scheme (ACTIVE, Playlist::Disc); }
 void sort_sel_bitrate () { aud_playlist_sort_selected_by_scheme (ACTIVE, Playlist::Bitrate); }
 void sort_sel_reverse () { aud_playlist_reverse_selected (ACTIVE); }
 void sort_sel_random () { aud_playlist_randomize_selected (ACTIVE); }

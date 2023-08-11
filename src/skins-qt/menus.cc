@@ -193,6 +193,7 @@ static const audqt::MenuItem playlist_select_items[] = {
 
 static const audqt::MenuItem sort_items[] = {
     audqt::MenuCommand ({N_("By Track Number")}, sort_track),
+    audqt::MenuCommand ({N_("By Disc Number")}, sort_disc),
     audqt::MenuCommand ({N_("By Title")}, sort_title),
     audqt::MenuCommand ({N_("By Artist")}, sort_artist),
     audqt::MenuCommand ({N_("By Album")}, sort_album),
@@ -209,6 +210,7 @@ static const audqt::MenuItem sort_items[] = {
 
 static const audqt::MenuItem sort_selected_items[] = {
     audqt::MenuCommand ({N_("By Track Number")}, sort_sel_track),
+    audqt::MenuCommand ({N_("By Disc Number")}, sort_sel_disc),
     audqt::MenuCommand ({N_("By Title")}, sort_sel_title),
     audqt::MenuCommand ({N_("By Artist")}, sort_sel_artist),
     audqt::MenuCommand ({N_("By Album")}, sort_sel_album),

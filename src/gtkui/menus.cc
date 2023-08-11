@@ -146,6 +146,7 @@ static const AudguiMenuItem dupe_items[] = {
 
 static const AudguiMenuItem sort_items[] = {
     MenuCommand (N_("By Track _Number"), nullptr, NONE, sort_track),
+    MenuCommand (N_("By D_isc Number"), nullptr, NONE, sort_disc),
     MenuCommand (N_("By _Title"), nullptr, NONE, sort_title),
     MenuCommand (N_("By _Artist"), nullptr, NONE, sort_artist),
     MenuCommand (N_("By Al_bum"), nullptr, NONE, sort_album),
@@ -164,6 +165,7 @@ static const AudguiMenuItem sort_items[] = {
 
 static const AudguiMenuItem sort_sel_items[] = {
     MenuCommand (N_("By Track _Number"), nullptr, NONE, sort_sel_track),
+    MenuCommand (N_("By D_isc Number"), nullptr, NONE, sort_sel_disc),
     MenuCommand (N_("By _Title"), nullptr, NONE, sort_sel_title),
     MenuCommand (N_("By _Artist"), nullptr, NONE, sort_sel_artist),
     MenuCommand (N_("By Al_bum"), nullptr, NONE, sort_sel_album),

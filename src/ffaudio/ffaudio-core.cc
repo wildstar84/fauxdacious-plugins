@@ -688,6 +688,7 @@ static const struct {
     {Tuple::String, Tuple::Composer, {"composer", nullptr}},
     {Tuple::Int, Tuple::Year, {"year", "WM/Year", "date", nullptr}},
     {Tuple::Int, Tuple::Track, {"track", "WM/TrackNumber", nullptr}},
+    {Tuple::Int, Tuple::Disc, {"disc", "WM/PartOfSet", nullptr}},
     {Tuple::String, Tuple::Lyrics, {"lyrics", nullptr}},
 };
 

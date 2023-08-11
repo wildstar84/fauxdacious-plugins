@@ -131,6 +131,7 @@ QMenuBar * qtui_build_menubar (QWidget * parent)
 
     static const audqt::MenuItem sort_items[] = {
         audqt::MenuCommand ({N_("By Track _Number")}, sort_track),
+        audqt::MenuCommand ({N_("By D_isc Number")}, sort_disc),
         audqt::MenuCommand ({N_("By _Title")}, sort_title),
         audqt::MenuCommand ({N_("By _Artist")}, sort_artist),
         audqt::MenuCommand ({N_("By Al_bum")}, sort_album),
@@ -149,6 +150,7 @@ QMenuBar * qtui_build_menubar (QWidget * parent)
 
     static const audqt::MenuItem sort_selected_items[] = {
         audqt::MenuCommand ({N_("By Track _Number")}, sort_sel_track),
+        audqt::MenuCommand ({N_("By D_isc Number")}, sort_sel_disc),
         audqt::MenuCommand ({N_("By _Title")}, sort_sel_title),
         audqt::MenuCommand ({N_("By _Artist")}, sort_sel_artist),
         audqt::MenuCommand ({N_("By Al_bum")}, sort_sel_album),

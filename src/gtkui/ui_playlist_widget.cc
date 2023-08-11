@@ -53,7 +53,8 @@ static const GType pw_col_types[PW_COLS] =
     G_TYPE_STRING,  // bitrate
     G_TYPE_STRING,  // comment
     G_TYPE_STRING,  // publisher
-    G_TYPE_STRING   // catalog number
+    G_TYPE_STRING,  // catalog number
+    G_TYPE_STRING   // disc
 };
 
 static GtkTreeViewColumn * s_sortedbycol = nullptr;
@@ -75,29 +76,9 @@ static const int pw_col_min_widths[PW_COLS] = {
     3,   // bitrate
     10,  // comment,
     10,  // publisher
-    3    // catalog number
+    3,   // catalog number
+    2    // disc
 };
-
-//static const bool pw_col_label[PW_COLS] = {
-//    false,  // entry number
-//    true,   // title
-//    true,   // artist
-//    true,   // year
-//    true,   // album
-//    true,   // album artist
-//    false,  // track
-//    true,   // genre
-//    false,  // queue position
-//    false,  // length
-//    true,   // path
-//    true,   // file name
-//    true,   // custom title
-//    false,  // bitrate
-//    true,   // comment
-//    true,   // comment
-//    true,   // publisher
-//    false   // catalog number
-//};
 
 static const Playlist::SortType pw_col_sort_types[PW_COLS] = {
     Playlist::n_sort_types,    // entry number
@@ -116,7 +97,8 @@ static const Playlist::SortType pw_col_sort_types[PW_COLS] = {
     Playlist::Bitrate,         // bitrate
     Playlist::Comment,         // comment
     Playlist::Publisher,       // publisher
-    Playlist::CatalogNum       // catalog number
+    Playlist::CatalogNum,      // catalog number
+    Playlist::Disc             // disc
 };
 
 struct PlaylistWidgetData
@@ -238,6 +220,9 @@ static void get_value (void * user, int row, int column, GValue * value)
         break;
     case PW_COL_CATALOG_NUM:
         set_string_from_tuple (value, tuple, Tuple::CatalogNum);
+        break;
+    case PW_COL_DISC:
+        set_int_from_tuple (value, tuple, Tuple::Disc);
         break;
     }
 }

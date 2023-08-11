@@ -49,7 +49,8 @@ const char * const pw_col_names[PW_COLS] = {
     N_("Bitrate"),
     N_("Comment"),
     N_("Publisher"),
-    N_("Catalog Number")
+    N_("Catalog Number"),
+    N_("Disc")
 };
 
 const char * const pw_col_headers[PW_COLS] = {
@@ -69,7 +70,9 @@ const char * const pw_col_headers[PW_COLS] = {
     N_("BPS"),
     N_("Comment"),
     N_("Publisher"),
-    N_("Cat#")
+    N_("Cat#"),
+    N_("Dsk")
+
 };
 
 int pw_num_cols;
@@ -93,7 +96,8 @@ static const char * const pw_col_keys[PW_COLS] = {
     "bitrate",
     "comment",
     "publisher",
-    "catalog-number"
+    "catalog-number",
+    "disc"
 };
 
 static const int pw_default_widths[PW_COLS] = {
@@ -103,7 +107,7 @@ static const int pw_default_widths[PW_COLS] = {
     10,   // year
     175,  // album
     175,  // album artist
-    10,   // track
+    10,   // track#
     100,  // genre
     10,   // queue position
     10,   // length
@@ -113,7 +117,8 @@ static const int pw_default_widths[PW_COLS] = {
     10,   // bitrate
     275,  // comment
     175,  // publisher
-    75    // catalog number
+    75,   // catalog number
+    10    // disc#
 };
 
 void pw_col_init ()

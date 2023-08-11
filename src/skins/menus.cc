@@ -193,6 +193,7 @@ static const AudguiMenuItem playlist_select_items[] = {
 
 static const AudguiMenuItem sort_items[] = {
     MenuCommand (N_("By Track Number"), nullptr, NO_KEY, sort_track),
+    MenuCommand (N_("By Disc Number"), nullptr, NO_KEY, sort_disc),
     MenuCommand (N_("By Title"), nullptr, NO_KEY, sort_title),
     MenuCommand (N_("By Artist"), nullptr, NO_KEY, sort_artist),
     MenuCommand (N_("By Album"), nullptr, NO_KEY, sort_album),
@@ -209,6 +210,7 @@ static const AudguiMenuItem sort_items[] = {
 
 static const AudguiMenuItem sort_selected_items[] = {
     MenuCommand (N_("By Track Number"), nullptr, NO_KEY, sort_sel_track),
+    MenuCommand (N_("By Disc Number"), nullptr, NO_KEY, sort_sel_disc),
     MenuCommand (N_("By Title"), nullptr, NO_KEY, sort_sel_title),
     MenuCommand (N_("By Artist"), nullptr, NO_KEY, sort_sel_artist),
     MenuCommand (N_("By Album"), nullptr, NO_KEY, sort_sel_album),
