@@ -519,19 +519,26 @@ static void follow_cb (void * data, void *)
 {
     bool advance_2_next_selected = aud_get_bool (nullptr, "advance_2_next_selected");
     int list = aud::from_ptr<int> (data);
+    int row = aud_playlist_get_position (list);
     if (advance_2_next_selected)
     {
         int prev_row = aud_get_int (nullptr, "_prev_entry");
         if (prev_row >= 0)
         {
-            aud_playlist_entry_set_selected (list, prev_row, false);
+            /* JWT:ONLY KEEP PREV. ENTRY SELECTED IFF OPTION SET && ADVANCED-TO ENTRY IS HILIGHTED
+               (THIS ENDS "Advance to next selected entry in list" IF NO OTHER ITEMS HIGHLIGHTED!)
+               NOTE:  Advance to next selected entry in list ONLY WORKS IF 2+ ENTRIES HIGHLIGHTED!
+            */
+            if (! aud_get_bool (nullptr, "keep_selected_on_advance")
+                    || ! aud_playlist_entry_get_selected (list, row))
+                aud_playlist_entry_set_selected (list, prev_row, false);
+
             aud_set_int (nullptr, "_prev_entry", -1);
         }
     }
     else
         aud_playlist_select_all (list, false);
 
-    int row = aud_playlist_get_position (list);
     if (row >= 0)
         aud_playlist_entry_set_selected (list, row, true);
 

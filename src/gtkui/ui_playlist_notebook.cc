@@ -529,7 +529,14 @@ void ui_playlist_notebook_position (void * data, void * user)
             int prev_row = aud_get_int (nullptr, "_prev_entry");
             if (prev_row >= 0)
             {
-                aud_playlist_entry_set_selected (list, prev_row, false);
+                /* JWT:ONLY KEEP PREV. ENTRY SELECTED IFF OPTION SET && ADVANCED-TO ENTRY IS HILIGHTED
+                   (THIS ENDS "Advance to next selected entry in list" IF NO OTHER ITEMS HIGHLIGHTED!)
+                   NOTE:  Advance to next selected entry in list ONLY WORKS IF 2+ ENTRIES HIGHLIGHTED!
+                */
+                if (! aud_get_bool (nullptr, "keep_selected_on_advance")
+                        || ! aud_playlist_entry_get_selected (list, row))
+                    aud_playlist_entry_set_selected (list, prev_row, false);
+
                 aud_set_int (nullptr, "_prev_entry", -1);
             }
         }
