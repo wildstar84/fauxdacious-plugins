@@ -359,6 +359,8 @@ bool MPG123Plugin::play (const char * filename, VFSFile & file)
 
             if (ret == MPG123_DONE || ret == MPG123_ERR_READER)
                 break;
+            else if (ret == MPG123_NEW_FORMAT) /* JWT:OLDER MP3 VSNS REQUIRE THIS AFTER (SOME) SEEKS: */
+                ret = mpg123_getformat (s.dec, & s.rate, & s.channels, & s.encoding);
 
             if (ret < 0)
             {
