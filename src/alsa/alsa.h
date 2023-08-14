@@ -40,6 +40,21 @@ do { \
     CHECK_VAL (CHECK_error, function, __VA_ARGS__); \
 } while (0)
 
+#define CHECK_VAL_QUIET(value, function, ...) \
+do { \
+    (value) = function (__VA_ARGS__); \
+    if ((value) < 0) { \
+        AUDDBG ("%s failed: %s.\n", #function, snd_strerror (value)); \
+        goto FAILED; \
+    } \
+} while (0)
+
+#define CHECK_QUIETLY(function, ...) \
+do { \
+    int CHECK_error; \
+    CHECK_VAL_QUIET (CHECK_error, function, __VA_ARGS__); \
+} while (0)
+
 #define CHECK_STR(str, function, ...) \
 do { \
     int CHECK_STR_error = function (__VA_ARGS__); \

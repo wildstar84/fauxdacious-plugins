@@ -532,7 +532,8 @@ void ALSAPlugin::pause (bool pause)
         if (pause)
             alsa_paused_delay = get_delay_locked ();
 
-        CHECK (snd_pcm_pause, alsa_handle, pause);
+        /* JWT:THIS ALWAYS SEEMS TO "FAIL" FOR ME, BUT NO PBMS I CAN TELL, SO SHUSH MESSAGES!: */
+        CHECK_QUIETLY (snd_pcm_pause, alsa_handle, pause);
     }
 
 DONE:
