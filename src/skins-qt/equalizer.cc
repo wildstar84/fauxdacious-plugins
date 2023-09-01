@@ -288,6 +288,7 @@ static void equalizerwin_create_window ()
 
     equalizerwin = new EqWindow (shaded);
     equalizerwin->setWindowTitle (_("Fauxdacious Equalizer"));
+    equalizerwin->setWindowRole ("equalizer");
 }
 
 void equalizerwin_unhook ()

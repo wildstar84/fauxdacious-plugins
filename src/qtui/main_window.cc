@@ -55,6 +55,7 @@ public:
     {
         setObjectName (item->id ());
         setWindowTitle (item->name ());
+        setWindowRole ("plugin");
         setWidget (item->widget ());
         setContextMenuPolicy (Qt::PreventContextMenu);
 
@@ -195,6 +196,7 @@ MainWindow::MainWindow () :
 
     setMenuBar (m_menubar);
     setDockNestingEnabled (true);
+    setWindowRole ("mainwindow");
 
     audqt::register_dock_host (this);
 
@@ -556,6 +558,7 @@ void MainWindow::add_dock_item (audqt::DockItem * item)
         if (instancename != String ("fauxdacious"))
             w->setWindowTitle (QString ("%1 (%2)").arg (w->windowTitle()).arg ((const char *) instancename));
 
+        w->setWindowRole ("altwindow");
         /* JWT:FOR MINI-FAUXDACIOUS - RESTORE THE WINDOW-SIZE/POSITION (DEFAULTS TOO SMALL)
            AND/OR USER PBLY. WANTS TO USE THIS STAND-ALONE MUCH LIKE THE MAIN WINDOW): */
         if (w->isFloating ())

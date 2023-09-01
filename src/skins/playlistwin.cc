@@ -490,6 +490,7 @@ static void playlistwin_create_window ()
 
     playlistwin = new PlWindow (shaded);
     playlistwin->setWindowTitle (_("Fauxdacious Playlist Editor"));
+    playlistwin->setWindowRole ("playlist");
 
     GtkWidget * w = playlistwin->gtk ();
     drag_dest_set (w);

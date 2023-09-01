@@ -235,6 +235,7 @@ on_entry_button_press_event(GtkWidget * widget,
             _("It is not recommended to bind the primary mouse buttons without modificators.\n\n"
               "Do you want to continue?"));
         gtk_window_set_title(GTK_WINDOW(dialog), _("Binding mouse buttons"));
+        gtk_window_set_role(GTK_WINDOW(dialog), "message");
         response = gtk_dialog_run(GTK_DIALOG(dialog));
         gtk_widget_destroy (dialog);
         if (response != GTK_RESPONSE_YES) return true;

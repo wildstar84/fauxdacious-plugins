@@ -1230,6 +1230,7 @@ static void mainwin_create_window ()
 
     mainwin = new MainWindow (shaded);
     mainwin->setWindowTitle (_("Fauxdacious"));
+    mainwin->setWindowRole("mainwindow");
 
     GtkWidget * w = mainwin->gtk ();
     drag_dest_set (w);

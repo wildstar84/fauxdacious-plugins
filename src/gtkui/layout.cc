@@ -405,6 +405,8 @@ G_GNUC_END_IGNORE_DEPRECATIONS
             if (instancename != String ("fauxdacious"))
                 str_append_printf (title, " (%s)", (const char *) instancename);
             gtk_window_set_title ((GtkWindow *) item->window, (const char *) title);
+            /* JWT:UNLIKE OTHER PLUGINS, Mini-Fauxdacious FUNCTIONS MORE LIKE A "MAIN WINDOW" */
+            gtk_window_set_role ((GtkWindow *) item->window, "altwindow");
             int toolbar_height = aud_get_int ("minifauxdacious-gtk", "toolbar_height");
             int fixed_height = 102;  /* JWT:FIXME SOMEHOW, SOMEDAY! */
             if (aud_get_bool ("minifauxdacious-gtk", "show_toolbar") && toolbar_height > 1)
@@ -421,7 +423,10 @@ G_GNUC_END_IGNORE_DEPRECATIONS
                 item->wprev = wtb;
         }
         else
+        {
             gtk_window_set_title ((GtkWindow *) item->window, item->name);
+            gtk_window_set_role ((GtkWindow *) item->window, "plugin");
+        }
 
         gtk_container_set_border_width ((GtkContainer *) item->window, 2);
 
