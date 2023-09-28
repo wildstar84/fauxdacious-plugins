@@ -364,7 +364,8 @@ static void album_update (void *, GtkWidget * widget)
     /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP FURTHER ART SEARCH: */
     if (haveartalready && (! strncmp (filename, "file://", 7)
             || (! strncmp (filename, "cdda://", 7) && ! aud_get_bool ("CDDA", "seek_albumart_for_cds"))
-            || (! strncmp (filename, "dvd://", 6) && aud_get_bool ("dvd", "skip_coverartlookup"))))
+            || (! strncmp (filename, "dvd://", 6) && aud_get_bool ("dvd", "skip_coverartlookup"))
+            || ! strncmp (filename, "stdin://", 8)))
     {
         if (aud_get_bool ("albumart", "hide_dup_art_icon"))
         {

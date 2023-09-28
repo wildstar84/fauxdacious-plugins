@@ -243,13 +243,12 @@ public:
         if (aud_get_bool ("albumart", "hide_dup_art_icon"))
             aud_set_bool ("albumart", "_infoarea_hide_art", ! have_channel_art);
 
-        if (haveartalready)  /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP INTERNET ART SEARCH! */
-        {
-            if (! strncmp (filename, "file://", 7)
-                    || (! strncmp (filename, "cdda://", 7) && ! aud_get_bool ("CDDA", "seek_albumart_for_cds"))
-                    || (! strncmp (filename, "dvd://", 6) && aud_get_bool ("dvd", "skip_coverartlookup")))
-                return;
-        }
+        /* JWT:IF SONG IS A FILE & ALREADY HAVE ART IMAGE, SKIP FURTHER ART SEARCH: */
+        if (haveartalready && (! strncmp (filename, "file://", 7)
+                || (! strncmp (filename, "cdda://", 7) && ! aud_get_bool ("CDDA", "seek_albumart_for_cds"))
+                || (! strncmp (filename, "dvd://", 6) && aud_get_bool ("dvd", "skip_coverartlookup"))
+                || ! strncmp (filename, "stdin://", 8)))
+            return;
 
         /* JWT:NOW CHECK THE ALBUM-ART CACHE: */
         Tuple tuple = aud_drct_get_tuple ();

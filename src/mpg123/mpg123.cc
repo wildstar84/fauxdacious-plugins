@@ -285,7 +285,12 @@ bool MPG123Plugin::read_tag (const char * filename, VFSFile & file, Tuple & tupl
         return false;
 
     if (stream)
-        tuple.fetch_stream_info (file);
+    {
+        if (strncmp (filename, "stdin://", 8))
+            tuple.fetch_stream_info (file);
+        else  /* JWT:STDIN IS A "STREAM", BUT MUST READ TAGS AS A FILE W/O SEEKING: */
+            audtag::read_tag (file, tuple, image);
+    }
     else
     {
         if (file.fseek (0, VFS_SEEK_SET) != 0)
