@@ -478,6 +478,24 @@ static void update_volume_delta ()
     gtk_adjustment_set_page_increment (adjustment, volume_delta);
 }
 
+static void set_menu_button_icon (GtkToolButton * button)
+{
+    if (aud_get_bool ("gtkui", "symbolic_icons"))
+        gtk_tool_button_set_icon_name (button, "open-menu-symbolic");
+    else
+    {
+#ifdef _WIN32
+        /* JWT:FIXME:(I CAN'T GET PNG ICON TO WORK NOR HAVE TOOLS TO MAKE AN SVG ONE!) */
+        StringBuf logo_path = filename_build ({aud_get_path (AudPath::DataDir), "images",
+                "fauxdacious24.png"});
+        GtkWidget * image = gtk_image_new_from_file (logo_path);
+        gtk_tool_button_set_icon_widget ((GtkToolButton *) menu_button, image);
+#else
+        gtk_tool_button_set_icon_name (button, "fauxdacious");
+#endif
+    }
+}
+
 static void set_button_icon (GtkToolButton * button, const char * icon)
 {
     if (aud_get_bool ("gtkui", "symbolic_icons"))
@@ -1183,15 +1201,7 @@ void show_hide_menu ()
         if (! menu_button)
         {
             menu_button = gtk_toggle_tool_button_new ();
-#ifdef _WIN32
-            /* JWT:FIXME:(I CAN'T GET PNG ICON TO WORK?!) */
-            StringBuf logo_path = filename_build ({aud_get_path (AudPath::DataDir), "images",
-                    "fauxdacious24.png"});
-            GtkWidget * image = gtk_image_new_from_file (logo_path);
-            gtk_tool_button_set_icon_widget ((GtkToolButton *) menu_button, image);
-#else
-            set_button_icon ((GtkToolButton *) menu_button, "fauxdacious");
-#endif
+            set_menu_button_icon ((GtkToolButton *) menu_button);
             gtk_tool_item_set_tooltip_text (menu_button, _("Menu"));
             g_signal_connect (menu_button, "destroy", (GCallback)
                     gtk_widget_destroyed, & menu_button);
@@ -1324,6 +1334,9 @@ void activate_playlist_manager ()
 
 void update_toolbar_icons ()
 {
+    if (menu_button)
+        set_menu_button_icon ((GtkToolButton *) menu_button);
+
     set_button_icon ((GtkToolButton *) search_button, "edit-find");
     set_button_icon ((GtkToolButton *) button_open, "document-open");
     set_button_icon ((GtkToolButton *) button_add, "list-add");
