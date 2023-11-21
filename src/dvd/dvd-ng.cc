@@ -826,7 +826,10 @@ static SDL_Texture * createSDL2Texture (SDL_Window * sdl_window, SDL_Renderer * 
 void save_window_xy (SDL_Window * sdl_window, int video_window_x, int video_window_y,
         int init_window_x, int init_window_y, int video_display_at_startup)
 {
-    int x, y, w, h;
+    int x = 0;
+    int y = 0;
+    int w = 0;
+    int h = 0;
 
     SDL_GetWindowSize (sdl_window, &w, &h);
     if (w < 1 || h < 1 || w > 9999 || h > 9999)  /* SDL RETURNED BAD WINDOW INFO, DON'T SAVE! */

@@ -48,6 +48,7 @@ extern "C" {
 #include <libfauxdcore/preferences.h>
 #include <libfauxdcore/probe.h>
 #include <libfauxdcore/plugins.h>
+#include <libfauxdcore/drct.h>
 
 // #define SDL_AUDIO_BUFFER_SIZE 4096
 // #define MAX_AUDIO_FRAME_SIZE 192000
@@ -962,7 +963,10 @@ static SDL_Texture * createSDL2Texture (SDL_Window * sdl_window, SDL_Renderer * 
 void save_window_xy (SDL_Window * sdl_window, int video_window_x, int video_window_y,
         int init_window_x, int init_window_y, bool video_display_at_startup)
 {
-    int x, y, w, h;
+    int x = 0;
+    int y = 0;
+    int w = 0;
+    int h = 0;
 
     SDL_GetWindowSize (sdl_window, &w, &h);
     if (w < 1 || h < 1 || w > 9999 || h > 9999)  /* SDL RETURNED BAD WINDOW INFO, DON'T SAVE! */
@@ -1232,11 +1236,6 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     if (myplay_video)
     {
         int video_xmove = aud_get_int ("ffaudio", "video_xmove");
-        String video_windowtitle;
-        String song_title;
-        int current_playlist = aud_playlist_get_active ();
-        Tuple tuple = aud_playlist_entry_get_tuple (current_playlist, aud_playlist_get_position (current_playlist));
-        song_title = tuple.get_str (Tuple::Title);
         if (noresize_optimizations)
         {
             /* JWT: time in seconds to wait for user to stop dragging before resetting window aspect */
@@ -1334,13 +1333,6 @@ bool FFaudio::play (const char * filename, VFSFile & file)
             myplay_video = false;
             goto breakout1;
         }
-        video_windowtitle = aud_get_str ("ffaudio", "video_windowtitle");
-        StringBuf titleBuf = (video_windowtitle && video_windowtitle[0])
-                ? str_printf ("%s - %s", (const char *) song_title, (const char *) video_windowtitle)
-                : str_copy ((const char *) song_title, -1);
-        song_title = String ();
-        video_windowtitle = String ();
-        str_replace_char (titleBuf, '_', ' ');
         SDL_SetWindowSize (sdl_window, video_width, video_height);
 
 #if SDL_COMPILEDVERSION < 4601
@@ -1351,8 +1343,6 @@ bool FFaudio::play (const char * filename, VFSFile & file)
             SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, aud_get_str ("ffaudio", "video_render_scale"));
         else
             SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "1");
-
-        SDL_SetWindowTitle (sdl_window, (const char *) titleBuf);
     }
 
 breakout1:
@@ -1433,6 +1423,24 @@ breakout1:
         AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
         goto error_exit;
     }
+
+    if (myplay_video)  /* SET VIDEO-WINDOW TITLE (INCLUDE SONG-TITLE): */
+    {
+        String video_windowtitle;
+        String song_title;
+        Tuple tuple = aud_drct_get_tuple ();
+        song_title = tuple.get_str (Tuple::Title);
+
+        video_windowtitle = aud_get_str ("ffaudio", "video_windowtitle");
+        StringBuf titleBuf = (video_windowtitle && video_windowtitle[0])
+                ? str_printf ("%s - %s", (const char *) song_title, (const char *) video_windowtitle)
+                : str_copy ((const char *) song_title, -1);
+        song_title = String ();
+        video_windowtitle = String ();
+        str_replace_char (titleBuf, '_', ' ');
+
+        SDL_SetWindowTitle (sdl_window, (const char *) titleBuf);
+	}
 
     /* LOOP TO PROCESS QUEUED AUDIO & VIDEO PACKETS FROM THE STREAM, INTERLACE AND OUTPUT THEM: */
     while (! thread_exit)
@@ -1824,8 +1832,7 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
         String save_video_uri = String (filename_to_uri (save_video_file));
         String error;
         VFSFile file (save_video_uri, "r");
-        int current_playlist = aud_playlist_get_active ();
-        Tuple tuple = aud_playlist_entry_get_tuple (current_playlist, aud_playlist_get_position (current_playlist));
+        Tuple tuple = aud_drct_get_tuple ();
         //??? tuple.unset (Tuple::Length);
         tuple.set_int (Tuple::Length, -1);
         String song_title = tuple.get_str (Tuple::Title);
