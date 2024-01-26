@@ -548,13 +548,13 @@ private:
 #ifdef _WIN32
                 WinExec ((const char *) str_concat ({cover_helper, " ALBUM '",
                         (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
-                        (const char *) artist_buf, "' '", (const char *) title_buf, "' ",
-                        (const char *) webfetch}), SW_HIDE);
+                        (const char *) artist_buf, "' '", (const char *) title_buf, "' '",
+                        (const char *) webfetch, "'"}), SW_HIDE);
 #else
                 system ((const char *) str_concat ({cover_helper, " ALBUM '",
                         (const char *) album_buf, "' ", aud_get_path (AudPath::UserDir), " '",
-                        (const char *) artist_buf, "' '", (const char *) title_buf, "' ",
-                        (const char *) webfetch}));
+                        (const char *) artist_buf, "' '", (const char *) title_buf, "' '",
+                        (const char *) webfetch, "'"}));
 #endif
             }
         }
