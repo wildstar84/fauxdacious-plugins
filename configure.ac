@@ -5,8 +5,8 @@ dnl ***
 dnl Initialize
 dnl ==========
 AC_PREREQ([2.59])
-AC_INIT([fauxdacious-plugins], [4.3-final])
-AC_COPYRIGHT([Copyright (C) 2001-2023 Jim Turner, Audacious developers and others])
+AC_INIT([fauxdacious-plugins], [4.4-devel])
+AC_COPYRIGHT([Copyright (C) 2001-2024 Jim Turner, Audacious developers and others])
 
 AC_DEFINE_UNQUOTED([PACKAGE], "$PACKAGE_NAME", [Name of package])
 AC_DEFINE_UNQUOTED([VERSION], "$PACKAGE_VERSION", [Version number of package])
@@ -66,7 +66,7 @@ dnl ======================
 
 INPUT_PLUGINS="aud_adplug metronom psf tonegen vtx xsf"
 OUTPUT_PLUGINS=""
-EFFECT_PLUGINS="bitcrusher compressor crossfade crystalizer mixer silence-removal stereo_plugin voice_removal echo_plugin"
+EFFECT_PLUGINS="background_music bitcrusher compressor crossfade crystalizer mixer silence-removal stereo_plugin voice_removal echo_plugin"
 GENERAL_PLUGINS=""
 VISUALIZATION_PLUGINS=""
 CONTAINER_PLUGINS="asx asx3 audpl m3u pls xspf"
@@ -810,6 +810,7 @@ echo "  Tone Generator:                         yes"
 echo
 echo "  Effects"
 echo "  -------"
+echo "  Background Music                        yes"
 echo "  Bauer stereophonic-to-binaural (bs2b):  $have_bs2b"
 echo "  Bitcrusher:                             yes"
 echo "  Channel Mixer:                          yes"
