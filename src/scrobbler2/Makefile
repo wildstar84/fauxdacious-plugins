@@ -5,7 +5,6 @@ SRCS = scrobbler.cc \
 	   scrobbler_xml_parsing.cc \
 	   config_window.cc
 
-
 include ../../buildsys.mk
 include ../../extra.mk
 

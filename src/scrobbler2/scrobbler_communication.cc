@@ -1,3 +1,11 @@
+/*
+ * Scrobbler Plugin v2.0 for Audacious by Pitxyoki
+ *
+ * Copyright 2012-2013 Luís Picciochi Oliveira <Pitxyoki@Gmail.com>
+ *
+ * This plugin is part of the Audacious Media Player.
+ * It is licensed under the GNU General Public License, version 3.
+ */
 
 //external includes
 #include <stdarg.h>
@@ -7,6 +15,7 @@
 
 #include <glib.h>
 
+//fauxdacious includes
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/interface.h>
 
@@ -26,13 +35,9 @@ gboolean scrobbling_enabled = true;
 char *received_data = nullptr;   //Holds the result of the last request made to last.fm
 size_t received_data_size = 0; //Holds the size of the received_data buffer
 
-
-
 // The cURL callback function to store the received data from the last.fm servers.
 static size_t result_callback (void *buffer, size_t size, size_t nmemb, void *userp) {
-
     const size_t len = size*nmemb;
-
     char *temp_data = g_renew(char, received_data, received_data_size + len + 1);
 
     if (temp_data == nullptr) {
@@ -155,7 +160,6 @@ static gboolean scrobbler_request_token ()
     return success;
 }
 
-
 static gboolean update_session_key() {
     gboolean result = true;
     String error_code;
@@ -203,7 +207,6 @@ static gboolean scrobbler_request_session ()
 //sets scrobbling_enabled to TRUE if the session is OK
 //sets session_key to nullptr if it is invalid
 static gboolean scrobbler_test_connection() {
-
     if (!session_key || !session_key[0]) {
         scrobbling_enabled = false;
         return true;
@@ -309,7 +312,6 @@ static void delete_lines_from_scrobble_log (GSList **lines_to_remove_ptr, GSList
         lines_to_retry = g_slist_reverse(lines_to_retry);
     }
 
-
     pthread_mutex_lock(&log_access_mutex);
 
     gboolean success = g_file_get_contents(queuepath, &contents, nullptr, nullptr);
@@ -327,16 +329,15 @@ static void delete_lines_from_scrobble_log (GSList **lines_to_remove_ptr, GSList
                 //keep this line
                 AUDDBG("Going to keep line %i\n", i);
                 if (lines_to_retry != nullptr && *((int *) (lines_to_retry->data)) == i) {
-                  lines_to_retry = g_slist_next(lines_to_retry);
-                  //this line will be retried with a zero timestamp
-                  AUDDBG("Going to zero this line.\n");
-                  AUDDBG("Line before: %s.\n", lines[i]);
-                  set_timestamp_to_current(&(lines[i]));
-                  AUDDBG("Line after: %s.\n", lines[i]);
+                    lines_to_retry = g_slist_next(lines_to_retry);
+                    //this line will be retried with a zero timestamp
+                    AUDDBG("Going to zero this line.\n");
+                    AUDDBG("Line before: %s.\n", lines[i]);
+                    set_timestamp_to_current(&(lines[i]));
+                    AUDDBG("Line after: %s.\n", lines[i]);
+                } else
+                    AUDDBG("not zeroing this line\n");
 
-                } else {
-                  AUDDBG("not zeroing this line\n");
-                }
                 n_finallines++;
                 finallines = g_renew (char *, finallines, n_finallines);
                 finallines[n_finallines-1] = g_strdup(lines[i]);
@@ -352,11 +353,9 @@ static void delete_lines_from_scrobble_log (GSList **lines_to_remove_ptr, GSList
         if (!success) {
             AUDERR("Could not write to scrobbler.log!\n");
         }
-
     }
 
     pthread_mutex_unlock(&log_access_mutex);
-
 
     g_strfreev(finallines);
     g_strfreev(lines);
@@ -370,7 +369,6 @@ static void save_line_to_remove(GSList **lines_to_remove, int linenumber) {
 }
 
 static void scrobble_cached_queue() {
-
     char *queuepath = g_build_filename(aud_get_path(AudPath::UserDir),"scrobbler.log", nullptr);
     char *contents = nullptr;
     gboolean success;
@@ -382,10 +380,10 @@ static void scrobble_cached_queue() {
     pthread_mutex_lock(&log_access_mutex);
     success = g_file_get_contents(queuepath, &contents, nullptr, nullptr);
     pthread_mutex_unlock(&log_access_mutex);
-    if (!success) {
-        AUDDBG("Couldn't access the queue file.\n");
-    } else {
 
+    if (!success)
+        AUDDBG("Couldn't access the queue file.\n");
+    else {
         lines = g_strsplit(contents, "\n", 0);
 
         for (int i = 0; lines[i] != nullptr && strlen(lines[i]) > 0 && scrobbling_enabled; i++) {
@@ -422,8 +420,7 @@ static void scrobble_cached_queue() {
                            //TODO: a track might not be scrobbled due to "daily scrobble limit exeeded".
                            //This message comes on the ignoredMessage attribute, inside the XML of the response.
                            //We are not dealing with this case currently and are losing that scrobble.
-                           //TODO
-
+                           //END TODO
                         } else {
                             AUDDBG("Not ignored. Carrying on...\n");
                             save_line_to_remove(&lines_to_remove, i);
@@ -447,9 +444,8 @@ static void scrobble_cached_queue() {
                             session_key = String();
                             aud_set_str("scrobbler", "session_key", "");
                         }
-                        else {
+                        else
                             save_line_to_remove(&lines_to_remove, i);
-                        }
                     }
                 } else {
                     AUDDBG("Could not scrobble a track on the queue. Network problem?\n");
@@ -465,17 +461,14 @@ static void scrobble_cached_queue() {
                 //leave entry on the cache file
             }
             g_strfreev(line);
-        }//for
-
+        } //for
 
         delete_lines_from_scrobble_log(&lines_to_remove, &lines_to_retry, queuepath);
 
-        if (lines_to_remove != nullptr) {
+        if (lines_to_remove != nullptr)
             g_slist_free_full(lines_to_remove, g_free);
-        }
-        if (lines_to_retry != nullptr) {
+        if (lines_to_retry != nullptr)
             g_slist_free_full(lines_to_retry, g_free);
-        }
 
         g_strfreev(lines);
     }
@@ -484,9 +477,7 @@ static void scrobble_cached_queue() {
     g_free(queuepath);
 }
 
-
 static void send_now_playing() {
-
   String error_code;
   String error_detail;
   gboolean ignored = false;
@@ -540,7 +531,6 @@ static void send_now_playing() {
 
     }
     //We don't care if the now playing was not accepted, no need to read the result from the server.
-
   }
 }
 
@@ -552,10 +542,8 @@ static void treat_permission_check_request() {
             if (scrobbler_request_token() == false || !request_token || !request_token[0]) {
                 perm_result = PERMISSION_NONET;
             } //else PERMISSION_DENIED
-
         } else if (scrobbler_request_session() == false) {
             perm_result = PERMISSION_NONET;
-
         } else if (!session_key || !session_key[0]) {
             //This means we had a token, a session was requested now,
             //but the token was not accepted or expired.
@@ -574,11 +562,10 @@ static void treat_permission_check_request() {
                     perm_result = PERMISSION_DENIED;
                 } //else PERMISSION_NONET
             }
-
         } else {
-            if (scrobbling_enabled) {
+            if (scrobbling_enabled)
                 perm_result = PERMISSION_ALLOWED;
-            } else {
+            else {
              /* This means that we have a session key but couldn't make
               * an authenticated call with it. This happens when:
               * a) the user revoked the permission to Audacious on his
@@ -587,11 +574,10 @@ static void treat_permission_check_request() {
               * c) the user fiddled with the audacious config file and
               * the key is now invalid
               */
-                if (scrobbler_request_token() != false && request_token && request_token[0]) {
+                if (scrobbler_request_token() != false && request_token && request_token[0])
                     perm_result = PERMISSION_DENIED;
-                } else {
+                else
                     perm_result = PERMISSION_NONET;
-                }
             }
         }
     } //session_key == nullptr || strlen(session_key) == 0
@@ -603,7 +589,6 @@ static void treat_permission_check_request() {
 // FALSE if there was a network problem OR a session_key was not obtained
 // TRUE if a new session_key was obtained
 static gboolean treat_migrate_config() {
-
     String password = aud_get_str("audioscrobbler","password");
     String username = aud_get_str("audioscrobbler","username");
     if (!password[0] || !username[0])
@@ -628,38 +613,31 @@ static gboolean treat_migrate_config() {
     return (session_key && session_key[0]);
 }
 
-
 //Scrobbling will only be enabled after the first connection test passed
 void * scrobbling_thread (void * input_data) {
-
     while (scrobbler_running) {
-
         if (migrate_config_requested) {
-          if (treat_migrate_config() == false) {
-            aud_ui_show_error(_("Audacious is now using an improved version of the Last.fm Scrobbler.\nPlease check the Preferences for the Scrobbler plugin."));
-          }
+          if (treat_migrate_config() == false)
+              aud_ui_show_error(_("Audacious is now using an improved version of the Last.fm Scrobbler.\nPlease check the Preferences for the Scrobbler plugin."));
+
           aud_set_str("scrobbler", "migrated", "true");
           migrate_config_requested = false;
-
         } else if (permission_check_requested) {
             treat_permission_check_request();
             permission_check_requested = false;
-
         } else if (invalidate_session_requested) {
             session_key = String();
             aud_set_str("scrobbler", "session_key", "");
             invalidate_session_requested = false;
-
         } else if (now_playing_requested) {
-            if (scrobbling_enabled) {
+            if (scrobbling_enabled)
               send_now_playing();
-            }
-            now_playing_requested = false;
 
+            now_playing_requested = false;
         } else {
-            if (scrobbling_enabled) {
-              scrobble_cached_queue();
-            }
+            if (scrobbling_enabled)
+                scrobble_cached_queue();
+
             //scrobbling may be disabled at this point if communication errors occur
 
             pthread_mutex_lock(&communication_mutex);
@@ -684,7 +662,7 @@ void * scrobbling_thread (void * input_data) {
                 }
             }
         }
-    }//while(scrobbler_running)
+    } //while(scrobbler_running)
 
     //reset all vars to their initial values
     g_free(received_data);
@@ -697,4 +675,3 @@ void * scrobbling_thread (void * input_data) {
     scrobbling_enabled = true;
     return nullptr;
 }
-
