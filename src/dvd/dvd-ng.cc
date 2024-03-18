@@ -2374,7 +2374,7 @@ AUDDBG("---INPUT PIPE OPENED!\n");
                 windowNowExposed = true;
             }
         }
-        if (needWinSzFudge && windowIsStable)
+        if (needWinSzFudge && windowIsStable && aud_get_bool ("audacious", "video_display"))
         {
 #if SDL_COMPILEDVERSION < 4601
             int x, y;
@@ -2429,6 +2429,12 @@ AUDDBG("---INPUT PIPE OPENED!\n");
 
                 AUDDBG ("--ASD FUDGE IS SET: (%d, %d) VW(%d, %d) - FETCHEDxy(%d, %d)\n",
                         sdl_init_fudge_x, sdl_init_fudge_y, video_window_x, video_window_y, x,y);
+                if (sdl_init_fudge_x == 0 && sdl_init_fudge_y == 0
+                        && aud_get_bool ("audacious", "afterstep"))  //JWT:NOTE: MAY NOT NEED AS-TEST HERE?
+                {
+                    x = video_window_x; //JWT:IGNORE CURRENT PLACEMENT IF INITIAL FUDGE IS (0,0):
+                    y = video_window_y;
+                }
             }
             else  // CALCULATE HOW FAR WINDOW WILL BE "MOVED" WHEN WE PLACE IT (ONLY HAPPENS ON 1ST VIDEO PLAYED):
             {
