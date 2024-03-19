@@ -1738,6 +1738,15 @@ breakout1:
 
             seek_value = -1;
         }
+
+        /* JWT:CHECK FOR METADATA CHANGES, IE. SONG TITLES IN STREAMING RADIO STATIONS: */
+        if (! strncmp (filename, "http", 4))  // IF STREAM, SEE IF SONG-INFO CHANGED IN STREAM:
+        {
+            Tuple tuple = get_playback_tuple ();
+
+            if (tuple.fetch_stream_info (file))
+                set_playback_tuple (tuple.ref ());
+        }
     }  // END PACKET-PROCESSING LOOP.
 
     if (pthread_join (helper_thread, NULL))
