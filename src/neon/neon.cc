@@ -43,6 +43,11 @@
 #include <ne_uri.h>
 #include <ne_utils.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <wincrypt.h>
+#endif
+
 #include "cert_verification.h"
 
 #define NEON_NETBLKSIZE     (4096)
@@ -100,8 +105,8 @@ static bool stop_playback = false;      /* SIGNAL FROM USER TO STOP PLAYBACK */
 static const char * const neon_schemes[] = {"http", "https"};
 
 static const ComboItem ignore_ssl_certs_choices[] = {
-    ComboItem (N_("Never"), 0),               // (DEFAULT) - PERFORM FULL SSL CERT. CHECKS ON HTTPS STREAMS.
-    ComboItem (N_("Untrusted"), 1),           // (WINDOWS DEFAULT) CHECK BUT ALLOW UNTRUSTED CERTS. (M$ WINDOWS SEEMS TO NEED)?
+    ComboItem (N_("Never (safest)"), 0),      // (DEFAULT) - PERFORM FULL SSL CERT. CHECKS ON HTTPS STREAMS.
+    ComboItem (N_("Untrusted"), 1),           // CHECK BUT ALLOW UNTRUSTED CERTS.
     ComboItem (N_("All checks (risky!)"), 2)  // SKIP ALL SSL VALIDATION (RISKY) USER MUST TRUST STREAMING SITES!
 };
 
@@ -132,11 +137,7 @@ const char * const NeonTransport::defaults[] = {
     "neon_buffersz", aud::numeric_string<NEON_NETBLKSIZE>::str,
     "neon_retries", aud::numeric_string<NEON_RETRY_COUNT>::str,
     "neon_timeoutsec", aud::numeric_string<NEON_TIMEOUTSEC>::str,
-#ifdef _WIN32
-    "ignore_ssl_certs", "1",  // WINDOWS DOESN'T USE SSL_CERT_* ENV. VARS & THUS CAN'T FIND CERTS?!
-#else
     "ignore_ssl_certs", "0",
-#endif
     "user_agent", "Fauxdacious/" PACKAGE_VERSION,
     nullptr
 };
@@ -632,6 +633,30 @@ int NeonFile::open_request (int64_t startbyte, String * error)
     return -1;
 }
 
+#ifdef _WIN32
+static void trust_win32_root_certs (ne_session * m_session)
+{
+    auto store = CertOpenSystemStore (0, "ROOT");
+    if (! store)
+        return;
+
+    const CERT_CONTEXT * ctx = NULL;
+    while ((ctx = CertEnumCertificatesInStore (store, ctx)))
+    {
+        char * enc = g_base64_encode (ctx->pbCertEncoded, ctx->cbCertEncoded);
+        ne_ssl_certificate * cert = ne_ssl_cert_import (enc);
+        if (cert)
+        {
+            ne_ssl_trust_cert (m_session, cert);
+            ne_ssl_cert_free (cert);
+        }
+        g_free (enc);
+    }
+
+    CertCloseStore (store, 0);
+}
+#endif
+
 int NeonFile::open_handle (int64_t startbyte, String * error)
 {
     int ret;
@@ -710,7 +735,10 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
         if (! strcmp ("https", m_purl.scheme))
         {
             AUDDBG ("<%p> Verifying certificate\n", this);
+#ifdef _WIN32
             ne_ssl_trust_default_ca (m_session);
+            trust_win32_root_certs (m_session);
+#endif
             ne_ssl_set_verify (m_session,
                     neon_vfs_verify_environment_ssl_certs, m_session);
         }
