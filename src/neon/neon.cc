@@ -735,8 +735,8 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
         if (! strcmp ("https", m_purl.scheme))
         {
             AUDDBG ("<%p> Verifying certificate\n", this);
-#ifdef _WIN32
             ne_ssl_trust_default_ca (m_session);
+#ifdef _WIN32
             trust_win32_root_certs (m_session);
 #endif
             ne_ssl_set_verify (m_session,
