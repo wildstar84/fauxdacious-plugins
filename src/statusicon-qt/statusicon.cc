@@ -33,7 +33,8 @@
 #include <QSystemTrayIcon>
 #include <QWheelEvent>
 
-class StatusIcon : public GeneralPlugin {
+class StatusIcon : public GeneralPlugin
+{
 public:
     static const char about[];
     static const char * const defaults[];
@@ -54,11 +55,12 @@ public:
     bool init ();
     void cleanup ();
 
+private:
+    static void update_tooltip (void * data, void * user_data);
     static void window_closed (void * data, void * user_data);
     static void activate (QSystemTrayIcon::ActivationReason);
     static void open_files ();
     static void toggle_aud_ui ();
-    static void update_menu ();
 };
 
 EXPORT StatusIcon aud_plugin_instance;
@@ -105,16 +107,13 @@ const PluginPreferences StatusIcon::prefs = {{widgets}};
 
 const audqt::MenuItem StatusIcon::items[] =
 {
-    audqt::MenuCommand ({N_("_Hide"), "window-close"}, StatusIcon::toggle_aud_ui),
-    audqt::MenuCommand ({N_("_Restore"), "window-new"}, StatusIcon::toggle_aud_ui),
-    audqt::MenuSep (),
-    audqt::MenuCommand ({N_("_Open Files ..."), "document-open"}, StatusIcon::open_files),
-    audqt::MenuCommand ({N_("Pre_vious"), "media-skip-backward"}, aud_drct_pl_prev),
     audqt::MenuCommand ({N_("_Play"), "media-playback-start"}, aud_drct_play),
     audqt::MenuCommand ({N_("Paus_e"), "media-playback-pause"}, aud_drct_pause),
     audqt::MenuCommand ({N_("_Stop"), "media-playback-stop"}, aud_drct_stop),
+    audqt::MenuCommand ({N_("Pre_vious"), "media-skip-backward"}, aud_drct_pl_prev),
     audqt::MenuCommand ({N_("_Next"), "media-skip-forward"}, aud_drct_pl_next),
     audqt::MenuSep (),
+    audqt::MenuCommand ({N_("_Open Files ..."), "document-open"}, StatusIcon::open_files),
     audqt::MenuCommand ({N_("Se_ttings ..."), "preferences-system"}, audqt::prefswin_show),
     audqt::MenuCommand ({N_("_Quit"), "application-exit"}, aud_quit),
 };
@@ -124,11 +123,6 @@ class SystemTrayIcon : public QSystemTrayIcon
 public:
     SystemTrayIcon (const QIcon & icon, QObject * parent = nullptr) :
         QSystemTrayIcon (icon, parent) {}
-    ~SystemTrayIcon ()
-        { hide_popup (); }
-
-    void show_popup ();
-    void hide_popup ();
 
 protected:
     void scroll (int steps);
@@ -136,13 +130,12 @@ protected:
 
 private:
     int scroll_delta = 0;
-    bool popup_shown = false;
-    QueuedFunc popup_timer;
 };
 
 void SystemTrayIcon::scroll (int delta)
 {
     scroll_delta += delta;
+
     /* we want discrete steps here */
     int steps = scroll_delta / 120;
     if (steps == 0)
@@ -154,7 +147,7 @@ void SystemTrayIcon::scroll (int delta)
     {
         case SI_CFG_SCROLL_ACTION_VOLUME:
             aud_drct_set_volume_main (aud_drct_get_volume_main () +
-                    aud_get_int (0, "volume_delta") * steps);
+                    aud_get_int (nullptr, "volume_delta") * steps);
             break;
 
         case SI_CFG_SCROLL_ACTION_SKIP:
@@ -172,8 +165,10 @@ bool SystemTrayIcon::event (QEvent * e)
     {
         case QEvent::ToolTip:
             if (! aud_get_bool ("statusicon", "disable_popup"))
-                show_popup ();
-
+            {
+                setToolTip (QString ()); /* prevent double tooltip */
+                audqt::infopopup_show_current ();
+            }
             return true;
 
         case QEvent::Wheel:
@@ -182,22 +177,6 @@ bool SystemTrayIcon::event (QEvent * e)
 
         default:
             return QSystemTrayIcon::event (e);
-    }
-}
-
-void SystemTrayIcon::show_popup ()
-{
-    audqt::infopopup_show_current ();
-    popup_timer.queue (5000, [this] () { this->hide_popup (); });
-    popup_shown = true;
-}
-
-void SystemTrayIcon::hide_popup ()
-{
-    if (popup_shown)
-    {
-        audqt::infopopup_hide ();
-        popup_shown = false;
     }
 }
 
@@ -213,11 +192,14 @@ bool StatusIcon::init ()
     tray = new SystemTrayIcon (qApp->windowIcon ());
     QObject::connect (tray, & QSystemTrayIcon::activated, activate);
     menu = audqt::menu_build (items);
-    QObject::connect (menu, & QMenu::aboutToShow, tray, & SystemTrayIcon::hide_popup);
     tray->setContextMenu (menu);
-    QObject::connect (menu, & QMenu::aboutToShow, update_menu);
     tray->show ();
 
+    update_tooltip (nullptr, nullptr);
+
+    hook_associate ("title change", update_tooltip, nullptr);
+    hook_associate ("playback ready", update_tooltip, nullptr);
+    hook_associate ("playback stop", update_tooltip, nullptr);
     hook_associate ("window close", window_closed, nullptr);
 
     return true;
@@ -226,6 +208,9 @@ bool StatusIcon::init ()
 void StatusIcon::cleanup ()
 {
     hook_dissociate ("window close", window_closed);
+    hook_dissociate ("playback stop", update_tooltip);
+    hook_dissociate ("playback ready", update_tooltip);
+    hook_dissociate ("title change", update_tooltip);
 
     /* Prevent accidentally hiding the interface by disabling
      * the plugin while Audacious is closed to the tray. */
@@ -239,6 +224,12 @@ void StatusIcon::cleanup ()
     menu = nullptr;
 
     audqt::cleanup ();
+}
+
+void StatusIcon::update_tooltip (void * data, void * user_data)
+{
+    String title = aud_drct_get_title ();
+    tray->setToolTip (QString (title));
 }
 
 void StatusIcon::window_closed (void * data, void * user_data)
@@ -279,12 +270,4 @@ void StatusIcon::open_files ()
 void StatusIcon::toggle_aud_ui ()
 {
     aud_ui_show (! aud_ui_is_shown ());
-}
-
-void StatusIcon::update_menu ()
-{
-    QList< QAction *> acts = menu->actions ();
-
-    acts.at (0)->setVisible (aud_ui_is_shown ());
-    acts.at (1)->setVisible (! aud_ui_is_shown ());
 }

@@ -145,7 +145,7 @@ static gboolean si_cb_btscroll (GtkStatusIcon * icon, GdkEventScroll * event)
           switch (aud_get_int ("statusicon", "scroll_action"))
           {
             case SI_CFG_SCROLL_ACTION_VOLUME:
-                si_volume_change (aud_get_int (0, "volume_delta"));
+                si_volume_change (aud_get_int (nullptr, "volume_delta"));
                 break;
             case SI_CFG_SCROLL_ACTION_SKIP:
                 if (aud_get_bool ("statusicon", "reverse_scroll"))
@@ -162,7 +162,7 @@ static gboolean si_cb_btscroll (GtkStatusIcon * icon, GdkEventScroll * event)
         switch (aud_get_int ("statusicon", "scroll_action"))
         {
           case SI_CFG_SCROLL_ACTION_VOLUME:
-              si_volume_change (-aud_get_int (0, "volume_delta"));
+              si_volume_change (-aud_get_int (nullptr, "volume_delta"));
               break;
           case SI_CFG_SCROLL_ACTION_SKIP:
               if (aud_get_bool ("statusicon", "reverse_scroll"))
@@ -281,13 +281,13 @@ static void open_files ()
 static GtkWidget * si_menu_create ()
 {
     static const AudguiMenuItem items[] = {
-        MenuCommand (N_("_Open Files ..."), "document-open", 0, (GdkModifierType) 0, open_files),
-        MenuCommand (N_("Pre_vious"), "media-skip-backward", 0, (GdkModifierType) 0, aud_drct_pl_prev),
         MenuCommand (N_("_Play"), "media-playback-start", 0, (GdkModifierType) 0, aud_drct_play),
         MenuCommand (N_("Paus_e"), "media-playback-pause", 0, (GdkModifierType) 0, aud_drct_pause),
         MenuCommand (N_("_Stop"), "media-playback-stop", 0, (GdkModifierType) 0, aud_drct_stop),
+        MenuCommand (N_("Pre_vious"), "media-skip-backward", 0, (GdkModifierType) 0, aud_drct_pl_prev),
         MenuCommand (N_("_Next"), "media-skip-forward", 0, (GdkModifierType) 0, aud_drct_pl_next),
         MenuSep (),
+        MenuCommand (N_("_Open Files ..."), "document-open", 0, (GdkModifierType) 0, open_files),
         MenuCommand (N_("Se_ttings ..."), "preferences-system", 0, (GdkModifierType) 0, audgui_show_prefs_window),
         MenuCommand (N_("_Quit"), "application-exit", 0, (GdkModifierType) 0, aud_quit)
     };
