@@ -1064,7 +1064,7 @@ void * InfoBarPlugin::get_gtk_widget ()
     update_toggles ();
 
     gtk_widget_set_can_focus (main_window, true);
-    gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nAlt-Q: Quit\nB: next\nC: pause\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous");
+    gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nB: next\nC: pause\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous\nAlt-Q: Quit");
     gtk_widget_grab_focus (main_window);
 
     ui_playback_ready ();

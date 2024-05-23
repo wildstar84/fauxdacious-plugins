@@ -195,7 +195,7 @@ MiniFauxdWin::MiniFauxdWin () :
 
     update_toggles ();
 
-    infobar_widget->setToolTip ("Space: pause\nEsc: close\nUp|Down: volume\nCtrl-Q: Quit\nB: next\nC: pause\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous");
+    infobar_widget->setToolTip ("Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nB: next\nC: pause\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous\nCtrl-Q: Quit");
 
     /* SET THE INITIAL WINDOW-SIZE HERE BASED ON WHETHER STARTED W/TOOLBAR SHADED OR NOT:
        (FUTURE USER-CHANGES WILL BE HANDLED BY show_titlebar_toggle_cb ())
