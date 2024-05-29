@@ -33,7 +33,6 @@
 #include "menus.h"
 #include "playlist-qt.h"
 #include "playlist_tabs.h"
-#include "settings.h"
 #include "status_bar.h"
 #include "time_slider.h"
 #include "tool_bar.h"
@@ -218,7 +217,7 @@ MainWindow::MainWindow () :
      * that case we don't want them to be gone forever. */
     toolbar->show ();
     int dock_count = 0;
-    for (auto w : findChildren<DockWidget *> ())
+    for (auto w : findChildren<QDockWidget *> ())
     {
         w->show ();
         ++dock_count;
