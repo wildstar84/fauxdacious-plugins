@@ -5,7 +5,7 @@ dnl ***
 dnl Initialize
 dnl ==========
 AC_PREREQ([2.59])
-AC_INIT([fauxdacious-plugins], [4.4-devel])
+AC_INIT([fauxdacious-plugins], [4.4-beta1])
 AC_COPYRIGHT([Copyright (C) 2001-2024 Jim Turner, Audacious developers and others])
 
 AC_DEFINE_UNQUOTED([PACKAGE], "$PACKAGE_NAME", [Name of package])
@@ -81,7 +81,7 @@ fi
 
 if test "x$USE_QT" = "xyes" ; then
     GENERAL_PLUGINS="$GENERAL_PLUGINS albumart-qt lyricwiki-qt playlist-manager-qt search-tool-qt song-info-qt"
-    GENERAL_PLUGINS="$GENERAL_PLUGINS statusicon-qt info-bar-plugin-qt qtui skins-qt"
+    GENERAL_PLUGINS="$GENERAL_PLUGINS statusicon-qt info-bar-plugin-qt qtui skins-qt moonstone"
     VISUALIZATION_PLUGINS="$VISUALIZATION_PLUGINS blur_scope-qt qt-spectrum vumeter-qt"
 fi
 
@@ -107,6 +107,12 @@ check_allowed () {
             plugin_allowed=$USE_QT
             if test $plugin_allowed = no -a $2 = yes ; then
                 AC_MSG_ERROR([--enable-$1 cannot be used without --enable-qt])
+            fi
+            if test $plugin_allowed = yes -a $1 = qtaudio ; then
+                plugin_allowed=$USE_QT5
+                if test $plugin_allowed = no -a $2 = yes ; then
+                    AC_MSG_ERROR([--enable-$1 cannot be used without --enable-qt5])
+                fi
             fi
             if test $plugin_allowed = yes -a $1 = ampache ; then
                 plugin_allowed=$have_neon
@@ -497,10 +503,10 @@ ENABLE_PLUGIN_WITH_TEST(glspectrum,
     auto,
     VISUALIZATION)
 
-if test "x$USE_GTK3" = "xyes"; then
-    GDK_X11_DEP=gdk-x11-3.0
-else
+if test "x$USE_GTK2" = "xyes"; then
     GDK_X11_DEP=gdk-x11-2.0
+else
+    GDK_X11_DEP=gdk-x11-3.0
 fi
 
 ENABLE_PLUGIN_WITH_DEP(hotkey,
@@ -527,23 +533,36 @@ ENABLE_PLUGIN_WITH_DEP(ampache,
     AMPACHE,
     ampache_browser_1)
 
+if test "x$USE_QT5" = "xyes"; then
+    QT_MULTIMEDIA_DEP=Qt5Multimedia
+    QT_NETWORK_DEP=Qt5Network
+    QT_OPENGL_DEP="Qt5OpenGL >= 5.4"
+    QT_X11_DEP=Qt5X11Extras
+    QT_VSN="5"
+else
+    QT_MULTIMEDIA_DEP=Qt6Multimedia
+    QT_NETWORK_DEP=Qt6Network
+    QT_OPENGL_DEP="Qt6OpenGL Qt6OpenGLWidgets"
+    QT_X11_DEP="Qt6Gui >= 6.2"
+    QT_VSN="6"
+fi
+
 ENABLE_PLUGIN_WITH_DEP(qtaudio,
     QtMultimedia output,
     auto,
     OUTPUT,
     QTMULTIMEDIA,
-    Qt5Multimedia)
+    $QT_MULTIMEDIA_DEP)
 
 ENABLE_PLUGIN_WITH_DEP(streamtuner,
     Stream tuner (Experimental),
     no,
     GENERAL,
     QTNETWORK,
-    Qt5Network)
+    $QT_NETWORK_DEP)
 
 test_qtglspectrum () {
-    PKG_CHECK_MODULES(QTOPENGL, Qt5OpenGL >= 5.4, [
-        QTOPENGL_CFLAGS="$QTOPENGL_CFLAGS -fPIC"
+    PKG_CHECK_MODULES(QTOPENGL, $QT_OPENGL_DEP, [
         if test $have_glspectrum = yes ; then
             have_qtglspectrum=yes
         elif test $HAVE_MSWINDOWS = yes ; then
@@ -569,7 +588,7 @@ ENABLE_PLUGIN_WITH_DEP(qthotkey,
     auto,
     GENERAL,
     QTX11EXTRAS,
-    Qt5X11Extras)
+    $QT_X11_DEP)
 
 dnl CoreAudio
 dnl =========
@@ -771,7 +790,7 @@ echo "Configuration:"
 echo
 echo "  Install path:                           $plugindir"
 echo
-echo "  GTK+ support:                           $USE_GTK"
+echo "  GTK support:                            $USE_GTK"
 echo "  Qt support:                             $USE_QT"
 echo
 echo "  Audio Formats"
@@ -818,7 +837,7 @@ echo "  Crystalizer:                            yes"
 echo "  Dynamic Range Compressor:               yes"
 echo "  Echo/Surround:                          yes"
 echo "  Extra Stereo:                           yes"
-echo "  LADSPA Host (requires GTK+):            $USE_GTK"
+echo "  LADSPA Host (requires GTK):             $USE_GTK"
 echo "  Sample Rate Converter:                  $have_resample"
 echo "  Silence Removal:                        yes"
 echo "  SoX Resampler:                          $have_soxr"
@@ -856,7 +875,7 @@ echo "  MMS (via libmms):                       $have_mms"
 echo
 echo "  General"
 echo "  -------"
-echo "  Alarm (requires GTK+):                  $USE_GTK"
+echo "  Alarm (requires GTK):                   $USE_GTK"
 echo "  Ampache browser (requires Qt):          $have_ampache"
 echo "  Delete Files:                           $USE_GTK_OR_QT"
 echo "  GNOME Shortcuts:                        $have_gnomeshortcuts"
@@ -869,9 +888,9 @@ echo "  Video Display (requires SDL2):          $have_video_display"
 echo
 
 if test "x$USE_GTK" = "xyes" ; then
-    echo "  GTK+ Support"
+    echo "  GTK Support"
     echo "  ------------"
-    echo "  GTK Interface:                          yes"
+    echo "  GTK Interface (release#)                $GTK_VSN"
     echo "  Winamp Classic Interface:               yes"
     echo "  Album Art:                              yes"
     echo "  Blur Scope:                             yes"
@@ -889,8 +908,8 @@ fi
 if test "x$USE_QT" = "xyes" ; then
     echo "  Qt Support"
     echo "  ----------"
-    echo "  Qt Multimedia output:                   $have_qtaudio"
-    echo "  Qt Interface:                           yes"
+    echo "  Qt Multimedia output (Qt 5 only):       $have_qtaudio"
+    echo "  Qt Interface (release#)                 $QT_VSN"
     echo "  Winamp Classic Interface:               yes"
     echo "  Album Art:                              yes"
     echo "  Blur Scope:                             yes"
