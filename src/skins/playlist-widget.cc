@@ -34,6 +34,8 @@
 #include "skin.h"
 #include "playlist-widget.h"
 #include "playlist-slider.h"
+#include "playlistwin.h"
+#include "window.h"
 
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/hook.h>
@@ -41,6 +43,7 @@
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/playlist.h>
 #include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 
 enum {
     DRAG_SELECT = 1,
@@ -283,8 +286,8 @@ void PlaylistWidget::draw (cairo_t * cr)
 
     /* don't show rectangle if this is the only selected entry */
     if (focus >= m_first && focus <= m_first + m_rows - 1 &&
-     (! aud_playlist_entry_get_selected (m_playlist, focus) ||
-     aud_playlist_selected_count (m_playlist) > 1))
+            (! aud_playlist_entry_get_selected (m_playlist, focus) ||
+            aud_playlist_selected_count (m_playlist) > 1))
     {
         cairo_new_path (cr);
         cairo_set_line_width (cr, 1);
@@ -343,16 +346,16 @@ void PlaylistWidget::set_font (const char * font)
 
 void PlaylistWidget::refresh ()
 {
+    int prev_playlist = m_playlist;
     m_playlist = aud_playlist_get_active ();
     m_length = aud_playlist_entry_count (m_playlist);
+
     update_title ();
     calc_layout ();
 
-    int id = aud_playlist_get_unique_id (m_playlist);
-    if (m_playlist_id != id)
+    if (m_playlist != prev_playlist)
     {
         cancel_all ();
-        m_playlist_id = id;
         m_first = 0;
         ensure_visible (aud_playlist_get_focus (m_playlist));
     }
@@ -422,7 +425,7 @@ void PlaylistWidget::select_toggle (bool relative, int position)
         return;
 
     aud_playlist_entry_set_selected (m_playlist, position,
-     ! aud_playlist_entry_get_selected (m_playlist, position));
+            ! aud_playlist_entry_get_selected (m_playlist, position));
     aud_playlist_set_focus (m_playlist, position);
     ensure_visible (position);
 }
@@ -797,12 +800,13 @@ void PlaylistWidget::popup_trigger (int pos)
 
     m_popup_pos = pos;
     m_popup_timer.queue (aud_get_int (nullptr,"filepopup_delay") * 100,
-            [this] () { popup_show(); });
+            [this] () { popup_show (); });
 }
 
 void PlaylistWidget::popup_show ()
 {
-    audgui_infopopup_show (m_playlist, m_popup_pos);
+    GtkWindow * parent = (GtkWindow *) playlistwin->gtk ();
+    audgui_infopopup_show (parent, m_playlist, m_popup_pos);
 }
 
 void PlaylistWidget::popup_hide ()

@@ -264,7 +264,7 @@ void dock_move (int x, int y)
     hori = SNAP_DISTANCE + 1;
     vert = SNAP_DISTANCE + 1;
 
-#ifdef USE_GTK3
+#if GTK_CHECK_VERSION(3, 22, 0)
     GdkDisplay * display = gdk_display_get_default ();
     int monitors = gdk_display_get_n_monitors (display);
 #else
@@ -276,7 +276,7 @@ void dock_move (int x, int y)
     {
         GdkRectangle rect;
 
-#ifdef USE_GTK3
+#if GTK_CHECK_VERSION(3, 22, 0)
         gdk_monitor_get_geometry (gdk_display_get_monitor (display, m), & rect);
 #else
         gdk_screen_get_monitor_geometry (screen, m, & rect);
@@ -362,4 +362,24 @@ void dock_change_scale (int old_scale, int new_scale)
             * dw.y = * main.y + (* dw.y - * main.y) * new_scale / old_scale;
         }
     }
+}
+
+void dock_draw_all ()
+{
+    for (DockWindow & dw : windows)
+    {
+        if (dw.window)
+            dw.window->queue_draw ();
+    }
+}
+
+bool dock_is_focused ()
+{
+    for (DockWindow & dw : windows)
+    {
+        if (dw.window && dw.window->is_focused_window ())
+            return true;
+    }
+
+    return false;
 }

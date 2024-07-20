@@ -4,6 +4,7 @@ dnl ***
 
 dnl Initialize
 dnl ==========
+
 AC_PREREQ([2.59])
 AC_INIT([fauxdacious-plugins], [4.4-beta1])
 AC_COPYRIGHT([Copyright (C) 2001-2024 Jim Turner, Audacious developers and others])
@@ -19,10 +20,12 @@ AUD_COMMON_PROGS
 
 BUILDSYS_INIT
 BUILDSYS_SHARED_LIB
+BUILDSYS_PLUGIN
 
 dnl gettext
 dnl =======
 AM_GNU_GETTEXT([external])
+AM_GNU_GETTEXT_VERSION(0.18.1)
 if test "$MSGFMT" = ":" ; then
     AC_MSG_ERROR([msgfmt was not found; have you installed gettext?])
 fi
@@ -32,9 +35,9 @@ LIBS="$LIBS $LIBINTL"
 dnl Check for Fauxdacious
 dnl ===================
 
-PKG_CHECK_MODULES(AUDACIOUS, [fauxdacious >= 4.0],
+PKG_CHECK_MODULES(AUDACIOUS, [fauxdacious >= 4.4],
     [],
-    [AC_MSG_ERROR([Cannot find Fauxdacious 4.0; have you installed Fauxdacious yet?])]
+    [AC_MSG_ERROR([Cannot find Fauxdacious 4.4; have you installed Fauxdacious yet?])]
 )
 
 CPPFLAGS="$CPPFLAGS $AUDACIOUS_CFLAGS"
@@ -66,7 +69,7 @@ dnl ======================
 
 INPUT_PLUGINS="aud_adplug metronom psf tonegen vtx xsf"
 OUTPUT_PLUGINS=""
-EFFECT_PLUGINS="background_music bitcrusher compressor crossfade crystalizer mixer silence-removal stereo_plugin voice_removal echo_plugin"
+EFFECT_PLUGINS="bitcrusher compressor crossfade crystalizer echo_plugin mixer silence-removal stereo_plugin voice_removal"
 GENERAL_PLUGINS=""
 VISUALIZATION_PLUGINS=""
 CONTAINER_PLUGINS="asx asx3 audpl m3u pls xspf"
@@ -91,7 +94,7 @@ if test "x$USE_GTK" = "xyes" -o "x$USE_QT" = "xyes" ; then
     GENERAL_PLUGINS="$GENERAL_PLUGINS delete-files skins-data"
 fi
 
-if test $HAVE_MSWINDOWS = yes ; then
+if test "x$HAVE_MSWINDOWS" = "xyes" ; then
     OUTPUT_PLUGINS="$OUTPUT_PLUGINS waveout"
 fi
 
@@ -242,7 +245,7 @@ ENABLE_PLUGIN_WITH_DEP(opus,
     auto,
     INPUT,
     OPUS,
-    opus >= 1.0.1 opusfile >= 0.4)
+    opusfile >= 0.4)
 
 ENABLE_PLUGIN_WITH_DEP(amidiplug,
     MIDI synthesizer,
@@ -388,12 +391,19 @@ ENABLE_PLUGIN_WITH_DEP(pulse,
     PULSE,
     libpulse >= 0.9.5)
 
-ENABLE_PLUGIN_WITH_DEP(sndio,
+test_sndio () {
+    PKG_CHECK_MODULES(SNDIO, sndio >= 1.9, [
+        AC_DEFINE(HAVE_SNDIO_1_9, 1, [Define if sndio version is >= 1.9])
+        have_sndio=yes
+    ], [
+        PKG_CHECK_MODULES(SNDIO, sndio, have_sndio=yes, have_sndio=no)
+    ])
+}
+
+ENABLE_PLUGIN_WITH_TEST(sndio,
     Sndio output,
     auto,
-    OUTPUT,
-    SNDIO,
-    sndio)
+    OUTPUT)
 
 test_cue () {
     PKG_CHECK_MODULES(CUE, libcue >= 2.0, [
@@ -447,7 +457,7 @@ ENABLE_PLUGIN_WITH_TEST(lirc,
     GENERAL)
 
 test_mpris2 () {
-    if test $HAVE_MSWINDOWS = yes ; then
+    if test "x$HAVE_MSWINDOWS" = "xyes" ; then
         have_mpris2=no
     else
         unset have_mpris2
@@ -461,7 +471,7 @@ ENABLE_PLUGIN_WITH_TEST(mpris2,
     GENERAL)
 
 test_songchange () {
-    if test $HAVE_MSWINDOWS = yes ; then
+    if test "x$HAVE_MSWINDOWS" = "xyes" ; then
         have_songchange=yes
     else
         AC_CHECK_HEADERS(sys/wait.h, have_songchange=yes, have_songchange=no)
@@ -533,6 +543,14 @@ ENABLE_PLUGIN_WITH_DEP(ampache,
     AMPACHE,
     ampache_browser_1)
 
+if test "x$USE_GTK3" = "xno"; then
+    GTK_VSN="2"
+elif test "x$USE_GTK3" = "x"; then
+    GTK_VSN="2"
+else
+    GTK_VSN="3"
+fi
+
 if test "x$USE_QT5" = "xyes"; then
     QT_MULTIMEDIA_DEP=Qt5Multimedia
     QT_NETWORK_DEP=Qt5Network
@@ -543,7 +561,7 @@ else
     QT_MULTIMEDIA_DEP=Qt6Multimedia
     QT_NETWORK_DEP=Qt6Network
     QT_OPENGL_DEP="Qt6OpenGL Qt6OpenGLWidgets"
-    QT_X11_DEP="Qt6Gui >= 6.2"
+    QT_X11_DEP="Qt6Gui >= 6.2 x11 xcb-proto"
     QT_VSN="6"
 fi
 
@@ -589,6 +607,20 @@ ENABLE_PLUGIN_WITH_DEP(qthotkey,
     GENERAL,
     QTX11EXTRAS,
     $QT_X11_DEP)
+
+dnl JWT:WON'T COMPILE ON OUR ANCIENT C? - BUMMER!:
+test_background_music () {
+if test "x$HAVE_MSWINDOWS" = "xyes" ; then
+    have_background_music=no
+else
+    have_background_music=yes
+fi
+}
+
+ENABLE_PLUGIN_WITH_TEST(background_music,
+    background volume normalizer,
+    auto,
+    EFFECT)
 
 dnl CoreAudio
 dnl =========
@@ -813,7 +845,7 @@ echo
 echo "  Chiptunes"
 echo "  ---------"
 echo "  AdLib synthesizer (adplug):             $have_adplug"
-echo "  Old Fauxdacious AdLib (aud_adplug):     yes"
+echo "  Old Audacious AdLib (aud_adplug):       yes"
 echo "  Commodore 64 audio (sid):               $have_sid"
 echo "  Game Music Emu (spc, nsf, gbs, etc.):   $have_console"
 echo "  ModPlug:                                $have_modplug"
@@ -829,7 +861,7 @@ echo "  Tone Generator:                         yes"
 echo
 echo "  Effects"
 echo "  -------"
-echo "  Background Music                        yes"
+echo "  Background Music                        $have_background_music"
 echo "  Bauer stereophonic-to-binaural (bs2b):  $have_bs2b"
 echo "  Bitcrusher:                             yes"
 echo "  Channel Mixer:                          yes"
@@ -849,6 +881,7 @@ echo "  -------"
 echo "  Advanced Linux Sound Architecture:      $have_alsa"
 echo "  Jack Audio Connection Kit:              $have_jack"
 echo "  Open Sound System:                      $have_oss4"
+echo "  PipeWire:                               -use PulseAudio plugin!-"
 echo "  PulseAudio:                             $have_pulse"
 echo "  Simple DirectMedia Layer (SDL2):        $have_sdlout"
 echo "  Sndio:                                  $have_sndio"
@@ -881,6 +914,7 @@ echo "  Delete Files:                           $USE_GTK_OR_QT"
 echo "  GNOME Shortcuts:                        $have_gnomeshortcuts"
 echo "  libnotify OSD:                          $have_notify"
 echo "  Linux Infrared Remote Control (LIRC):   $have_lirc"
+echo "  Lyrics Viewer:                          yes"
 echo "  MPRIS 2 Server:                         $have_mpris2"
 echo "  Scrobbler 2.0:                          $have_scrobbler2"
 echo "  Song Change:                            $have_songchange"
@@ -889,13 +923,12 @@ echo
 
 if test "x$USE_GTK" = "xyes" ; then
     echo "  GTK Support"
-    echo "  ------------"
+    echo "  -----------"
     echo "  GTK Interface (release#)                $GTK_VSN"
     echo "  Winamp Classic Interface:               yes"
     echo "  Album Art:                              yes"
     echo "  Blur Scope:                             yes"
     echo "  OpenGL Spectrum Analyzer:               $have_glspectrum"
-    echo "  LyricWiki viewer:                       yes"
     echo "  Playlist Manager:                       yes"
     echo "  Search Tool:                            yes"
     echo "  Spectrum Analyzer (2D):                 yes"
@@ -913,7 +946,6 @@ if test "x$USE_QT" = "xyes" ; then
     echo "  Winamp Classic Interface:               yes"
     echo "  Album Art:                              yes"
     echo "  Blur Scope:                             yes"
-    echo "  LyricWiki viewer:                       yes"
     echo "  OpenGL Spectrum Analyzer:               $have_qtglspectrum"
     echo "  Playlist Manager:                       yes"
     echo "  Search Tool:                            yes"
@@ -927,8 +959,8 @@ if test "x$USE_QT" = "xyes" ; then
 fi
 
 if test "x$HAVE_DARWIN" = "xyes" ; then
-    echo "  Mac OS X Support"
-    echo "  ----------------"
+    echo "  macOS Support"
+    echo "  -------------"
     echo "  CoreAudio output:                       $have_coreaudio"
     echo "  Media Keys:                             $enable_mac_media_keys"
     echo

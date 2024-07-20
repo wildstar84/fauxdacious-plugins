@@ -43,6 +43,7 @@
 #include <libfauxdcore/plugins.h>
 #include <libfauxdcore/runtime.h>
 #include <libfauxdgui/libfauxdgui.h>
+#include <libfauxdgui/libfauxdgui-gtk.h>
 #include <libfauxdcore/playlist.h>
 
 #include "actions-mainwin.h"
@@ -391,6 +392,12 @@ static void mainwin_set_song_info (int bitrate, int samplerate, int channels)
     mainwin_set_othertext (scratch);
 }
 
+static void mainwin_show_infopopup ()
+{
+    GtkWindow * parent = (GtkWindow *) mainwin->gtk ();
+    audgui_infopopup_show_current (parent);
+}
+
 static void info_change ()
 {
     int bitrate, samplerate, channels;
@@ -573,7 +580,7 @@ bool MainWindow::motion (GdkEventMotion * event)
         if (! m_popup_shown)
         {
             m_popup_timer.queue (aud_get_int (nullptr, "filepopup_delay") * 100,
-                    audgui_infopopup_show_current);
+                    mainwin_show_infopopup);
             m_popup_shown = true;
         }
     }
@@ -1221,7 +1228,7 @@ void MainWindow::draw (cairo_t * cr)
     int height = is_shaded () ? MAINWIN_SHADED_HEIGHT : skin.hints.mainwin_height;
 
     skin_draw_pixbuf (cr, SKIN_MAIN, 0, 0, 0, 0, width, height);
-    skin_draw_mainwin_titlebar (cr, is_shaded (), true);
+    skin_draw_mainwin_titlebar (cr, is_shaded (), is_focused ());
 }
 
 static void mainwin_create_window ()

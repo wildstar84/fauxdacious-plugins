@@ -129,9 +129,13 @@ static GtkWidget * make_close_button (GtkWidget * ebox, int list)
     g_signal_connect (button, "clicked", (GCallback) close_button_cb,
      GINT_TO_POINTER (aud_playlist_get_unique_id (list)));
 
-#ifdef USE_GTK3
+#if GTK_CHECK_VERSION(3, 20, 0)
     gtk_widget_set_focus_on_click (button, false);
+#else
+    gtk_button_set_focus_on_click ((GtkButton *) button, false);
+#endif
 
+#ifdef USE_GTK3
     GtkCssProvider * provider = gtk_css_provider_new ();
     gtk_css_provider_load_from_data (provider,
      "#gtkui-tab-close-button {"
@@ -149,8 +153,6 @@ static GtkWidget * make_close_button (GtkWidget * ebox, int list)
      GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     g_object_unref (provider);
 #else
-    gtk_button_set_focus_on_click ((GtkButton *) button, false);
-
     gtk_rc_parse_string (
      "style \"gtkui-tab-close-button-style\" {"
      " GtkButton::default-border = {0, 0, 0, 0}"
@@ -607,6 +609,9 @@ GtkWidget * ui_playlist_notebook_new ()
 
 void show_hide_playlist_tabs ()
 {
-    gtk_notebook_set_show_tabs ((GtkNotebook *) notebook, aud_get_bool ("gtkui",
-     "playlist_tabs_visible") || aud_playlist_count () > 1);
+    int playlist_tabs_visible = aud_get_int ("gtkui", "playlist_tabs_visible");
+    bool show_tabs = playlist_tabs_visible != PlaylistTabVisibility::Never &&
+                    (playlist_tabs_visible != PlaylistTabVisibility::AutoHide ||
+                     aud_playlist_count () > 1);
+    gtk_notebook_set_show_tabs ((GtkNotebook *) notebook, show_tabs);
 }

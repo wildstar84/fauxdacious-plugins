@@ -51,7 +51,7 @@ static const char * const gtkui_defaults[] = {
     "infoarea_show_vis", "TRUE",
     "infoarea_visible", "TRUE",
     "menu_visible", "TRUE",
-    "playlist_tabs_visible", "TRUE",
+    "playlist_tabs_visible", aud::numeric_string<PlaylistTabVisibility::Always>::str,
     "statusbar_visible", "TRUE",
     "entry_count_visible", "FALSE",
     "close_button_visible", "TRUE",
@@ -1062,7 +1062,7 @@ bool GtkUI::init ()
     AUDDBG ("playlist associate\n");
     ui_playlist_notebook_populate ();
 
-    g_signal_connect (slider, "change-value", (GCallback) ui_slider_change_value_cb , nullptr);
+    g_signal_connect (slider, "change-value", (GCallback) ui_slider_change_value_cb, nullptr);
     g_signal_connect (slider, "button-press-event", (GCallback) ui_slider_button_press_cb, nullptr);
     g_signal_connect (slider, "button-release-event", (GCallback) ui_slider_button_release_cb, nullptr);
 
@@ -1127,7 +1127,12 @@ void GtkUI::cleanup ()
     audgui_cleanup ();
 }
 
-#ifndef USE_GTK3
+GtkWindow * get_main_window ()
+{
+    return (GtkWindow *) window;
+}
+
+#if !GTK_CHECK_VERSION(3, 22, 0)
 static void menu_position_cb (GtkMenu *, int * x, int * y, int * push, void * button)
 {
     GtkAllocation alloc;
@@ -1151,7 +1156,7 @@ static void menu_button_cb ()
         return;
     }
 
-#ifdef USE_GTK3
+#if GTK_CHECK_VERSION(3, 22, 0)
     gtk_menu_popup_at_widget ((GtkMenu *) menu_main, (GtkWidget *) menu_button,
             GDK_GRAVITY_SOUTH_WEST, GDK_GRAVITY_STATIC, nullptr);
 #else
@@ -1293,7 +1298,7 @@ void show_hide_statusbar ()
 
 static void popup_menu (GtkMenu * menu, const GdkEvent * event)
 {
-#ifdef USE_GTK3
+#if GTK_CHECK_VERSION(3, 22, 0)
     gtk_menu_popup_at_pointer (menu, event);
 #else
     GdkEventButton * button_event = (GdkEventButton *) event;

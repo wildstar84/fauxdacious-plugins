@@ -24,6 +24,12 @@
 
 #define UI_PLAYLIST_NOTEBOOK ui_playlist_get_notebook ()
 
+enum PlaylistTabVisibility {
+    Always,
+    AutoHide,
+    Never
+};
+
 GtkNotebook * ui_playlist_get_notebook ();
 GtkWidget * ui_playlist_notebook_new ();
 
