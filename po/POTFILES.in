@@ -23,6 +23,7 @@ src/aud_adplug/aud_adplug-xmms.cc
 src/aud_adplug/core/rix.cc
 src/aud_adplug/core/rix.h
 src/audpl/audpl.cc
+src/background_music/background_music.cc
 src/bitcrusher/bitcrusher.cc
 src/blur_scope/blur_scope.cc
 src/blur_scope-qt/blur_scope.cc
@@ -124,6 +125,11 @@ src/mms/mms.cc
 src/modplug/modplugbmp.cc
 src/modplug/modplugbmp.h
 src/modplug/plugin_main.cc
+src/moonstone/main_window.cc
+src/moonstone/moonstone.cc
+src/moonstone/playlist_header.cc
+src/moonstone/playlist_model.cc
+src/moonstone/playlist_tabs.cc
 src/mpg123/mpg123.cc
 src/mpris2/plugin.cc
 src/neon/neon.cc
@@ -161,7 +167,6 @@ src/qtui/status_bar.cc
 src/resample/resample.cc
 src/scrobbler2/config_window.cc
 src/scrobbler2/scrobbler.cc
-src/scrobbler2/scrobbler_communication.cc
 src/sdlout/sdlout.cc
 src/search-tool-qt/search-tool-qt.cc
 src/search-tool/search-tool.cc
