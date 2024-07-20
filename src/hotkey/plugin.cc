@@ -33,8 +33,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#include <stdlib.h>
-
 #include <X11/XF86keysym.h>
 
 #include <gdk/gdk.h>
@@ -103,6 +101,15 @@ bool GlobalHotkeys::init ()
         return false;
     }
 
+#ifdef USE_GTK3
+    /* Check for X11 to prevent segfaults on Wayland, supported since GTK 3 */
+    if (!GDK_IS_X11_DISPLAY(gdk_display_get_default()))
+    {
+        AUDERR("Global Hotkeys plugin currently only supports X11, not Wayland.\n");
+        return false;
+    }
+#endif
+
     setup_filter();
     load_config ( );
     grab_keys ( );
@@ -111,84 +118,56 @@ bool GlobalHotkeys::init ()
 }
 
 /* handle keys */
-gboolean handle_keyevent (EVENT event)
+bool handle_keyevent (EVENT event)
 {
     int current_volume, old_volume;
     static int volume_static = 0;
-    gboolean mute;
 
     /* get current volume */
     current_volume = aud_drct_get_volume_main ();
     old_volume = current_volume;
-    if (current_volume)
-    {
-        /* volume is not mute */
-        mute = false;
-    } else {
-        /* volume is mute */
-        mute = true;
-    }
 
     /* mute the playback */
     if (event == EVENT_MUTE)
     {
-        if (!mute)
+        if (current_volume != 0)
         {
             volume_static = current_volume;
             aud_drct_set_volume_main (0);
-            mute = true;
-        } else {
-            aud_drct_set_volume_main (volume_static);
-            mute = false;
         }
+        else
+            aud_drct_set_volume_main (volume_static);
+
         return true;
     }
 
     /* decrease volume */
     if (event == EVENT_VOL_DOWN)
     {
-        if (mute)
-        {
-            current_volume = old_volume;
-            old_volume = 0;
-            mute = false;
-        }
-
         if ((current_volume -= aud_get_int (0, "volume_delta")) < 0)
         {
             current_volume = 0;
         }
-
         if (current_volume != old_volume)
         {
             aud_drct_set_volume_main (current_volume);
         }
 
-        old_volume = current_volume;
         return true;
     }
 
     /* increase volume */
     if (event == EVENT_VOL_UP)
     {
-        if (mute)
-        {
-            current_volume = old_volume;
-            old_volume = 0;
-            mute = false;
-        }
-
         if ((current_volume += aud_get_int (0, "volume_delta")) > 100)
         {
             current_volume = 100;
         }
-
         if (current_volume != old_volume)
         {
             aud_drct_set_volume_main (current_volume);
         }
 
-        old_volume = current_volume;
         return true;
     }
 

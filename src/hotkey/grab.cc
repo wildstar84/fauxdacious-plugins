@@ -30,15 +30,15 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with audacious-hotkey; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+ *  USA.
  */
 
-#include <gtk/gtk.h>
 #include <gdk/gdkx.h>
+#include <gtk/gtk.h>
 
 #include "grab.h"
 #include "plugin.h"
-
 
 static int grabbed = 0;
 static unsigned int numlock_mask = 0;
@@ -50,7 +50,7 @@ static unsigned int capslock_mask = 0;
 static void get_offending_modifiers (Display * dpy)
 {
     int i;
-    XModifierKeymap *modmap;
+    XModifierKeymap * modmap;
     KeyCode nlock, slock;
 
     static int mask_table[8] = {
@@ -62,9 +62,9 @@ static void get_offending_modifiers (Display * dpy)
     slock = XKeysymToKeycode (dpy, XK_Scroll_Lock);
 
     /*
-    * Find out the masks for the NumLock and ScrollLock modifiers,
-    * so that we can bind the grabs for when they are enabled too.
-    */
+     * Find out the masks for the NumLock and ScrollLock modifiers,
+     * so that we can bind the grabs for when they are enabled too.
+     */
     modmap = XGetModifierMapping (dpy);
 
     if (modmap != nullptr && modmap->max_keypermod > 0)
@@ -85,119 +85,107 @@ static void get_offending_modifiers (Display * dpy)
 }
 
 
-static int x11_error_handler (Display *dpy, XErrorEvent *error)
+static int x11_error_handler (Display * dpy, XErrorEvent * error)
 {
     return 0;
 }
 
 /* grab required keys */
-static void grab_key(const HotkeyConfiguration *hotkey, Display *xdisplay, Window x_root_window)
+static void grab_key(const HotkeyConfiguration * hotkey, Display * xdisplay, Window x_root_window)
 {
     unsigned int modifier = hotkey->mask & ~(numlock_mask | capslock_mask | scrolllock_mask);
 
-    if (hotkey->key == 0) return;
+    if (hotkey->key == 0)
+        return;
 
     if (hotkey->type == TYPE_KEY)
     {
-        XGrabKey (xdisplay, hotkey->key, modifier, x_root_window,
-            False, GrabModeAsync, GrabModeAsync);
+        XGrabKey (xdisplay, hotkey->key, modifier, x_root_window, False,
+                GrabModeAsync, GrabModeAsync);
 
         if (modifier == AnyModifier)
             return;
 
         if (numlock_mask)
             XGrabKey (xdisplay, hotkey->key, modifier | numlock_mask,
-                x_root_window,
-                False, GrabModeAsync, GrabModeAsync);
+                    x_root_window, False, GrabModeAsync, GrabModeAsync);
 
         if (capslock_mask)
             XGrabKey (xdisplay, hotkey->key, modifier | capslock_mask,
-                x_root_window,
-                False, GrabModeAsync, GrabModeAsync);
+                    x_root_window, False, GrabModeAsync, GrabModeAsync);
 
         if (scrolllock_mask)
             XGrabKey (xdisplay, hotkey->key, modifier | scrolllock_mask,
-                x_root_window,
-                False, GrabModeAsync, GrabModeAsync);
+                    x_root_window, False, GrabModeAsync, GrabModeAsync);
 
         if (numlock_mask && capslock_mask)
             XGrabKey (xdisplay, hotkey->key, modifier | numlock_mask | capslock_mask,
-                x_root_window,
-                False, GrabModeAsync, GrabModeAsync);
+                    x_root_window, False, GrabModeAsync, GrabModeAsync);
 
         if (numlock_mask && scrolllock_mask)
             XGrabKey (xdisplay, hotkey->key, modifier | numlock_mask | scrolllock_mask,
-                x_root_window,
-                False, GrabModeAsync, GrabModeAsync);
+                    x_root_window, False, GrabModeAsync, GrabModeAsync);
 
         if (capslock_mask && scrolllock_mask)
             XGrabKey (xdisplay, hotkey->key, modifier | capslock_mask | scrolllock_mask,
-                x_root_window,
-                False, GrabModeAsync, GrabModeAsync);
+                    x_root_window, False, GrabModeAsync, GrabModeAsync);
 
         if (numlock_mask && capslock_mask && scrolllock_mask)
-            XGrabKey (xdisplay, hotkey->key,
-                modifier | numlock_mask | capslock_mask | scrolllock_mask,
-                x_root_window, False, GrabModeAsync,
-                GrabModeAsync);
+            XGrabKey (xdisplay, hotkey->key, modifier | numlock_mask | capslock_mask | scrolllock_mask,
+                    x_root_window, False, GrabModeAsync, GrabModeAsync);
     }
     if (hotkey->type == TYPE_MOUSE)
     {
-        XGrabButton (xdisplay, hotkey->key, modifier, x_root_window,
-            False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
+        XGrabButton (xdisplay, hotkey->key, modifier, x_root_window, False,
+                ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
 
         if (modifier == AnyModifier)
             return;
 
         if (numlock_mask)
             XGrabButton (xdisplay, hotkey->key, modifier | numlock_mask,
-                x_root_window,
-                False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
+                    x_root_window, False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
 
         if (capslock_mask)
             XGrabButton (xdisplay, hotkey->key, modifier | capslock_mask,
-                x_root_window,
-                False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
+                    x_root_window, False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
 
         if (scrolllock_mask)
             XGrabButton (xdisplay, hotkey->key, modifier | scrolllock_mask,
-                x_root_window,
-                False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
+                    x_root_window, False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
 
         if (numlock_mask && capslock_mask)
             XGrabButton (xdisplay, hotkey->key, modifier | numlock_mask | capslock_mask,
-                x_root_window,
-                False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
+                    x_root_window, False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
 
         if (numlock_mask && scrolllock_mask)
             XGrabButton (xdisplay, hotkey->key, modifier | numlock_mask | scrolllock_mask,
-                x_root_window,
-                False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
+                    x_root_window, False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
 
         if (capslock_mask && scrolllock_mask)
             XGrabButton (xdisplay, hotkey->key, modifier | capslock_mask | scrolllock_mask,
-                x_root_window,
-                False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
+                    x_root_window, False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
 
         if (numlock_mask && capslock_mask && scrolllock_mask)
             XGrabButton (xdisplay, hotkey->key,
-                modifier | numlock_mask | capslock_mask | scrolllock_mask,
-                x_root_window, False, ButtonPressMask, GrabModeAsync,
-                GrabModeAsync, None, None);
+                    modifier | numlock_mask | capslock_mask | scrolllock_mask,
+                    x_root_window, False, ButtonPressMask, GrabModeAsync,
+                    GrabModeAsync, None, None);
     }
 }
 
-void grab_keys ( )
+void grab_keys ()
 {
-    Display* xdisplay;
+    Display * xdisplay;
     int screen;
-    PluginConfig* plugin_cfg = get_config();
+    PluginConfig * plugin_cfg = get_config();
     HotkeyConfiguration *hotkey;
 
     XErrorHandler old_handler = 0;
-     xdisplay = GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
+    xdisplay = GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
 
-    if (grabbed) return;
+    if (grabbed)
+        return;
 
 
     XSync(xdisplay, False);
@@ -220,14 +208,13 @@ void grab_keys ( )
     grabbed = 1;
 }
 
-
-
 /* grab required keys */
 static void ungrab_key(HotkeyConfiguration *hotkey, Display* xdisplay, Window x_root_window)
 {
     unsigned int modifier = hotkey->mask & ~(numlock_mask | capslock_mask | scrolllock_mask);
 
-    if (hotkey->key == 0) return;
+    if (hotkey->key == 0)
+        return;
 
     if (hotkey->type == TYPE_KEY)
     {
@@ -297,8 +284,11 @@ void ungrab_keys ( )
     XErrorHandler old_handler = 0;
      xdisplay = GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
 
-    if (!grabbed) return;
-    if (!xdisplay) return;
+    if (!grabbed)
+        return;
+
+    if (!xdisplay)
+        return;
 
     XSync(xdisplay, False);
     old_handler = XSetErrorHandler (x11_error_handler);
@@ -320,7 +310,6 @@ void ungrab_keys ( )
 
     grabbed = 0;
 }
-
 
 static GdkFilterReturn
 gdk_filter(GdkXEvent *xevent,
@@ -373,16 +362,14 @@ gdk_filter(GdkXEvent *xevent,
     return GDK_FILTER_CONTINUE;
 }
 
-gboolean setup_filter()
+void setup_filter()
 {
     gdk_window_add_filter (gdk_screen_get_root_window
-     (gdk_screen_get_default ()), gdk_filter, nullptr);
-
-    return true;
+            (gdk_screen_get_default ()), gdk_filter, nullptr);
 }
 
 void release_filter()
 {
     gdk_window_remove_filter (gdk_screen_get_root_window
-     (gdk_screen_get_default ()), gdk_filter, nullptr);
+            (gdk_screen_get_default ()), gdk_filter, nullptr);
 }

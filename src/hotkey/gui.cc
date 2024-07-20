@@ -30,7 +30,8 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with audacious-hotkey; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+ *  USA.
  */
 
 #include <libfauxdcore/i18n.h>
@@ -39,31 +40,31 @@
 #include <libfauxdgui/gtk-compat.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
-#include <gtk/gtk.h>
-#include <gdk/gdkx.h>
 #include <gdk/gdkkeysyms-compat.h>
+#include <gdk/gdkx.h>
+#include <gtk/gtk.h>
 
 #include <X11/XKBlib.h>
 
-#include "plugin.h"
-#include "gui.h"
 #include "grab.h"
+#include "gui.h"
+#include "plugin.h"
 
-typedef struct _KeyControls {
-    GtkWidget *keytext;
-    GtkWidget *grid;
-    GtkWidget *button;
-    GtkWidget *combobox;
+typedef struct _KeyControls
+{
+    GtkWidget * keytext;
+    GtkWidget * grid;
+    GtkWidget * button;
+    GtkWidget * combobox;
 
     HotkeyConfiguration hotkey;
-    struct _KeyControls *next, *prev, *first;
+    struct _KeyControls * next, * prev, * first;
 } KeyControls;
 
 static KeyControls *first_controls;
 
-
-static void clear_keyboard (GtkWidget *widget, void * data);
-static void add_callback (GtkWidget *widget, void * data);
+static void clear_keyboard (GtkWidget * widget, void * data);
+static void add_callback (GtkWidget * widget, void * data);
 static void destroy_callback ();
 static void ok_callback ();
 
@@ -89,140 +90,139 @@ static const char * event_desc[] = {N_("Previous track"),
 static_assert(aud::n_elems(event_desc) == EVENT_MAX,
               "event_desc table is not up to date");
 
-static void set_keytext (GtkWidget *entry, int key, int mask, int type)
+static void set_keytext (GtkWidget * entry, int key, int mask, int type)
 {
-    char *text = nullptr;
+    char * text = nullptr;
 
     if (key == 0 && mask == 0)
-    {
         text = g_strdup(_("(none)"));
-    } else {
-        static const char *modifier_string[] = { "Control", "Shift", "Alt", "Mod2", "Mod3", "Super", "Mod5" };
+    else {
+        static const char * modifier_string[] = { "Control", "Shift", "Alt", "Mod2", "Mod3", "Super", "Mod5" };
         static const unsigned int modifiers[] = { ControlMask, ShiftMask, Mod1Mask, Mod2Mask, Mod3Mask, Mod4Mask, Mod5Mask };
-        const char *strings[9];
-        char *keytext = nullptr;
+        const char * strings[9];
+        char * keytext = nullptr;
         int i, j;
         if (type == TYPE_KEY)
         {
             KeySym keysym;
             keysym = XkbKeycodeToKeysym(GDK_DISPLAY_XDISPLAY(gdk_display_get_default()), key, 0, 0);
-            if (keysym == 0 || keysym == NoSymbol)
-            {
-                keytext = g_strdup_printf("#%d", key);
-            } else {
-                keytext = g_strdup(XKeysymToString(keysym));
-            }
+            keytext = (keysym == 0 || keysym == NoSymbol) ? g_strdup_printf("#%d", key)
+                    : g_strdup(XKeysymToString(keysym));
         }
         if (type == TYPE_MOUSE)
-        {
             keytext = g_strdup_printf("Button%d", key);
-        }
 
         for (i = 0, j=0; j<7; j++)
         {
             if (mask & modifiers[j])
-                 strings[i++] = modifier_string[j];
+                strings[i++] = modifier_string[j];
         }
-        if (key != 0) strings[i++] = keytext;
-        strings[i] = nullptr;
+        if (key != 0)
+            strings[i++] = keytext;
 
+        strings[i] = nullptr;
         text = g_strjoinv(" + ", (char **)strings);
         g_free(keytext);
     }
 
     gtk_entry_set_text(GTK_ENTRY(entry), text);
     gtk_editable_set_position(GTK_EDITABLE(entry), -1);
-    if (text) g_free(text);
+    if (text)
+        g_free(text);
 }
 
-static gboolean
-on_entry_key_press_event(GtkWidget * widget,
-                         GdkEventKey * event,
-                         void * user_data)
+static gboolean on_entry_key_press_event(GtkWidget * widget,
+        GdkEventKey * event, void * user_data)
 {
-    KeyControls *controls = (KeyControls*) user_data;
+    KeyControls *controls = (KeyControls*)user_data;
     int is_mod;
     int mod;
 
-    if (event->keyval == GDK_Tab) return false;
-    if (event->keyval == GDK_Escape && ((event->state & ~GDK_LOCK_MASK) == 0)) return false;
-    if (event->keyval == GDK_Return && ((event->state & ~GDK_LOCK_MASK) == 0)) return false;
-    if (event->keyval == GDK_ISO_Left_Tab)
+    if (event->keyval == GDK_Tab)
+        return false;
+    else if (event->keyval == GDK_Escape && ((event->state & ~GDK_LOCK_MASK) == 0))
+        return false;
+    else if (event->keyval == GDK_Return && ((event->state & ~GDK_LOCK_MASK) == 0))
+        return false;
+    else if (event->keyval == GDK_ISO_Left_Tab)
     {
-        set_keytext(controls->keytext, controls->hotkey.key, controls->hotkey.mask, controls->hotkey.type);
+        set_keytext(controls->keytext, controls->hotkey.key,
+                controls->hotkey.mask, controls->hotkey.type);
         return false;
     }
-    if (event->keyval == GDK_Up && ((event->state & ~GDK_LOCK_MASK) == 0)) return false;
-    if (event->keyval == GDK_Down && ((event->state & ~GDK_LOCK_MASK) == 0)) return false;
+    else if (event->keyval == GDK_Up && ((event->state & ~GDK_LOCK_MASK) == 0))
+        return false;
+    else if (event->keyval == GDK_Down && ((event->state & ~GDK_LOCK_MASK) == 0))
+        return false;
 
     mod = 0;
     is_mod = 0;
 
     if ((event->state & GDK_CONTROL_MASK) | (!is_mod && (is_mod = (event->keyval == GDK_Control_L || event->keyval == GDK_Control_R))))
-            mod |= ControlMask;
+        mod |= ControlMask;
 
     if ((event->state & GDK_MOD1_MASK) | (!is_mod && (is_mod = (event->keyval == GDK_Alt_L || event->keyval == GDK_Alt_R))))
-            mod |= Mod1Mask;
+        mod |= Mod1Mask;
 
     if ((event->state & GDK_SHIFT_MASK) | (!is_mod && (is_mod = (event->keyval == GDK_Shift_L || event->keyval == GDK_Shift_R))))
-            mod |= ShiftMask;
+        mod |= ShiftMask;
 
     if ((event->state & GDK_MOD5_MASK) | (!is_mod && (is_mod = (event->keyval == GDK_ISO_Level3_Shift))))
-            mod |= Mod5Mask;
+        mod |= Mod5Mask;
 
     if ((event->state & GDK_MOD4_MASK) | (!is_mod && (is_mod = (event->keyval == GDK_Super_L || event->keyval == GDK_Super_R))))
-            mod |= Mod4Mask;
+        mod |= Mod4Mask;
 
-    if (!is_mod) {
+    if (!is_mod)
+    {
         controls->hotkey.key = event->hardware_keycode;
         controls->hotkey.mask = mod;
         controls->hotkey.type = TYPE_KEY;
         if (controls->next == nullptr)
             add_callback (nullptr, (void *) controls);
-        else gtk_widget_grab_focus(GTK_WIDGET(controls->next->keytext));
+        else
+            gtk_widget_grab_focus(GTK_WIDGET(controls->next->keytext));
     }
 
     set_keytext(controls->keytext, is_mod ? 0 : event->hardware_keycode, mod, TYPE_KEY);
     return true;
 }
 
-static gboolean
-on_entry_key_release_event(GtkWidget * widget,
-                           GdkEventKey * event,
-                           void * user_data)
+static gboolean on_entry_key_release_event(GtkWidget * widget,
+        GdkEventKey * event, void * user_data)
 {
     KeyControls *controls = (KeyControls*) user_data;
-    if (!gtk_widget_is_focus(widget)) return false;
-    set_keytext(controls->keytext, controls->hotkey.key, controls->hotkey.mask, controls->hotkey.type);
+    if (!gtk_widget_is_focus(widget))
+        return false;
 
+    set_keytext(controls->keytext, controls->hotkey.key, controls->hotkey.mask, controls->hotkey.type);
     return true;
 }
 
-static gboolean
-on_entry_button_press_event(GtkWidget * widget,
-                            GdkEventButton * event,
-                            void * user_data)
+static gboolean on_entry_button_press_event(GtkWidget * widget,
+        GdkEventButton * event, void * user_data)
 {
-    KeyControls *controls = (KeyControls*) user_data;
+    KeyControls *controls = (KeyControls *)user_data;
     int mod;
 
-    if (!gtk_widget_is_focus(widget)) return false;
+    if (!gtk_widget_is_focus(widget))
+        return false;
 
     mod = 0;
     if (event->state & GDK_CONTROL_MASK)
-            mod |= ControlMask;
+        mod |= ControlMask;
 
     if (event->state & GDK_MOD1_MASK)
-            mod |= Mod1Mask;
+        mod |= Mod1Mask;
 
     if (event->state & GDK_SHIFT_MASK)
-            mod |= ShiftMask;
+        mod |= ShiftMask;
 
     if (event->state & GDK_MOD5_MASK)
-            mod |= Mod5Mask;
+        mod |= Mod5Mask;
 
     if (event->state & GDK_MOD4_MASK)
-            mod |= Mod4Mask;
+        mod |= Mod4Mask;
 
     if ((event->button <= 3) && (mod == 0))
     {
@@ -238,12 +238,13 @@ on_entry_button_press_event(GtkWidget * widget,
         gtk_window_set_role(GTK_WINDOW(dialog), "message");
         response = gtk_dialog_run(GTK_DIALOG(dialog));
         gtk_widget_destroy (dialog);
-        if (response != GTK_RESPONSE_YES) return true;
+        if (response != GTK_RESPONSE_YES)
+            return true;
     }
 
     controls->hotkey.key = event->button;
     controls->hotkey.mask = mod;
-        controls->hotkey.type = TYPE_MOUSE;
+    controls->hotkey.type = TYPE_MOUSE;
     set_keytext(controls->keytext, controls->hotkey.key, controls->hotkey.mask, controls->hotkey.type);
     if (controls->next == nullptr)
         add_callback (nullptr, (void *) controls);
@@ -251,31 +252,30 @@ on_entry_button_press_event(GtkWidget * widget,
     return true;
 }
 
-static gboolean
-on_entry_scroll_event(GtkWidget * widget,
-                            GdkEventScroll * event,
-                            void * user_data)
+static gboolean on_entry_scroll_event(GtkWidget * widget,
+        GdkEventScroll * event, void * user_data)
 {
     KeyControls *controls = (KeyControls*) user_data;
     int mod;
 
-    if (!gtk_widget_is_focus(widget)) return false;
+    if (!gtk_widget_is_focus(widget))
+        return false;
 
     mod = 0;
     if (event->state & GDK_CONTROL_MASK)
-            mod |= ControlMask;
+        mod |= ControlMask;
 
     if (event->state & GDK_MOD1_MASK)
-            mod |= Mod1Mask;
+        mod |= Mod1Mask;
 
     if (event->state & GDK_SHIFT_MASK)
-            mod |= ShiftMask;
+        mod |= ShiftMask;
 
     if (event->state & GDK_MOD5_MASK)
-            mod |= Mod5Mask;
+        mod |= Mod5Mask;
 
     if (event->state & GDK_MOD4_MASK)
-            mod |= Mod4Mask;
+        mod |= Mod4Mask;
 
     if (event->direction == GDK_SCROLL_UP)
         controls->hotkey.key = 4;
@@ -285,13 +285,15 @@ on_entry_scroll_event(GtkWidget * widget,
         controls->hotkey.key = 6;
     else if (event->direction == GDK_SCROLL_RIGHT)
         controls->hotkey.key = 7;
-    else return false;
+    else
+        return false;
 
     controls->hotkey.mask = mod;
-        controls->hotkey.type = TYPE_MOUSE;
+    controls->hotkey.type = TYPE_MOUSE;
     set_keytext(controls->keytext, controls->hotkey.key, controls->hotkey.mask, controls->hotkey.type);
     if (controls->next == nullptr)
         add_callback (nullptr, (void *) controls);
+
     return true;
 }
 
@@ -318,11 +320,13 @@ KeyControls* add_event_controls(KeyControls* list,
         controls->hotkey.event = hotkey->event;
         if (controls->hotkey.key == 0)
             controls->hotkey.mask = 0;
-    } else {
+    }
+    else
+    {
         controls->hotkey.key = 0;
         controls->hotkey.mask = 0;
         controls->hotkey.type = TYPE_KEY;
-        controls->hotkey.event = (EVENT) 0;
+        controls->hotkey.event = (EVENT)0;
     }
 
     controls->combobox = gtk_combo_box_text_new();
@@ -334,7 +338,6 @@ KeyControls* add_event_controls(KeyControls* list,
 
     controls->keytext = gtk_entry_new ();
     gtk_editable_set_editable(GTK_EDITABLE(controls->keytext), false);
-
 
     set_keytext(controls->keytext, controls->hotkey.key, controls->hotkey.mask, controls->hotkey.type);
     g_signal_connect((void *)controls->keytext, "key_press_event",
@@ -361,28 +364,25 @@ KeyControls* add_event_controls(KeyControls* list,
     gtk_grid_attach(GTK_GRID(grid), controls->keytext, 1, row, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), controls->button, 2, row, 1, 1);
 #else
-    gtk_table_attach_defaults(GTK_TABLE(grid), controls->combobox, 0, 1, row,
-                              row + 1);
-    gtk_table_attach_defaults(GTK_TABLE(grid), controls->keytext, 1, 2, row,
-                              row + 1);
-    gtk_table_attach_defaults(GTK_TABLE(grid), controls->button, 2, 3, row,
-                              row + 1);
+    gtk_table_attach_defaults(GTK_TABLE(grid), controls->combobox, 0, 1, row, row + 1);
+    gtk_table_attach_defaults(GTK_TABLE(grid), controls->keytext, 1, 2, row, row + 1);
+    gtk_table_attach_defaults(GTK_TABLE(grid), controls->button, 2, 3, row, row + 1);
 #endif
 
     gtk_widget_grab_focus(GTK_WIDGET(controls->keytext));
     return controls;
 }
 
-void *make_config_widget ()
+void * make_config_widget ()
 {
-    KeyControls *current_controls;
+    KeyControls * current_controls;
     GtkWidget * main_vbox, * hbox;
     GtkWidget * frame;
     GtkWidget * label1, * label2, * label3;
     GtkWidget * image;
     GtkWidget * grid;
     GtkWidget * button_box, * button;
-    PluginConfig* plugin_cfg;
+    PluginConfig * plugin_cfg;
     HotkeyConfiguration * hotkey, temphotkey;
     int i;
 
@@ -440,7 +440,7 @@ void *make_config_widget ()
 
     hotkey = &(plugin_cfg->first);
     i = 1;
-    first_controls = (KeyControls*) g_malloc(sizeof(KeyControls));
+    first_controls = (KeyControls*)g_malloc(sizeof(KeyControls));
     first_controls->next = nullptr;
     first_controls->prev = nullptr;
     first_controls->grid = grid;
@@ -450,7 +450,7 @@ void *make_config_widget ()
     first_controls->first = first_controls;
     first_controls->hotkey.key = 0;
     first_controls->hotkey.mask = 0;
-    first_controls->hotkey.event = (EVENT) 0;
+    first_controls->hotkey.event = (EVENT)0;
     first_controls->hotkey.type = TYPE_KEY;
     current_controls = first_controls;
     if (hotkey -> key != 0)
@@ -466,14 +466,14 @@ void *make_config_widget ()
     temphotkey.mask = 0;
     temphotkey.type = TYPE_KEY;
     if (current_controls != first_controls)
-        temphotkey.event = (EVENT) (current_controls->hotkey.event + 1);
+        temphotkey.event = (EVENT)(current_controls->hotkey.event + 1);
     else
-        temphotkey.event = (EVENT) 0;
+        temphotkey.event = (EVENT)0;
+
     if (temphotkey.event >= EVENT_MAX)
-        temphotkey.event = (EVENT) 0;
+        temphotkey.event = (EVENT)0;
+
     add_event_controls(current_controls, grid, i, &temphotkey);
-
-
     hbox = audgui_hbox_new (0);
     gtk_box_pack_start (GTK_BOX (main_vbox), hbox, false, true, 0);
 
@@ -490,9 +490,9 @@ void *make_config_widget ()
     return main_vbox;
 }
 
-static void clear_keyboard (GtkWidget *widget, void * data)
+static void clear_keyboard (GtkWidget * widget, void * data)
 {
-    KeyControls *controls= (KeyControls*)data;
+    KeyControls * controls= (KeyControls *)data;
 
     if ((controls->next == nullptr) && (controls->prev->keytext == nullptr))
     {
@@ -500,24 +500,27 @@ static void clear_keyboard (GtkWidget *widget, void * data)
         controls->hotkey.mask = 0;
         controls->hotkey.type = TYPE_KEY;
         set_keytext(controls->keytext, 0, 0, TYPE_KEY);
-        gtk_combo_box_set_active( GTK_COMBO_BOX(controls->combobox), 0);
+        gtk_combo_box_set_active(GTK_COMBO_BOX(controls->combobox), 0);
         return;
     }
 
     if (controls->prev)
     {
-        KeyControls* c;
-        GtkWidget* grid;
+        KeyControls * c;
+        GtkWidget * grid;
         int row;
 
         gtk_widget_destroy(GTK_WIDGET(controls->button));
         gtk_widget_destroy(GTK_WIDGET(controls->keytext));
         gtk_widget_destroy(GTK_WIDGET(controls->combobox));
 
-        row=0;
+        row = 0;
         c = controls->first;
-        while (c) {
-            if (c == controls) break;
+        while (c)
+        {
+            if (c == controls)
+                break;
+
             row++;
             c = c->next;
         }
@@ -525,17 +528,19 @@ static void clear_keyboard (GtkWidget *widget, void * data)
         controls->prev->next = controls->next;
         if (controls->next)
             controls->next->prev = controls->prev;
+
         g_free(controls);
-        if (c) grid = c->grid; else grid = nullptr;
+
+        grid = c ? c->grid : nullptr;
         while (c)
         {
             g_object_ref(c->combobox);
             g_object_ref(c->keytext);
             g_object_ref(c->button);
 
-            gtk_container_remove( GTK_CONTAINER(c->grid) , c->combobox);
-            gtk_container_remove( GTK_CONTAINER(c->grid) , c->keytext);
-            gtk_container_remove( GTK_CONTAINER(c->grid) , c->button);
+            gtk_container_remove(GTK_CONTAINER(c->grid), c->combobox);
+            gtk_container_remove(GTK_CONTAINER(c->grid), c->keytext);
+            gtk_container_remove(GTK_CONTAINER(c->grid), c->button);
 
 #ifdef USE_GTK3
             gtk_grid_attach(GTK_GRID(c->grid), c->combobox, 0, row, 1, 1);
@@ -554,13 +559,13 @@ static void clear_keyboard (GtkWidget *widget, void * data)
             row++;
         }
         if (grid)
-            gtk_widget_show_all (GTK_WIDGET (grid));
+            gtk_widget_show_all(GTK_WIDGET(grid));
 
         return;
     }
 }
 
-void add_callback (GtkWidget *widget, void * data)
+void add_callback (GtkWidget * widget, void * data)
 {
     KeyControls* controls = (KeyControls*)data;
     HotkeyConfiguration temphotkey;
@@ -586,12 +591,12 @@ void add_callback (GtkWidget *widget, void * data)
 
 void destroy_callback ()
 {
-    KeyControls* controls = first_controls;
+    KeyControls * controls = first_controls;
 
     grab_keys ();
 
     while (controls) {
-        KeyControls *old;
+        KeyControls * old;
         old = controls;
         controls = controls->next;
         g_free(old);
@@ -602,9 +607,9 @@ void destroy_callback ()
 
 void ok_callback ()
 {
-    KeyControls *controls = first_controls;
-    PluginConfig* plugin_cfg = get_config();
-    HotkeyConfiguration *hotkey;
+    KeyControls * controls = first_controls;
+    PluginConfig * plugin_cfg = get_config();
+    HotkeyConfiguration * hotkey;
 
     hotkey = &(plugin_cfg->first);
     hotkey = hotkey->next;
@@ -617,7 +622,7 @@ void ok_callback ()
     }
     plugin_cfg->first.next = nullptr;
     plugin_cfg->first.key = 0;
-    plugin_cfg->first.event = (EVENT) 0;
+    plugin_cfg->first.event = (EVENT)0;
     plugin_cfg->first.mask = 0;
 
     hotkey = &(plugin_cfg->first);
@@ -631,15 +636,14 @@ void ok_callback ()
             }
             hotkey->key = controls->hotkey.key;
             hotkey->mask = controls->hotkey.mask;
-            hotkey->event = (EVENT) gtk_combo_box_get_active( GTK_COMBO_BOX(controls->combobox) );
+            hotkey->event = (EVENT)gtk_combo_box_get_active(GTK_COMBO_BOX(controls->combobox));
             hotkey->type = controls->hotkey.type;
         }
         controls = controls->next;
     }
 
-    save_config ( );
+    save_config ();
 }
-
 
 static const PreferencesWidget hotkey_widgets[] = {
     WidgetCustomGTK (make_config_widget)

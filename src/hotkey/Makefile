@@ -9,5 +9,5 @@ plugindir := ${plugindir}/${GENERAL_PLUGIN_DIR}
 
 LD = ${CXX}
 CFLAGS += ${PLUGIN_CFLAGS}
-CPPFLAGS += ${PLUGIN_CPPFLAGS} ${GTK_CFLAGS} ${GLIB_CFLAGS} -I../.. -I..
-LIBS += ${GLIB_LIBS} ${GTK_LIBS} -lX11 -lfauxdgui
+CPPFLAGS += ${PLUGIN_CPPFLAGS} ${GTK_CFLAGS} -I../.. -I..
+LIBS += ${GTK_LIBS} -lX11 -lfauxdgui
