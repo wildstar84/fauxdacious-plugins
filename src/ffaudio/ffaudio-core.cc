@@ -812,7 +812,7 @@ void FFaudio::write_audioframe (CodecInfo * cinfo, AVPacket * pkt, int out_fmt, 
     int size = 0;
     Index<char> buf;
 #ifdef SEND_PACKET
-    if ((LOG (avcodec_send_packet, cinfo->context, pkt)) < 0)
+    if (LOG (avcodec_send_packet, cinfo->context, pkt) < 0)
         return;
 #else
     int decoded = 0;
@@ -829,7 +829,7 @@ void FFaudio::write_audioframe (CodecInfo * cinfo, AVPacket * pkt, int out_fmt, 
     {
         ScopedFrame frame;
 #ifdef SEND_PACKET
-        if ((LOG (avcodec_receive_frame, cinfo->context, frame.ptr)) < 0)
+        if (LOG (avcodec_receive_frame, cinfo->context, frame.ptr) < 0)
             break; /* read next packet (continue past errors) */
 #else
         decoded = 0;
@@ -874,7 +874,7 @@ void FFaudio::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
     int video_height, bool last_resized, bool * windowIsStable)
 {
 #ifdef SEND_PACKET
-    if ((LOG (avcodec_send_packet, vcinfo->context, pkt)) < 0)
+    if (LOG (avcodec_send_packet, vcinfo->context, pkt) < 0)
         return;
 #else
     int subframeCnt = 0;
@@ -885,7 +885,7 @@ void FFaudio::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
 #endif
         ScopedFrame vframe;
 #ifdef SEND_PACKET
-        if ((LOG (avcodec_receive_frame, vcinfo->context, vframe.ptr)) < 0)
+        if (LOG (avcodec_receive_frame, vcinfo->context, vframe.ptr) < 0)
             return; /* read next packet (continue past errors) */
 #else
         frameFinished = 0;
@@ -1735,8 +1735,6 @@ breakout1:
                 TD.errcount = 0;
 
             pthread_mutex_unlock (& read_mutex);
-
-            seek_value = -1;
         }
 
         /* JWT:CHECK FOR METADATA CHANGES, IE. SONG TITLES IN STREAMING RADIO STATIONS: */

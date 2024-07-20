@@ -702,7 +702,7 @@ bool DVD::write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo,
         int * resized_window_width, int * resized_window_height)
 {
 #ifdef SEND_PACKET
-    if ((LOG (avcodec_send_packet, vcinfo->context, pkt)) < 0)
+    if (LOG (avcodec_send_packet, vcinfo->context, pkt) < 0)
         return false;
 #else
     int subframeCnt = 0;
@@ -893,7 +893,7 @@ void DVD::write_audioframe (CodecInfo * cinfo, AVPacket * pkt, int out_fmt, bool
     int size = 0;
     Index<char> buf;
 #ifdef SEND_PACKET
-    if ((LOG (avcodec_send_packet, cinfo->context, pkt)) < 0)
+    if (LOG (avcodec_send_packet, cinfo->context, pkt) < 0)
         return;
 #else
     int decoded = 0;
@@ -910,7 +910,7 @@ void DVD::write_audioframe (CodecInfo * cinfo, AVPacket * pkt, int out_fmt, bool
     {
         ScopedFrame frame;
 #ifdef SEND_PACKET
-        if ((LOG (avcodec_receive_frame, cinfo->context, frame.ptr)) < 0)
+        if (LOG (avcodec_receive_frame, cinfo->context, frame.ptr) < 0)
             break;  /* read next packet (continue past errors) */
 #else
         decoded = 0;
