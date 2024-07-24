@@ -27,6 +27,7 @@
 #include <libfauxdcore/playlist.h>
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/tuple.h>
+#include <libfauxdcore/hook.h>
 #include <libfauxdgui/libfauxdgui.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 #include <libfauxdgui/list.h>
@@ -34,6 +35,7 @@
 #include "gtkui.h"
 #include "playlist_util.h"
 #include "ui_playlist_widget.h"
+#include "ui_playlist_notebook.h"
 
 static const GType pw_col_types[PW_COLS] =
 {
@@ -56,8 +58,6 @@ static const GType pw_col_types[PW_COLS] =
     G_TYPE_STRING,  // catalog number
     G_TYPE_STRING   // disc
 };
-
-static GtkTreeViewColumn * s_sortedbycol = nullptr;
 
 static const int pw_col_min_widths[PW_COLS] = {
     3,   // entry number
@@ -106,6 +106,8 @@ struct PlaylistWidgetData
     int list;
     int popup_pos = -1;
     QueuedFunc popup_timer;
+    GtkTreeViewColumn * s_sortedbycol = nullptr;
+    GtkTreeViewColumn * s_sortindicatorcol = nullptr;
 
     void show_popup ()
     {
@@ -341,6 +343,54 @@ static const AudguiListCallbacks callbacks = {
     focus_change
 };
 
+/* JWT:CALLED BY OUR HOOK ADDED IN playlist-utils.cc:aud_playlist_sort_by_scheme()
+   WHEN USER SORTS PLAYLIST VIA THE MENU: */
+static void ui_playlist_set_sort_indicator (void * sort_type_data, GtkWidget * widget)
+{
+    auto sort_type = aud::from_ptr<Playlist::SortType> (sort_type_data);
+    PlaylistWidgetData * data = (PlaylistWidgetData *) audgui_list_get_user (widget);
+
+    if (data && data->list == aud_playlist_get_active ())
+    {
+        if (data->s_sortindicatorcol)  /* CLEAR ANY CURRENTLY-SET SORT-INDICATOR: */
+            gtk_tree_view_column_set_sort_indicator (data->s_sortindicatorcol, false);
+
+        for (int i = 0; i < pw_num_cols; i ++)
+        {
+            /* JWT:SEARCH EACH VISIBLE COLUMN FOR ONE MATCHING THE CORRESPONDING SORT CRITERIA: */
+            int n = pw_cols[i];
+            if (pw_col_sort_types[n] < Playlist::n_sort_types)
+            {
+                auto column = gtk_tree_view_get_column ((GtkTreeView *) widget, i);
+                auto sort_type_ptr = g_object_get_data ((GObject *) column, "playlist-sort-type");
+                auto column_sort_type = aud::from_ptr<Playlist::SortType> (sort_type_ptr);
+                if (column_sort_type == sort_type)
+                {
+                    /* FOUND MATCHING COLUMN & IT'S VISIBLE, SO SET IT'S SORT INDICATOR: */
+                    /* NOTE:  GTK SEEMS TO HAVE THE "GTK_SORT_*" SYMBOLS REVERSED!: */
+                    if (column == data->s_sortedbycol)
+                    {
+                        /* WAS ASCENDING (UP-ARROW), SO REVERSE TO DESCENDING (DOWN-ARROW): */
+                        aud_playlist_reverse (data->list);
+                        gtk_tree_view_column_set_sort_indicator (data->s_sortedbycol, true);
+                        gtk_tree_view_column_set_sort_order (data->s_sortedbycol, GTK_SORT_ASCENDING);
+                        data->s_sortindicatorcol = data->s_sortedbycol;
+                        data->s_sortedbycol = nullptr;
+                    }
+                    else  /* INITIAL SORT SORTS ASCENDING, (SO SET UP-ARROW): */
+                    {
+                        data->s_sortedbycol = column;
+                        gtk_tree_view_column_set_sort_indicator (data->s_sortedbycol, true);
+                        gtk_tree_view_column_set_sort_order (data->s_sortedbycol, GTK_SORT_DESCENDING);
+                        data->s_sortindicatorcol = data->s_sortedbycol;
+                    }
+                    return;  /* WE'RE DONE, QUIT SEARCHING. */
+                }
+            }
+        }
+    }
+}
+
 static gboolean search_cb (GtkTreeModel * model, int column, const char * search,
  GtkTreeIter * iter, void * user)
 {
@@ -382,8 +432,10 @@ static gboolean search_cb (GtkTreeModel * model, int column, const char * search
     return ! matched;
 }
 
-static void destroy_cb (PlaylistWidgetData * data)
+static void destroy_cb (PlaylistWidgetData * data, GtkWidget * Widget)
 {
+    hook_dissociate ("set playlist sort indicator", (HookFunction) ui_playlist_set_sort_indicator,
+            Widget);
     delete data;
 }
 
@@ -394,13 +446,6 @@ static void column_clicked_cb (GtkTreeViewColumn * column, PlaylistWidgetData * 
     //gint colindex = gtk_tree_view_column_get_sort_column_id (column);
 
     aud_playlist_sort_by_scheme (data->list, sort_type);
-    if (column == s_sortedbycol)
-    {
-    	   aud_playlist_reverse (data->list);
-    	   s_sortedbycol = nullptr;
-    }
-    else
-        s_sortedbycol = column;
 }
 
 GtkWidget * ui_playlist_widget_new (int playlist)
@@ -439,6 +484,10 @@ GtkWidget * ui_playlist_widget_new (int playlist)
             g_signal_connect (column, "clicked", (GCallback) column_clicked_cb, data);
         }
     }
+
+    /* JWT:ADDED HOOK TO SET SORT-INDICATOR WHEN USER SORTS VIA THE PLAYLIST MENU: */
+    hook_associate ("set playlist sort indicator", (HookFunction) ui_playlist_set_sort_indicator,
+            list);
 
     return list;
 }
