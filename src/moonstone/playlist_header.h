@@ -54,8 +54,11 @@ private:
     bool event(QEvent * event);
     void updateStyle ();
 
-    const HookReceiver<PlaylistHeader> hook1{
-        "moonstone update playlist columns", this, &PlaylistHeader::updateColumns};
+    const HookReceiver<PlaylistHeader> 
+        hook1{"moonstone update playlist columns", this,
+            &PlaylistHeader::updateColumns},
+        hook2{"moonstone update playlist headers", this,
+              &PlaylistHeader::updateStyle};
 };
 
 }

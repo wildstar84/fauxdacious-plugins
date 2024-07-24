@@ -20,6 +20,8 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#include <libfauxdcore/templates.h>
+
 #define DEFAULT_COLUMNS "playing artist title"
 
 /* JWT:NOTE - THIS IS DUPLICATED IN playlist_tabs.cc DUE TO NAMESPACE ISSUES, INCLUDE ANY CHANGES THERE TOO! */
@@ -29,29 +31,9 @@ enum PlaylistTabVisibility {
     Never
 };
 
-const char * const moonstone_defaults[] = {
-    "infoarea_show_vis", "TRUE",
-    "infoarea_show_art", "TRUE",
-    "_infoarea_show_art_saved", "TRUE",
-    "infoarea_hide_fallback_art", "FALSE",
-    "_infoarea_hide_fallback_art_saved", "FALSE",
-    "infoarea_visible", "TRUE",
-    "menu_visible", "TRUE",
-    "playlist_tabs_visible", aud::numeric_string<PlaylistTabVisibility::AutoHide>::str,
-    "entry_count_visible", "FALSE",
-    "close_button_visible", "TRUE",
-    "tabheight", "20",
-    "autoscroll", "TRUE",
-    "playlist_columns", DEFAULT_COLUMNS,
-    "playlist_headers", "TRUE",
-    "playlist_headers_bold", "TRUE",
-    "show_remaining_time", "FALSE",
-    "show_filepopup_for_tuple", "TRUE",
-    "shaded", "FALSE",
-    "window_w", "768",
-    "window_h", "480",
-    nullptr
-};
+struct PluginPreferences;
+extern const PluginPreferences moonstone_prefs;
+
+extern const char * const moonstone_defaults[];
 
 #endif
-

@@ -90,11 +90,14 @@ private:
     void tabMoved(int from, int to);
     void updateSettings();
 
-    const HookReceiver<PlaylistTabBar> pause_hook{"playback pause", this,
-                                                  &PlaylistTabBar::updateIcons},
+    const HookReceiver<PlaylistTabBar>
+        pause_hook{"playback pause", this,
+                &PlaylistTabBar::updateIcons},
         unpause_hook{"playback unpause", this, &PlaylistTabBar::updateIcons},
         set_playing_hook{"playlist set playing", this,
-                         &PlaylistTabBar::updateIcons};
+                &PlaylistTabBar::updateIcons},
+        settings_hook{"moonstone update playlist settings", this,
+                &PlaylistTabBar::updateSettings};
 
     QWidget * m_leftbtn = nullptr;
 };

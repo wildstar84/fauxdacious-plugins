@@ -42,11 +42,13 @@ static void show_titlebar_toggle_fn ()
 class MoonstoneUI : public audqt::QtIfacePlugin
 {
 public:
-    constexpr MoonstoneUI ()
-        : audqt::QtIfacePlugin (
-              {N_("Moonstone"), PACKAGE, nullptr, nullptr, PluginQtOnly})
-    {
-    }
+    constexpr MoonstoneUI () : audqt::QtIfacePlugin ({
+        N_("Moonstone"),
+        PACKAGE,
+        nullptr,
+        & moonstone_prefs,
+        PluginQtOnly
+    }) {}
 
     bool init ()
     {

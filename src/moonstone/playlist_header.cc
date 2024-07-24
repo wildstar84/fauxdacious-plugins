@@ -341,7 +341,9 @@ void PlaylistHeader::sectionClicked (int logicalIndex)
            SINGLE "HEADER" OBJECT, SHARED BY ALL TABS, THE SORT INDICATOR WILL BE BOGUS FOR OTHER TABS!
            (SETTING TO -1 REMOVES ANY SORT-INDICATOR):
         */
-        int show_sort_col = (aud_playlist_count () == 1) ? logicalIndex : -1;
+        int show_sort_col = (aud_playlist_count () == 1
+                || aud_get_int("moonstone", "playlist_tabs_visible") == PlaylistTabVisibility::Never)
+                ? logicalIndex : -1;
         this->setSortIndicator (show_sort_col, s_lastsortorder);
         s_lastsortcol = show_sort_col;
     }
