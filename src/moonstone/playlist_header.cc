@@ -58,10 +58,6 @@ static const char * const s_col_keys[] = {
     "disc"
 };
 
-static int s_sortedbycol = -1;
-static int s_lastsortcol = -1;
-static Qt::SortOrder s_lastsortorder = Qt::AscendingOrder;
-
 static const int s_default_widths[] = {
     25,   // now playing
     25,   // entry number
@@ -173,6 +169,7 @@ PlaylistHeader::PlaylistHeader (PlaylistWidget * playlist) :
     connect (this, & QHeaderView::sectionClicked, this, & PlaylistHeader::sectionClicked);
     connect (this, & QHeaderView::sectionResized, this, & PlaylistHeader::sectionResized);
     connect (this, & QHeaderView::sectionMoved, this, & PlaylistHeader::sectionMoved);
+    m_playlist_no = m_playlist->playlist ();
 }
 
 static void toggleColumn (int col, bool on)
@@ -314,39 +311,54 @@ void PlaylistHeader::updateStyle ()
     this->setSortIndicator (s_lastsortcol, s_lastsortorder);
 }
 
+/* JWT:CALLED BY OUR HOOK ADDED IN playlist-utils.cc:aud_playlist_sort_by_scheme()
+   TO SET THE SORT INDICATOR ARROW WHEN USER SORTS PLAYLIST VIA THE MENU: */
+void PlaylistHeader::set_sort_sndicator (Playlist::SortType * sort_type_data)
+{
+    if (this->m_playlist_no != aud_playlist_get_active ())
+        return;
+
+    auto sort_type = aud::from_ptr<Playlist::SortType> (sort_type_data);
+
+    if (s_sortindicatorcol)  /* CLEAR ANY CURRENTLY-SET SORT-INDICATOR: */
+        this->setSortIndicator (-1, Qt::AscendingOrder);
+
+    int col = -1;
+    for (int i = 0; i < PlaylistModel::n_cols; i++)
+    {
+        if (s_sort_types[i] == sort_type)
+        {
+            col = i + 1;
+            if (col == s_sortedbycol)
+            {
+                aud_playlist_reverse (m_playlist->playlist ());
+                s_sortindicatorcol = col;
+                s_sortedbycol = -1;
+                s_lastsortorder = Qt::AscendingOrder;
+            }
+            else
+            {
+                s_sortedbycol = col;
+                s_lastsortorder = Qt::DescendingOrder;
+                s_sortindicatorcol = s_sortedbycol;
+            }
+            this->setSortIndicator (col, s_lastsortorder);
+            s_lastsortcol = col;
+            aud_set_bool(nullptr, "_skip_playlist_reboot", true);
+            return;
+        }
+    }
+}
+
 void PlaylistHeader::sectionClicked (int logicalIndex)
 {
     int col = logicalIndex - 1;
     s_lastsortcol = -1;
     this->setSortIndicator (-1, Qt::AscendingOrder);
 
-    if (col < 2 || col >= PlaylistModel::n_cols)
-        return;
-
-    if (s_sort_types[col] != Playlist::n_sort_types)
-    {
+    if (col >= 2 && col < PlaylistModel::n_cols
+            && s_sort_types[col] != Playlist::n_sort_types)
         aud_playlist_sort_by_scheme (m_playlist->playlist (), s_sort_types[col]);
-        if (col == s_sortedbycol)
-        {
-            aud_playlist_reverse (m_playlist->playlist ());
-            s_sortedbycol = -1;
-            s_lastsortorder = Qt::AscendingOrder;
-        }
-        else
-        {
-            s_sortedbycol = col;
-            s_lastsortorder = Qt::DescendingOrder;
-        }
-        /* FIXME:ONLY SHOW SORT-INDICATOR IFF WE HAVE A *SINGLE* PLAYLIST TAB - SINCE WE ONLY HAVE A
-           SINGLE "HEADER" OBJECT, SHARED BY ALL TABS, THE SORT INDICATOR WILL BE BOGUS FOR OTHER TABS!
-           (SETTING TO -1 REMOVES ANY SORT-INDICATOR):
-        */
-        int show_sort_col = (aud_playlist_count () == 1
-                || aud_get_int("moonstone", "playlist_tabs_visible") == PlaylistTabVisibility::Never)
-                ? logicalIndex : -1;
-        this->setSortIndicator (show_sort_col, s_lastsortorder);
-        s_lastsortcol = show_sort_col;
-    }
 }
 
 void PlaylistHeader::sectionMoved (int logicalIndex, int oldVisualIndex, int newVisualIndex)

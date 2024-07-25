@@ -195,8 +195,9 @@ void PlaylistTabs::playlist_activate_cb()
 void PlaylistTabs::playlist_update_cb(Playlist::UpdateLevel global_level)
 {
     m_in_update = true;
-    if (global_level == Playlist::Structure)
+    if (global_level == Playlist::Structure && ! aud_get_bool (nullptr, "_skip_playlist_reboot"))
         addRemovePlaylists();
+
     if (global_level >= Playlist::Metadata)
         m_tabbar->updateTitles();
 
@@ -206,6 +207,7 @@ void PlaylistTabs::playlist_update_cb(Playlist::UpdateLevel global_level)
     m_tabbar->updateIcons();  // JWT:NEED THIS TO KEEP TAB ICONS SET?! (AUDACIOUS DOESN'T)
     setCurrentIndex (aud_playlist_get_active ());
     m_in_update = false;
+    aud_set_bool (nullptr, "_skip_playlist_reboot", false);
 }
 
 void PlaylistTabs::playlist_position_cb(int list)
@@ -338,6 +340,9 @@ void PlaylistTabBar::contextMenuEvent(QContextMenuEvent * e)
     auto addfiles_act = new QAction(audqt::get_icon("list-add"),
                                 audqt::translate_str(N_("_Add Files")), menu);
 
+    auto addplaylist_act = new QAction(audqt::get_icon("document-new"),
+                                audqt::translate_str(N_("Add Playlist")), menu);
+
     QObject::connect(play_act, &QAction::triggered, [playlist] ()
     {
         aud_playlist_play (playlist);
@@ -361,12 +366,17 @@ void PlaylistTabBar::contextMenuEvent(QContextMenuEvent * e)
         setCurrentIndex(playlist);
         audqt::fileopener_show (audqt::FileMode::Add);
     });
+    QObject::connect(addplaylist_act, &QAction::triggered, [playlist] ()
+    {
+        aud_playlist_new();
+    });
 
     menu->addAction(play_act);
     menu->addAction(rename_act);
     menu->addAction(remove_act);
     menu->addAction(import_act);
     menu->addAction(addfiles_act);
+    menu->addAction(addplaylist_act);
     menu->setAttribute(Qt::WA_DeleteOnClose);
     menu->popup(e->globalPos());
 }

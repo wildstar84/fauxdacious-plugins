@@ -22,6 +22,7 @@
 #define PLAYLIST_HEADER_H
 
 #include <QHeaderView>
+#include <libfauxdcore/playlist.h>
 #include <libfauxdcore/hook.h>
 
 class QAction;
@@ -45,7 +46,14 @@ private:
     bool m_inUpdate = false;
     bool m_inStyleChange = false;
     int m_lastCol = -1;
+    /* JWT:SAVE TAB-SPECIFIC SORT-INDICATOR INFO: */
+    int m_playlist_no = -1;
+    int s_sortedbycol = -1;
+    int s_lastsortcol = -1;
+    int s_sortindicatorcol = -1;
+    Qt::SortOrder s_lastsortorder = Qt::AscendingOrder;
 
+    void set_sort_sndicator (Playlist::SortType * sort_type_data);
     void sectionClicked(int logicalIndex);
     void sectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
     void sectionResized(int logicalIndex, int /*oldSize*/, int newSize);
@@ -59,6 +67,10 @@ private:
             &PlaylistHeader::updateColumns},
         hook2{"moonstone update playlist headers", this,
               &PlaylistHeader::updateStyle};
+        /* JWT:ADDED HOOK TO SET SORT-INDICATOR WHEN USER SORTS VIA THE PLAYLIST MENU: */
+        HookReceiver<PlaylistHeader, Playlist::SortType *> sort_sndicator_hook {
+            "set playlist sort indicator", this, & PlaylistHeader::set_sort_sndicator
+        };
 };
 
 }
