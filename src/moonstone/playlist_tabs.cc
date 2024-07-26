@@ -18,6 +18,7 @@
  */
 
 #include "playlist_tabs.h"
+#include "menus.h"
 #include "playlist.h"
 
 #include <QBoxLayout>
@@ -66,7 +67,7 @@ LayoutWidget::LayoutWidget (QWidget * parent, int playlist, QMenu * contextMenu)
 
 PlaylistTabs::PlaylistTabs (QWidget * parent) :
     QTabWidget (parent),
-    m_pl_menu (new QMenu (this)),
+    m_pl_menu (qtui_build_pl_menu (this)),
     m_tabbar (new PlaylistTabBar (this))
 {
     installEventFilter (this);

@@ -1,6 +1,8 @@
 PLUGIN = moonstone${PLUGIN_SUFFIX}
 
 SRCS = moonstone.cc \
+       menu-ops.cc \
+       menus.cc \
        main_window.cc \
        tool_bar.cc \
        time_slider.cc \
