@@ -19,7 +19,7 @@
 
 //fauxdacious includes
 #include <libfauxdcore/i18n.h>
-#include <libaudcore/mainloop.h>
+#include <libfauxdcore/mainloop.h>
 #include <libfauxdcore/preferences.h>
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/tuple.h>
