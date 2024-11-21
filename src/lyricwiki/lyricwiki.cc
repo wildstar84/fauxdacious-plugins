@@ -18,6 +18,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
+#include <vector>
+#include <sstream>    // For std::istringstream
+#include <regex>     // For std::regex and std::smatch
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <string.h>
@@ -66,6 +70,15 @@ typedef struct {
     String sholyrics;
     int current_playlist;  /* JWT:SAVE THE PLAYLIST CURRENT WHEN ENTRY STARTS PLAYING! */
 } LyricsState;
+
+struct TimedLyricLine {
+    int timestamp_ms;   // Timestamp in milliseconds
+    String text;        // Lyric text at this timestamp
+};
+
+std::vector<TimedLyricLine> timed_lyrics;  // Stores parsed lyrics with timestamps
+
+
 
 class LyricWiki : public GeneralPlugin
 {
@@ -880,6 +893,34 @@ static void show_lyrics ()
     gtk_text_buffer_get_start_iter (textbuffer, & iter);
     gtk_text_view_scroll_to_iter (textview, & iter, 0, true, 0, 0);
     gtk_widget_set_sensitive (save_button, ok2save_was);
+
+    // Parse the lyrics and populate timed_lyrics
+    timed_lyrics.clear();
+    std::istringstream iss(static_cast<std::string>(state.sholyrics)); // Assuming String can be cast to std::string
+    std::string line;
+
+    while (std::getline(iss, line)) {
+        // Sanitize the line: remove leading/trailing spaces and carriage return
+        line.erase(0, line.find_first_not_of(" \t\r"));  // Remove leading whitespace and \r
+        line.erase(line.find_last_not_of(" \t\r") + 1);  // Remove trailing whitespace and \r
+
+        // Updated regex to handle various whitespaces around the timestamp and lyric text
+        std::regex re(R"(\[\s*(\d+)\s*:\s*(\d+\.\d+)\s*\]\s*(.*))");
+        std::smatch match;
+
+        if (std::regex_match(line, match, re)) {
+            int minutes = std::stoi(match[1].str());  // Convert minutes
+            float seconds = std::stof(match[2].str());  // Convert seconds
+            int timestamp_ms = (minutes * 60 + static_cast<int>(seconds)) * 1000;
+
+            TimedLyricLine timed_line;
+            timed_line.timestamp_ms = timestamp_ms;
+            timed_line.text = String(match[3].str().c_str());  // Lyric text
+
+            timed_lyrics.push_back(timed_line);
+        } 
+    }
+
 }
 
 /* CALLED WHENEVER WE NEED LYRICS: */
@@ -1149,6 +1190,76 @@ static void destroy_cb ()
 // DEPRECIATED:     edit_button = nullptr;
 }
 
+void highlight_lyrics(int current_time_ms) {
+    if (!textbuffer) return;
+
+    // Clear the text buffer
+    gtk_text_buffer_set_text(textbuffer, "", -1);
+
+    // Find the 4 lines closest to the current timestamp (current + 3 neighbors)
+    std::vector<TimedLyricLine> lines_to_display;
+
+    // Store up to 4 lines starting from the current one
+    for (size_t i = 0; i < timed_lyrics.size(); ++i) {
+        if (timed_lyrics[i].timestamp_ms >= current_time_ms) {
+            // Ensure we have the current line and its neighbors (3 more lines)
+            size_t start_index = (i > 1) ? i - 2 : 0;  // Start 2 lines before the current line
+            size_t end_index = std::min(i + 2, timed_lyrics.size() - 1);  // Limit to 3 more lines after
+
+            // Ensure no more than 4 lines are selected
+            size_t line_count = 0;
+
+            for (size_t j = start_index; j <= end_index && line_count < 4; ++j) {
+                lines_to_display.push_back(timed_lyrics[j]);
+                line_count++;
+            }
+            break;
+        }
+    }
+
+    // Retrieve the tag table
+    GtkTextTagTable* tag_table = gtk_text_buffer_get_tag_table(textbuffer);
+
+    // Check if the enlarge tag exists, and create it if not
+    GtkTextTag* enlarge_tag = gtk_text_tag_table_lookup(tag_table, "enlarge_tag");
+    if (!enlarge_tag) {
+        enlarge_tag = gtk_text_tag_new("enlarge_tag");
+        g_object_set(enlarge_tag, "scale", 1.5, NULL); // Enlarge by 1.5 times (adjust as needed)
+        gtk_text_tag_table_add(tag_table, enlarge_tag);
+    }
+
+    // Insert the selected lines into the text buffer
+    GtkTextIter iter;
+    gtk_text_buffer_get_start_iter(textbuffer, &iter);
+
+    for (size_t i = 0; i < lines_to_display.size(); ++i) {
+        const TimedLyricLine &line = lines_to_display[i];
+        std::string text_with_newline = std::string(line.text);
+
+        // Apply the enlarge tag to the second line
+        if (i == 1) {  // Second line (index 1)
+            gtk_text_buffer_insert_with_tags_by_name(textbuffer, &iter, text_with_newline.c_str(), -1, "enlarge_tag", NULL);
+        } else {
+            gtk_text_buffer_insert(textbuffer, &iter, text_with_newline.c_str(), -1);
+}
+        
+        gtk_text_buffer_insert(textbuffer, &iter, "\n", -1);
+    }
+
+    // After inserting lines, force scroll to the last line
+    GtkTextIter end_iter;
+    gtk_text_buffer_get_end_iter(textbuffer, &end_iter);
+    gtk_text_view_scroll_to_iter(textview, &end_iter, 0, TRUE, 0, 0);
+}
+
+gboolean update_lyrics_display(gpointer data)
+{
+    int current_time_ms = aud_drct_get_time();  // Get current time from player in ms
+    highlight_lyrics(current_time_ms);
+
+    return G_SOURCE_CONTINUE;  // Continue calling this function
+}
+
 /* CALLED ON STARTUP (WIDGET CREATION): */
 void * LyricWiki::get_gtk_widget ()
 {
@@ -1160,6 +1271,8 @@ void * LyricWiki::get_gtk_widget ()
 
     g_signal_connect (vbox, "destroy", destroy_cb, nullptr);
 
+    g_timeout_add(200, update_lyrics_display, nullptr);  // Call every 500 ms
+    
     if (aud_drct_get_ready ())
         lyricwiki_playback_began ();
 
