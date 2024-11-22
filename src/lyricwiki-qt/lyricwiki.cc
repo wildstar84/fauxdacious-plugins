@@ -23,6 +23,11 @@
 #include <string.h>
 #include <pthread.h>
 
+#include <iostream>
+#include <vector>
+#include <sstream>    // For std::istringstream
+#include <regex>     // For std::regex and std::smatch
+                     //
 #ifdef _WIN32
 #include <windows.h>
 #include <winbase.h>
@@ -37,6 +42,7 @@
 #include <QTextEdit>
 #include <QThread>
 #include <QEvent>
+#include <QTimer>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -89,6 +95,13 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int customType = QEvent::registerEventType();
 static Index<String> extlist = str_list_to_index (".mp3,.ogg,.ogm,.oga,.flac,.fla,.wv", ",");
 
+struct TimedLyricLine {
+    int timestamp_ms;   // Timestamp in milliseconds
+    String text;        // Lyric text at this timestamp
+};
+
+std::vector<TimedLyricLine> timed_lyrics;  // Stores parsed lyrics with timestamps
+
 class TextEdit : public QTextEdit
 {
 public:
@@ -123,6 +136,31 @@ public:
                         ? cursor.insertHtml (Q_Lyrics.replace (QChar ('\n'), "<br>"))
                         : cursor.insertText (Q_Lyrics);
             }
+
+        // Parse the lyrics and populate timed_lyrics
+        timed_lyrics.clear();
+        std::istringstream iss(Q_Lyrics.toStdString());
+        std::string line;
+        std::regex re(R"(\[\s*(\d+)\s*:\s*(\d+\.\d+)\s*\]\s*(.*))");
+        
+        while (std::getline(iss, line)) {
+            // Sanitize the line
+            line.erase(0, line.find_first_not_of(" \t\r"));  // Remove leading whitespace
+            line.erase(line.find_last_not_of(" \t\r") + 1);  // Remove trailing whitespace
+
+            std::smatch match;
+            if (std::regex_match(line, match, re)) {
+                int minutes = std::stoi(match[1].str());
+                float seconds = std::stof(match[2].str());
+                int timestamp_ms = static_cast<int>((minutes * 60 + seconds) * 1000);
+
+                TimedLyricLine timed_line;
+                timed_line.timestamp_ms = timestamp_ms;
+                timed_line.text = String(match[3].str().c_str());  // Lyric text
+
+                timed_lyrics.push_back(timed_line);
+            }
+        }
         }
         state.ok2save = ok2save_was;
     }
@@ -790,6 +828,77 @@ static void allow_usersave ()
     state.ok2saveTag = state.Wasok2saveTag;
 }
 
+void highlight_lyrics(int current_time_ms)
+{
+    if (!textedit)
+        return;
+
+    // Clear the current content in the text editor
+    textedit->document()->clear();
+
+    // Find the current line and its neighbors (up to 4 lines in total)
+    std::vector<TimedLyricLine> lines_to_display;
+
+    // Iterate through the timed lyrics and find the lines closest to the current timestamp
+    for (size_t i = 0; i < timed_lyrics.size(); ++i)
+    {
+
+        if (timed_lyrics[i].timestamp_ms >= current_time_ms)
+        {
+            // Ensure we have the current line and its neighbors (3 more lines)
+            size_t start_index = (i > 1) ? i - 2 : 0;  // Start 2 lines before the current line
+            size_t end_index = std::min(i + 2, timed_lyrics.size() - 1);  // Limit to 3 more lines after
+
+            // Ensure no more than 4 lines are selected
+            size_t line_count = 0;
+
+            for (size_t j = start_index; j <= end_index && line_count < 4; ++j)
+            {
+                lines_to_display.push_back(timed_lyrics[j]);
+                line_count++;
+            }
+            break;
+        }
+    }
+
+    // Create a cursor to insert the selected lines into the text editor
+    QTextCursor cursor(textedit->document());
+
+    // Iterate over the lines to insert and apply formatting
+    for (size_t i = 0; i < lines_to_display.size(); ++i)
+    {
+        const TimedLyricLine &line = lines_to_display[i];
+
+        // Create a QTextCharFormat for styling
+        QTextCharFormat format;
+
+        // Check if it's the second line (index 1) and apply custom formatting
+        if (i == 1)
+        {
+            format.setFontPointSize(16);  // Enlarge text (adjust size as needed)
+            format.setForeground(Qt::white);  // Set white color
+        }
+        else
+        {
+            format.setForeground(Qt::white);  // Set white color for other lines
+        }
+
+        // Apply the formatting and insert the text for this line
+        cursor.setCharFormat(format);
+
+        /*cursor.insertText(QString::fromStdString(line.text.c_str()));  // If line.text has c_str()*/
+        cursor.insertText(QString::fromStdString(static_cast<std::string>(line.text)));
+
+        // Insert a line break after the lyric line
+        cursor.insertHtml("<br>");
+    }
+
+    /*textedit->verticalScrollBar()->setValue(textedit->verticalScrollBar()->maximum());*/
+}
+
+
+
+
 /* CALLED BY BOTH MAIN AND THREAD TO UPDATE LYRICS (FOR LATER DISPLAYING IN THE WIDGET): */
 static void update_lyrics (const char * title, const char * artist, const char * lyrics)
 {
@@ -1060,6 +1169,12 @@ static void lw_cleanup (QObject * object = nullptr)
     textedit = nullptr;
 }
 
+void update_lyrics_display()
+{
+    int current_time_ms = aud_drct_get_time();  // Get current time from player in ms
+    highlight_lyrics(current_time_ms);  // Update lyrics display based on current time
+}
+
 /* CALLED ON STARTUP (WIDGET CREATION): */
 void * LyricWikiQt::get_qt_widget ()
 {
@@ -1075,11 +1190,15 @@ void * LyricWikiQt::get_qt_widget ()
 
     if (aud_drct_get_ready ())
         lyricwiki_playback_began ();
+    // Create a QTimer to call update_lyrics_display every 100ms
+    QTimer *timer = new QTimer(textedit);
+    timer->setInterval(200);  // Set the interval to 100ms
+    QObject::connect(timer, &QTimer::timeout, update_lyrics_display);  // Connect the timeout signal to the update function
+    timer->start();  // Start the timer
 
     hook_associate ("playback ready", (HookFunction) lyricwiki_playback_began, nullptr);
     hook_associate ("tuple change", (HookFunction) lyricwiki_playback_changed, nullptr);
     hook_associate ("playback stop", (HookFunction) kill_thread_eventloop, nullptr);
-
     return textedit;
 }
 
