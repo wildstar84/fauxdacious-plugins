@@ -201,10 +201,13 @@ EXPORT LyricWikiQt aud_plugin_instance;
 
 const char * const LyricWikiQt::defaults[] = {
     "search_internet", "TRUE",            // SEARCH FOR LYRICS FROM WEB (IF NOT FOUND LOCALLY)
+    "sync_lyrics", "TRUE",               // ENABLE LYRIC SYNCHRONIZATION
     nullptr
 };
 
 const PreferencesWidget LyricWikiQt::widgets[] = {
+    WidgetCheck(N_("Enable lyric synchronization"),
+        WidgetBool("lyricwiki", "sync_lyrics")),
     WidgetCheck (N_("Fetch lyrics from internet?"),
         WidgetBool ("lyricwiki", "search_internet")),
     WidgetCheck (N_("Cache (save) lyrics to disk?"),
@@ -837,6 +840,10 @@ static void allow_usersave ()
 void highlight_lyrics(int current_time_ms)
 {
     if (!textedit)
+        return;
+
+    // Check if lyric sync is enabled
+    if (!aud_get_bool("lyricwiki", "sync_lyrics"))
         return;
 
     // Clear the current content in the text editor

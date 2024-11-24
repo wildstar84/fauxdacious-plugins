@@ -103,6 +103,7 @@ public:
 
 const char * const LyricWiki::defaults[] = {
     "search_internet", "TRUE",            // SEARCH FOR LYRICS FROM WEB (IF NOT FOUND LOCALLY)
+    "sync_lyrics", "TRUE",               // ENABLE LYRIC SYNCHRONIZATION
     nullptr
 };
 
@@ -111,6 +112,8 @@ EXPORT LyricWiki aud_plugin_instance;
 const PreferencesWidget LyricWiki::widgets[] = {
     WidgetCheck (N_("Fetch lyrics from internet?"),
         WidgetBool ("lyricwiki", "search_internet")),
+    WidgetCheck (N_("Enable lyric synchronization"),
+        WidgetBool ("lyricwiki", "sync_lyrics")),
     WidgetCheck (N_("Cache (save) lyrics to disk?"),
         WidgetBool ("lyricwiki", "cache_lyrics")),
     WidgetCheck (N_("Try to save by song file-name first?"),
@@ -1198,6 +1201,10 @@ static void destroy_cb ()
 
 void highlight_lyrics(int current_time_ms) {
     if (!textbuffer) return;
+
+    // Check if lyric sync is enabled
+    if (!aud_get_bool("lyricwiki", "sync_lyrics"))
+        return;
 
     // Clear the text buffer
     gtk_text_buffer_set_text(textbuffer, "", -1);
