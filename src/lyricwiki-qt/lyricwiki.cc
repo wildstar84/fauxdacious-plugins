@@ -141,7 +141,14 @@ public:
         timed_lyrics.clear();
         std::istringstream iss(Q_Lyrics.toStdString());
         std::string line;
-        std::regex re(R"(\[\s*(\d+)\s*:\s*(\d+\.\d+)\s*\]\s*(.*))");
+        // Updated regex to support both SS.SS and SS.SSS formats
+        std::regex re(R"(\[\s*(\d+)\s*:\s*(\d+\.\d{2,3})\s*\]\s*(.*))");
+        
+        // Add a dummy timestamp line at the beginning to prevent title from being highlighted
+        TimedLyricLine dummy_line;
+        dummy_line.timestamp_ms = 0;
+        dummy_line.text = String("");
+        timed_lyrics.push_back(dummy_line);
         
         while (std::getline(iss, line)) {
             // Sanitize the line
@@ -488,7 +495,6 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
                 bool can_write = aud_file_can_write_tuple (state.filename, decoder);
                 if (can_write)
                     state.ok2saveTag = true;
-                break;
             }
         }
         state.Wasok2saveTag = state.ok2saveTag;
@@ -868,6 +874,10 @@ void highlight_lyrics(int current_time_ms)
     for (size_t i = 0; i < lines_to_display.size(); ++i)
     {
         const TimedLyricLine &line = lines_to_display[i];
+        std::string text = static_cast<std::string>(line.text);
+
+        // Skip empty lines (like our dummy timestamp)
+        if (text.empty()) continue;
 
         // Create a QTextCharFormat for styling
         QTextCharFormat format;
@@ -885,9 +895,7 @@ void highlight_lyrics(int current_time_ms)
 
         // Apply the formatting and insert the text for this line
         cursor.setCharFormat(format);
-
-        /*cursor.insertText(QString::fromStdString(line.text.c_str()));  // If line.text has c_str()*/
-        cursor.insertText(QString::fromStdString(static_cast<std::string>(line.text)));
+        cursor.insertText(QString::fromStdString(text));
 
         // Insert a line break after the lyric line
         cursor.insertHtml("<br>");
@@ -951,7 +959,9 @@ static void lyricwiki_playback (bool force_refresh)
         {
             lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir), "/lyrics/",
                     (const char *) playingdiskid, ".lrc"}));
-            found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
+            found_lyricfile = force_refresh ? 0 : ! (g_stat ((const char *) lyricStr, & statbuf));
+
+            /* local_filename := (GLOBAL) ARTIST NAME/TITLE, IF NOT ALREADY SET *OR* save_by_songfile NOT SET. */
             if (found_lyricfile || (! state.local_filename || ! state.local_filename[0]))
                 state.local_filename = lyricStr;  // SET FOUND CD-WIDE LYRICS FOUND OR NO TRACK FILE SET (DVD).
         }
@@ -1022,7 +1032,7 @@ static void lyricwiki_playback (bool force_refresh)
         if (state.title)
         {
             /* JWT:MANY STREAMS & SOME FILES FORMAT THE TITLE FIELD AS:
-               "<artist> - <title> [<other-stuff>?]".  IF SO, THEN PARSE OUT THE
+               "<artist> - <title> [<other-stuff]?".  IF SO, THEN PARSE OUT THE
                ARTIST AND TITLE COMPONENTS FROM THE TITLE FOR SEARCHING LYRICWIKI:
             */
             const char * ttlstart = (const char *) state.title;
@@ -1065,8 +1075,8 @@ static void lyricwiki_playback (bool force_refresh)
                 found_lyricfile = force_refresh ? 0 : ! (g_stat ((const char *) lyricStr, & statbuf));
 
                 /* local_filename := (GLOBAL) ARTIST NAME/TITLE, IF NOT ALREADY SET *OR* save_by_songfile NOT SET. */
-                if (! state.local_filename || ! state.local_filename[0] || ! save_by_songfile)
-                    state.local_filename = lyricStr;  /* THE FILE NAME WE'LL CACHE OR "SAVE LOCALLY" TO. */
+                if (found_lyricfile || (! state.local_filename || ! state.local_filename[0]))
+                    state.local_filename = lyricStr;  // SET FOUND LYRICS FILE OR NO LOCAL FILE SET.
 
                 if (need_lyrics && found_lyricfile)
                 {

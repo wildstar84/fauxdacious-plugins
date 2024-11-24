@@ -899,19 +899,25 @@ static void show_lyrics ()
     std::istringstream iss(static_cast<std::string>(state.sholyrics)); // Assuming String can be cast to std::string
     std::string line;
 
+    // Add a dummy timestamp line at the beginning to prevent title from being highlighted
+    TimedLyricLine dummy_line;
+    dummy_line.timestamp_ms = 0;
+    dummy_line.text = String("");
+    timed_lyrics.push_back(dummy_line);
+
     while (std::getline(iss, line)) {
         // Sanitize the line: remove leading/trailing spaces and carriage return
         line.erase(0, line.find_first_not_of(" \t\r"));  // Remove leading whitespace and \r
         line.erase(line.find_last_not_of(" \t\r") + 1);  // Remove trailing whitespace and \r
 
         // Updated regex to handle various whitespaces around the timestamp and lyric text
-        std::regex re(R"(\[\s*(\d+)\s*:\s*(\d+\.\d+)\s*\]\s*(.*))");
+        std::regex re(R"(\[\s*(\d+)\s*:\s*(\d+\.\d{2,3})\s*\]\s*(.*))");
         std::smatch match;
 
         if (std::regex_match(line, match, re)) {
             int minutes = std::stoi(match[1].str());  // Convert minutes
             float seconds = std::stof(match[2].str());  // Convert seconds
-            int timestamp_ms = (minutes * 60 + static_cast<int>(seconds)) * 1000;
+            int timestamp_ms = static_cast<int>((minutes * 60 + seconds) * 1000);
 
             TimedLyricLine timed_line;
             timed_line.timestamp_ms = timestamp_ms;
@@ -967,7 +973,7 @@ static void lyricwiki_playback (bool force_refresh)
         {
             lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir), "/lyrics/",
                     (const char *) playingdiskid, ".lrc"}));
-            found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
+            found_lyricfile = force_refresh ? 0 : ! (g_stat ((const char *) lyricStr, & statbuf));
             if (found_lyricfile || (! state.local_filename || ! state.local_filename[0]))
                 state.local_filename = lyricStr;  // SET FOUND CD-WIDE LYRICS FOUND OR NO TRACK FILE SET (DVD).
         }
@@ -1037,7 +1043,7 @@ static void lyricwiki_playback (bool force_refresh)
         if (state.title)
         {
             /* JWT:MANY STREAMS & SOME FILES FORMAT THE TITLE FIELD AS:
-               "<artist> - <title> [<other-stuff>?]".  IF SO, THEN PARSE OUT THE
+               "<artist> - <title> [<other-stuff]?]".  IF SO, THEN PARSE OUT THE
                ARTIST AND TITLE COMPONENTS FROM THE TITLE FOR SEARCHING LYRICWIKI:
             */
             const char * ttlstart = (const char *) state.title;
@@ -1236,12 +1242,15 @@ void highlight_lyrics(int current_time_ms) {
         const TimedLyricLine &line = lines_to_display[i];
         std::string text_with_newline = std::string(line.text);
 
+        // Skip empty lines (like our dummy timestamp)
+        if (text_with_newline.empty()) continue;
+
         // Apply the enlarge tag to the second line
         if (i == 1) {  // Second line (index 1)
             gtk_text_buffer_insert_with_tags_by_name(textbuffer, &iter, text_with_newline.c_str(), -1, "enlarge_tag", NULL);
         } else {
             gtk_text_buffer_insert(textbuffer, &iter, text_with_newline.c_str(), -1);
-}
+        }
         
         gtk_text_buffer_insert(textbuffer, &iter, "\n", -1);
     }
