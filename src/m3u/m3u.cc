@@ -28,7 +28,12 @@
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/runtime.h>
 
-static const char * const m3u_exts[] = {"m3u", "m3u8", "txt", "ls"};  // JWT:ACCEPT .txt & "ls * |"
+// static const char * const m3u_exts[] = {"m3u", "m3u8", "txt", "ls"};  // JWT:ACCEPT .txt & "ls * |"
+/* JWT:NO LONGER ACCEPT .m3u8 AS A PLAYLIST - THEY'RE ALMOST ALWAYS HLS, WHICH WE NEED TO GO
+   THRU THE URL-HELPER SCRIPT TO MANUALLY SELECT LIMITED BANDWIDTH STREAMS, SINCE FFMPEG
+   DOESN'T SEEM TO DO THAT (AUTOMATICALLY RETURNS THE HIGHEST BITRATE STREAM?)!
+*/
+static const char * const m3u_exts[] = {"m3u", "txt", "ls"};  // JWT:ACCEPT .txt & "ls * |"
 
 class M3ULoader : public PlaylistPlugin
 {
