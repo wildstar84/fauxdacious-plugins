@@ -18,6 +18,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
+#include <vector>
+#include <sstream>   // For std::istringstream
+#include <regex>     // For std::regex and std::smatch
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <string.h>
@@ -61,23 +65,32 @@ typedef struct {
     gint startlyrics;      /* JWT:OFFSET IN LYRICS WINDOW WHERE LYRIC TEXT ACTUALLY STARTS */
     bool Wasok2saveTag;    /* JWT:SET TO TRUE AFTER SAVE TO TAGS, FOR RESETTING IF USER EDITS THEM */
     bool force_refresh;    /* JWT:TRUE IF USER FORCED REFRESH VIA [Refresh] BUTTON (DON'T WAIT FOR ALBUMART! */
+    bool synclyrics;       /* JWT:SCROLL LYRICS ON TIMESTAMPS (AS SET WHEN PLAYBACK STARTED) */
     String shotitle;       /* JWT:NEXT 3 FOR THREAD TO SAVE LYRIC DATA UNTIL MAIN THREAD CAN DISPLAY IT: */
     String shoartist;
     String sholyrics;
     int current_playlist;  /* JWT:SAVE THE PLAYLIST CURRENT WHEN ENTRY STARTS PLAYING! */
 } LyricsState;
 
+struct TimedLyricLine {
+    int timestamp_ms;   // Timestamp in milliseconds
+    String text;        // Lyric text at this timestamp
+};
+
+std::vector<TimedLyricLine> timed_lyrics;  // Stores parsed lyrics with timestamps
+
 class LyricWiki : public GeneralPlugin
 {
 public:
     static const char * const defaults[];
+    static const char about[];
     static const PreferencesWidget widgets[];
     static const PluginPreferences prefs;
 
     static constexpr PluginInfo info = {
         N_("Lyrics"),
         PACKAGE,
-        nullptr, // about
+        about,   // about
         & prefs, // prefs
         PluginGLibOnly
     };
@@ -89,15 +102,29 @@ public:
 };
 
 const char * const LyricWiki::defaults[] = {
-    "search_internet", "TRUE",            // SEARCH FOR LYRICS FROM WEB (IF NOT FOUND LOCALLY)
+    "search_internet", "TRUE",  // SEARCH FOR LYRICS FROM WEB (IF NOT FOUND LOCALLY)
+    "sync_lyrics", "TRUE",      // ENABLE LYRIC SYNCHRONIZATION
     nullptr
 };
+
+const char LyricWiki::about[] =
+    N_("Lyrics-display plugin for Fauxdacious\n"
+    "\n"
+    "from Audacious plugin by (c:2010): \n"
+    "William Pitcock <nenolod@nenolod.net>\n"
+    "\n"
+    "Rewritten for Fauxdacious\n"
+    "by (c:2020) Jim Turner <turnerjw784@yahoo.com>\n"
+    "Scrolling lyrics by timestamp option\n"
+    "by (c:2024) lecheel <lecheel@gmail.com>.");
 
 EXPORT LyricWiki aud_plugin_instance;
 
 const PreferencesWidget LyricWiki::widgets[] = {
     WidgetCheck (N_("Fetch lyrics from internet?"),
         WidgetBool ("lyricwiki", "search_internet")),
+    WidgetCheck (N_("Enable scrolling lyric sync. by timestamps"),
+        WidgetBool ("lyricwiki", "sync_lyrics")),
     WidgetCheck (N_("Cache (save) lyrics to disk?"),
         WidgetBool ("lyricwiki", "cache_lyrics")),
     WidgetCheck (N_("Try to save by song file-name first?"),
@@ -110,6 +137,7 @@ const PluginPreferences LyricWiki::prefs = {{widgets}};
 
 static GtkTextView * textview;
 static GtkTextBuffer * textbuffer;
+static guint timer = 0;
 
 static bool resetthreads = false;     // JWT:TRUE STOP ANY THREADS RUNNING ON SONG CHANGE OR SHUTDOWN.
 static bool fromsongstartup = false;  // JWT:TRUE WHEN THREAD STARTED BY SONG CHANGE.
@@ -316,6 +344,7 @@ static GtkWidget * tag_save_button;
 
 static void save_lyrics_locally ();
 static void save_lyrics_locally_fromscreen ();
+gboolean update_lyrics_display (gpointer data);
 
 /* DEPRECIATED: STEP 3 OF 3 (FOR FETCHING LYRICS THE OLD-SCHOOL AUDACIOUS WAY (NO HELPER)): */
 static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *)
@@ -350,7 +379,7 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
     show_lyrics ();
     AUDINFO ("i:Lyrics came from old LyricWiki site!\n");
 // DEPRECIATED:     gtk_widget_set_sensitive (edit_button, true);
-    gtk_widget_set_sensitive (save_button, true);
+    gtk_widget_set_sensitive (save_button, (timer == 0));
     if (aud_get_bool ("lyricwiki", "cache_lyrics"))
         save_lyrics_locally_fromscreen ();
 
@@ -508,7 +537,7 @@ static void * lyric_helper_thread_fn (void * data)
                         lyrics[lyrics.len ()-1] = '\0';
                         lyrics_found = true;
                         update_lyrics (state.title, state.artist, (const char *) lyrics.begin ());
-                        gtk_widget_set_sensitive (save_button, true);
+                        gtk_widget_set_sensitive (save_button, (timer == 0));
                         if (aud_get_bool ("lyricwiki", "cache_lyrics"))
                         {
                             save_lyrics_locally ();
@@ -529,7 +558,7 @@ static void * lyric_helper_thread_fn (void * data)
                                     bool can_write = aud_file_can_write_tuple (state.filename, decoder);
                                     if (can_write)
                                     {
-                                        gtk_widget_set_sensitive (tag_save_button, true);
+                                        gtk_widget_set_sensitive (tag_save_button, (timer == 0));
                                         state.Wasok2saveTag = true;
                                     }
                                     break;
@@ -628,7 +657,7 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
                 bool can_write = aud_file_can_write_tuple (state.filename, decoder);
                 if (can_write)
                 {
-                    gtk_widget_set_sensitive (tag_save_button, true);
+                    gtk_widget_set_sensitive (tag_save_button, (timer == 0));
                     state.Wasok2saveTag = true;
                 }
                 break;
@@ -779,9 +808,9 @@ static void allow_usersave (GtkTextBuffer *textbuffer,
                gpointer     user_data)
 {
     if (! gtk_widget_get_sensitive (save_button))
-        gtk_widget_set_sensitive (save_button, true);
+        gtk_widget_set_sensitive (save_button, (timer == 0));
 
-    gtk_widget_set_sensitive (tag_save_button, state.Wasok2saveTag);
+    gtk_widget_set_sensitive (tag_save_button, (state.Wasok2saveTag && timer == 0));
 }
 
 static GtkWidget * build_widget ()
@@ -879,7 +908,56 @@ static void show_lyrics ()
 
     gtk_text_buffer_get_start_iter (textbuffer, & iter);
     gtk_text_view_scroll_to_iter (textview, & iter, 0, true, 0, 0);
-    gtk_widget_set_sensitive (save_button, ok2save_was);
+    gtk_widget_set_sensitive (save_button, (ok2save_was && timer == 0));
+
+    if (! state.synclyrics)
+        return;
+
+    bool have_timestamps = false;
+    // Parse the lyrics and populate timed_lyrics
+    timed_lyrics.clear ();
+    std::istringstream iss (static_cast<std::string>(state.sholyrics)); // Assuming String can be cast to std::string
+    std::string line;
+
+    // Add a dummy timestamp line at the beginning to prevent title from being highlighted
+    TimedLyricLine dummy_line;
+    dummy_line.timestamp_ms = 0;
+    dummy_line.text = String ("");
+    timed_lyrics.push_back (dummy_line);
+
+    while (std::getline (iss, line))
+    {
+        // Sanitize the line: remove leading/trailing spaces and carriage return
+        line.erase (0, line.find_first_not_of (" \t\r"));  // Remove leading whitespace and \r
+        line.erase (line.find_last_not_of (" \t\r") + 1);  // Remove trailing whitespace and \r
+
+        // Updated regex to handle various whitespaces around the timestamp and lyric text
+        std::regex re (R"(\[\s*(\d+)\s*:\s*(\d+\.\d{2,3})\s*\]\s*(.*))");
+        std::smatch match;
+
+        if (std::regex_match (line, match, re))
+        {
+            int minutes = std::stoi (match[1].str ());    // Convert minutes
+            float seconds = std::stof (match[2].str ());  // Convert seconds
+            int timestamp_ms = static_cast<int>((minutes * 60 + seconds) * 1000);
+
+            have_timestamps = true;
+            TimedLyricLine timed_line;
+            timed_line.timestamp_ms = timestamp_ms;
+            timed_line.text = String (match[3].str ().c_str ());  // Lyric text
+
+            timed_lyrics.push_back (timed_line);
+        }
+    }
+    if (! have_timestamps)
+    {
+        if (timer > 0)
+        {
+            g_source_remove (timer);  // Stop the sync timer
+            timer = 0;
+        }
+        state.synclyrics = false;
+    }
 }
 
 /* CALLED WHENEVER WE NEED LYRICS: */
@@ -898,6 +976,7 @@ static void lyricwiki_playback (bool force_refresh)
     gtk_widget_set_sensitive (refresh_button, false);
     state.local_filename = String ("");
     state.force_refresh = force_refresh;
+    state.synclyrics = aud_get_bool ("lyricwiki", "sync_lyrics");
 
     if (! strncmp (state.filename, "cdda://?", 8))  // FOR CDs, LOOK FOR DIRECTORY WITH TRACK LYRIC FILES:
     {
@@ -987,7 +1066,7 @@ static void lyricwiki_playback (bool force_refresh)
             update_lyrics (state.title, state.artist, (const char *) lyricsFromTuple);
             show_lyrics ();
 // DEPRECIATED:             gtk_widget_set_sensitive (edit_button, false);
-            gtk_widget_set_sensitive (save_button, true);
+            gtk_widget_set_sensitive (save_button, (timer == 0));
             state.Wasok2saveTag = true;
             AUDINFO ("i:Lyrics came from embedded tag!\n");
             need_lyrics = false;
@@ -996,7 +1075,7 @@ static void lyricwiki_playback (bool force_refresh)
         if (state.title)
         {
             /* JWT:MANY STREAMS & SOME FILES FORMAT THE TITLE FIELD AS:
-               "<artist> - <title> [<other-stuff>?]".  IF SO, THEN PARSE OUT THE
+               "<artist> - <title> [<other-stuff>]".  IF SO, THEN PARSE OUT THE
                ARTIST AND TITLE COMPONENTS FROM THE TITLE FOR SEARCHING LYRICWIKI:
             */
             const char * ttlstart = (const char *) state.title;
@@ -1036,7 +1115,7 @@ static void lyricwiki_playback (bool force_refresh)
                 StringBuf base_path = filename_build ({user_dir, "lyrics"});
                 StringBuf artist_path = filename_build ({base_path, state.artist});
                 lyricStr = String (str_concat({filename_build({artist_path, state.title}), ".lrc"}));
-                found_lyricfile = force_refresh ? 0 : ! (g_stat ((const char *) lyricStr, & statbuf));
+                found_lyricfile = force_refresh ? false : ! (g_stat ((const char *) lyricStr, & statbuf));
 
                 /* local_filename := (GLOBAL) ARTIST NAME/TITLE, IF NOT ALREADY SET *OR* save_by_songfile NOT SET. */
                 if (! state.local_filename || ! state.local_filename[0] || ! save_by_songfile)
@@ -1051,7 +1130,7 @@ static void lyricwiki_playback (bool force_refresh)
                             && aud_get_bool ("lyricwiki", "search_internet"))
                         gtk_widget_set_sensitive (refresh_button, true);
                     if (save_by_songfile)
-                        gtk_widget_set_sensitive (save_button, true);
+                        gtk_widget_set_sensitive (save_button, (timer == 0));
 
                     return;
                 }
@@ -1102,6 +1181,11 @@ static void lyricwiki_playback (bool force_refresh)
                 AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
         }
     }
+    if (state.synclyrics && timer == 0)  // Start the sync timer
+        timer = g_timeout_add (200, update_lyrics_display, nullptr);  // Call every 200 ms
+
+    gtk_widget_set_sensitive (save_button, (timer == 0));  // NO SAVING (PARTIAL) SYNCED LYRICS!
+
     lyricStr = String ();
 }
 
@@ -1123,6 +1207,11 @@ static void lyricwiki_playback_changed ()
 /* CALLED WHEN PLAYBACK IS STOPPED, MAKE SURE NO DANGLING THREADS HAVE LOCAL EVENT LOOP RUNNING!: */
 static void kill_thread_eventloop ()
 {
+    if (state.synclyrics && timer > 0)
+    {
+        g_source_remove (timer);  // Stop the sync timer
+        timer = 0;
+    }
     gtk_widget_set_sensitive (refresh_button, false);
     resetthreads = true;
 }
@@ -1141,12 +1230,95 @@ static void destroy_cb ()
     state.artist = String ();
     state.uri = String ();
     state.local_filename = String ();
-
+    if (timer > 0)
+    {
+        g_source_remove (timer);  // Stop the sync timer
+        timer = 0;
+    }
     textview = nullptr;
     textbuffer = nullptr;
     save_button = nullptr;
     tag_save_button = nullptr;
 // DEPRECIATED:     edit_button = nullptr;
+}
+
+void highlight_lyrics(int current_time_ms) {
+    if (!textbuffer)
+        return;
+
+    // Clear the text buffer
+    gtk_text_buffer_set_text (textbuffer, "", -1);
+    gtk_widget_set_sensitive (save_button, false);  // NO SAVING (PARTIAL) SYNCED LYRICS!
+
+    // Find the 4 lines closest to the current timestamp (current + 3 neighbors)
+    std::vector<TimedLyricLine> lines_to_display;
+
+    // Store up to 4 lines starting from the current one
+    for (size_t i = 0; i < timed_lyrics.size (); ++i)
+    {
+        if (timed_lyrics[i].timestamp_ms >= current_time_ms)
+        {
+            // Ensure we have the current line and its neighbors (3 more lines)
+            size_t start_index = (i > 1) ? i - 2 : 0;  // Start 2 lines before the current line
+            size_t end_index = std::min (i + 2, timed_lyrics.size () - 1);  // Limit to 3 more lines after
+
+            // Ensure no more than 4 lines are selected
+            size_t line_count = 0;
+
+            for (size_t j = start_index; j <= end_index && line_count < 4; ++j)
+            {
+                lines_to_display.push_back (timed_lyrics[j]);
+                line_count++;
+            }
+            break;
+        }
+    }
+
+    // Retrieve the tag table
+    GtkTextTagTable* tag_table = gtk_text_buffer_get_tag_table (textbuffer);
+
+    // Check if the enlarge tag exists, and create it if not
+    GtkTextTag* enlarge_tag = gtk_text_tag_table_lookup (tag_table, "enlarge_tag");
+    if (!enlarge_tag) {
+        enlarge_tag = gtk_text_tag_new ("enlarge_tag");
+        g_object_set (enlarge_tag, "scale", 1.5, NULL); // Enlarge by 1.5 times (adjust as needed)
+        gtk_text_tag_table_add (tag_table, enlarge_tag);
+    }
+
+    // Insert the selected lines into the text buffer
+    GtkTextIter iter;
+    gtk_text_buffer_get_start_iter (textbuffer, &iter);
+
+    for (size_t i = 0; i < lines_to_display.size (); ++i) {
+        const TimedLyricLine &line = lines_to_display[i];
+        std::string text_with_newline = std::string (line.text);
+
+        // Skip empty lines (like our dummy timestamp)
+        if (text_with_newline.empty ())
+            continue;
+
+        // Apply the enlarge tag to the second line
+        if (i == 1)  // Second line (index 1)
+            gtk_text_buffer_insert_with_tags_by_name (textbuffer, &iter,
+                    text_with_newline.c_str (), -1, "enlarge_tag", NULL);
+        else
+            gtk_text_buffer_insert(textbuffer, &iter, text_with_newline.c_str (), -1);
+
+        gtk_text_buffer_insert (textbuffer, &iter, "\n", -1);
+    }
+
+    // After inserting lines, force scroll to the last line
+    GtkTextIter end_iter;
+    gtk_text_buffer_get_end_iter (textbuffer, &end_iter);
+    gtk_text_view_scroll_to_iter (textview, &end_iter, 0, TRUE, 0, 0);
+}
+
+gboolean update_lyrics_display (gpointer data)
+{
+    int current_time_ms = aud_drct_get_time ();  // Get current time from player in ms
+    highlight_lyrics (current_time_ms);
+
+    return G_SOURCE_CONTINUE;  // Continue calling this function
 }
 
 /* CALLED ON STARTUP (WIDGET CREATION): */
