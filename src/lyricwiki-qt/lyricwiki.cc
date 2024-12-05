@@ -25,9 +25,9 @@
 
 #include <iostream>
 #include <vector>
-#include <sstream>    // For std::istringstream
+#include <sstream>   // For std::istringstream
 #include <regex>     // For std::regex and std::smatch
-                     //
+
 #ifdef _WIN32
 #include <windows.h>
 #include <winbase.h>
@@ -82,6 +82,7 @@ typedef struct {
     bool ok2edit;          /* JWT:DEPRECIATED:  SET TO TRUE IF USER CAN EDIT LYRICS (SITE) */
     bool allowRefresh;     /* JWT:ENABLE [Refresh] BUTTON IF TRUE */
     bool force_refresh;    /* JWT:TRUE IF USER FORCED REFRESH VIA [Refresh] BUTTON (DON'T WAIT FOR ALBUMART! */
+    bool synclyrics;       /* JWT:SCROLL LYRICS ON TIMESTAMPS (AS SET WHEN PLAYBACK STARTED) */
     String shotitle;       /* JWT:NEXT 3 FOR THREAD TO SAVE LYRIC DATA UNTIL MAIN THREAD CAN DISPLAY IT: */
     String shoartist;
     String sholyrics;
@@ -107,14 +108,14 @@ class TextEdit : public QTextEdit
 public:
     TextEdit (QWidget * parent = nullptr) : QTextEdit (parent) {}
 
-
     bool event (QEvent*);
 
     void show_lyrics ()
     {
         bool ok2save_was = state.ok2save;  // OK2SAVE GETS SET TO TRUE BY allow_usersave() CALLBACK IN HERE!:
         document ()->clear ();
-        if (! state.shotitle)  return;
+        if (! state.shotitle)
+            return;
 
         QTextCursor cursor (document ());
         QString lyrichtml = QString ("<big><b>") + QString (state.shotitle) + QString ("</b></big>");
@@ -129,45 +130,55 @@ public:
         state.startlyrics = prelyrics.length ();
         if (state.sholyrics)
         {
+            bool have_timestamps = false;
             QString Q_Lyrics = QString (str_to_utf8 (state.sholyrics, -1));
-            if (Q_Lyrics.length() > 0)
+            if (Q_Lyrics.length () > 0)
             {
                 (Q_Lyrics.contains ('<') && Q_Lyrics.contains ('>'))
                         ? cursor.insertHtml (Q_Lyrics.replace (QChar ('\n'), "<br>"))
                         : cursor.insertText (Q_Lyrics);
             }
 
-        // Parse the lyrics and populate timed_lyrics
-        timed_lyrics.clear();
-        std::istringstream iss(Q_Lyrics.toStdString());
-        std::string line;
-        // Updated regex to support both SS.SS and SS.SSS formats
-        std::regex re(R"(\[\s*(\d+)\s*:\s*(\d+\.\d{2,3})\s*\]\s*(.*))");
-        
-        // Add a dummy timestamp line at the beginning to prevent title from being highlighted
-        TimedLyricLine dummy_line;
-        dummy_line.timestamp_ms = 0;
-        dummy_line.text = String("");
-        timed_lyrics.push_back(dummy_line);
-        
-        while (std::getline(iss, line)) {
-            // Sanitize the line
-            line.erase(0, line.find_first_not_of(" \t\r"));  // Remove leading whitespace
-            line.erase(line.find_last_not_of(" \t\r") + 1);  // Remove trailing whitespace
+            // Check if lyric sync is enabled
+            if (! state.synclyrics)
+                return;
 
-            std::smatch match;
-            if (std::regex_match(line, match, re)) {
-                int minutes = std::stoi(match[1].str());
-                float seconds = std::stof(match[2].str());
-                int timestamp_ms = static_cast<int>((minutes * 60 + seconds) * 1000);
+            // Parse the lyrics and populate timed_lyrics
+            timed_lyrics.clear ();
+            std::istringstream iss (Q_Lyrics.toStdString ());
+            std::string line;
+            // Updated regex to support both SS.SS and SS.SSS formats
+            std::regex re (R"(\[\s*(\d+)\s*:\s*(\d+\.\d{2,3})\s*\]\s*(.*))");
 
-                TimedLyricLine timed_line;
-                timed_line.timestamp_ms = timestamp_ms;
-                timed_line.text = String(match[3].str().c_str());  // Lyric text
+            // Add a dummy timestamp line at the beginning to prevent title from being highlighted
+            TimedLyricLine dummy_line;
+            dummy_line.timestamp_ms = 0;
+            dummy_line.text = String ("");
+            timed_lyrics.push_back (dummy_line);
 
-                timed_lyrics.push_back(timed_line);
+            while (std::getline (iss, line))
+            {
+                // Sanitize the line
+                line.erase(0, line.find_first_not_of (" \t\r"));  // Remove leading whitespace
+                line.erase(line.find_last_not_of (" \t\r") + 1);  // Remove trailing whitespace
+
+                std::smatch match;
+                if (std::regex_match (line, match, re))
+                {
+                    have_timestamps = true;
+                    int minutes = std::stoi (match[1].str ());    // Convert minutes
+                    float seconds = std::stof (match[2].str ());  // Convert seconds
+                    int timestamp_ms = static_cast<int>((minutes * 60 + seconds) * 1000);
+
+                    TimedLyricLine timed_line;
+                    timed_line.timestamp_ms = timestamp_ms;
+                    timed_line.text = String (match[3].str ().c_str ());  // Lyric text
+
+                    timed_lyrics.push_back (timed_line);
+                }
             }
-        }
+            if (! have_timestamps)
+                state.synclyrics = false;
         }
         state.ok2save = ok2save_was;
     }
@@ -180,13 +191,14 @@ class LyricWikiQt : public GeneralPlugin
 {
 public:
     static const char * const defaults[];
+    static const char about[];
     static const PreferencesWidget widgets[];
     static const PluginPreferences prefs;
 
     static constexpr PluginInfo info = {
         N_("Lyrics"),
         PACKAGE,
-        nullptr, // about
+        about,   // about
         & prefs, // prefs
         PluginQtOnly
     };
@@ -200,16 +212,27 @@ public:
 EXPORT LyricWikiQt aud_plugin_instance;
 
 const char * const LyricWikiQt::defaults[] = {
-    "search_internet", "TRUE",            // SEARCH FOR LYRICS FROM WEB (IF NOT FOUND LOCALLY)
-    "sync_lyrics", "TRUE",               // ENABLE LYRIC SYNCHRONIZATION
+    "search_internet", "TRUE",  // SEARCH FOR LYRICS FROM WEB (IF NOT FOUND LOCALLY)
+    "sync_lyrics", "TRUE",      // ENABLE LYRIC SYNCHRONIZATION
     nullptr
 };
 
+const char LyricWikiQt::about[] =
+    N_("Lyrics-display plugin for Fauxdacious\n"
+    "\n"
+    "from Audacious plugin by (c:2010): \n"
+    "William Pitcock <nenolod@nenolod.net>\n"
+    "\n"
+    "Rewritten for Fauxdacious\n"
+    "by (c:2020) Jim Turner <turnerjw784@yahoo.com>\n"
+    "Scrolling lyrics by timestamp option\n"
+    "by (c:2024) lecheel <lecheel@gmail.com>.");
+
 const PreferencesWidget LyricWikiQt::widgets[] = {
-    WidgetCheck(N_("Enable lyric synchronization"),
-        WidgetBool("lyricwiki", "sync_lyrics")),
     WidgetCheck (N_("Fetch lyrics from internet?"),
         WidgetBool ("lyricwiki", "search_internet")),
+    WidgetCheck (N_("Enable scrolling lyric sync. by timestamps"),
+        WidgetBool ("lyricwiki", "sync_lyrics")),
     WidgetCheck (N_("Cache (save) lyrics to disk?"),
         WidgetBool ("lyricwiki", "cache_lyrics")),
     WidgetCheck (N_("Try to save by song file-name first?"),
@@ -221,6 +244,7 @@ const PreferencesWidget LyricWikiQt::widgets[] = {
 const PluginPreferences LyricWikiQt::prefs = {{widgets}};
 
 static TextEdit * textedit;
+static QTimer * timer;
 
 bool LyricWikiQt::init ()
 {
@@ -498,6 +522,8 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
                 bool can_write = aud_file_can_write_tuple (state.filename, decoder);
                 if (can_write)
                     state.ok2saveTag = true;
+
+                break;
             }
         }
         state.Wasok2saveTag = state.ok2saveTag;
@@ -710,6 +736,9 @@ static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *
     StringBuf nullterminated_buf = str_copy (buf.begin (), buf.len ());
     update_lyrics (state.title, state.artist, (const char *) nullterminated_buf);
     textedit->show_lyrics ();
+    textedit->setReadOnly (state.synclyrics);
+    if (! state.synclyrics)
+        timer->stop ();
 
     /* JWT:(DEPRECIATED):  ALLOW 'EM TO EDIT LYRICWIKI, EVEN IF LYRICS ARE LOCAL, IF THEY HAVE */
     /* BOTH REQUIRED FIELDS:BUT ONLY IF USING OLD SITE (*NOT* USING THE PERL "HELPER")! */
@@ -837,37 +866,32 @@ static void allow_usersave ()
     state.ok2saveTag = state.Wasok2saveTag;
 }
 
-void highlight_lyrics(int current_time_ms)
+void highlight_lyrics (int current_time_ms)
 {
-    if (!textedit)
-        return;
-
-    // Check if lyric sync is enabled
-    if (!aud_get_bool("lyricwiki", "sync_lyrics"))
+    if (! textedit)
         return;
 
     // Clear the current content in the text editor
-    textedit->document()->clear();
+    textedit->document ()->clear ();
 
     // Find the current line and its neighbors (up to 4 lines in total)
     std::vector<TimedLyricLine> lines_to_display;
 
     // Iterate through the timed lyrics and find the lines closest to the current timestamp
-    for (size_t i = 0; i < timed_lyrics.size(); ++i)
+    for (size_t i = 0; i < timed_lyrics.size (); ++i)
     {
-
         if (timed_lyrics[i].timestamp_ms >= current_time_ms)
         {
             // Ensure we have the current line and its neighbors (3 more lines)
             size_t start_index = (i > 1) ? i - 2 : 0;  // Start 2 lines before the current line
-            size_t end_index = std::min(i + 2, timed_lyrics.size() - 1);  // Limit to 3 more lines after
+            size_t end_index = std::min (i + 2, timed_lyrics.size () - 1);  // Limit to 3 more lines after
 
             // Ensure no more than 4 lines are selected
             size_t line_count = 0;
 
             for (size_t j = start_index; j <= end_index && line_count < 4; ++j)
             {
-                lines_to_display.push_back(timed_lyrics[j]);
+                lines_to_display.push_back (timed_lyrics[j]);
                 line_count++;
             }
             break;
@@ -875,44 +899,36 @@ void highlight_lyrics(int current_time_ms)
     }
 
     // Create a cursor to insert the selected lines into the text editor
-    QTextCursor cursor(textedit->document());
+    QTextCursor cursor (textedit->document ());
 
     // Iterate over the lines to insert and apply formatting
-    for (size_t i = 0; i < lines_to_display.size(); ++i)
+    for (size_t i = 0; i < lines_to_display.size (); ++i)
     {
         const TimedLyricLine &line = lines_to_display[i];
         std::string text = static_cast<std::string>(line.text);
 
         // Skip empty lines (like our dummy timestamp)
-        if (text.empty()) continue;
+        if (text.empty ()) continue;
 
         // Create a QTextCharFormat for styling
         QTextCharFormat format;
 
         // Check if it's the second line (index 1) and apply custom formatting
         if (i == 1)
-        {
-            format.setFontPointSize(16);  // Enlarge text (adjust size as needed)
-            format.setForeground(Qt::white);  // Set white color
-        }
-        else
-        {
-            format.setForeground(Qt::white);  // Set white color for other lines
-        }
+            format.setFontPointSize (16);  // Enlarge text (adjust size as needed)
+
+        format.setForeground (Qt::white);  // Set white color for other lines
 
         // Apply the formatting and insert the text for this line
-        cursor.setCharFormat(format);
-        cursor.insertText(QString::fromStdString(text));
+        cursor.setCharFormat (format);
+        cursor.insertText (QString::fromStdString (text));
 
         // Insert a line break after the lyric line
-        cursor.insertHtml("<br>");
+        cursor.insertHtml ("<br>");
     }
 
-    /*textedit->verticalScrollBar()->setValue(textedit->verticalScrollBar()->maximum());*/
+    /* textedit->verticalScrollBar ()->setValue (textedit->verticalScrollBar ()->maximum ()); */
 }
-
-
-
 
 /* CALLED BY BOTH MAIN AND THREAD TO UPDATE LYRICS (FOR LATER DISPLAYING IN THE WIDGET): */
 static void update_lyrics (const char * title, const char * artist, const char * lyrics)
@@ -938,6 +954,9 @@ static void lyricwiki_playback (bool force_refresh)
     state.allowRefresh = false;
     state.local_filename = String ("");
     state.force_refresh = force_refresh;
+    state.synclyrics = aud_get_bool ("lyricwiki", "sync_lyrics");
+
+    timer->stop ();  // Stop the sync timer
 
     if (! strncmp (state.filename, "cdda://?", 8))  // FOR CDs, LOOK FOR DIRECTORY WITH TRACK LYRIC FILES:
     {
@@ -966,7 +985,7 @@ static void lyricwiki_playback (bool force_refresh)
         {
             lyricStr = String (str_concat ({aud_get_path (AudPath::UserDir), "/lyrics/",
                     (const char *) playingdiskid, ".lrc"}));
-            found_lyricfile = force_refresh ? 0 : ! (g_stat ((const char *) lyricStr, & statbuf));
+            found_lyricfile = ! (g_stat ((const char *) lyricStr, & statbuf));
 
             /* local_filename := (GLOBAL) ARTIST NAME/TITLE, IF NOT ALREADY SET *OR* save_by_songfile NOT SET. */
             if (found_lyricfile || (! state.local_filename || ! state.local_filename[0]))
@@ -1039,7 +1058,7 @@ static void lyricwiki_playback (bool force_refresh)
         if (state.title)
         {
             /* JWT:MANY STREAMS & SOME FILES FORMAT THE TITLE FIELD AS:
-               "<artist> - <title> [<other-stuff]?".  IF SO, THEN PARSE OUT THE
+               "<artist> - <title> [<other-stuff>]".  IF SO, THEN PARSE OUT THE
                ARTIST AND TITLE COMPONENTS FROM THE TITLE FOR SEARCHING LYRICWIKI:
             */
             const char * ttlstart = (const char *) state.title;
@@ -1079,11 +1098,11 @@ static void lyricwiki_playback (bool force_refresh)
                 StringBuf base_path = filename_build ({user_dir, "lyrics"});
                 StringBuf artist_path = filename_build ({base_path, state.artist});
                 lyricStr = String (str_concat({filename_build({artist_path, state.title}), ".lrc"}));
-                found_lyricfile = force_refresh ? 0 : ! (g_stat ((const char *) lyricStr, & statbuf));
+                found_lyricfile = force_refresh ? false : ! (g_stat ((const char *) lyricStr, & statbuf));
 
                 /* local_filename := (GLOBAL) ARTIST NAME/TITLE, IF NOT ALREADY SET *OR* save_by_songfile NOT SET. */
-                if (found_lyricfile || (! state.local_filename || ! state.local_filename[0]))
-                    state.local_filename = lyricStr;  // SET FOUND LYRICS FILE OR NO LOCAL FILE SET.
+                if (! state.local_filename || ! state.local_filename[0] || ! save_by_songfile)
+                    state.local_filename = lyricStr;  /* THE FILE NAME WE'LL CACHE OR "SAVE LOCALLY" TO. */
 
                 if (need_lyrics && found_lyricfile)
                 {
@@ -1109,6 +1128,7 @@ static void lyricwiki_playback (bool force_refresh)
                 update_lyrics (_("Error"), nullptr, _("Missing title and/or artist"));
                 textedit->show_lyrics ();
                 state.ok2edit = false;  /* NO EDITING LYRICS ON HELPER-SERVED SITES! */
+
                 return;
             }
             if (! aud_get_bool ("lyricwiki", "search_internet"))
@@ -1118,6 +1138,7 @@ static void lyricwiki_playback (bool force_refresh)
                         (const char *) state.artist}),
                         str_printf (_("Unable to fetch lyrics (Fetch lyrics from internet option not enabled).")));
                 textedit->show_lyrics ();
+
                 return;
             }
 
@@ -1143,6 +1164,9 @@ static void lyricwiki_playback (bool force_refresh)
                 AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
         }
     }
+    if (state.synclyrics)
+        timer->start ();  // Start the sync timer
+
     lyricStr = String ();
 }
 
@@ -1164,6 +1188,9 @@ static void lyricwiki_playback_changed ()
 /* CALLED WHEN PLAYBACK IS STOPPED, MAKE SURE NO DANGLING THREADS HAVE LOCAL EVENT LOOP RUNNING!: */
 static void kill_thread_eventloop ()
 {
+    if (state.synclyrics)
+        timer->stop ();  // Stop the sync timer
+
     state.allowRefresh = false;
     resetthreads = true;
 }
@@ -1183,13 +1210,14 @@ static void lw_cleanup (QObject * object = nullptr)
     state.uri = String ();
     state.local_filename = String ();
 
+    timer = nullptr;
     textedit = nullptr;
 }
 
 void update_lyrics_display()
 {
-    int current_time_ms = aud_drct_get_time();  // Get current time from player in ms
-    highlight_lyrics(current_time_ms);  // Update lyrics display based on current time
+    int current_time_ms = aud_drct_get_time ();  // Get current time from player in ms
+    highlight_lyrics (current_time_ms);  // Update lyrics display based on current time
 }
 
 /* CALLED ON STARTUP (WIDGET CREATION): */
@@ -1207,11 +1235,11 @@ void * LyricWikiQt::get_qt_widget ()
 
     if (aud_drct_get_ready ())
         lyricwiki_playback_began ();
-    // Create a QTimer to call update_lyrics_display every 100ms
-    QTimer *timer = new QTimer(textedit);
-    timer->setInterval(200);  // Set the interval to 100ms
-    QObject::connect(timer, &QTimer::timeout, update_lyrics_display);  // Connect the timeout signal to the update function
-    timer->start();  // Start the timer
+
+    // Create a QTimer to call update_lyrics_display every 200ms
+    timer = new QTimer (textedit);
+    timer->setInterval (200);  // Set the interval to 200ms
+    QObject::connect (timer, &QTimer::timeout, update_lyrics_display);  // Connect the timeout signal to the update function
 
     hook_associate ("playback ready", (HookFunction) lyricwiki_playback_began, nullptr);
     hook_associate ("tuple change", (HookFunction) lyricwiki_playback_changed, nullptr);
@@ -1232,19 +1260,22 @@ void TextEdit::contextMenuEvent (QContextMenuEvent * event)
             QDesktopServices::openUrl (QUrl ((const char *) state.uri));
         });
     }
-    if (state.ok2save)
+    if (! state.synclyrics)  // JWT:NOTE:SAVING LYRICS WHILST SYNCING WILL ONLY SAVE 3 LINES (WHAT'S ON DISPLAY)!:
     {
-        QAction * save_button = menu->addAction (_("Save Locally"));
-        QObject::connect (save_button, & QAction::triggered, [] () {
-            save_lyrics_locally (true);
-        });
-    }
-    if (state.ok2saveTag)
-    {
-        QAction * tuple_save_button = menu->addAction (_("Save Embedded"));
-        QObject::connect (tuple_save_button, & QAction::triggered, [] () {
-            save_lyrics_in_embedded_tag ();
-        });
+        if (state.ok2save)
+        {
+            QAction * save_button = menu->addAction (_("Save Locally"));
+            QObject::connect (save_button, & QAction::triggered, [] () {
+                save_lyrics_locally (true);
+            });
+        }
+        if (state.ok2saveTag)
+        {
+            QAction * tuple_save_button = menu->addAction (_("Save Embedded"));
+            QObject::connect (tuple_save_button, & QAction::triggered, [] () {
+                save_lyrics_in_embedded_tag ();
+            });
+        }
     }
     if (state.allowRefresh && aud_get_bool ("lyricwiki", "cache_lyrics")
             && aud_get_bool ("lyricwiki", "search_internet"))
