@@ -1193,7 +1193,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     if (play_video)
         vcodec_opened = true;
 
-    /* JWT:WE CAN NOT RE-OPEN stdin or youtube-dl PIPED STREAMS (THEY CAN ONLY BE OPENED ONE TIME, SO WE 
+    /* JWT:WE CAN NOT RE-OPEN stdin STREAMS (THEY CAN ONLY BE OPENED ONE TIME, SO WE
        DON'T OPEN THOSE UNTIL HERE - WE'RE READY TO PLAY)! */
     if (! strncmp (filename, "stdin://", 8))  /* JWT: FOR STDIN: TRY AGAIN TO GET "read_tag()" STUFF NOW (NEEDED TO SHOW LENGTH W/O SLIDER)! */
     {
@@ -1883,6 +1883,9 @@ const char * const FFaudio::exts[] = {
 
     /* MPEG 2/4 AC3 */
     "ac3",
+
+    /* CRI ADX */
+    "adx",
 
     /* monkey's audio */
     "ape",
