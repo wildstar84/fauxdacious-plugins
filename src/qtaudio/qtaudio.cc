@@ -30,11 +30,20 @@
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/runtime.h>
 
+#include <QtGlobal>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <QAudioDevice>
+#include <QAudioFormat>
+#include <QAudioSink>
+#include <QMediaDevices>
+#else
 #include <QAudioOutput>
+#endif
 
 #define VOLUME_RANGE 40 /* decibels */
+#define NS_PER_SECOND 1000000000
 
-class QtAudio : public OutputPlugin
+class QtAudioOutput : public OutputPlugin
 {
 public:
     static const char about[];
@@ -46,7 +55,7 @@ public:
         about
     };
 
-    constexpr QtAudio () : OutputPlugin (info, 1) {}
+    constexpr QtAudioOutput () : OutputPlugin (info, 1) {}
 
     bool init ();
 
@@ -64,20 +73,24 @@ public:
 
     void pause (bool pause);
     void flush ();
+
+private:
+    timespec calc_abs_time (const timespec & rel_time);
 };
 
-EXPORT QtAudio aud_plugin_instance;
+EXPORT QtAudioOutput aud_plugin_instance;
 
-const char QtAudio::about[] =
+const char QtAudioOutput::about[] =
  N_("QtMultimedia Audio Output Plugin for Audacious\n"
     "Copyright 2014 William Pitcock\n\n"
     "Based on SDL Output Plugin for Audacious\n"
     "Copyright 2010 John Lindgren");
 
-const char * const QtAudio::defaults[] = {
- "vol_left", "100",
- "vol_right", "100",
- nullptr};
+const char * const QtAudioOutput::defaults[] = {
+    "vol_left", "100",
+    "vol_right", "100",
+    nullptr
+};
 
 static const timespec fifty_ms = {0, 50000000};
 
@@ -89,41 +102,49 @@ static bool paused;
 static int last_buffered, delay_estimate;
 static timeval last_system_time;
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+static QAudioSink * output_instance = nullptr;
+#else
 static QAudioOutput * output_instance = nullptr;
+#endif
 static QIODevice * buffer_instance = nullptr;
 
 struct FormatDescriptionMap {
     int aud_format;
-
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    enum QAudioFormat::SampleFormat sample_format;
+#else
     unsigned int sample_size;
     enum QAudioFormat::SampleType sample_type;
-    enum QAudioFormat::Endian endian;    
+#endif
 };
 
 static constexpr FormatDescriptionMap FormatMap[] = {
-    {FMT_S16_LE, 16, QAudioFormat::SignedInt, QAudioFormat::LittleEndian},
-    {FMT_S16_BE, 16, QAudioFormat::SignedInt, QAudioFormat::BigEndian},
-    {FMT_U16_LE, 16, QAudioFormat::UnSignedInt, QAudioFormat::LittleEndian},
-    {FMT_U16_BE, 16, QAudioFormat::UnSignedInt, QAudioFormat::BigEndian},
-    {FMT_S32_LE, 32, QAudioFormat::SignedInt, QAudioFormat::LittleEndian},
-    {FMT_S32_BE, 32, QAudioFormat::SignedInt, QAudioFormat::BigEndian},
-    {FMT_U32_LE, 32, QAudioFormat::UnSignedInt, QAudioFormat::LittleEndian},
-    {FMT_U32_BE, 32, QAudioFormat::UnSignedInt, QAudioFormat::BigEndian},
-    {FMT_FLOAT, 32, QAudioFormat::Float, QAudioFormat::LittleEndian},
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    {FMT_S16_NE, QAudioFormat::Int16},
+    {FMT_S32_NE, QAudioFormat::Int32},
+    {FMT_FLOAT, QAudioFormat::Float},
+#else
+    {FMT_S16_NE, 16, QAudioFormat::SignedInt},
+    {FMT_U16_NE, 16, QAudioFormat::UnSignedInt},
+    {FMT_S32_NE, 32, QAudioFormat::SignedInt},
+    {FMT_U32_NE, 32, QAudioFormat::UnSignedInt},
+    {FMT_FLOAT, 32, QAudioFormat::Float},
+#endif
 };
 
-bool QtAudio::init ()
+bool QtAudioOutput::init ()
 {
     aud_config_set_defaults ("qtaudio", defaults);
     return true;
 }
 
-StereoVolume QtAudio::get_volume ()
+StereoVolume QtAudioOutput::get_volume ()
 {
     return {aud_get_int ("qtaudio", "vol_left"), aud_get_int ("qtaudio", "vol_right")};
 }
 
-void QtAudio::set_volume (StereoVolume v)
+void QtAudioOutput::set_volume (StereoVolume v)
 {
     int vol_max = aud::max (v.left, v.right);
 
@@ -138,7 +159,7 @@ void QtAudio::set_volume (StereoVolume v)
     }
 }
 
-bool QtAudio::open_audio (int format, int rate, int chan, String & error)
+bool QtAudioOutput::open_audio (int format, int rate, int chan, String & error)
 {
     const FormatDescriptionMap * m = nullptr;
 
@@ -174,19 +195,34 @@ bool QtAudio::open_audio (int format, int rate, int chan, String & error)
     QAudioFormat fmt;
     fmt.setSampleRate (rate);
     fmt.setChannelCount (chan);
-    fmt.setSampleSize (m->sample_size);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    fmt.setSampleFormat (m->sample_format);
+    QAudioDevice info = QMediaDevices::defaultAudioOutput ();
+#else
     fmt.setCodec ("audio/pcm");
-    fmt.setByteOrder (m->endian);
+    fmt.setSampleSize (m->sample_size);
     fmt.setSampleType (m->sample_type);
 
+#ifdef WORDS_BIGENDIAN
+    fmt.setByteOrder (QAudioFormat::BigEndian);
+#else
+    fmt.setByteOrder (QAudioFormat::LittleEndian);
+#endif
+
     QAudioDeviceInfo info (QAudioDeviceInfo::defaultOutputDevice ());
+#endif
+
     if (! info.isFormatSupported (fmt))
     {
         error = String ("QtAudio error: Format not supported by backend.");
         return false;
     }
 
-    output_instance = new QAudioOutput (fmt, nullptr);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    output_instance = new QAudioSink (info, fmt);
+#else
+    output_instance = new QAudioOutput (fmt);
+#endif
     output_instance->setBufferSize (buffer_size);
     buffer_instance = output_instance->start ();
 
@@ -195,7 +231,7 @@ bool QtAudio::open_audio (int format, int rate, int chan, String & error)
     return true;
 }
 
-void QtAudio::close_audio ()
+void QtAudioOutput::close_audio ()
 {
     AUDDBG ("Closing audio.\n");
 
@@ -205,21 +241,24 @@ void QtAudio::close_audio ()
     output_instance = nullptr;
 }
 
-void QtAudio::period_wait ()
+void QtAudioOutput::period_wait ()
 {
     pthread_mutex_lock (& mutex);
 
-    while (output_instance->bytesFree () < output_instance->periodSize ())
-        pthread_cond_timedwait (& cond, & mutex, & fifty_ms);
+    while (output_instance->bytesFree () == 0)
+    {
+        timespec ts = calc_abs_time (fifty_ms);
+        pthread_cond_timedwait (& cond, & mutex, & ts);
+    }
 
     pthread_mutex_unlock (& mutex);
 }
 
-int QtAudio::write_audio (const void * data, int len)
+int QtAudioOutput::write_audio (const void * data, int len)
 {
     pthread_mutex_lock (& mutex);
 
-    len = aud::min (len, output_instance->bytesFree ());
+    len = aud::min<int> (len, output_instance->bytesFree ());
     buffer_instance->write ((const char *) data, len);
     last_buffered += len;
 
@@ -227,18 +266,21 @@ int QtAudio::write_audio (const void * data, int len)
     return len;
 }
 
-void QtAudio::drain ()
+void QtAudioOutput::drain ()
 {
     AUDDBG ("Draining.\n");
     pthread_mutex_lock (& mutex);
 
     while (output_instance->bytesFree () < output_instance->bufferSize ())
-        pthread_cond_timedwait (& cond, & mutex, & fifty_ms);
+    {
+        timespec ts = calc_abs_time (fifty_ms);
+        pthread_cond_timedwait (& cond, & mutex, & ts);
+    }
 
     pthread_mutex_unlock (& mutex);
 }
 
-int QtAudio::get_delay ()
+int QtAudioOutput::get_delay ()
 {
     auto timediff = [] (const timeval & a, const timeval & b) -> int64_t
         { return 1000 * (int64_t) (b.tv_sec - a.tv_sec) + (b.tv_usec - a.tv_usec) / 1000; };
@@ -265,7 +307,7 @@ int QtAudio::get_delay ()
     return delay;
 }
 
-void QtAudio::pause (bool pause)
+void QtAudioOutput::pause (bool pause)
 {
     AUDDBG ("%sause.\n", pause ? "P" : "Unp");
     pthread_mutex_lock (& mutex);
@@ -281,7 +323,7 @@ void QtAudio::pause (bool pause)
     pthread_mutex_unlock (& mutex);
 }
 
-void QtAudio::flush ()
+void QtAudioOutput::flush ()
 {
     AUDDBG ("Seek requested; discarding buffer.\n");
     pthread_mutex_lock (& mutex);
@@ -296,4 +338,18 @@ void QtAudio::flush ()
 
     pthread_cond_broadcast (& cond); /* wake up period wait */
     pthread_mutex_unlock (& mutex);
+}
+
+timespec QtAudioOutput::calc_abs_time (const timespec & rel_time)
+{
+    timespec ts {};
+    clock_gettime (CLOCK_REALTIME, & ts);
+    ts.tv_sec += rel_time.tv_sec;
+    ts.tv_nsec += rel_time.tv_nsec;
+    if (ts.tv_nsec >= NS_PER_SECOND)
+    {
+        ts.tv_sec ++;
+        ts.tv_nsec -= NS_PER_SECOND;
+    }
+    return ts;
 }
