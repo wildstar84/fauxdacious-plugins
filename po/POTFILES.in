@@ -126,10 +126,12 @@ src/modplug/modplugbmp.cc
 src/modplug/modplugbmp.h
 src/modplug/plugin_main.cc
 src/moonstone/main_window.cc
+src/moonstone/menus.cc
 src/moonstone/moonstone.cc
 src/moonstone/playlist_header.cc
 src/moonstone/playlist_model.cc
 src/moonstone/playlist_tabs.cc
+src/moonstone/settings.cc
 src/mpg123/mpg123.cc
 src/mpris2/plugin.cc
 src/neon/neon.cc

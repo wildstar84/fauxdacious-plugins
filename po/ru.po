@@ -49,7 +49,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Audacious Plugins\n"
 "Report-Msgid-Bugs-To: https://redmine.audacious-media-player.org/\n"
-"POT-Creation-Date: 2024-07-20 16:26-0500\n"
+"POT-Creation-Date: 2024-12-14 11:59-0600\n"
 "PO-Revision-Date: 2018-07-29 21:54+0000\n"
 "Last-Translator: Thomas Lange\n"
 "Language-Team: Russian (http://www.transifex.com/audacious/audacious/"
@@ -130,8 +130,9 @@ msgid "Hz"
 msgstr "Гц"
 
 #: src/adplug/adplug-xmms.cc:386 src/gtkui/settings.cc:53
-#: src/modplug/plugin_main.cc:109 src/qtui/settings.cc:80
-#: src/skins-qt/skins_cfg.cc:312 src/skins/skins_cfg.cc:293
+#: src/modplug/plugin_main.cc:109 src/moonstone/settings.cc:80
+#: src/qtui/settings.cc:80 src/skins-qt/skins_cfg.cc:312
+#: src/skins/skins_cfg.cc:293
 msgid "<b>Miscellaneous</b>"
 msgstr "<b>Разное</b>"
 
@@ -419,7 +420,7 @@ msgid "Scale small images to fill."
 msgstr ""
 
 #: src/albumart/albumart.cc:625 src/albumart-qt/albumart.cc:678
-#: src/lyricwiki/lyricwiki.cc:103 src/lyricwiki-qt/lyricwiki.cc:167
+#: src/lyricwiki/lyricwiki.cc:130 src/lyricwiki-qt/lyricwiki.cc:238
 msgid "Try to save by song file-name first?"
 msgstr ""
 
@@ -2265,8 +2266,8 @@ msgid "_Quit"
 msgstr "_Выход"
 
 #: src/gtkui/menus.cc:120 src/gtkui/menus.cc:261
-#: src/moonstone/playlist_tabs.cc:328 src/qtui/menus.cc:107
-#: src/qtui/playlist_tabs.cc:336 src/search-tool-qt/search-tool-qt.cc:849
+#: src/moonstone/playlist_tabs.cc:331 src/qtui/menus.cc:107
+#: src/qtui/playlist_tabs.cc:339 src/search-tool-qt/search-tool-qt.cc:849
 #: src/search-tool/search-tool.cc:696 src/statusicon-qt/statusicon.cc:110
 #: src/statusicon/statusicon.cc:284
 msgid "_Play"
@@ -2312,8 +2313,8 @@ msgstr "Н_е передвигаться по списку"
 msgid "Stop A_fter This Song"
 msgstr "Остановка после _этой песни"
 
-#: src/gtkui/menus.cc:132 src/gtkui/menus.cc:244 src/qtui/menus.cc:119
-#: src/qtui/menus.cc:240
+#: src/gtkui/menus.cc:132 src/gtkui/menus.cc:244 src/moonstone/menus.cc:40
+#: src/qtui/menus.cc:119 src/qtui/menus.cc:240
 msgid "Song _Info ..."
 msgstr "Информация о _песне"
 
@@ -2462,8 +2463,8 @@ msgid "Ren_ame ..."
 msgstr "Пере_именовать"
 
 #: src/gtkui/menus.cc:198 src/gtkui/menus.cc:263
-#: src/moonstone/playlist_tabs.cc:333 src/qtui/menus.cc:184
-#: src/qtui/playlist_tabs.cc:341
+#: src/moonstone/playlist_tabs.cc:336 src/qtui/menus.cc:184
+#: src/qtui/playlist_tabs.cc:344
 msgid "Remo_ve"
 msgstr "Убрать"
 
@@ -2553,8 +2554,8 @@ msgstr "_Воспроизведение"
 msgid "P_laylist"
 msgstr "С_писок"
 
-#: src/gtkui/menus.cc:235 src/gtkui/menus.cc:257 src/qtui/menus.cc:226
-#: src/qtui/menus.cc:253
+#: src/gtkui/menus.cc:235 src/gtkui/menus.cc:257 src/moonstone/menus.cc:53
+#: src/qtui/menus.cc:226 src/qtui/menus.cc:253
 msgid "_Services"
 msgstr "_Службы"
 
@@ -2566,85 +2567,94 @@ msgstr "_Вывод"
 msgid "_View"
 msgstr "_Вид"
 
-#: src/gtkui/menus.cc:245 src/qtui/menus.cc:241
+#: src/gtkui/menus.cc:245 src/moonstone/menus.cc:41 src/qtui/menus.cc:241
 msgid "_Queue/Unqueue"
 msgstr "_Элемент очереди"
 
-#: src/gtkui/menus.cc:247 src/qtui/menus.cc:243
+#: src/gtkui/menus.cc:247 src/moonstone/menus.cc:43 src/qtui/menus.cc:243
 msgid "_Open Containing Folder"
 msgstr "_Открыть расположение файла"
 
-#: src/gtkui/menus.cc:248 src/qtui/menus.cc:244 src/skins/menus.cc:238
-#: src/skins-qt/menus.cc:238
+#: src/gtkui/menus.cc:248 src/moonstone/menus.cc:44 src/qtui/menus.cc:244
+#: src/skins/menus.cc:238 src/skins-qt/menus.cc:238
 msgid "_Refresh Selected"
 msgstr "_Обновить выбранное"
 
-#: src/gtkui/menus.cc:250 src/qtui/menus.cc:246
+#: src/gtkui/menus.cc:250 src/moonstone/menus.cc:46 src/qtui/menus.cc:246
 msgid "Cu_t"
 msgstr "_Вырезать"
 
-#: src/gtkui/menus.cc:251 src/qtui/menus.cc:247
+#: src/gtkui/menus.cc:251 src/moonstone/menus.cc:47 src/qtui/menus.cc:247
 msgid "_Copy"
 msgstr "_Копировать"
 
-#: src/gtkui/menus.cc:252 src/qtui/menus.cc:248
+#: src/gtkui/menus.cc:252 src/moonstone/menus.cc:48 src/qtui/menus.cc:248
 msgid "_Paste"
 msgstr "_Вставить"
 
-#: src/gtkui/menus.cc:253 src/qtui/menus.cc:249
+#: src/gtkui/menus.cc:253 src/moonstone/menus.cc:49 src/qtui/menus.cc:249
 msgid "Paste at _End"
 msgstr "Вставить в _конец"
 
-#: src/gtkui/menus.cc:254 src/qtui/menus.cc:250
+#: src/gtkui/menus.cc:254 src/moonstone/menus.cc:50 src/qtui/menus.cc:250
 msgid "Select _All"
 msgstr "Выбрать _всё"
 
-#: src/gtkui/menus.cc:255 src/qtui/menus.cc:251
+#: src/gtkui/menus.cc:255 src/moonstone/menus.cc:51 src/qtui/menus.cc:251
 #, fuzzy
 msgid "Select _None"
 msgstr "Снять выделение"
 
-#: src/gtkui/menus.cc:262 src/moonstone/playlist_tabs.cc:331
-#: src/qtui/playlist_tabs.cc:339
+#: src/gtkui/menus.cc:262 src/moonstone/playlist_tabs.cc:334
+#: src/qtui/playlist_tabs.cc:342
 msgid "_Rename ..."
 msgstr "Пере_именовать..."
 
-#: src/gtkui/settings.cc:35 src/qtui/settings.cc:61
+#: src/gtkui/settings.cc:35 src/moonstone/settings.cc:61
+#: src/qtui/settings.cc:61
 #, fuzzy
 msgid "Always"
 msgstr "Поверх всех окон"
 
-#: src/gtkui/settings.cc:36 src/qtui/settings.cc:62
+#: src/gtkui/settings.cc:36 src/moonstone/settings.cc:62
+#: src/qtui/settings.cc:62
 #, fuzzy
 msgid "Auto-hide"
 msgstr "Автоматически"
 
-#: src/gtkui/settings.cc:37 src/qtui/settings.cc:63
+#: src/gtkui/settings.cc:37 src/moonstone/settings.cc:63
+#: src/qtui/settings.cc:63
 msgid "Never"
 msgstr ""
 
-#: src/gtkui/settings.cc:41 src/qtui/settings.cc:67
+#: src/gtkui/settings.cc:41 src/moonstone/settings.cc:67
+#: src/qtui/settings.cc:67
 msgid "<b>Playlist Tabs</b>"
 msgstr "<b>Вкладки плейлиста</b>"
 
-#: src/gtkui/settings.cc:42 src/qtui/settings.cc:68
+#: src/gtkui/settings.cc:42 src/moonstone/settings.cc:68
+#: src/qtui/settings.cc:68
 #, fuzzy
 msgid "Show playlist tabs:"
 msgstr "Отобразить редактор списка воспроизведения"
 
-#: src/gtkui/settings.cc:45 src/qtui/settings.cc:71
+#: src/gtkui/settings.cc:45 src/moonstone/settings.cc:71
+#: src/qtui/settings.cc:71
 msgid "Show entry counts"
 msgstr "Показывать счётчик элементов"
 
-#: src/gtkui/settings.cc:47 src/qtui/settings.cc:73
+#: src/gtkui/settings.cc:47 src/moonstone/settings.cc:73
+#: src/qtui/settings.cc:73
 msgid "Show close buttons"
 msgstr "Показывать кнопки закрытия"
 
-#: src/gtkui/settings.cc:49 src/qtui/settings.cc:75
+#: src/gtkui/settings.cc:49 src/moonstone/settings.cc:75
+#: src/qtui/settings.cc:75
 msgid "<b>Playlist Columns</b>"
 msgstr "<b>Колонки плейлиста</b>"
 
-#: src/gtkui/settings.cc:51 src/qtui/settings.cc:76
+#: src/gtkui/settings.cc:51 src/moonstone/settings.cc:76
+#: src/qtui/settings.cc:76
 msgid "Show column headers"
 msgstr "Показывать заголовки столбцов"
 
@@ -2652,7 +2662,8 @@ msgstr "Показывать заголовки столбцов"
 msgid "Use symbolic (flat) icons in toolbar"
 msgstr ""
 
-#: src/gtkui/settings.cc:56 src/qtui/settings.cc:81
+#: src/gtkui/settings.cc:56 src/moonstone/settings.cc:81
+#: src/qtui/settings.cc:81
 msgid "Scroll on song change"
 msgstr "Прокручивать при смене песни"
 
@@ -3218,134 +3229,151 @@ msgstr "Переподключиться к серверу LIRC"
 msgid "Wait before reconnecting:"
 msgstr "Ждать перед переподключением:"
 
-#: src/lyricwiki/lyricwiki.cc:78 src/lyricwiki-qt/lyricwiki.cc:142
+#: src/lyricwiki/lyricwiki.cc:91 src/lyricwiki-qt/lyricwiki.cc:199
 msgid "Lyrics"
 msgstr ""
 
-#: src/lyricwiki/lyricwiki.cc:99 src/lyricwiki-qt/lyricwiki.cc:163
+#: src/lyricwiki/lyricwiki.cc:111 src/lyricwiki-qt/lyricwiki.cc:221
+msgid ""
+"Lyrics-display plugin for Fauxdacious\n"
+"\n"
+"from Audacious plugin by (c:2010): \n"
+"William Pitcock <nenolod@nenolod.net>\n"
+"\n"
+"Rewritten for Fauxdacious\n"
+"by (c:2020) Jim Turner <turnerjw784@yahoo.com>\n"
+"Scrolling lyrics by timestamp option\n"
+"by (c:2024) lecheel <lecheel@gmail.com>."
+msgstr ""
+
+#: src/lyricwiki/lyricwiki.cc:124 src/lyricwiki-qt/lyricwiki.cc:232
 msgid "Fetch lyrics from internet?"
 msgstr ""
 
-#: src/lyricwiki/lyricwiki.cc:101 src/lyricwiki-qt/lyricwiki.cc:165
+#: src/lyricwiki/lyricwiki.cc:126 src/lyricwiki-qt/lyricwiki.cc:234
+msgid "Enable scrolling lyric sync. by timestamps"
+msgstr ""
+
+#: src/lyricwiki/lyricwiki.cc:128 src/lyricwiki-qt/lyricwiki.cc:236
 msgid "Cache (save) lyrics to disk?"
 msgstr ""
 
-#: src/lyricwiki/lyricwiki.cc:105 src/lyricwiki-qt/lyricwiki.cc:169
+#: src/lyricwiki/lyricwiki.cc:132 src/lyricwiki-qt/lyricwiki.cc:240
 #, fuzzy
 msgid "Helper:"
 msgstr "Справка"
 
-#: src/lyricwiki/lyricwiki.cc:195 src/lyricwiki/lyricwiki.cc:413
-#: src/lyricwiki-qt/lyricwiki.cc:267 src/lyricwiki-qt/lyricwiki.cc:487
+#: src/lyricwiki/lyricwiki.cc:223 src/lyricwiki/lyricwiki.cc:442
+#: src/lyricwiki-qt/lyricwiki.cc:347 src/lyricwiki-qt/lyricwiki.cc:568
 msgid "No lyrics available"
 msgstr "Текст песни недоступен"
 
-#: src/lyricwiki/lyricwiki.cc:329 src/lyricwiki/lyricwiki.cc:394
-#: src/lyricwiki/lyricwiki.cc:405 src/lyricwiki/lyricwiki.cc:588
-#: src/lyricwiki/lyricwiki.cc:1068 src/lyricwiki-qt/lyricwiki.cc:412
-#: src/lyricwiki-qt/lyricwiki.cc:468 src/lyricwiki-qt/lyricwiki.cc:479
-#: src/lyricwiki-qt/lyricwiki.cc:656 src/lyricwiki-qt/lyricwiki.cc:983
+#: src/lyricwiki/lyricwiki.cc:358 src/lyricwiki/lyricwiki.cc:423
+#: src/lyricwiki/lyricwiki.cc:434 src/lyricwiki/lyricwiki.cc:617
+#: src/lyricwiki/lyricwiki.cc:1147 src/lyricwiki-qt/lyricwiki.cc:492
+#: src/lyricwiki-qt/lyricwiki.cc:549 src/lyricwiki-qt/lyricwiki.cc:560
+#: src/lyricwiki-qt/lyricwiki.cc:737 src/lyricwiki-qt/lyricwiki.cc:1136
 #: src/qtui/dialog_windows.cc:38 src/ui-common/dialogs-qt.cc:63
 msgid "Error"
 msgstr "Ошибка"
 
-#: src/lyricwiki/lyricwiki.cc:330 src/lyricwiki/lyricwiki.cc:395
-#: src/lyricwiki-qt/lyricwiki.cc:413 src/lyricwiki-qt/lyricwiki.cc:469
+#: src/lyricwiki/lyricwiki.cc:359 src/lyricwiki/lyricwiki.cc:424
+#: src/lyricwiki-qt/lyricwiki.cc:493 src/lyricwiki-qt/lyricwiki.cc:550
 #, c-format
 msgid "Unable to fetch %s"
 msgstr "Не удалось получить %s"
 
-#: src/lyricwiki/lyricwiki.cc:340 src/lyricwiki/lyricwiki.cc:546
-#: src/lyricwiki-qt/lyricwiki.cc:423 src/lyricwiki-qt/lyricwiki.cc:614
+#: src/lyricwiki/lyricwiki.cc:369 src/lyricwiki/lyricwiki.cc:575
+#: src/lyricwiki-qt/lyricwiki.cc:503 src/lyricwiki-qt/lyricwiki.cc:695
 msgid "No lyrics Found"
 msgstr ""
 
-#: src/lyricwiki/lyricwiki.cc:343 src/lyricwiki-qt/lyricwiki.cc:426
+#: src/lyricwiki/lyricwiki.cc:372 src/lyricwiki-qt/lyricwiki.cc:506
 #, fuzzy, c-format
 msgid "Unable to parse(3) %s"
 msgstr "Не удалось проанализировать %s"
 
-#: src/lyricwiki/lyricwiki.cc:406 src/lyricwiki-qt/lyricwiki.cc:480
+#: src/lyricwiki/lyricwiki.cc:435 src/lyricwiki-qt/lyricwiki.cc:561
 #, fuzzy, c-format
 msgid "Unable to parse(2) %s"
 msgstr "Не удалось проанализировать %s"
 
-#: src/lyricwiki/lyricwiki.cc:421 src/lyricwiki-qt/lyricwiki.cc:495
+#: src/lyricwiki/lyricwiki.cc:450 src/lyricwiki-qt/lyricwiki.cc:576
 msgid "Looking for lyrics ..."
 msgstr "Поиск текста песни ..."
 
-#: src/lyricwiki/lyricwiki.cc:550 src/lyricwiki-qt/lyricwiki.cc:618
+#: src/lyricwiki/lyricwiki.cc:579 src/lyricwiki-qt/lyricwiki.cc:699
 msgid "Lyrics fetch skipped (helper config)."
 msgstr ""
 
-#: src/lyricwiki/lyricwiki.cc:551 src/lyricwiki-qt/lyricwiki.cc:619
+#: src/lyricwiki/lyricwiki.cc:580 src/lyricwiki-qt/lyricwiki.cc:700
 #, fuzzy
 msgid "Unable to fetch lyrics."
 msgstr "Не удалось получить %s"
 
-#: src/lyricwiki/lyricwiki.cc:565 src/lyricwiki-qt/lyricwiki.cc:633
+#: src/lyricwiki/lyricwiki.cc:594 src/lyricwiki-qt/lyricwiki.cc:714
 #, fuzzy
 msgid "Connecting to lyrics.fandom.com ..."
 msgstr "Устанавливаю соединение с lyrics.wikia.com ..."
 
-#: src/lyricwiki/lyricwiki.cc:589 src/lyricwiki-qt/lyricwiki.cc:657
+#: src/lyricwiki/lyricwiki.cc:618 src/lyricwiki-qt/lyricwiki.cc:738
 #, fuzzy, c-format
 msgid "Unable to fetch file %s"
 msgstr "Не удалось получить %s"
 
-#: src/lyricwiki/lyricwiki.cc:818 src/lyricwiki-qt/lyricwiki.cc:1116
+#: src/lyricwiki/lyricwiki.cc:847 src/lyricwiki-qt/lyricwiki.cc:1286
 #, fuzzy
 msgid "Refresh"
 msgstr "Обновить"
 
-#: src/lyricwiki/lyricwiki.cc:823
+#: src/lyricwiki/lyricwiki.cc:852
 msgid "Save"
 msgstr ""
 
-#: src/lyricwiki/lyricwiki.cc:824
+#: src/lyricwiki/lyricwiki.cc:853
 msgid "Embed"
 msgstr ""
 
-#: src/lyricwiki/lyricwiki.cc:826 src/lyricwiki-qt/lyricwiki.cc:1101
+#: src/lyricwiki/lyricwiki.cc:855 src/lyricwiki-qt/lyricwiki.cc:1270
 msgid "Save Locally"
 msgstr ""
 
-#: src/lyricwiki/lyricwiki.cc:827 src/lyricwiki-qt/lyricwiki.cc:1108
+#: src/lyricwiki/lyricwiki.cc:856 src/lyricwiki-qt/lyricwiki.cc:1277
 msgid "Save Embedded"
 msgstr ""
 
-#: src/lyricwiki/lyricwiki.cc:1068 src/lyricwiki-qt/lyricwiki.cc:983
+#: src/lyricwiki/lyricwiki.cc:1147 src/lyricwiki-qt/lyricwiki.cc:1136
 msgid "Missing title and/or artist"
 msgstr ""
 
-#: src/lyricwiki/lyricwiki.cc:1075 src/lyricwiki-qt/lyricwiki.cc:990
+#: src/lyricwiki/lyricwiki.cc:1154 src/lyricwiki-qt/lyricwiki.cc:1144
 #, fuzzy
 msgid "No lyrics Found locally"
 msgstr "Текст песни недоступен"
 
-#: src/lyricwiki/lyricwiki.cc:1078 src/lyricwiki-qt/lyricwiki.cc:993
+#: src/lyricwiki/lyricwiki.cc:1157 src/lyricwiki-qt/lyricwiki.cc:1147
 msgid "Unable to fetch lyrics (Fetch lyrics from internet option not enabled)."
 msgstr ""
 
-#: src/lyricwiki-qt/lyricwiki.cc:1094
+#: src/lyricwiki-qt/lyricwiki.cc:1261
 #, fuzzy
 msgid "Edit Lyricwiki"
 msgstr "Редактировать текст песни ..."
 
-#: src/m3u/m3u.cc:39
+#: src/m3u/m3u.cc:44
 msgid "M3U Playlists"
 msgstr "Списки воспроизведения M3U"
 
-#: src/m3u/m3u.cc:279
+#: src/m3u/m3u.cc:284
 #, fuzzy
 msgid "<b>M3U Configuration</b>"
 msgstr "<b>Настройки XSF</b>"
 
-#: src/m3u/m3u.cc:280
+#: src/m3u/m3u.cc:285
 msgid "Save in Extended M3U format?"
 msgstr ""
 
-#: src/m3u/m3u.cc:281
+#: src/m3u/m3u.cc:286
 msgid "Only 1st ts entry for HLS streams?"
 msgstr ""
 
@@ -3544,11 +3572,11 @@ msgstr "Oткрыть каталог ..."
 msgid "Open Files ..."
 msgstr "Открыть файлы..."
 
-#: src/moonstone/moonstone.cc:47
+#: src/moonstone/moonstone.cc:46
 msgid "Moonstone"
 msgstr ""
 
-#: src/moonstone/playlist_header.cc:238 src/qtui/playlist_header.cc:236
+#: src/moonstone/playlist_header.cc:235 src/qtui/playlist_header.cc:233
 msgid "Reset to Defaults"
 msgstr "Сбросить по умолчанию"
 
@@ -3562,15 +3590,25 @@ msgstr "Сейчас Воспроизводится"
 msgid "Q#"
 msgstr ""
 
-#: src/moonstone/playlist_tabs.cc:336 src/qtui/playlist_tabs.cc:344
+#: src/moonstone/playlist_tabs.cc:339 src/qtui/playlist_tabs.cc:347
 #, fuzzy
 msgid "_Import"
 msgstr "_Импортировать ..."
 
-#: src/moonstone/playlist_tabs.cc:339 src/qtui/playlist_tabs.cc:347
+#: src/moonstone/playlist_tabs.cc:342 src/qtui/playlist_tabs.cc:350
 #, fuzzy
 msgid "_Add Files"
 msgstr "Добавить файлы"
+
+#: src/moonstone/playlist_tabs.cc:345 src/qtui/playlist_tabs.cc:353
+#, fuzzy
+msgid "Add Playlist"
+msgstr "_Добавить в список воспроизведения"
+
+#: src/moonstone/settings.cc:78 src/qtui/settings.cc:78
+#, fuzzy
+msgid "Use bold font for column headers"
+msgstr "Показывать заголовки столбцов"
 
 #: src/mpg123/mpg123.cc:55
 msgid "MPG123 Plugin"
@@ -3584,7 +3622,7 @@ msgstr "Использовать аккуратное вычисление дл�
 msgid "Surround"
 msgstr "Объёмное звучание"
 
-#: src/mpris2/plugin.cc:38
+#: src/mpris2/plugin.cc:40
 msgid "MPRIS 2 Server"
 msgstr "Сервер MPRIS 2"
 
@@ -3755,7 +3793,7 @@ msgstr ""
 msgid "Opus Decoder"
 msgstr "Декодер VTX"
 
-#: src/opus/opus.cc:334
+#: src/opus/opus.cc:374
 #, fuzzy
 msgid ""
 "Opus Decoder Plugin for Audacious\n"
@@ -3859,9 +3897,12 @@ msgstr ""
 msgid "Stream name:"
 msgstr ""
 
-#: src/pulse/pulse_audio.cc:579
+#: src/pulse/pulse_audio.cc:588
+#, fuzzy
 msgid ""
 "Audacious PulseAudio Output Plugin\n"
+"\n"
+"Provides audio support for PulseAudio and Pipewire.\n"
 "\n"
 "This program is free software; you can redistribute it and/or modify it "
 "under the terms of the GNU General Public License as published by the Free "
@@ -3892,11 +3933,11 @@ msgstr ""
 "этой программой; если нет, напишите в Free Software Foundation, Inc., 51 "
 "Franklin Street, Fifth Floor, Boston, MA 02110-1301, США."
 
-#: src/qtaudio/qtaudio.cc:44
+#: src/qtaudio/qtaudio.cc:53
 msgid "QtMultimedia Output"
 msgstr "Выход QtMultimedia"
 
-#: src/qtaudio/qtaudio.cc:72
+#: src/qtaudio/qtaudio.cc:84
 msgid ""
 "QtMultimedia Audio Output Plugin for Audacious\n"
 "Copyright 2014 William Pitcock\n"
@@ -4032,11 +4073,6 @@ msgstr "Интерфейс Qt"
 #: src/qtui/search_bar.cc:47
 msgid "Search playlist"
 msgstr "Найти список воспроизведения"
-
-#: src/qtui/settings.cc:78
-#, fuzzy
-msgid "Use bold font for column headers"
-msgstr "Показывать заголовки столбцов"
 
 #: src/resample/resample.cc:43
 msgid "Sample Rate Converter"
