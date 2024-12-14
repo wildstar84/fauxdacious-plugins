@@ -81,8 +81,8 @@ const PreferencesWidget PulseOutput::widgets[] = {
 
 const PluginPreferences PulseOutput::prefs = {{widgets}};
 
-const String PulseOutput::default_context_name = String ("Audacious");
-const String PulseOutput::default_stream_name = String ("Audacious");
+const String PulseOutput::default_context_name = String ("Fauxdacious");
+const String PulseOutput::default_stream_name = String ("Fauxdacious");
 
 const char * const PulseOutput::prefs_defaults[] = {
     "context_name", PulseOutput::default_context_name,
@@ -432,7 +432,16 @@ static bool create_context (scoped_lock & lock)
         return false;
     }
 
-    if (! (context = pa_context_new (pa_mainloop_get_api (mainloop), get_context_name ())))
+    pa_proplist * proplist = pa_proplist_new ();
+    pa_proplist_sets (proplist, PA_PROP_APPLICATION_ID, "fauxdacious");
+    pa_proplist_sets (proplist, PA_PROP_APPLICATION_ICON_NAME, "fauxdacious");
+
+    context = pa_context_new_with_proplist (pa_mainloop_get_api (mainloop),
+            get_context_name (), proplist);
+
+    pa_proplist_free (proplist);
+
+    if (! context)
     {
         AUDERR ("Failed to allocate context\n");
         return false;
@@ -577,6 +586,7 @@ void PulseOutput::cleanup ()
 
 const char PulseOutput::about[] =
  N_("Audacious PulseAudio Output Plugin\n\n"
+    "Provides audio support for PulseAudio and Pipewire.\n\n"
     "This program is free software; you can redistribute it and/or modify "
     "it under the terms of the GNU General Public License as published by "
     "the Free Software Foundation; either version 2 of the License, or "
