@@ -23,12 +23,9 @@
 
 #include <gtk/gtk.h>
 
-#include <libfauxdcore/hook.h>
 #include <libfauxdcore/i18n.h>
-#include <libfauxdcore/interface.h>
 #include <libfauxdcore/plugin.h>
 #include <libfauxdgui/gtk-compat.h>
-#include <libfauxdgui/libfauxdgui.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
 #define MAX_BANDS   (256)
@@ -184,11 +181,11 @@ static void draw_background (GtkWidget * area, cairo_t * cr)
     GtkAllocation alloc;
     gtk_widget_get_allocation (area, & alloc);
 
-    cairo_rectangle(cr, 0, 0, alloc.width, alloc.height);
+    cairo_rectangle (cr, 0, 0, alloc.width, alloc.height);
     cairo_fill (cr);
 }
 
-static void draw_visualizer (GtkWidget *widget, cairo_t *cr)
+static void draw_visualizer (GtkWidget * widget, cairo_t * cr)
 {
     for (int i = 0; i < bands; i++)
     {
@@ -207,44 +204,41 @@ static gboolean configure_event (GtkWidget * widget, GdkEventConfigure * event)
 {
     width = event->width;
     height = event->height;
-    gtk_widget_queue_draw(widget);
+    gtk_widget_queue_draw (widget);
 
     bands = width / 10;
-    bands = aud::clamp(bands, 12, MAX_BANDS);
+    bands = aud::clamp (bands, 12, MAX_BANDS);
     Visualizer::compute_log_xscale (xscale, bands);
 
     return true;
 }
 
 #ifdef USE_GTK3
-static gboolean draw_event (GtkWidget * widget, cairo_t * cr, GtkWidget * area)
+static gboolean draw_event (GtkWidget * widget, cairo_t * cr)
 {
-    draw_background (widget, cr);
-    draw_visualizer (widget, cr);
-
-    return true;
-}
 #else
 static gboolean draw_event (GtkWidget * widget)
 {
     cairo_t * cr = gdk_cairo_create (gtk_widget_get_window (widget));
+#endif
 
     draw_background (widget, cr);
     draw_visualizer (widget, cr);
 
+#ifndef USE_GTK3
     cairo_destroy (cr);
+#endif
     return true;
 }
-#endif
 
 void * CairoSpectrum::get_gtk_widget ()
 {
-    GtkWidget *area = gtk_drawing_area_new();
+    GtkWidget *area = gtk_drawing_area_new ();
     spect_widget = area;
 
-    g_signal_connect(area, AUDGUI_DRAW_SIGNAL, (GCallback) draw_event, nullptr);
-    g_signal_connect(area, "configure-event", (GCallback) configure_event, nullptr);
-    g_signal_connect(area, "destroy", (GCallback) gtk_widget_destroyed, & spect_widget);
+    g_signal_connect (area, AUDGUI_DRAW_SIGNAL, (GCallback) draw_event, nullptr);
+    g_signal_connect (area, "configure-event", (GCallback) configure_event, nullptr);
+    g_signal_connect (area, "destroy", (GCallback) gtk_widget_destroyed, & spect_widget);
 
     GtkWidget * frame = gtk_frame_new (nullptr);
     gtk_frame_set_shadow_type ((GtkFrame *) frame, GTK_SHADOW_IN);
