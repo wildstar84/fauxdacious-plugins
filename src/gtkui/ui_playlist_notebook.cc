@@ -327,7 +327,7 @@ void ui_playlist_notebook_create_tab (int playlist)
 
     GtkWidget * hbox = audgui_hbox_new (2);
 
-    GtkWidget * label = gtk_label_new ("");
+    GtkWidget * label = gtk_label_new (nullptr);
     set_tab_label (playlist, (GtkLabel *) label);
     gtk_box_pack_start ((GtkBox *) hbox, label, false, false, 0);
 
