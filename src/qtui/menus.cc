@@ -55,6 +55,7 @@ static void configure_output () { audqt::prefswin_show_plugin_page (PluginType::
 static void configure_visualizations () { audqt::prefswin_show_plugin_page (PluginType::Vis); }
 
 static void show_search_tool () { hook_call ("qtui show search tool", nullptr); }
+static void show_playback_history () { hook_call ("qtui show playback history", nullptr); }
 static void show_playlist_manager () { hook_call ("qtui show playlist manager", nullptr); }
 static void toggle_menubar () { hook_call ("qtui toggle menubar", nullptr); }
 static void toggle_infoarea () { hook_call ("qtui toggle infoarea", nullptr); }
@@ -117,6 +118,8 @@ QMenuBar * qtui_build_menubar (QWidget * parent)
         audqt::MenuToggle ({N_("Stop A_fter This Song"), nullptr, "Ctrl+M"}, {nullptr, "stop_after_current_song", "set stop_after_current_song"}),
         audqt::MenuSep (),
         audqt::MenuCommand ({N_("Song _Info ..."), "dialog-information", "Ctrl+I"}, audqt::infowin_show_current),
+        audqt::MenuCommand ({N_("Playback Histor_y ..."), nullptr, "Ctrl+H"}, show_playback_history),
+        audqt::MenuCommand ({N_("Jump to Song ..."), "go-jump", "J"}, aud_ui_show_jump_to_song),
         audqt::MenuSep(),
         audqt::MenuCommand ({N_("Set Repeat Point _A"), nullptr, "Ctrl+1"}, set_ab_repeat_a),
         audqt::MenuCommand ({N_("Set Repeat Point _B"), nullptr, "Ctrl+2"}, set_ab_repeat_b),
@@ -247,10 +250,10 @@ QMenu * qtui_build_pl_menu (QWidget * parent)
         audqt::MenuCommand ({N_("_Copy"), "edit-copy", "Ctrl+C"}, pl_copy),
         audqt::MenuCommand ({N_("_Paste"), "edit-paste", "Ctrl+V"}, pl_paste),
         audqt::MenuCommand ({N_("Paste at _End"), "edit-paste", "Shift+Ctrl+V"}, pl_paste_end),
-        audqt::MenuCommand ({N_("Select _All"), "edit-select-all"}, pl_select_all),
+        audqt::MenuCommand ({N_("Select _All"), "edit-select-all", "Ctrl+A"}, pl_select_all),
         audqt::MenuCommand ({N_("Select _None"), "edit-clear"}, pl_select_none),
         audqt::MenuSep (),
-        audqt::MenuSub ({N_("_Services")}, services_menu_pl)
+        audqt::MenuSub ({N_("_Services"), "media-optical"}, services_menu_pl)
     };
 
     return audqt::menu_build (pl_items, parent);
