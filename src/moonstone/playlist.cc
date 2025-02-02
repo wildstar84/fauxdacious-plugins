@@ -26,6 +26,7 @@
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/drct.h>
 #include <libfauxdcore/runtime.h>
+#include <libfauxdcore/interface.h>
 #include <libfauxdqt/libfauxdqt.h>
 
 #include "playlist.h"
@@ -167,6 +168,9 @@ void PlaylistWidget::keyPressEvent (QKeyEvent * event)
             return;
           case Qt::Key_C:
             aud_drct_pause ();
+            return;
+          case Qt::Key_J:
+            aud_ui_show_jump_to_song ();
             return;
           case Qt::Key_M:
             {

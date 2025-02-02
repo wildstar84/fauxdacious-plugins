@@ -155,7 +155,7 @@ MainWindow::MainWindow () :
     m_center_layout->addWidget (m_toolbar);
     m_center_layout->addWidget (m_playlist_tabs);
 
-    m_infobar->setToolTip ("Space: pause\nUp|Down: volume\nLeft|Right: seek\nB: next\nC: pause\nDelete: selected entries\nM: mute\nT: toggle shade\nV: stop\nX: play\nZ: previous\nCtrl-Q: Quit");
+    m_infobar->setToolTip ("Space: pause\nUp|Down: volume\nLeft|Right: seek\nB: next\nC: pause\nDelete: selected entries\nM: mute\nJ: jump to song\nT: toggle shade\nV: stop\nX: play\nZ: previous\nCtrl-Q: Quit");
 
     connect (shade_button, & QToolButton::clicked, [this] () {
         show_titlebar_toggle_cb ();
