@@ -144,6 +144,7 @@ MainWindow::MainWindow () :
     m_infobar (new audqt::InfoBar (this)),
     m_statusbar (new StatusBar (this)),
     m_search_tool (aud_plugin_lookup_basename ("search-tool-qt")),
+    m_playback_history (aud_plugin_lookup_basename ("playback-history-qt")),
     m_playlist_manager (aud_plugin_lookup_basename ("playlist-manager-qt"))
 {
     auto slider = new TimeSlider (this);
@@ -544,10 +545,15 @@ void MainWindow::add_dock_item (audqt::DockItem * item)
 
     if (! restoreDockWidget (w))
     {
-        addDockWidget (Qt::LeftDockWidgetArea, w);
-        // only the search tool and albumart plugins are docked by default:
-        if (strcmp (item->id (), "search-tool-qt") && strcmp(item->id(), "albumart-qt"))
-            w->setFloating (true);
+        // only the search tool, playback history, and albumart plugins are docked by default:
+        if (! strcmp (item->id (), "playback-history-qt"))
+            addDockWidget (Qt::BottomDockWidgetArea, w);
+        else
+        {
+            addDockWidget (Qt::LeftDockWidgetArea, w);
+            if (strcmp (item->id (), "search-tool-qt") && strcmp(item->id(), "albumart-qt"))
+                w->setFloating (true);
+        }
     }
 
     /* JWT:APPEND THE FAUXDACIOUS INSTANCE-NAME (IF NOT DEFAULT) 'CASE WE'RE RUNNING MULTIPLE INSTANCES!: */

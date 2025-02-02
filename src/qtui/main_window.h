@@ -51,7 +51,7 @@ private:
     audqt::InfoBar * m_infobar;
     StatusBar * m_statusbar;
 
-    PluginHandle * m_search_tool, * m_playlist_manager;
+    PluginHandle * m_search_tool, * m_playback_history, * m_playlist_manager;
 
     QAction * m_menu_action, * m_search_action;
     QAction * m_play_pause_action, * m_stop_action, * m_stop_after_action;
@@ -83,12 +83,26 @@ private:
     void remove_dock_item (audqt::DockItem * item) override;
 
     void show_search_tool ()
-        { if (m_search_tool) show_dock_plugin (m_search_tool); }
+    {
+        if (m_search_tool)
+            show_dock_plugin (m_search_tool);
+    }
+    void show_playback_history()
+    {
+        if (m_playback_history)
+            show_dock_plugin(m_playback_history);
+    }
     void show_playlist_manager ()
-        { if (m_playlist_manager) show_dock_plugin (m_playlist_manager); }
+    {
+        if (m_playlist_manager)
+            show_dock_plugin (m_playlist_manager);
+    }
 
     static bool plugin_watcher (PluginHandle *, void * me)
-        { ((MainWindow *) me)->update_toggles (); return true; }
+    {
+        ((MainWindow *) me)->update_toggles ();
+        return true;
+    }
 
     const HookReceiver<MainWindow>
      hook1 {"title change", this, & MainWindow::title_change_cb},
@@ -106,7 +120,8 @@ private:
      hook13 {"qtui toggle infoarea", this, & MainWindow::update_visibility},
      hook14 {"qtui toggle statusbar", this, & MainWindow::update_visibility},
      hook15 {"qtui show search tool", this, & MainWindow::show_search_tool},
-     hook16 {"qtui show playlist manager", this, & MainWindow::show_playlist_manager};
+     hook16 {"qtui show playback history", this, & MainWindow::show_playback_history},
+     hook17 {"qtui show playlist manager", this, & MainWindow::show_playlist_manager};
 };
 
 #endif
