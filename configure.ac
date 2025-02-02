@@ -6,7 +6,7 @@ dnl Initialize
 dnl ==========
 
 AC_PREREQ([2.59])
-AC_INIT([fauxdacious-plugins], [4.4.2-final])
+AC_INIT([fauxdacious-plugins], [4.5-devel1])
 AC_COPYRIGHT([Copyright (C) 2001-2024 Jim Turner, Audacious developers and others])
 
 AC_DEFINE_UNQUOTED([PACKAGE], "$PACKAGE_NAME", [Name of package])
@@ -79,11 +79,11 @@ if test "x$USE_GTK" = "xyes" ; then
     EFFECT_PLUGINS="$EFFECT_PLUGINS ladspa"
     GENERAL_PLUGINS="$GENERAL_PLUGINS alarm albumart lyricwiki playlist-manager search-tool statusicon"
     GENERAL_PLUGINS="$GENERAL_PLUGINS info-bar-plugin-gtk gtkui skins"
-    VISUALIZATION_PLUGINS="$VISUALIZATION_PLUGINS blur_scope cairo-spectrum"
+    VISUALIZATION_PLUGINS="$VISUALIZATION_PLUGINS blur_scope cairo-spectrum vumeter"
 fi
 
 if test "x$USE_QT" = "xyes" ; then
-    GENERAL_PLUGINS="$GENERAL_PLUGINS albumart-qt lyricwiki-qt playlist-manager-qt search-tool-qt song-info-qt"
+    GENERAL_PLUGINS="$GENERAL_PLUGINS albumart-qt lyricwiki-qt playback-history-qt playlist-manager-qt search-tool-qt song-info-qt"
     GENERAL_PLUGINS="$GENERAL_PLUGINS statusicon-qt info-bar-plugin-qt qtui skins-qt moonstone"
     VISUALIZATION_PLUGINS="$VISUALIZATION_PLUGINS blur_scope-qt qt-spectrum vumeter-qt"
 fi
@@ -927,6 +927,7 @@ if test "x$USE_GTK" = "xyes" ; then
     echo "  Search Tool:                            yes"
     echo "  Spectrum Analyzer (2D):                 yes"
     echo "  Status Icon:                            yes"
+    echo "  VU Meter:                               yes"
     echo "  X11 Global Hotkeys:                     $have_hotkey"
     echo "  X11 On-Screen Display (aosd):           $have_aosd"
     echo
@@ -937,10 +938,12 @@ if test "x$USE_QT" = "xyes" ; then
     echo "  ----------"
     echo "  Qt Multimedia output:                   $have_qtaudio"
     echo "  Qt Interface (release#)                 $QT_VSN"
+    echo "  Moonstone Interface                     yes"
     echo "  Winamp Classic Interface:               yes"
     echo "  Album Art:                              yes"
     echo "  Blur Scope:                             yes"
     echo "  OpenGL Spectrum Analyzer:               $have_qtglspectrum"
+    echo "  Playback History:                       yes"
     echo "  Playlist Manager:                       yes"
     echo "  Search Tool:                            yes"
     echo "  Song Info:                              yes"
