@@ -27,6 +27,7 @@
 #include <libfauxdcore/drct.h>
 #include <libfauxdcore/hook.h>
 #include <libfauxdcore/i18n.h>
+#include <libfauxdcore/interface.h>
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/playlist.h>
@@ -770,6 +771,9 @@ static gboolean infobar_keypress_cb (GtkWidget *, GdkEventKey * event)
         case 'b':
             aud_drct_pl_next ();
             break;
+        case 'j':
+            aud_ui_show_jump_to_song ();
+            break;
         case 'm':
             toggle_mute ();
             break;
@@ -1064,7 +1068,7 @@ void * InfoBarPlugin::get_gtk_widget ()
     update_toggles ();
 
     gtk_widget_set_can_focus (main_window, true);
-    gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nB: next\nC: pause\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous\nAlt-Q: Quit");
+    gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nB: next\nC: pause\nJ: jump to song\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous\nAlt-Q: Quit");
     gtk_widget_grab_focus (main_window);
 
     ui_playback_ready ();
