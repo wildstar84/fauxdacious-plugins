@@ -253,9 +253,12 @@ private:
      * Adds the newly played song into the playback history.
      */
     void playbackStarted ();
+    void titleChanged ();
 
-    const HookReceiver<HistoryModel> activate_hook {
+    const HookReceiver<HistoryModel> pbready_hook {
         "playback ready", this, &HistoryModel::playbackStarted};
+    const HookReceiver<HistoryModel> titlechg_hook {
+        "title change", this, &HistoryModel::titleChanged};
 
     Index<HistoryEntry> m_entries;
     /** The position of the entry that is currently playing
@@ -705,6 +708,13 @@ void HistoryModel::playbackStarted ()
         updateFontForPosition (prevPlayingPosition);
 }
 
+// JWT:ALSO CHECK STREAMING STATION METADATA CHANGES (TO RECORD HISTORY FROM STREAMING STATIONS):
+void HistoryModel::titleChanged ()
+{
+	if (aud_get_bool("playback-history", "chk_on_title_change"))
+		playbackStarted ();
+}
+
 HistoryView::HistoryView ()
 {
     AUDDBG ("creating\n");
@@ -833,6 +843,9 @@ const PreferencesWidget PlaybackHistory::widgets[] = {
     WidgetRadio (N_("Song"), WidgetInt(configSection, configEntryType),
                 {static_cast<int>(HistoryEntry::Type::Song)}),
     WidgetRadio (N_("Album"), WidgetInt(configSection, configEntryType),
-                {static_cast<int>(HistoryEntry::Type::Album)})};
+                {static_cast<int>(HistoryEntry::Type::Album)}),
+    // JWT:ALSO RECORD CHANGES WITHIN STREAMING RADIO-STATIONS:
+    WidgetCheck (N_("Check station metadata changes."),
+        WidgetBool ("playback-history", "chk_on_title_change"))};
 
 const PluginPreferences PlaybackHistory::prefs = {{widgets}};
