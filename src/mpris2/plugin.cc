@@ -19,6 +19,7 @@
 
 #include <math.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/drct.h>
