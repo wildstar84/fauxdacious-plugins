@@ -482,7 +482,7 @@ void MainWindow::title_change_cb ()
     String title = String (aud_drct_get_title_one_line (false));
     if (title && title[0])
     {
-        set_title (QString (title) + QString (" - Fauxdacious"));
+        set_title (QString ("%1 - %2").arg ((const char *)title, _("Fauxdacious")));
         m_buffering_timer.stop ();
     }
 }
@@ -518,7 +518,7 @@ void MainWindow::pause_cb ()
 
 void MainWindow::playback_stop_cb ()
 {
-    set_title ("Fauxdacious");
+    set_title (_("Fauxdacious"));
     m_buffering_timer.stop ();
 
     update_play_pause ();
