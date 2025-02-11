@@ -346,6 +346,9 @@ void PlaylistTabBar::contextMenuEvent(QContextMenuEvent * e)
     auto import_act = new QAction(audqt::get_icon("document-open"),
                                 audqt::translate_str(N_("_Import")), menu);
 
+    auto export_act = new QAction(audqt::get_icon("document-save"),
+                                audqt::translate_str(N_("_Export")), menu);
+
     auto addfiles_act = new QAction(audqt::get_icon("list-add"),
                                 audqt::translate_str(N_("_Add Files")), menu);
 
@@ -370,6 +373,11 @@ void PlaylistTabBar::contextMenuEvent(QContextMenuEvent * e)
         setCurrentIndex(playlist);
         audqt::fileopener_show (audqt::FileMode::ImportPlaylist);
     });
+    QObject::connect(export_act, &QAction::triggered, [this, playlist] ()
+    {
+        setCurrentIndex(playlist);
+        audqt::fileopener_show (audqt::FileMode::ExportPlaylist);
+    });
     QObject::connect(addfiles_act, &QAction::triggered, [this, playlist] ()
     {
         setCurrentIndex(playlist);
@@ -384,6 +392,7 @@ void PlaylistTabBar::contextMenuEvent(QContextMenuEvent * e)
     menu->addAction(rename_act);
     menu->addAction(remove_act);
     menu->addAction(import_act);
+    menu->addAction(export_act);
     menu->addAction(addfiles_act);
     menu->addAction(addplaylist_act);
     menu->setAttribute(Qt::WA_DeleteOnClose);
