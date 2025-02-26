@@ -321,7 +321,7 @@ static StringBuf format_filename (const char * suffix, bool fallback2unnamed)
         {
             int number = in_tuple.get_int (Tuple::Track);
             if (number >= 0)
-                str_append_printf (filename, "%d%%20", number);
+                str_append_printf (filename, "%02d%%20", number);
         }
 
         if (! fallback2unnamed && aud_get_bool ("filewriter", "filenamefromtags"))
