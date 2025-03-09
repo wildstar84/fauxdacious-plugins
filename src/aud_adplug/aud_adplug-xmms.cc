@@ -66,6 +66,7 @@ public:
     };
 
     constexpr AudAdPlugXMMS () : InputPlugin (info, InputInfo ()
+        .with_priority (_AUD_PLUGIN_DEFAULT_PRIO + 1)  // prefer OpenMPT
         .with_exts (exts)) {}
 
     bool init ();
