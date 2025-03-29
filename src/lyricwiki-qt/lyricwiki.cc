@@ -251,12 +251,6 @@ void update_lyrics_display();
 bool LyricWikiQt::init ()
 {
     aud_config_set_defaults ("lyricwiki", defaults);
-
-    // Create a QTimer to call update_lyrics_display every 200ms
-    timer = new QTimer (textedit);
-    timer->setInterval (200);  // Set the interval to 200ms
-    QObject::connect (timer, &QTimer::timeout, update_lyrics_display);  // Connect the timeout signal to the update function
-
     return true;
 }
 
@@ -964,7 +958,8 @@ static void lyricwiki_playback (bool force_refresh)
     state.force_refresh = force_refresh;
     state.synclyrics = aud_get_bool ("lyricwiki", "sync_lyrics");
 
-    timer->stop ();  // Stop the sync timer
+    if (state.synclyrics)
+        timer->stop ();  // Stop the sync timer
 
     if (! strncmp (state.filename, "cdda://?", 8))  // FOR CDs, LOOK FOR DIRECTORY WITH TRACK LYRIC FILES:
     {
@@ -1233,11 +1228,15 @@ void * LyricWikiQt::get_qt_widget ()
 {
     textedit = new TextEdit;
     textedit->setReadOnly (false);
+    // Create a QTimer to call update_lyrics_display every 200ms
+    timer = new QTimer (textedit);
+    timer->setInterval (200);  // Set the interval to 200ms
 
 #ifdef Q_OS_MAC  // Mac-specific font tweaks
     textedit->document ()->setDefaultFont (QApplication::font ("QTipLabel"));
 #endif
 
+    QObject::connect (timer, & QTimer::timeout, update_lyrics_display);  // Connect the timeout signal to the update function
     QObject::connect (textedit, & QObject::destroyed, lw_cleanup);
     QObject::connect (textedit, & QTextEdit::textChanged, allow_usersave);
 
