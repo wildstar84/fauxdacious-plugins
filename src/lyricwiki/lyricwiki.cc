@@ -64,13 +64,21 @@ typedef struct {
     String local_filename; /* JWT:CALCULATED LOCAL FILENAME TO SAVE LYRICS TO */
     gint startlyrics;      /* JWT:OFFSET IN LYRICS WINDOW WHERE LYRIC TEXT ACTUALLY STARTS */
     bool Wasok2saveTag;    /* JWT:SET TO TRUE AFTER SAVE TO TAGS, FOR RESETTING IF USER EDITS THEM */
-    bool force_refresh;    /* JWT:TRUE IF USER FORCED REFRESH VIA [Refresh] BUTTON (DON'T WAIT FOR ALBUMART! */
+    bool force_refresh;    /* JWT:TRUE IF USER FORCED REFRESH VIA [Refresh] BUTTON (DON'T WAIT FOR ALBUMART */
     bool synclyrics;       /* JWT:SCROLL LYRICS ON TIMESTAMPS (AS SET WHEN PLAYBACK STARTED) */
+    bool is_stream;        /* JWT:TRUE IF STREAM (VS FILE|DISK) - NEEDED FOR SYNCED LYRICS */
     String shotitle;       /* JWT:NEXT 3 FOR THREAD TO SAVE LYRIC DATA UNTIL MAIN THREAD CAN DISPLAY IT: */
     String shoartist;
     String sholyrics;
     int current_playlist;  /* JWT:SAVE THE PLAYLIST CURRENT WHEN ENTRY STARTS PLAYING! */
 } LyricsState;
+
+enum {
+    SYNC_NO,
+    SYNC_OK,
+    SYNC_YES,
+    SYNC_ONLY
+};
 
 struct TimedLyricLine {
     int timestamp_ms;   // Timestamp in milliseconds
@@ -125,6 +133,19 @@ const PreferencesWidget LyricWiki::widgets[] = {
         WidgetBool ("lyricwiki", "search_internet")),
     WidgetCheck (N_("Enable scrolling lyric sync. by timestamps"),
         WidgetBool ("lyricwiki", "sync_lyrics")),
+    WidgetLabel (N_("<b>Fetchable Lyrics Formats:</b>")),
+    WidgetRadio (N_("Plain-text only"),
+        WidgetInt ("lyricwiki", "lyric_format"),
+        {SYNC_NO}),
+    WidgetRadio (N_("Plain-text, Timestamped"),
+        WidgetInt ("lyricwiki", "lyric_format"),
+        {SYNC_OK}),
+    WidgetRadio (N_("Timestamped, Plain-text"),
+        WidgetInt ("lyricwiki", "lyric_format"),
+        {SYNC_YES}),
+    WidgetRadio (N_("Timestamped only"),
+        WidgetInt ("lyricwiki", "lyric_format"),
+        {SYNC_ONLY}),
     WidgetCheck (N_("Cache (save) lyrics to disk?"),
         WidgetBool ("lyricwiki", "cache_lyrics")),
     WidgetCheck (N_("Try to save by song file-name first?"),
@@ -148,6 +169,7 @@ static Index<String> extlist = str_list_to_index (".mp3,.ogg,.ogm,.oga,.flac,.fl
 bool LyricWiki::init ()
 {
     aud_config_set_defaults ("lyricwiki", defaults);
+
     return true;
 }
 
@@ -408,7 +430,9 @@ static void get_lyrics_step_3 (const char * uri, const Index<char> & buf, void *
 /* CALLED BY g_idle_add() TO UPDATE LYRIC WIDGET FROM THREAD: */
 static gboolean lyrics_ready (gpointer data)
 {
+    state.synclyrics = aud_get_bool ("lyricwiki", "sync_lyrics");
     show_lyrics ();
+
     return false;
 }
 
@@ -469,21 +493,18 @@ static void * lyric_helper_thread_fn (void * data)
         pthread_exit (nullptr);
         return nullptr;
     }
-    if (fromsongstartup)  // TRUE IF SONG-START, FALSE ON TUPLE-CHANGE!
+    if (fromsongstartup && state.is_stream)  // TRUE IF SONG-START, FALSE ON TUPLE-CHANGE!
     {
-        if (! strcmp_nocase (state.filename, "https://", 8) || ! strcmp_nocase (state.filename, "http://", 7))
+        int sleep_msec = aud_get_int ("lyricwiki", "sleep_msec");
+        if (sleep_msec < 1)  sleep_msec = 1600;
+        g_usleep (sleep_msec * 1000);  // SLEEP 2" TO ALLOW FOR ANY IMMEDIATE TUPLE CHANGE TO OVERRIDE! */
+        if (! fromsongstartup || resetthreads)  // CHGD. BY ANOTHER THREAD WHILST WE WERE SLEEPING!
         {
-            int sleep_msec = aud_get_int ("lyricwiki", "sleep_msec");
-            if (sleep_msec < 1)  sleep_msec = 1600;
-            g_usleep (sleep_msec * 1000);  // SLEEP 2" TO ALLOW FOR ANY IMMEDIATE TUPLE CHANGE TO OVERRIDE! */
-            if (! fromsongstartup || resetthreads)  // CHGD. BY ANOTHER THREAD WHILST WE WERE SLEEPING!
-            {
-                /* ANOTHER THREAD HAS BEEN STARTED BY TUPLE-CHANGE, WHILE WE SLEPT, SO ABORT THIS
-                   THREAD AND LET THE LATTER (TUPLE-CHANGE) THREAD UPDATE THE LYRICS!
-                */
-                pthread_exit (nullptr);
-                return nullptr;
-            }
+            /* ANOTHER THREAD HAS BEEN STARTED BY TUPLE-CHANGE, WHILE WE SLEPT, SO ABORT THIS
+               THREAD AND LET THE LATTER (TUPLE-CHANGE) THREAD UPDATE THE LYRICS!
+            */
+            pthread_exit (nullptr);
+            return nullptr;
         }
     }
 
@@ -503,17 +524,23 @@ static void * lyric_helper_thread_fn (void * data)
             state.album = String ("_");
 
         /* JWT:DON'T WANT HELPER WAITING FOR ALBUMART UNLESS ALBUMART ACTIVE AND NOT A USER-FORCED REFRESH: */
-        const char * flags = (! state.force_refresh && aud_get_bool ("albumart", "_isactive")
-                && aud_get_bool ("albumart", "internet_coverartlookup")) ? "ALBUMART" : "none";
+        int lyric_format = aud_get_int ("lyricwiki", "lyric_format");
+        if (lyric_format > 1 && state.is_stream)
+            lyric_format = 1;  /* DON'T ENFORCE TIMESTAMPPED-LYRICS FETCH FOR STREAMS (IT DON'T WORK)! */
+
+        StringBuf flags = (! state.force_refresh && aud_get_bool ("albumart", "_isactive")
+                && aud_get_bool ("albumart", "internet_coverartlookup"))
+                        ? str_printf ("%s%d", "ALBUMART,SYNC=", lyric_format)
+                        : str_printf ("%s%d", "SYNC=", lyric_format);
 
         AUDINFO ("i:HELPER FOUND: WILL DO (%s)\n", (const char *) str_concat ({lyric_helper, " \"",
                 (const char *) state.artist, "\" \"",
                 (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir),
-                " \"", (const char *) state.album, "\" '", flags, "' "}));
+                " \"", (const char *) state.album, "\" '", (const char *) flags, "' "}));
 #ifdef _WIN32
         WinExec ((const char *) str_concat ({lyric_helper, " \"", (const char *) state.artist, "\" \"",
                 (const char *) state.title, "\" ", aud_get_path (AudPath::UserDir),
-                " \"", (const char *) state.album, "\" '", flags, "' "}),
+                " \"", (const char *) state.album, "\" '", (const char *) flags, "' "}),
                 SW_HIDE);
 #else
         helper_returncode = system ((const char *) str_concat ({lyric_helper, " \"", (const char *) state.artist, "\" \"",
@@ -612,6 +639,12 @@ THREAD_EXIT:
 /* JWT:HANDLE LYRICS FROM LOCAL LYRICS FILES: */
 static void get_lyrics_step_0 (const char * uri, const Index<char> & buf, void *)
 {
+    if (timer > 0)
+    {
+        g_source_remove (timer);  // Stop the sync timer
+        timer = 0;
+    }
+
     if (! buf.len ())
     {
         update_lyrics (_("Error"), nullptr,
@@ -892,13 +925,13 @@ static void show_lyrics ()
     gtk_text_buffer_set_text (textbuffer, "", -1);
     gtk_text_buffer_get_start_iter (textbuffer, & iter);
     gtk_text_buffer_insert_with_tags_by_name (textbuffer, & iter, str_to_utf8 (state.shotitle, -1), -1,
-     "weight_bold", "size_x_large", nullptr);
+            "weight_bold", "size_x_large", nullptr);
 
     if (state.shoartist)
     {
         gtk_text_buffer_insert (textbuffer, & iter, "\n", -1);
         gtk_text_buffer_insert_with_tags_by_name (textbuffer, & iter, str_to_utf8 (state.shoartist, -1), -1,
-         "style_italic", nullptr);
+                "style_italic", nullptr);
     }
 
     gtk_text_buffer_insert (textbuffer, & iter, "\n\n", -1);
@@ -910,7 +943,7 @@ static void show_lyrics ()
     gtk_text_view_scroll_to_iter (textview, & iter, 0, true, 0, 0);
     gtk_widget_set_sensitive (save_button, (ok2save_was && timer == 0));
 
-    if (! state.synclyrics)
+    if (state.is_stream || ! state.synclyrics)
         return;
 
     bool have_timestamps = false;
@@ -918,46 +951,44 @@ static void show_lyrics ()
     timed_lyrics.clear ();
     std::istringstream iss (static_cast<std::string>(state.sholyrics)); // Assuming String can be cast to std::string
     std::string line;
+    // Updated regex to support both SS.SS and SS.SSS formats
+    std::regex re (R"(\[\s*(\d+)\s*:\s*(\d+\.\d{2,3})\s*\]\s*(.*))");
+    std::regex re_offset (R"(\[offset:([+-]?\d+)\])");
 
     // Add a dummy timestamp line at the beginning to prevent title from being highlighted
     TimedLyricLine dummy_line;
     dummy_line.timestamp_ms = 0;
     dummy_line.text = String ("");
     timed_lyrics.push_back (dummy_line);
+    int offset_ms = 0;
 
     while (std::getline (iss, line))
     {
         // Sanitize the line: remove leading/trailing spaces and carriage return
-        line.erase (0, line.find_first_not_of (" \t\r"));  // Remove leading whitespace and \r
-        line.erase (line.find_last_not_of (" \t\r") + 1);  // Remove trailing whitespace and \r
-
-        // Updated regex to handle various whitespaces around the timestamp and lyric text
-        std::regex re (R"(\[\s*(\d+)\s*:\s*(\d+\.\d{2,3})\s*\]\s*(.*))");
+        line.erase(0, line.find_first_not_of (" \t\r"));  // Remove leading whitespace
+        line.erase(line.find_last_not_of (" \t\r") + 1);  // Remove trailing whitespace
         std::smatch match;
-
         if (std::regex_match (line, match, re))
         {
+            have_timestamps = true;
             int minutes = std::stoi (match[1].str ());    // Convert minutes
             float seconds = std::stof (match[2].str ());  // Convert seconds
-            int timestamp_ms = static_cast<int>((minutes * 60 + seconds) * 1000);
+            int timestamp_ms = static_cast<int>(((minutes * 60 + seconds) * 1000) + offset_ms);
 
-            have_timestamps = true;
             TimedLyricLine timed_line;
             timed_line.timestamp_ms = timestamp_ms;
             timed_line.text = String (match[3].str ().c_str ());  // Lyric text
 
             timed_lyrics.push_back (timed_line);
         }
+        else if (std::regex_match (line, match, re_offset))
+            offset_ms = std::stoi (match[1].str ());    // Convert offset_millisec
     }
     if (! have_timestamps)
-    {
-        if (timer > 0)
-        {
-            g_source_remove (timer);  // Stop the sync timer
-            timer = 0;
-        }
         state.synclyrics = false;
-    }
+
+    if (state.synclyrics && ! state.is_stream && timer == 0)
+        timer = g_timeout_add (200, update_lyrics_display, nullptr);  // Start the sync timer
 }
 
 /* CALLED WHENEVER WE NEED LYRICS: */
@@ -974,9 +1005,16 @@ static void lyricwiki_playback (bool force_refresh)
     state.uri = String ();
 // DEPRECIATED:     gtk_widget_set_sensitive (edit_button, false);
     gtk_widget_set_sensitive (refresh_button, false);
+    state.is_stream = false;
     state.local_filename = String ("");
     state.force_refresh = force_refresh;
     state.synclyrics = aud_get_bool ("lyricwiki", "sync_lyrics");
+
+    if (timer > 0)
+    {
+        g_source_remove (timer);  // Stop the sync timer
+        timer = 0;
+    }
 
     if (! strncmp (state.filename, "cdda://?", 8))  // FOR CDs, LOOK FOR DIRECTORY WITH TRACK LYRIC FILES:
     {
@@ -1010,6 +1048,9 @@ static void lyricwiki_playback (bool force_refresh)
                 state.local_filename = lyricStr;  // SET FOUND CD-WIDE LYRICS FOUND OR NO TRACK FILE SET (DVD).
         }
     }
+    else if (strncmp (state.filename, "file://", 7))  // WE'RE NOT A CD, DVD, OR FILE, SO WE'RE A STREAM!:
+        state.is_stream = true;
+
     if (! found_lyricfile)
     {
         /* JWT: EXTRACT JUST THE "NAME" PART TO USE TO NAME THE LYRICS FILE: */
@@ -1181,8 +1222,6 @@ static void lyricwiki_playback (bool force_refresh)
                 AUDERR ("s:Error initializing helper thread attributes: %s!\n", strerror (errno));
         }
     }
-    if (state.synclyrics && timer == 0)  // Start the sync timer
-        timer = g_timeout_add (200, update_lyrics_display, nullptr);  // Call every 200 ms
 
     gtk_widget_set_sensitive (save_button, (timer == 0));  // NO SAVING (PARTIAL) SYNCED LYRICS!
 
@@ -1207,7 +1246,7 @@ static void lyricwiki_playback_changed ()
 /* CALLED WHEN PLAYBACK IS STOPPED, MAKE SURE NO DANGLING THREADS HAVE LOCAL EVENT LOOP RUNNING!: */
 static void kill_thread_eventloop ()
 {
-    if (state.synclyrics && timer > 0)
+    if (timer > 0)
     {
         g_source_remove (timer);  // Stop the sync timer
         timer = 0;
@@ -1315,8 +1354,7 @@ void highlight_lyrics(int current_time_ms) {
 
 gboolean update_lyrics_display (gpointer data)
 {
-    int current_time_ms = aud_drct_get_time ();  // Get current time from player in ms
-    highlight_lyrics (current_time_ms);
+    highlight_lyrics (aud_drct_get_time ());  // Update lyrics display based on current time (ONLY WORKS FOR NON-STREAMS!)
 
     return G_SOURCE_CONTINUE;  // Continue calling this function
 }
