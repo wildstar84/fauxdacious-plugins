@@ -21,6 +21,7 @@
 #include <cassert>
 #include <utility>
 
+#include <gdk/gdkkeysyms.h>
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/hook.h>
 #include <libfauxdcore/i18n.h>

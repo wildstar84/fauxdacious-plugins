@@ -1,4 +1,4 @@
-PLUGIN = playback-history${PLUGIN_SUFFIX}
+PLUGIN = playback-history-gtk${PLUGIN_SUFFIX}
 
 SRCS = playback-history.cc
 
