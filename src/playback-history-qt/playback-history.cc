@@ -20,11 +20,15 @@
 #include <cassert>
 #include <utility>
 
+#include <QApplication>
 #include <QAbstractListModel>
 #include <QEvent>
+#include <QKeyEvent>
 #include <QFont>
 #include <QMetaObject>
 #include <QPointer>
+#include <QClipboard>
+#include <QThread>
 
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/hook.h>
@@ -221,6 +225,7 @@ public:
 
     int rowCount (const QModelIndex & parent) const override;
     int columnCount (const QModelIndex & parent) const override;
+    const char * textdata (const QModelIndex & index) const;
     QVariant data (const QModelIndex & index, int role) const override;
 
     bool removeRows (int row, int count,
@@ -284,6 +289,7 @@ protected:
     void changeEvent (QEvent * event) override;
     void currentChanged (const QModelIndex & current,
             const QModelIndex & previous) override;
+    void keyPressEvent (QKeyEvent * event) override;
 
 private:
     void makeCurrent (const QModelIndex & index);
@@ -511,6 +517,19 @@ int HistoryModel::rowCount (const QModelIndex & parent) const
 int HistoryModel::columnCount (const QModelIndex & parent) const
 {
     return parent.isValid () ? 0 : NColumns;
+}
+
+/* JWT:ADDED TO FETCH BACK THE DISPLAYED TITLE|ALBUM, SINCE ::text() RETURNS QVariant
+   (ONLY AS QString) *FROM* A String & I COULDN'T GET IT BACK TO String OR const char *!
+   WITH ANY COMBO. OF QString's .to*()/.constData() METHODS!:
+*/
+const char * HistoryModel::textdata (const QModelIndex & index) const
+{
+    if (isOutOfBounds (index))
+        return "-no data-";  //PLAY SAFE!
+
+    return (const char *) m_entries[positionFromIndex (index)].text ();
+
 }
 
 QVariant HistoryModel::data (const QModelIndex & index, int role) const
@@ -784,6 +803,59 @@ void HistoryView::currentChanged (const QModelIndex & current,
         makeCurrent (current);
 }
 
+void HistoryView::keyPressEvent (QKeyEvent * event)
+{
+    if (! event)
+        return;
+
+    auto CtrlShiftAlt = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier;
+
+    if (! (event->modifiers () & CtrlShiftAlt))
+    {
+        switch (event->key ())
+        {
+          case Qt::Key_Delete:
+            audqt::TreeView::keyPressEvent (event);
+            return;
+        }
+    }
+    else if (event->modifiers () & Qt::ControlModifier)
+    {
+        switch (event->key ())
+        {
+          case Qt::Key_A:
+            selectAll ();
+            return;
+          case Qt::Key_C:  // COPY TO CLIPBOARD:
+          {
+            // get all selected rows - JWT:stole this from:  https://medo64.com/posts/copy-to-clipboard-in-qt
+            QClipboard * clipboard = QApplication::clipboard ();
+            StringBuf pastem;
+            for (auto & idx : selectionModel ()->selectedRows ())
+            {
+                const char * rowtitle = m_model.textdata (idx);
+                pastem.insert (-1, rowtitle);
+                pastem.insert (-1, "\n");
+            }
+            // JWT:ADDED TO COPY SELECTED HISTORY ENTRIES TO <CLIPBOARD> FOR PASTING IN OTHER APPS:
+            if (pastem && pastem.len () > 0)
+            {
+                clipboard->setText((const char *) pastem, QClipboard::Clipboard);
+                if (clipboard->supportsSelection ())
+                    clipboard->setText ((const char *) pastem, QClipboard::Selection);
+
+#if defined(Q_OS_LINUX)
+                QThread::msleep (1); //workaround for copied text not being available...
+#endif
+            }
+            return;
+          }
+        }
+    }
+
+    audqt::TreeView::keyPressEvent (event);
+}
+
 void HistoryView::makeCurrent (const QModelIndex & index)
 {
     // QAbstractItemView::pressed is only emitted when the index is valid.
@@ -819,6 +891,9 @@ void * PlaybackHistory::get_qt_widget ()
 {
     assert (! s_history_view);
     s_history_view = new HistoryView;
+    /* JWT:NEEDED FOR KEYPRESS EVENTS TO BE SEEN!: */
+    s_history_view->setFocusPolicy (Qt::StrongFocus);
+
     return s_history_view;
 }
 
