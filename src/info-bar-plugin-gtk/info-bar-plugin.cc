@@ -827,9 +827,6 @@ static gboolean infobar_keypress_cb (GtkWidget *, GdkEventKey * event)
                 if (plugin)
                     aud_plugin_enable (plugin, (! aud_plugin_get_enabled (plugin)));
                 break;
-              case 'q':
-                aud_quit ();
-                break;
               case 's':
                 plugin = aud_plugin_lookup_basename ("search-tool");
                 if (plugin)
@@ -842,6 +839,15 @@ static gboolean infobar_keypress_cb (GtkWidget *, GdkEventKey * event)
                 break;
               default:
                 return false;
+            }
+        }
+      case GDK_CONTROL_MASK:        // [Ctrl]
+        {
+            switch (event->keyval)
+            {
+              case 'q':
+                aud_quit ();
+                break;
             }
         }
       default:
@@ -1068,7 +1074,7 @@ void * InfoBarPlugin::get_gtk_widget ()
     update_toggles ();
 
     gtk_widget_set_can_focus (main_window, true);
-    gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nB: next\nC: pause\nJ: jump to song\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous\nAlt-Q: Quit");
+    gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nB: next\nC: pause\nJ: jump to song\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous\nCtrl-Q: Quit");
     gtk_widget_grab_focus (main_window);
 
     ui_playback_ready ();
