@@ -59,11 +59,11 @@ private:
            "This plugin tracks and provides access to playback history.\n\n"
 
            "History entries are stored only in memory and are lost\n"
-           "on Audacious exit. When the plugin is disabled,\n"
+           "on Fauxdacious exit. When the plugin is disabled,\n"
            "playback history is not tracked at all.\n"
            "History entries are only added, never removed automatically.\n"
            "The user can remove selected entries by pressing the Delete key.\n"
-           "Restart Audacious or disable the plugin by closing\n"
+           "Restart Fauxdacious or disable the plugin by closing\n"
            "Playback History view to clear the entries.\n\n"
 
            "Two history item granularities (modes) are supported.\n"
@@ -202,6 +202,7 @@ private:
 };
 
 Index<HistoryEntry> m_entries;
+GtkWidget * treeview = nullptr;
 
 /* ADDS NEW SONG ENTRIES INTO THE HISTORY-LIST: */
 bool HistoryEntry::assignPlayingEntry ()
@@ -301,7 +302,7 @@ bool HistoryEntry::retrieveText (String & text)
     {
         String errorMessage;
         const auto tuple = aud_playlist_entry_get_tuple (m_playlist,
-                m_playlistPosition, Playlist::NoWait);
+                m_playlistPosition, Playlist::Wait, & errorMessage);
 
         if (errorMessage || tuple.state () != Tuple::Valid)
         {
@@ -360,8 +361,19 @@ bool HistoryEntry::isAvailable ()
     {
         if (type () == HistoryEntry::Type::Song)
         {
+            String errorMessage;
             Tuple tuple = aud_playlist_entry_get_tuple (m_playlist,
-                    m_playlistPosition, Playlist::NoWait);
+                    m_playlistPosition, Playlist::Wait, & errorMessage);
+
+            if (errorMessage || tuple.state () != Tuple::Valid)
+            {
+                AUDWARN ("Failed to retrieve metadata of entry #%d in playlist %s: %s\n",
+                        entryNumber (), printable(playlistTitle ()),
+                        errorMessage ? printable (errorMessage)
+                                     : "Song info could not be read");
+                return false;
+            }
+
             String album = tuple.get_str (Tuple::Album);
             if (! album || ! album[0])
                 album = String ("--no album!--");
@@ -384,8 +396,6 @@ bool HistoryEntry::shouldAppendEntry ()
 {
     if (m_playingPosition < 0 || fromTitleChg)
         return true;
-    else if (m_playingPosition == prevPlayingPosition)
-        return false;
 
     auto & prevPlayingEntry = m_entries[m_playingPosition];
 
@@ -414,7 +424,7 @@ bool HistoryEntry::shouldAppendEntry ()
     // Ignore this possibility here. The users concerned about such an
     // occurrence are advised to edit metadata in their music collections
     // and ensure unique album names. The unique album names would also
-    // prevent Audacious from erroneously playing same-name albums
+    // prevent Fauxdacious from erroneously playing same-name albums
     // in order if they happen to end up adjacent in a playlist.
     if (strcmp_safe ((const char *) prevPlayingEntry.text (),
             (const char *) this->text ()))
@@ -499,10 +509,27 @@ static void select_all (void * user, bool selected) {}
 /* CALLBACK WHEN USER DOUBLE-CLICKS AN ENTRY: */
 static void activate_row (void * user, int row)
 {
-    prevPlayingPosition = m_playingPosition;
-    aud_playlist_select_all (m_entries[m_entries.len ()-(row+1)].playlist (), false);
-    m_entries[m_entries.len ()-(row+1)].play ();
-    m_playingPosition = m_entries.len ()-(row+1);
+    int pos = m_entries.len ()-(row+1);
+    if (! m_entries[pos].play ())
+        return;
+
+    // Update m_playingPosition here to prevent the imminent playbackStarted()
+    // invocation from appending a copy of the activated entry to m_entries.
+    // This does not prevent appending a different-type counterpart entry if the
+    // type of the activated entry does not match the currently configured
+    // History Item Granularity. Such a scenario is uncommon (happens only when
+    // the user switches between the History modes), and so is not specially
+    // handled or optimized for.
+    if (pos != m_playingPosition)
+    {
+        GtkWidget * list = (GtkWidget *) treeview;
+        prevPlayingPosition = m_playingPosition;
+        m_playingPosition = pos;
+        int highlight_row = m_entries.len ()-(m_playingPosition+1);
+        audgui_list_set_highlight (list, highlight_row);
+        audgui_list_set_focus (list, highlight_row);
+    }
+    aud_playlist_select_all (m_entries[pos].playlist (), false);
 }
 
 /* CALLED WHEN USER DELETES ROWS VIA PRESSING [Delete] KEY: */
@@ -518,14 +545,33 @@ static void remove_selected (GtkWidget * treeview)
         GtkTreePath * path = (GtkTreePath *) cursor->data;
         gtk_tree_model_get_iter (model, &iter, path);
         int row = gtk_tree_path_get_indices (path)[0];
+        int pos = m_entries.len ()-(row+1);
+        if (pos == m_playingPosition)
+            m_playingPosition = -1;  // We removed the currently-playing item, so unset it!
+        else if (m_playingPosition > pos)
+            m_playingPosition--;
+
         audgui_list_delete_rows (treeview, row, 1);
-        m_entries.remove (m_entries.len ()-(row+1), 1);
+        m_entries.remove (pos, 1);
         cursor = cursor->prev;
     }
+    /* JWT:WE DIFFER NEXT LINE FROM AUDACIOUS BY RESETTING UNSET (-1) POSITION TO TOP
+       ENTRY TO REDUCE POSSIBILITY OF SAME ENTRY APPEARING BACK-TO-BACK IN LIST:
+    */
+    if (m_playingPosition < 0 || m_playingPosition >= m_entries.len ())
+        prevPlayingPosition = m_playingPosition = m_entries.len () - 1;
+
     g_list_free_full (selected_list, (GDestroyNotify) gtk_tree_path_free);
+    if (m_playingPosition >= 0)
+    {
+        int highlight_row = m_entries.len ()-(m_playingPosition+1);
+        GtkWidget * list = (GtkWidget *) treeview;
+        audgui_list_set_highlight (list, highlight_row);
+        audgui_list_set_focus (list, highlight_row);
+    }
 }
 
-/* HANDLE SPECIAL KEY PRESSES (CURRENTLY ONLY [DELETE] KEY: */
+/* HANDLE SPECIAL KEY PRESSES (CURRENTLY: [Delete], [Ctrl-[a]], & [Ctrl-[c]] KEYS): */
 static gboolean pbhist_keypress_cb (GtkWidget * treeview, GdkEventKey * event)
 {
     switch (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK))
@@ -542,7 +588,7 @@ static gboolean pbhist_keypress_cb (GtkWidget * treeview, GdkEventKey * event)
     case GDK_CONTROL_MASK:  // Ctrl-KEYS:
         switch (event->keyval)
         {
-        case 'a':
+        case 'a':  // Ctrl-a:  SELECT ALL HISTORY-ENTRIES:
         {
             GtkTreeSelection * sel = gtk_tree_view_get_selection ((GtkTreeView *) treeview);
             for (int i = 0; i < m_entries.len(); i ++)
@@ -552,7 +598,8 @@ static gboolean pbhist_keypress_cb (GtkWidget * treeview, GdkEventKey * event)
             }
             return true;
         }
-        case 'c':
+        // NOTE: Shift-Ctrl-A (DESELECT ALL ENTRIES) ALREADY HANDLED, SO NOT INCLUDED HERE!:
+        case 'c':  // Ctrl-c:  COPY SELECTED ENTRIES TO PASTE-BUFFER:
         {
             GtkTreeModel * model;
             GtkTreeSelection * selection = gtk_tree_view_get_selection ((GtkTreeView *) treeview);
@@ -595,12 +642,15 @@ static void destroy_cb (GtkWidget * window)
     m_entries.clear();
     m_playingPosition = -1;
     prevPlayingPosition = -1; 
+    treeview = nullptr;
 }
 
 /* CREATE ALL THE WIDGETS (ON STARTUP): */
 void * PlaybackHistory::get_gtk_widget ()
 {
-    GtkWidget * treeview = audgui_list_new (& callbacks, nullptr, 0);
+    if (treeview == nullptr)
+        treeview = audgui_list_new (& callbacks, nullptr, 0);
+
     gtk_tree_view_set_headers_visible ((GtkTreeView *) treeview, false);
     audgui_list_add_column (treeview, nullptr, 0, G_TYPE_STRING, -1);
 

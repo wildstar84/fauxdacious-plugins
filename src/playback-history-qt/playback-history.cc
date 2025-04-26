@@ -407,7 +407,7 @@ bool HistoryEntry::retrieveText (String & text) const
 {
     String errorMessage;
     const auto tuple = aud_playlist_entry_get_tuple (m_playlist,
-            m_playlistPosition, Playlist::NoWait);
+            m_playlistPosition, Playlist::Wait, & errorMessage);
 
     if (errorMessage || tuple.state () != Tuple::Valid)
     {
@@ -419,6 +419,9 @@ bool HistoryEntry::retrieveText (String & text) const
     }
 
     text = tuple.get_str (static_cast<Tuple::Field>(m_type));
+    if (! text || ! text[0])
+        text = String (str_printf ("--no %s!--", untranslatedTextDesignation ()));
+
     return true;
 }
 
@@ -453,6 +456,29 @@ bool HistoryEntry::isAvailable () const
     // referenced song is not stored in a history entry just for this case.
     if (currentTextAtPlaylistPosition != m_text)
     {
+        if (type () == HistoryEntry::Type::Song)
+        {
+            String errorMessage;
+            Tuple tuple = aud_playlist_entry_get_tuple (m_playlist,
+                    m_playlistPosition, Playlist::Wait, & errorMessage);
+
+            if (errorMessage || tuple.state () != Tuple::Valid)
+            {
+                AUDWARN ("Failed to retrieve metadata of entry #%d in playlist %s: %s\n",
+                        entryNumber (), printable(playlistTitle ()),
+                        errorMessage ? printable (errorMessage)
+                                     : "Song info could not be read");
+                return false;
+            }
+
+            String album = tuple.get_str (Tuple::Album);
+            if (! album || ! album[0])
+                album = String ("--no album!--");
+
+            if (! strcmp_safe ((const char *) album, (const char *) m_text))
+                return true;
+        }
+
         AUDWARN ("The %s at the selected entry's playlist position has"
                 " changed.\n",
                 untranslatedTextDesignation ());
@@ -593,6 +619,14 @@ bool HistoryModel::removeRows (int row, int count, const QModelIndex & parent)
 
     endRemoveRows ();
     m_areRowsBeingRemoved = false;
+    /* JWT:WE DIFFER NEXT LINE FROM AUDACIOUS BY RESETTING UNSET (-1) POSITION TO TOP
+       ENTRY TO REDUCE POSSIBILITY OF SAME ENTRY APPEARING BACK-TO-BACK IN LIST:
+    */
+    if (m_playingPosition < 0)
+        m_playingPosition = m_entries.len () - 1;
+
+    if (m_playingPosition > 0)
+            updateFontForPosition (m_playingPosition);
 
     return true;
 }
@@ -730,8 +764,8 @@ void HistoryModel::playbackStarted ()
 // JWT:ALSO CHECK STREAMING STATION METADATA CHANGES (TO RECORD HISTORY FROM STREAMING STATIONS):
 void HistoryModel::titleChanged ()
 {
-	if (aud_get_bool("playback-history", "chk_on_title_change"))
-		playbackStarted ();
+    if (aud_get_bool("playback-history", "chk_on_title_change"))
+        playbackStarted ();
 }
 
 HistoryView::HistoryView ()
@@ -803,6 +837,7 @@ void HistoryView::currentChanged (const QModelIndex & current,
         makeCurrent (current);
 }
 
+/* HANDLE SPECIAL KEY PRESSES (CURRENTLY: [Delete], [Ctrl-[a]], [Shift-Ctrl-[a] & [Ctrl-[c]] KEYS): */
 void HistoryView::keyPressEvent (QKeyEvent * event)
 {
     if (! event)
@@ -810,20 +845,29 @@ void HistoryView::keyPressEvent (QKeyEvent * event)
 
     auto CtrlShiftAlt = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier;
 
-    if (! (event->modifiers () & CtrlShiftAlt))
+    if (! (event->modifiers () & CtrlShiftAlt))  // NO MODIFIER KEYS:
     {
         switch (event->key ())
         {
-          case Qt::Key_Delete:
+          case Qt::Key_Delete:  // HANDLE [Delete] KEY TO REMOVE HISTORY ENTRIES:
             audqt::TreeView::keyPressEvent (event);
             return;
         }
     }
-    else if (event->modifiers () & Qt::ControlModifier)
+    else if (event->modifiers () == (Qt::ShiftModifier | Qt::ControlModifier))  // Shift-Ctrl-KEYS:
     {
         switch (event->key ())
         {
-          case Qt::Key_A:
+          case Qt::Key_A:  // Shift-Ctrl-a:  DESELECT ALL HISTORY-ENTRIES:
+            clearSelection();
+            return;
+        }
+    }
+    else if (event->modifiers () & Qt::ControlModifier)  // Ctrl-KEYS:
+    {
+        switch (event->key ())
+        {
+          case Qt::Key_A:  // Ctrl-a:  SELECT ALL HISTORY-ENTRIES:
             selectAll ();
             return;
           case Qt::Key_C:  // COPY TO CLIPBOARD:
