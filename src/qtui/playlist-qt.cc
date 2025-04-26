@@ -259,6 +259,15 @@ void PlaylistWidget::keyPressEvent (QKeyEvent * event)
             return;
         }
     }
+    else if (event->modifiers () & Qt::ControlModifier)
+    {
+        switch (event->key ())
+        {
+          case Qt::Key_Q:
+            aud_quit ();
+            return;
+        }
+    }
 
     audqt::TreeView::keyPressEvent (event);
 }
