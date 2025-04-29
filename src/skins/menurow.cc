@@ -25,6 +25,10 @@
  * Audacious or using our public API to be a derived work.
  */
 
+/* This code handles the old vertical menu-buttons:  [O A I D V] on
+ * left-side of the main window.
+ */
+
 #include <libfauxdcore/runtime.h>
 
 #include "skins_cfg.h"
@@ -43,12 +47,23 @@ void MenuRow::draw (cairo_t * cr)
     else
         skin_draw_pixbuf (cr, SKIN_TITLEBAR, 304 + 8 * (m_selected - 1), 44, 0, 0, 8, 43);
 
+    if (aud_get_bool ("skins", "always_on_top"))
+        skin_draw_pixbuf (cr, SKIN_TITLEBAR, 312, 54, 0, 10, 8, 8);
+    if (aud_get_bool ("skins", "double_size"))
+        skin_draw_pixbuf (cr, SKIN_TITLEBAR, 328, 70, 0, 26, 8, 8);
+
     if (m_pushed)
     {
-        if (aud_get_bool ("skins", "always_on_top"))
-            skin_draw_pixbuf (cr, SKIN_TITLEBAR, 312, 54, 0, 10, 8, 8);
-        if (aud_get_bool ("skins", "double_size"))
-            skin_draw_pixbuf (cr, SKIN_TITLEBAR, 328, 70, 0, 26, 8, 8);
+        if (m_selected == 2)
+        {
+            if (! aud_get_bool ("skins", "always_on_top"))
+                skin_draw_pixbuf (cr, SKIN_TITLEBAR, 312, 54, 0, 10, 8, 8);
+        }
+        else if (m_selected == 4)
+        {
+            if (! aud_get_bool ("skins", "double_size"))
+                skin_draw_pixbuf (cr, SKIN_TITLEBAR, 328, 70, 0, 26, 8, 8);
+        }
     }
 }
 
