@@ -398,13 +398,14 @@ G_GNUC_END_IGNORE_DEPRECATIONS
 
         /* JWT:APPEND THE FAUXDACIOUS INSTANCE-NAME (IF NOT DEFAULT) 'CASE WE'RE RUNNING MULTIPLE INSTANCES!: */
         /* NOTE:  THIS ONLY CHANGES THE WM-DECORATION TITLE, *NOT* THE ONE IN THE DOCK-WINDOW'S HEADER!: */
+        StringBuf title = str_copy (item->name);
+        String instancename = aud_get_instancename ();
+        if (instancename != String ("fauxdacious"))
+            str_append_printf (title, " (%s)", (const char *) instancename);
+
+        gtk_window_set_title ((GtkWindow *) item->window, (const char *) title);
         if (strstr (item->name, "Mini-Fauxdacious"))  /* ONLY NEED THIS ON MINI-FAUXDACIOUS PLUGIN. */
         {
-            StringBuf title = str_copy (_("Mini-Fauxdacious"));
-            String instancename = aud_get_instancename ();
-            if (instancename != String ("fauxdacious"))
-                str_append_printf (title, " (%s)", (const char *) instancename);
-            gtk_window_set_title ((GtkWindow *) item->window, (const char *) title);
             /* JWT:UNLIKE OTHER PLUGINS, Mini-Fauxdacious FUNCTIONS MORE LIKE A "MAIN WINDOW" */
             gtk_window_set_role ((GtkWindow *) item->window, "altwindow");
             int toolbar_height = aud_get_int ("minifauxdacious-gtk", "toolbar_height");
@@ -423,10 +424,7 @@ G_GNUC_END_IGNORE_DEPRECATIONS
                 item->wprev = wtb;
         }
         else
-        {
-            gtk_window_set_title ((GtkWindow *) item->window, item->name);
             gtk_window_set_role ((GtkWindow *) item->window, "plugin");
-        }
 
         gtk_container_set_border_width ((GtkContainer *) item->window, 2);
 

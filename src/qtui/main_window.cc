@@ -177,6 +177,7 @@ MainWindow::MainWindow () :
         ToolBarCustom (audqt::volume_button_new (this))
     };
 
+    setDockOptions (QMainWindow::AllowTabbedDocks);  // JWT:ALLOW >1 DOCS PER SIDE.
     auto toolbar = new ToolBar (this, items);
     addToolBar (Qt::TopToolBarArea, toolbar);
 
@@ -542,6 +543,7 @@ void MainWindow::show_dock_plugin (PluginHandle * plugin)
 void MainWindow::add_dock_item (audqt::DockItem * item)
 {
     auto w = new DockWidget (this, item);
+    String instancename = aud_get_instancename ();
 
     if (! restoreDockWidget (w))
     {
@@ -559,10 +561,6 @@ void MainWindow::add_dock_item (audqt::DockItem * item)
     /* JWT:APPEND THE FAUXDACIOUS INSTANCE-NAME (IF NOT DEFAULT) 'CASE WE'RE RUNNING MULTIPLE INSTANCES!: */
     if (strstr (w->windowTitle().toUtf8().constData(), "Mini-Fauxdacious"))
     {
-        String instancename = aud_get_instancename ();
-        if (instancename != String ("fauxdacious"))
-            w->setWindowTitle (QString ("%1 (%2)").arg (w->windowTitle()).arg ((const char *) instancename));
-
         w->setWindowRole ("altwindow");
         /* JWT:FOR MINI-FAUXDACIOUS - RESTORE THE WINDOW-SIZE/POSITION (DEFAULTS TOO SMALL)
            AND/OR USER PBLY. WANTS TO USE THIS STAND-ALONE MUCH LIKE THE MAIN WINDOW): */
@@ -580,6 +578,9 @@ void MainWindow::add_dock_item (audqt::DockItem * item)
             w->resize (width, w->geometry ().height ());
         }
     }
+
+    if (instancename != String ("fauxdacious"))
+        w->setWindowTitle (QString ("%1 (%2)").arg (w->windowTitle()).arg ((const char *) instancename));
 
     /* workaround for QTBUG-89144 to make sure wm can manage the window! */
     auto flags = w->windowFlags();
