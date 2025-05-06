@@ -35,6 +35,7 @@ typedef struct {
     bool analyzer_peaks;
     bool twoway_scroll;
     bool use_random_skins;
+    int oaidu_menustyle;
     int vis_type;
     int analyzer_mode, analyzer_type;
     int scope_mode;

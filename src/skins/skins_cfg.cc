@@ -50,6 +50,7 @@ static const char * const skins_defaults[] = {
     "show_remaining_time", "FALSE",
     "twoway_scroll", "FALSE",
     "use_random_skins", "FALSE",
+    "oaidu_menustyle", "0",
 
     /* visualizer */
     "analyzer_falloff", aud::numeric_string<FALLOFF_FAST>::str,
@@ -127,7 +128,8 @@ static const struct {
     {"playlist_x", & config.playlist_x},
     {"playlist_y", & config.playlist_y},
     {"playlist_width", & config.playlist_width},
-    {"playlist_height", & config.playlist_height}
+    {"playlist_height", & config.playlist_height},
+    {"oaidu_menustyle", & config.oaidu_menustyle}
 };
 
 void skins_cfg_load ()
@@ -183,6 +185,11 @@ static void vis_reset_cb ()
     start_stop_visual (false);
 }
 
+static void oaidu_menustyle_cb ()
+{
+    view_apply_skin ();
+}
+
 static void * create_skin_view ();
 
 static const PreferencesWidget font_table_elements[] = {
@@ -192,6 +199,11 @@ static const PreferencesWidget font_table_elements[] = {
     WidgetFonts (N_("Playlist:"),
         WidgetString ("skins", "playlist_font", playlist_font_set_cb),
         {N_("Select playlist font:")})
+};
+
+static const ComboItem oaidu_menustyle[] = {
+    ComboItem (N_("Xmms"), 0),
+    ComboItem (N_("Legacy"), 1)
 };
 
 static const PreferencesWidget skins_widgets_general[] = {
@@ -208,7 +220,10 @@ static const PreferencesWidget skins_widgets_general[] = {
     WidgetCheck (N_("Scroll song title in both directions"),
         WidgetBool (config.twoway_scroll, autoscroll_set_cb)),
     WidgetCheck (N_("Random skin on play"),
-        WidgetBool (config.use_random_skins, random_skins_set_cb))
+        WidgetBool (config.use_random_skins, random_skins_set_cb)),
+    WidgetCombo (N_("Winamp [OAIDU] menu style:"),
+        WidgetInt (config.oaidu_menustyle, oaidu_menustyle_cb),
+        {{oaidu_menustyle}})
 };
 
 static ComboItem vis_mode_elements[] = {
