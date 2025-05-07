@@ -131,6 +131,15 @@ private:
 
 void skin_load_hints (const char * path)
 {
+    if (config.try_classic_hints)
+    {
+        VFSFile file = open_local_file_nocase (path, "skin-classic.hints");
+        if (file)
+        {
+            HintsParser ().parse (file);
+            return;
+        }
+    }
     VFSFile file = open_local_file_nocase (path, "skin.hints");
     if (file)
         HintsParser ().parse (file);

@@ -50,6 +50,7 @@ static const char * const skins_defaults[] = {
     "twoway_scroll", "FALSE",
     "use_random_skins", "FALSE",
     "oaidu_menustyle", "0",
+    "try_classic_hints", "FALSE",
 
     /* visualizer */
     "analyzer_falloff", aud::numeric_string<FALLOFF_FAST>::str,
@@ -97,6 +98,7 @@ static const struct skins_cfg_boolent_t {
     {"active_titlebar_any", & config.active_titlebar_any},
     {"twoway_scroll", & config.twoway_scroll},
     {"use_random_skins", & config.use_random_skins},
+    {"try_classic_hints", & config.try_classic_hints},
 
     /* visualizer */
     {"analyzer_peaks", & config.analyzer_peaks}
@@ -204,6 +206,17 @@ static void vis_reset_cb ()
     start_stop_visual (false);
 }
 
+static void try_classic_hints_cb ()
+{
+    aud_set_bool ("skins", "try_classic_hints", config.try_classic_hints);
+    String path = aud_get_str ("skins", "skin");
+    if (path && path[0])
+    {
+        skin_load (path);
+        view_apply_skin ();
+    }
+}
+
 static void oaidu_menustyle_cb ()
 {
     view_apply_skin ();
@@ -240,6 +253,8 @@ static const PreferencesWidget skins_widgets_general[] = {
         WidgetBool (config.twoway_scroll, autoscroll_set_cb)),
     WidgetCheck (N_("Random skin on play"),
         WidgetBool (config.use_random_skins, random_skins_set_cb)),
+    WidgetCheck (N_("Use Classic skin hints (skin-classic.hints) if available)"),
+        WidgetBool (config.try_classic_hints, try_classic_hints_cb)),
     WidgetCombo (N_("Winamp [OAIDU] menu style:"),
         WidgetInt (config.oaidu_menustyle, oaidu_menustyle_cb),
         {{oaidu_menustyle}})
