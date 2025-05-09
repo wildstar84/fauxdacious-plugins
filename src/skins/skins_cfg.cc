@@ -65,7 +65,7 @@ static const char * const skins_defaults[] = {
     "vu_mode", aud::numeric_string<VU_SMOOTH>::str,
 
     /* windows */
-    "active_titlebar_any", "TRUE",
+    "active_titlebar_any", "FALSE",
     "always_on_top", "FALSE",
     "double_size", "FALSE",
     "equalizer_shaded", "FALSE",
@@ -232,6 +232,7 @@ static const PreferencesWidget skins_widgets_general[] = {
         WidgetBool (config.autoscroll, autoscroll_set_cb)),
     WidgetCheck (N_("Scroll song title in both directions"),
         WidgetBool (config.twoway_scroll, autoscroll_set_cb)),
+    WidgetLabel (N_("<b>Fauxdacious Extras</b>")),
     WidgetCheck (N_("Random skin on play"),
         WidgetBool (config.use_random_skins, random_skins_set_cb)),
     WidgetCheck (N_("Use Classic skin hints (skin-classic.hints) if available)"),
