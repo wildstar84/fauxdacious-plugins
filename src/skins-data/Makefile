@@ -208,4 +208,33 @@ DATA = Skins/Classic/balance.png	\
        Skins/Lavadacious/text.png		\
        Skins/Lavadacious/titlebar.png	\
        Skins/Lavadacious/viscolor.txt	\
-       Skins/Lavadacious/volume.png
+       Skins/Lavadacious/volume.png \
+       Skins/Winamp2.9/BALANCE.BMP	\
+       Skins/Winamp2.9/CBUTTONS.BMP	\
+       Skins/Winamp2.9/CLOSE.CUR	\
+       Skins/Winamp2.9/EQ_EX.BMP	\
+       Skins/Winamp2.9/EQMAIN.BMP	\
+       Skins/Winamp2.9/EQSLID.CUR	\
+       Skins/Winamp2.9/EQTITLE.CUR	\
+       Skins/Winamp2.9/GEN.BMP	\
+       Skins/Winamp2.9/GENEX.BMP	\
+       Skins/Winamp2.9/MAIN.BMP	\
+       Skins/Winamp2.9/MAINMENU.CUR	\
+       Skins/Winamp2.9/MB.BMP	\
+       Skins/Winamp2.9/MONOSTER.BMP	\
+       Skins/Winamp2.9/NUMBERS.BMP	\
+       Skins/Winamp2.9/PLAYPAUS.BMP	\
+       Skins/Winamp2.9/PLEDIT.BMP	\
+       Skins/Winamp2.9/PLEDIT.TXT	\
+       Skins/Winamp2.9/POSBAR.BMP	\
+       Skins/Winamp2.9/POSBAR.CUR	\
+       Skins/Winamp2.9/PSIZE.CUR	\
+       Skins/Winamp2.9/REGION.TXT	\
+       Skins/Winamp2.9/SHUFREP.BMP	\
+       Skins/Winamp2.9/TEXT.BMP	\
+       Skins/Winamp2.9/TITLEBAR.BMP	\
+       Skins/Winamp2.9/TITLEBAR.CUR	\
+       Skins/Winamp2.9/VIDEO.BMP	\
+       Skins/Winamp2.9/VISCOLOR.TXT	\
+       Skins/Winamp2.9/VOLBAL.CUR	\
+       Skins/Winamp2.9/VOLUME.BMP
