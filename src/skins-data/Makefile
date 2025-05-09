@@ -51,6 +51,7 @@ DATA = Skins/Classic/balance.png	\
        Skins/Default/posbar.png		\
        Skins/Default/shufrep.png	\
        Skins/Default/skin.hints		\
+       Skins/Default/skin-classic.hints		\
        Skins/Default/text.png		\
        Skins/Default/titlebar.png	\
        Skins/Default/viscolor.txt	\
@@ -67,6 +68,7 @@ DATA = Skins/Classic/balance.png	\
        Skins/DefaultRed/posbar.png		\
        Skins/DefaultRed/shufrep.png	\
        Skins/DefaultRed/skin.hints		\
+       Skins/DefaultRed/skin-classic.hints		\
        Skins/DefaultRed/text.png		\
        Skins/DefaultRed/titlebar.png	\
        Skins/DefaultRed/viscolor.txt	\
@@ -83,6 +85,7 @@ DATA = Skins/Classic/balance.png	\
        Skins/DefaultViolet/posbar.png		\
        Skins/DefaultViolet/shufrep.png	\
        Skins/DefaultViolet/skin.hints		\
+       Skins/DefaultViolet/skin-classic.hints		\
        Skins/DefaultViolet/text.png		\
        Skins/DefaultViolet/titlebar.png	\
        Skins/DefaultViolet/viscolor.txt	\
@@ -150,6 +153,7 @@ DATA = Skins/Classic/balance.png	\
        Skins/Refugee/posbar.png		\
        Skins/Refugee/shufrep.png	\
        Skins/Refugee/skin.hints		\
+       Skins/Refugee/skin-classic.hints		\
        Skins/Refugee/text.png		\
        Skins/Refugee/titlebar.png	\
        Skins/Refugee/viscolor.txt	\
@@ -166,6 +170,7 @@ DATA = Skins/Classic/balance.png	\
        Skins/RefugeeRed/posbar.png		\
        Skins/RefugeeRed/shufrep.png	\
        Skins/RefugeeRed/skin.hints		\
+       Skins/RefugeeRed/skin-classic.hints		\
        Skins/RefugeeRed/text.png		\
        Skins/RefugeeRed/titlebar.png	\
        Skins/RefugeeRed/viscolor.txt	\
@@ -182,6 +187,7 @@ DATA = Skins/Classic/balance.png	\
        Skins/RefugeeViolet/posbar.png		\
        Skins/RefugeeViolet/shufrep.png	\
        Skins/RefugeeViolet/skin.hints		\
+       Skins/RefugeeViolet/skin-classic.hints		\
        Skins/RefugeeViolet/text.png		\
        Skins/RefugeeViolet/titlebar.png	\
        Skins/RefugeeViolet/viscolor.txt	\
@@ -198,6 +204,7 @@ DATA = Skins/Classic/balance.png	\
        Skins/Lavadacious/posbar.png		\
        Skins/Lavadacious/shufrep.png	\
        Skins/Lavadacious/skin.hints		\
+       Skins/Lavadacious/skin-classic.hints		\
        Skins/Lavadacious/text.png		\
        Skins/Lavadacious/titlebar.png	\
        Skins/Lavadacious/viscolor.txt	\

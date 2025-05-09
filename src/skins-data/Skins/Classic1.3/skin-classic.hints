@@ -1,3 +1,5 @@
 [skin]
 skinDescription=The default skin for Audacious. (Classic variant)
 mainwinOthertext=1
+mainwinStreaminfoVisible=1
+mainwinStreaminfoLabels=1
