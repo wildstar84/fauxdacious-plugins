@@ -167,6 +167,7 @@ struct SkinHints {
 
     int mainwin_menurow_visible = true;
     int mainwin_streaminfo_visible = true;
+    int mainwin_streaminfo_labels = false;
     int mainwin_othertext_is_status = false;
 
     int textbox_bitmap_font_width = 5;

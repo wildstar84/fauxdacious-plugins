@@ -36,7 +36,7 @@ typedef struct {
     int * value_ptr;
 } HintPair;
 
-/* in alphabetical order to allow binary search */
+/* MUST BE IN ALPHABETICAL ORDER to allow binary search!: */
 static const HintPair hint_pairs[] = {
     {"mainwinaboutx", & skin.hints.mainwin_about_x},
     {"mainwinabouty", & skin.hints.mainwin_about_y},
@@ -88,6 +88,7 @@ static const HintPair hint_pairs[] = {
     {"mainwinshuffley", & skin.hints.mainwin_shuffle_y},
     {"mainwinstopx", & skin.hints.mainwin_stop_x},
     {"mainwinstopy", & skin.hints.mainwin_stop_y},
+    {"mainwinstreaminfolabels", & skin.hints.mainwin_streaminfo_labels},
     {"mainwinstreaminfovisible", & skin.hints.mainwin_streaminfo_visible},
     {"mainwintextvisible", & skin.hints.mainwin_text_visible},
     {"mainwintextwidth", & skin.hints.mainwin_text_width},

@@ -70,6 +70,7 @@ public:
 private:
     void draw (QPainter & cr);
     bool button_press (QMouseEvent * event);
+    bool keypress (QKeyEvent * event);
     bool scroll (QWheelEvent * event);
 };
 
@@ -239,6 +240,14 @@ bool PlWindow::button_press (QMouseEvent * event)
     }
 
     return Window::button_press (event);
+}
+
+bool PlWindow::keypress (QKeyEvent * event)
+{
+    if (playlistwin_list->handle_keypress (event))
+        return true;
+
+    return false;
 }
 
 void playlistwin_hide_timer ()

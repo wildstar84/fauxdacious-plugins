@@ -128,6 +128,7 @@ static Button * mainwin_shuffle, * mainwin_repeat;
 
 static TextBox * mainwin_stime_min, * mainwin_stime_sec;
 static TextBox * mainwin_rate_text, * mainwin_freq_text, * mainwin_othertext;
+static TextBox * mainwin_rlabel_text, * mainwin_flabel_text;
 
 static PlayStatus * mainwin_playstatus;
 static SkinnedNumber * mainwin_minus_num, * mainwin_10min_num, * mainwin_min_num;
@@ -289,6 +290,8 @@ void mainwin_refresh_hints ()
     mainwin_menurow->setVisible (p->mainwin_menurow_visible);
     mainwin_rate_text->setVisible (p->mainwin_streaminfo_visible);
     mainwin_freq_text->setVisible (p->mainwin_streaminfo_visible);
+    mainwin_rlabel_text->setVisible (p->mainwin_streaminfo_labels);
+    mainwin_flabel_text->setVisible (p->mainwin_streaminfo_labels);
     mainwin_monostereo->setVisible (p->mainwin_streaminfo_visible);
 
     mainwin_info->set_width (p->mainwin_text_width);
@@ -332,12 +335,12 @@ void mainwin_refresh_hints ()
 
     mainwin_vis->set_colors ();
     volume_delta = aud_get_int ("skins", "scroll_volume_steps");
-    if (volume_delta < 0 || volume_delta > 50)
+    if (volume_delta <= 0 || volume_delta > 50)
 	    volume_delta = aud_get_int (nullptr, "volume_delta");
-	if (volume_delta < 0 || volume_delta > 50)
+	if (volume_delta <= 0 || volume_delta > 50)
 	    volume_delta = 5;
 	step_size = aud_get_int (nullptr, "step_size");
-	if (step_size < 0)
+	if (step_size <= 0)
 	    step_size = 1;
 }
 
@@ -359,6 +362,9 @@ static void mainwin_set_song_info (int bitrate, int samplerate, int channels)
     }
     else
         mainwin_rate_text->set_text (nullptr);
+
+    mainwin_rlabel_text->set_text ("KBPS");
+    mainwin_flabel_text->set_text ("KHZ");
 
     if (samplerate > 0)
     {
@@ -485,6 +491,8 @@ static void mainwin_playback_stop ()
     /* clear sampling parameter displays */
     mainwin_rate_text->set_text (nullptr);
     mainwin_freq_text->set_text (nullptr);
+    mainwin_rlabel_text->set_text (nullptr);
+    mainwin_flabel_text->set_text (nullptr);
     mainwin_monostereo->set_num_channels (0);
     mainwin_set_othertext ("");
 
@@ -613,6 +621,16 @@ static void mainwin_playback_rpress (Button * button, GdkEventButton * event)
 
 bool Window::keypress (GdkEventKey * event)
 {
+    switch (event->keyval)
+    {
+        case GDK_KEY_Up:    /* JWT:ADDED FOR FAUXDACIOUS: */
+            mainwin_set_volume_diff (volume_delta);
+            return true;
+        case GDK_KEY_Down:  /* JWT:ADDED FOR FAUXDACIOUS: */
+            mainwin_set_volume_diff (-1 * volume_delta);
+            return true;
+    }
+
     if (playlistwin_list->handle_keypress (event))
         return true;
 
@@ -1096,6 +1114,12 @@ static void mainwin_create_widgets ()
 
     mainwin_freq_text = new TextBox (10, nullptr, false);
     mainwin->put_widget (false, mainwin_freq_text, 156, 43);
+
+    mainwin_rlabel_text = new TextBox (20, nullptr, false);
+    mainwin->put_widget (false, mainwin_rlabel_text, 131, 43);
+
+    mainwin_flabel_text = new TextBox (15, nullptr, false);
+    mainwin->put_widget (false, mainwin_flabel_text, 171, 43);
 
     mainwin_menurow = new MenuRow;
     mainwin->put_widget (false, mainwin_menurow, 10, 22);

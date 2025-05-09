@@ -73,6 +73,7 @@ private:
     void draw (cairo_t * cr);
     bool button_press (GdkEventButton * event);
     bool scroll (GdkEventScroll * event);
+    bool keypress (GdkEventKey * event);
 };
 
 Window * playlistwin;
@@ -248,6 +249,14 @@ bool PlWindow::button_press (GdkEventButton * event)
     }
 
     return Window::button_press (event);
+}
+
+bool PlWindow::keypress (GdkEventKey * event)
+{
+    if (playlistwin_list->handle_keypress (event))
+        return true;
+
+    return false;
 }
 
 void playlistwin_hide_timer ()
