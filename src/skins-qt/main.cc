@@ -583,21 +583,35 @@ static void mainwin_playback_rpress (Button * button, QMouseEvent * event)
 
 bool Window::keypress (QKeyEvent * event)
 {
-    switch (event->key ())
+    switch (event->modifiers () & (Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier))
     {
-        case Qt::Key_Up:    /* JWT:ADDED FOR FAUXDACIOUS: */
-            mainwin_set_volume_diff (volume_delta);
-            return true;
-        case Qt::Key_Down:  /* JWT:ADDED FOR FAUXDACIOUS: */
-            mainwin_set_volume_diff (-1 * volume_delta);
-            return true;
+      /* THESE KEYS ALWAYS HANDLED HERE ONLY WHEN MAIN-WINDOW FOCUSED -
+         (PLAYLIST-WINDOW HANDLES THESE WHEN IT IS FOCUSED):
+      */
+      case 0:
+        switch (event->key ())
+        {
+            case Qt::Key_Up:    /* JWT:ADDED FOR FAUXDACIOUS: */
+                mainwin_set_volume_diff (volume_delta);
+                return true;
+            case Qt::Key_Down:  /* JWT:ADDED FOR FAUXDACIOUS: */
+                mainwin_set_volume_diff (-1 * volume_delta);
+                return true;
+        }
+      case Qt::ControlModifier:
+        switch (event->key ())
+        {
+            case Qt::Key_Q:  /* JWT:MUST ADD MANUALLY HERE (GTK BINDS IT AUTOMATICALLY)!: */
+                aud_quit ();
+                return true;
+        }
     }
-
     if (playlistwin_list->handle_keypress (event))
-        return true;
+        return true;  /* STOP - PLAYLIST-WINDOW HANDLED THE KEY! */
 
     switch (event->key ())
     {
+        /* KEYS HANDLED HERE (IFF NOT HANDLED BY PLAYLIST-WINDOW): */
         case Qt::Key_Left:
             aud_drct_seek (aud_drct_get_time () - step_size * 1000);
             break;
@@ -606,6 +620,9 @@ bool Window::keypress (QKeyEvent * event)
             break;
         case Qt::Key_Space:
             aud_drct_pause ();
+            break;
+        case Qt::Key_F:  /* WON'T WORK IN GTK. */
+            mainwin_menubtn_cb ();
             break;
         default:
             return false;

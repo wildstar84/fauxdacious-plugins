@@ -623,6 +623,9 @@ bool Window::keypress (GdkEventKey * event)
 {
     switch (event->keyval)
     {
+        /* THESE KEYS ALWAYS HANDLED HERE ONLY WHEN MAIN-WINDOW FOCUSED -
+           (PLAYLIST-WINDOW HANDLES THESE WHEN IT IS FOCUSED):
+        */
         case GDK_KEY_Up:    /* JWT:ADDED FOR FAUXDACIOUS: */
             mainwin_set_volume_diff (volume_delta);
             return true;
@@ -632,10 +635,12 @@ bool Window::keypress (GdkEventKey * event)
     }
 
     if (playlistwin_list->handle_keypress (event))
-        return true;
+        return true;  /* STOP - PLAYLIST-WINDOW HANDLED THE KEY! */
 
     switch (event->keyval)
     {
+        /* KEYS HANDLED HERE (IFF NOT HANDLED BY PLAYLIST-WINDOW): */
+           (OTHERWISE HANDLED BY PLAYLIST-WINDOW REGARDLESS OF FOCUS)!: */
         case GDK_KEY_Left:
         case GDK_KEY_KP_Left:
         case GDK_KEY_KP_7:
@@ -657,16 +662,6 @@ bool Window::keypress (GdkEventKey * event)
             break;
         case GDK_KEY_space:
             aud_drct_pause ();
-            break;
-        case GDK_KEY_Tab: /* GtkUIManager does not handle tab, apparently. */
-            if (event->state & GDK_SHIFT_MASK)
-                pl_prev ();
-            else
-                pl_next ();
-
-            break;
-        case GDK_KEY_ISO_Left_Tab:
-            pl_prev ();
             break;
         default:
             return false;

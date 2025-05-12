@@ -30,10 +30,14 @@
 #include "menus.h"
 #include "skins_cfg.h"
 #include "skin.h"
+#include "view.h"
 #include "playlist-widget.h"
 #include "playlist-slider.h"
 
 #include "../ui-common/qt-compat.h"
+#include "../ui-common/menu-ops.h"
+#include "actions-mainwin.h"
+#include "actions-playlist.h"
 
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/drct.h>
@@ -418,6 +422,9 @@ bool PlaylistWidget::handle_keypress (QKeyEvent * event)
 
     switch (event->modifiers () & (Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier))
     {
+      /* KEYS HANDLED HERE BY PLAYLIST-WINDOW REGARDLESS OF FOCUS -
+         (UNLESS ALREADY HANDLED BY MAIN WINDOW WHEN IT'S FOCUSED)!:
+      */
       case 0:
         switch (event->key ())
         {
@@ -450,6 +457,25 @@ bool PlaylistWidget::handle_keypress (QKeyEvent * event)
           case Qt::Key_Delete:
             delete_selected ();
             break;
+          case Qt::Key_Tab:
+            pl_next ();
+            break;
+          /* JWT:MUST ADD THESE VIEW MENU ITEMS MANUALLY HERE (GTK BINDS 'EM AUTOMATICALLY)!: */
+          case Qt::Key_F:
+            action_playlist_add_files ();
+            break;
+          case Qt::Key_L:
+            action_play_file ();
+            break;
+          case Qt::Key_P:
+            action_playlist_manager ();
+            break;
+          case Qt::Key_U:
+            action_playlist_add_url ();
+            break;
+          case Qt::Key_Y:
+            action_search_tool ();
+            break;
           default:
             return false;
         }
@@ -474,6 +500,25 @@ bool PlaylistWidget::handle_keypress (QKeyEvent * event)
             break;
           case Qt::Key_End:
             select_extend (false, m_length - 1);
+            break;
+          case Qt::Key_Backtab: /* JWT:NOTE:THIS == "[Shift+[Tab]]"!!!: */
+            pl_prev ();
+            break;
+          /* JWT:MUST ADD THESE VIEW MENU ITEMS MANUALLY HERE (GTK BINDS 'EM AUTOMATICALLY)!: */
+          case Qt::Key_Return:
+            pl_play ();
+            break;
+          case Qt::Key_D:
+            action_playlist_delete ();
+            break;
+          case Qt::Key_F:
+            action_playlist_add_folder ();
+            break;
+          case Qt::Key_L:
+            action_play_folder ();
+            break;
+          case Qt::Key_Q:
+            pl_queue_clear ();
             break;
           default:
             return false;
@@ -503,6 +548,25 @@ bool PlaylistWidget::handle_keypress (QKeyEvent * event)
           case Qt::Key_End:
             select_slide (false, m_length - 1);
             break;
+          /* JWT:MUST ADD THESE VIEW MENU ITEMS MANUALLY HERE (GTK BINDS 'EM AUTOMATICALLY)!: */
+          case Qt::Key_D:
+            view_set_double_size (! aud_get_bool ("skins", "double_size"));
+            break;
+          case Qt::Key_L:
+            action_play_location ();
+            break;
+          case Qt::Key_O:
+            view_set_on_top (! aud_get_bool ("skins", "always_on_top"));
+            break;
+          case Qt::Key_P:
+            audqt::prefswin_show ();
+            break;
+          case Qt::Key_S:
+            view_set_sticky (! aud_get_bool ("skins", "sticky"));
+            break;
+          case Qt::Key_W:
+            view_set_player_shaded (! aud_get_bool ("skins", "player_shaded"));
+            break;
           default:
             return false;
         }
@@ -527,6 +591,13 @@ bool PlaylistWidget::handle_keypress (QKeyEvent * event)
             break;
           case Qt::Key_End:
             select_move (false, m_length - 1);
+            break;
+          /* JWT:MUST ADD THESE VIEW MENU ITEMS MANUALLY HERE (GTK BINDS 'EM AUTOMATICALLY)!: */
+          case Qt::Key_E:
+            view_set_show_playlist (! aud_get_bool ("skins", "playlist_visible"));
+            break;
+          case Qt::Key_G:
+            view_set_show_equalizer (! aud_get_bool ("skins", "equalizer_visible"));
             break;
           default:
             return false;

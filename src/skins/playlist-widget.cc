@@ -45,6 +45,8 @@
 #include <libfauxdgui/libfauxdgui.h>
 #include <libfauxdgui/libfauxdgui-gtk.h>
 
+#include "../ui-common/menu-ops.h"
+
 enum {
     DRAG_SELECT = 1,
     DRAG_MOVE
@@ -462,6 +464,9 @@ bool PlaylistWidget::handle_keypress (GdkEventKey * event)
 
     switch (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK))
     {
+      /* KEYS HANDLED HERE BY PLAYLIST-WINDOW REGARDLESS OF FOCUS -
+         (UNLESS ALREADY HANDLED BY MAIN WINDOW WHEN IT'S FOCUSED)!:
+      */
       case 0:
         switch (event->keyval)
         {
@@ -494,6 +499,9 @@ bool PlaylistWidget::handle_keypress (GdkEventKey * event)
           case GDK_KEY_Delete:
             delete_selected ();
             break;
+          case GDK_KEY_Tab:
+                pl_next ();
+            break;
           default:
             return false;
         }
@@ -518,6 +526,9 @@ bool PlaylistWidget::handle_keypress (GdkEventKey * event)
             break;
           case GDK_KEY_End:
             select_extend (false, m_length - 1);
+            break;
+          case GDK_KEY_ISO_Left_Tab: /* JWT:NOTE:THIS == "[Shift+[Tab]]"!!!: */
+            pl_prev ();
             break;
           default:
             return false;
