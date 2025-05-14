@@ -45,6 +45,7 @@
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/playlist.h>
+#include <libfauxdcore/interface.h>
 #include <libfauxdqt/libfauxdqt.h>
 
 #include <QMimeData>
@@ -460,12 +461,28 @@ bool PlaylistWidget::handle_keypress (QKeyEvent * event)
           case Qt::Key_Tab:
             pl_next ();
             break;
-          /* JWT:MUST ADD THESE VIEW MENU ITEMS MANUALLY HERE (GTK BINDS 'EM AUTOMATICALLY)!: */
+          /* JWT:MUST ADD THESE MENU ITEMS MANUALLY HERE (GTK BINDS 'EM AUTOMATICALLY) */
+          /* DUE TO "Qt::WidgetShortcut" ADDED BY MAINS COMMIT# c9403ee (APRIL, 2025): */
+          case Qt::Key_B:
+            aud_drct_pl_next ();
+            break;
+          case Qt::Key_C:
+            aud_drct_pause ();
+            break;
           case Qt::Key_F:
             action_playlist_add_files ();
             break;
+          case Qt::Key_I:
+            audqt::infowin_show_current ();
+            break;
+          case Qt::Key_J:
+            aud_ui_show_jump_to_song ();
+            break;
           case Qt::Key_L:
             action_play_file ();
+            break;
+          case Qt::Key_O:
+            audqt::fileopener_show (audqt::FileMode::ImportPlaylist);
             break;
           case Qt::Key_P:
             action_playlist_manager ();
@@ -473,8 +490,17 @@ bool PlaylistWidget::handle_keypress (QKeyEvent * event)
           case Qt::Key_U:
             action_playlist_add_url ();
             break;
+          case Qt::Key_V:
+            aud_drct_stop ();
+            break;
+          case Qt::Key_X:
+            aud_drct_play ();
+            break;
           case Qt::Key_Y:
             action_search_tool ();
+            break;
+          case Qt::Key_Z:
+            aud_drct_pl_prev ();
             break;
           default:
             return false;
@@ -504,12 +530,13 @@ bool PlaylistWidget::handle_keypress (QKeyEvent * event)
           case Qt::Key_Backtab: /* JWT:NOTE:THIS == "[Shift+[Tab]]"!!!: */
             pl_prev ();
             break;
-          /* JWT:MUST ADD THESE VIEW MENU ITEMS MANUALLY HERE (GTK BINDS 'EM AUTOMATICALLY)!: */
+          /* JWT:MUST ADD THESE MENU ITEMS MANUALLY HERE (GTK BINDS 'EM AUTOMATICALLY)!: */
           case Qt::Key_Return:
             pl_play ();
             break;
           case Qt::Key_D:
-            action_playlist_delete ();
+            /* action_playlist_delete (); */
+            audqt::playlist_confirm_delete (aud_playlist_get_active ());
             break;
           case Qt::Key_F:
             action_playlist_add_folder ();
@@ -519,6 +546,9 @@ bool PlaylistWidget::handle_keypress (QKeyEvent * event)
             break;
           case Qt::Key_Q:
             pl_queue_clear ();
+            break;
+          case Qt::Key_S:
+            audqt::fileopener_show (audqt::FileMode::ExportPlaylist);
             break;
           default:
             return false;
@@ -548,9 +578,12 @@ bool PlaylistWidget::handle_keypress (QKeyEvent * event)
           case Qt::Key_End:
             select_slide (false, m_length - 1);
             break;
-          /* JWT:MUST ADD THESE VIEW MENU ITEMS MANUALLY HERE (GTK BINDS 'EM AUTOMATICALLY)!: */
+          /* JWT:MUST ADD THESE MENU ITEMS MANUALLY HERE (GTK BINDS 'EM AUTOMATICALLY)!: */
           case Qt::Key_D:
             view_set_double_size (! aud_get_bool ("skins", "double_size"));
+            break;
+          case Qt::Key_F:
+            audqt::playlist_search_and_select ();
             break;
           case Qt::Key_L:
             action_play_location ();
@@ -563,6 +596,12 @@ bool PlaylistWidget::handle_keypress (QKeyEvent * event)
             break;
           case Qt::Key_S:
             view_set_sticky (! aud_get_bool ("skins", "sticky"));
+            break;
+          case Qt::Key_T:
+            aud_playlist_new ();
+            break;
+          case Qt::Key_U:
+            audqt::queue_manager_show ();
             break;
           case Qt::Key_W:
             view_set_player_shaded (! aud_get_bool ("skins", "player_shaded"));
@@ -592,7 +631,7 @@ bool PlaylistWidget::handle_keypress (QKeyEvent * event)
           case Qt::Key_End:
             select_move (false, m_length - 1);
             break;
-          /* JWT:MUST ADD THESE VIEW MENU ITEMS MANUALLY HERE (GTK BINDS 'EM AUTOMATICALLY)!: */
+          /* JWT:MUST ADD THESE MENU ITEMS MANUALLY HERE (GTK BINDS 'EM AUTOMATICALLY)!: */
           case Qt::Key_E:
             view_set_show_playlist (! aud_get_bool ("skins", "playlist_visible"));
             break;

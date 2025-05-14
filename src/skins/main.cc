@@ -639,8 +639,9 @@ bool Window::keypress (GdkEventKey * event)
 
     switch (event->keyval)
     {
-        /* KEYS HANDLED HERE (IFF NOT HANDLED BY PLAYLIST-WINDOW): */
-           (OTHERWISE HANDLED BY PLAYLIST-WINDOW REGARDLESS OF FOCUS)!: */
+        /* THESE KEYS ALWAYS HANDLED HERE ONLY WHEN MAIN-WINDOW FOCUSED -
+           (PLAYLIST-WINDOW HANDLES THESE WHEN IT IS FOCUSED):
+        */
         case GDK_KEY_Left:
         case GDK_KEY_KP_Left:
         case GDK_KEY_KP_7:
