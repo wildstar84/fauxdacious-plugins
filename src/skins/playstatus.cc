@@ -47,13 +47,12 @@ void PlayStatus::draw (cairo_t * cr)
         break;
     case STATUS_PLAY:
         skin_draw_pixbuf (cr, SKIN_PLAYPAUSE, 1, 0, 3, 0, 8, 9);
+        if (aud_get_bool (nullptr, "no_playlist_advance"))
+            skin_draw_pixbuf (cr, SKIN_PLAYPAUSE, 39, 5, 0, 5, 3, 4);
+        if (aud_get_bool (nullptr, "stop_after_current_song"))
+            skin_draw_pixbuf (cr, SKIN_PLAYPAUSE, 39, 5, 0, 0, 3, 4);
         break;
     }
-
-    if (aud_get_bool (nullptr, "no_playlist_advance"))
-        skin_draw_pixbuf (cr, SKIN_PLAYPAUSE, 39, 5, 0, 5, 3, 4);
-    if (aud_get_bool (nullptr, "stop_after_current_song"))
-        skin_draw_pixbuf (cr, SKIN_PLAYPAUSE, 39, 5, 0, 0, 3, 4);
 }
 
 PlayStatus::PlayStatus ()
