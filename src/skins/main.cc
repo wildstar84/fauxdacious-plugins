@@ -534,6 +534,8 @@ static void stop_after_song_toggled ()
 {
     if (aud_get_bool (nullptr, "stop_after_current_song"))
         mainwin_show_status_message (_("Stopping after song."));
+    else
+        mainwin_show_status_message (_("Continuing after song."));
 }
 
 bool MainWindow::scroll (GdkEventScroll * event)
