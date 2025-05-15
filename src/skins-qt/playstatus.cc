@@ -28,6 +28,7 @@
 #include "skins_cfg.h"
 #include "skin.h"
 #include "playstatus.h"
+#include <libfauxdcore/runtime.h>
 
 void PlayStatus::draw (QPainter & cr)
 {
@@ -48,6 +49,11 @@ void PlayStatus::draw (QPainter & cr)
         skin_draw_pixbuf (cr, SKIN_PLAYPAUSE, 1, 0, 3, 0, 8, 9);
         break;
     }
+
+    if (aud_get_bool (nullptr, "no_playlist_advance"))
+        skin_draw_pixbuf (cr, SKIN_PLAYPAUSE, 39, 5, 0, 5, 3, 4);
+    if (aud_get_bool (nullptr, "stop_after_current_song"))
+        skin_draw_pixbuf (cr, SKIN_PLAYPAUSE, 39, 5, 0, 0, 3, 4);
 }
 
 PlayStatus::PlayStatus ()

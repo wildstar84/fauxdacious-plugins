@@ -588,6 +588,16 @@ bool PlaylistWidget::handle_keypress (QKeyEvent * event)
           case Qt::Key_L:
             action_play_location ();
             break;
+          case Qt::Key_M:
+            aud_set_bool (nullptr, "stop_after_current_song",
+                    ! aud_get_bool (nullptr, "stop_after_current_song"));
+            view_redraw_main ();
+            break;
+          case Qt::Key_N:
+            aud_set_bool (nullptr, "no_playlist_advance",
+                    ! aud_get_bool (nullptr, "no_playlist_advance"));
+            view_redraw_main ();
+            break;
           case Qt::Key_O:
             view_set_on_top (! aud_get_bool ("skins", "always_on_top"));
             break;

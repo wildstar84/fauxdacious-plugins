@@ -52,5 +52,6 @@ void view_set_show_remaining (bool remaining);
 void view_apply_show_remaining ();
 
 void view_apply_skin ();
+void view_redraw_main ();
 
 #endif /* SKINS_VIEW_H */

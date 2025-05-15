@@ -301,3 +301,8 @@ void view_apply_skin ()
     equalizerwin->queue_draw ();
     playlistwin->queue_draw ();
 }
+
+void view_redraw_main ()
+{
+    mainwin->queue_draw ();
+}
