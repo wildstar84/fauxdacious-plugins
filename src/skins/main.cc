@@ -237,13 +237,10 @@ void mainwin_show_status_message (const char * message)
 
 static void mainwin_set_song_title (const char * title)
 {
+    playlistwin_set_shaded_title (title);
     StringBuf buf = title ? str_printf (_("%s - Fauxdacious"), title)
             : str_copy (_("Fauxdacious"));
 
-/* JWT:DON'T DO THIS!    int instance = aud_get_instance ();
-    if (instance != 1)
-        str_append_printf (buf, " (%d)", instance);
-*/
     String instancename = aud_get_instancename ();
     if (instancename != String ("fauxdacious"))
         str_append_printf (buf, " (%s)", (const char *) instancename);

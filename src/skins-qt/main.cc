@@ -234,6 +234,7 @@ void mainwin_show_status_message (const char * message)
 
 static void mainwin_set_song_title (const char * title)
 {
+    playlistwin_set_shaded_title (title);
     StringBuf buf = title ? str_printf (_("%s - Fauxdacious"), title)
             : str_copy (_("Fauxdacious"));
 

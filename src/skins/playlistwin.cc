@@ -104,33 +104,10 @@ static void update_info ()
     playlistwin_info->set_text (str_concat ({s1, "/", s2}));
 }
 
-static void update_rollup_text ()
+void playlistwin_set_shaded_title (const char * title)
 {
-    int playlist = aud_playlist_get_active ();
-    int entry = aud_playlist_get_position (playlist);
-    Tuple tuple = aud_playlist_entry_get_tuple (playlist, entry, Playlist::NoWait);
-    char scratch[512];
-
-    scratch[0] = 0;
-
-    if (entry > -1)
-    {
-        String title = tuple.get_str (Tuple::FormattedTitle);
-        int length = tuple.get_int (Tuple::Length);
-
-        if (aud_get_bool (nullptr, "show_numbers_in_pl"))
-            APPEND (scratch, "%d. ", 1 + entry);
-
-        APPEND (scratch, "%s", (const char *) title);
-
-        if (length >= 0)
-        {
-            StringBuf buf = str_format_time (length);
-            APPEND (scratch, " (%s)", (const char *) buf);
-        }
-    }
-
-    playlistwin_sinfo->set_text (scratch);
+    if (playlistwin_sinfo)  /* playlistwin MAY NOT YET BE CREATED WHEN THIS 1ST CALLED!: */
+        playlistwin_sinfo->set_text (title ? title : "");
 }
 
 static void playlistwin_shade_toggle ()
@@ -514,7 +491,6 @@ static void update_cb (void *, void *)
 {
     playlistwin_list->refresh ();
     update_info ();
-    update_rollup_text ();
 }
 
 static void follow_cb (void * data, void *)
@@ -555,7 +531,6 @@ void playlistwin_create ()
     playlistwin_create_widgets ();
 
     update_info ();
-    update_rollup_text ();
 
     hook_associate ("playlist position", follow_cb, nullptr);
     hook_associate ("playlist activate", update_cb, nullptr);
@@ -564,7 +539,7 @@ void playlistwin_create ()
 
 void playlistwin_unhook ()
 {
-    hook_dissociate ("playlist position", follow_cb);
-    hook_dissociate ("playlist activate", update_cb);
     hook_dissociate ("playlist update", update_cb);
+    hook_dissociate ("playlist activate", update_cb);
+    hook_dissociate ("playlist position", follow_cb);
 }

@@ -31,6 +31,7 @@ void playlistwin_create ();
 void playlistwin_unhook ();
 void playlistwin_hide_timer ();
 void playlistwin_set_time (const char * minutes, const char * seconds);
+void playlistwin_set_shaded_title (const char * title);
 
 extern Window * playlistwin;
 extern PlaylistWidget * playlistwin_list;
