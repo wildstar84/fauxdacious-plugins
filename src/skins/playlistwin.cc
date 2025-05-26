@@ -78,7 +78,7 @@ private:
 
 Window * playlistwin;
 PlaylistWidget * playlistwin_list;
-TextBox * playlistwin_sinfo;
+TextBox * playlistwin_sinfo = nullptr; // JWT:MUST BE INITIALIZED & !STATIC!
 
 static Button * playlistwin_shade, * playlistwin_close;
 static Button * playlistwin_shaded_shade, * playlistwin_shaded_close;
@@ -542,4 +542,5 @@ void playlistwin_unhook ()
     hook_dissociate ("playlist update", update_cb);
     hook_dissociate ("playlist activate", update_cb);
     hook_dissociate ("playlist position", follow_cb);
+    playlistwin_sinfo = nullptr;  // JWT:MAKE SURE THIS IS NULL WHEN NOT VALID!
 }
