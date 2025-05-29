@@ -22,8 +22,10 @@
 #include "window.h"
 #include "plugin.h"
 #include "skins_cfg.h"
+#include "view.h"
 
 #include "../ui-common/qt-compat.h"
+#include <libfauxdcore/runtime.h>
 
 void Window::apply_shape ()
 {
@@ -76,6 +78,28 @@ void Window::changeEvent (QEvent * event)
 {
     if (event->type () == QEvent::ActivationChange)
         config.active_titlebar_any ? dock_draw_all () : Window::queue_draw ();
+
+    /* JWT:SEE CODE FROM:  https://www.qtcentre.org/threads/46548-Catch-maximize-and-restore-events */
+    if (event->type () == QEvent::WindowStateChange
+            && aud_get_bool ("audacious", "afterstep2"))
+    {
+        QWindowStateChangeEvent* wchg_event
+                = static_cast<QWindowStateChangeEvent*>(event);
+
+        if( wchg_event->oldState() & Qt::WindowMinimized )
+        {
+            if (aud_get_bool ("skins", "_equalizer_was_visible"))
+            {
+                view_set_show_equalizer (true);
+                aud_set_bool ("skins", "_equalizer_was_visible", false);
+            }
+            if (aud_get_bool ("skins", "_playlist_was_visible"))
+            {
+                view_set_show_playlist (true);
+                aud_set_bool ("skins", "_playlist_was_visible", false);
+            }
+        }
+    }
 
     QWidget::changeEvent (event);
 }

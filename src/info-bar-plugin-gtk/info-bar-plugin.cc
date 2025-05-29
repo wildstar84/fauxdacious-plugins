@@ -730,6 +730,20 @@ static gboolean infobar_btnpress_cb (GtkWidget * widget, GdkEventKey * event)
     return false;
 }
 
+static gboolean infobarwin_btnrelease_cb (GtkWidget * widget, GdkEventButton * event)
+{
+    /* JWT:ENABLE UNMOVABLE UNDECORATED MINI-FAUXDACIOUS TO BE MOVED/RESIZED VIA AfterStep: */
+    if (event->type == GDK_BUTTON_RELEASE)
+    {
+        if (event->button == 2)       // MIDDLE-BUTTON: MOVE.
+            system("WinCommand -pattern \"^\" resize");
+        else if (event->button == 3)  // RIGHT-BUTTON: RESIZE.
+            system("WinCommand -pattern \"^\" move");
+    }
+
+    return false;
+}
+
 static gboolean infobar_keypress_cb (GtkWidget *, GdkEventKey * event)
 {
     switch (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK))
@@ -1037,10 +1051,12 @@ void * InfoBarPlugin::get_gtk_widget ()
     if (! show_toolbar)
         gtk_widget_set_no_show_all (toolbar, true);
 
-    gtk_widget_set_events (mouse_eventbox, GDK_BUTTON_PRESS_MASK);
+    gtk_widget_set_events (mouse_eventbox, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
     g_signal_connect (widget, "destroy", (GCallback) infobar_cleanup, nullptr);
     g_signal_connect (main_window, "key-press-event", (GCallback) infobar_keypress_cb, nullptr);
     g_signal_connect (mouse_eventbox, "button_press_event", (GCallback) infobar_btnpress_cb, nullptr);
+    if (aud_get_bool ("audacious", "afterstep2"))
+        g_signal_connect (mouse_eventbox, "button_release_event", (GCallback) infobarwin_btnrelease_cb, nullptr);
 
     gtk_widget_show (widget);
     plugin_running = true;
@@ -1074,7 +1090,11 @@ void * InfoBarPlugin::get_gtk_widget ()
     update_toggles ();
 
     gtk_widget_set_can_focus (main_window, true);
-    gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nB: next\nC: pause\nJ: jump to song\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous\nCtrl-Q: Quit");
+    if (aud_get_bool ("audacious", "afterstep2"))
+        gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nB: next\nC: pause\nJ: jump to song\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous\nBtn2: resize\nBtn3: move\nCtrl-Q: Quit");
+    else
+        gtk_widget_set_tooltip_text (widget, "Space: pause\nEsc: close\nUp|Down: volume\nLeft|Right: seek\nB: next\nC: pause\nJ: jump to song\nM: mute\nT: toggle toolbar\nV: stop\nX: play\nZ: previous\nCtrl-Q: Quit");
+
     gtk_widget_grab_focus (main_window);
 
     ui_playback_ready ();

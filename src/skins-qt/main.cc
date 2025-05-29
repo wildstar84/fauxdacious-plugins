@@ -186,7 +186,19 @@ static void mainwin_menubtn_cb ()
 
 static void mainwin_minimize_cb ()
 {
-    mainwin->showMinimized ();
+    if (aud_get_bool ("audacious", "afterstep2"))
+    {
+        /* JWT:SPECIAL CASE JUST FOR OUR DBUS-LESS VSN. OF AfterStep WINDOW-MANAGER!: */
+        aud_set_bool ("skins", "_playlist_was_visible",      // SAVE STATE (see window.cc).
+                aud_get_bool ("skins", "playlist_visible"));
+        aud_set_bool ("skins", "_equalizer_was_visible",
+                aud_get_bool ("skins", "equalizer_visible"));
+        view_set_show_playlist (false);  // JWT:HIDE 'EM B/C AS ONLY ICONIFIES MAIN WINDOW!
+        view_set_show_equalizer (false);
+        system ("WinCommand -pattern \"^\" iconify");
+    }
+    else
+        mainwin->showMinimized ();
 }
 
 static void mainwin_shade_toggle ()
@@ -198,7 +210,8 @@ static void mainwin_lock_info_text (const char * text)
 {
     if (! locked_textbox)
     {
-        locked_textbox = skin.hints.mainwin_othertext_is_status ? mainwin_othertext : mainwin_info;
+        locked_textbox = skin.hints.mainwin_othertext_is_status
+                ? mainwin_othertext : mainwin_info;
         locked_old_text = locked_textbox->get_text ();
     }
 
@@ -249,7 +262,7 @@ static void title_change ()
 {
     if (aud_drct_get_ready ())
     {
-        String newtitle = aud_drct_get_title_one_line (true);   /* JWT:ONLY CHANGE SONG TITLE IF NOT EMPTY! */
+        String newtitle = aud_drct_get_title_one_line (true);
         if (newtitle && newtitle[0] && strlen(newtitle) > 0)
             mainwin_set_song_title ((const char *) newtitle);
     }
@@ -1229,7 +1242,9 @@ static void mainwin_create_window ()
     drag_dest_set (w);
 
     g_signal_connect (w, "drag-data-received", (GCallback) mainwin_drag_data_received, nullptr);
-    g_signal_connect (w, "window-state-event", (GCallback) state_cb, nullptr);
+    if (! aud_get_bool ("audacious", "afterstep"))
+        /* Afterstep seems to be broken handling window events: */
+        g_signal_connect (w, "window-state-event", (GCallback) state_cb, nullptr);
 #endif
 
     hook_associate ("playback begin", (HookFunction) mainwin_playback_begin, nullptr);

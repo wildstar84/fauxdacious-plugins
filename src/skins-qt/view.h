@@ -43,6 +43,7 @@ void view_set_double_size (bool double_size);
 void view_apply_double_size ();
 
 void view_set_on_top (bool on_top);
+void view_apply_on_top_startup ();
 void view_apply_on_top ();
 
 void view_set_sticky (bool sticky);

@@ -45,6 +45,10 @@ void view_show_player (bool show)
 {
     if (show)
     {
+        /* JWT:NEXT 2 MOVED HERE FROM plugin.cc:skins_init_main().
+           FOR BETTER COOPORATION BETWEEN AfterStep & statusicon PLUGIN: */
+        view_apply_on_top_startup ();
+        view_apply_sticky ();
         mainwin->show ();
         mainwin->activateWindow ();
         show_plugin_windows ();
@@ -196,7 +200,7 @@ void view_set_on_top (bool on_top)
     view_apply_on_top ();
 }
 
-void view_apply_on_top ()
+void view_apply_on_top_startup ()
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
     bool on_top = aud_get_bool ("skins", "always_on_top");
@@ -216,6 +220,41 @@ void view_apply_on_top ()
     playlistwin->setWindowFlag (Qt::WindowStaysOnTopHint, on_top);
     if (playlist_visible)
         playlistwin->show ();
+#endif
+
+    mainwin_menurow->refresh ();
+}
+
+void view_apply_on_top ()
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
+    if (aud_get_bool ("audacious", "afterstep2"))
+        /* JWT:SPECIAL CASE JUST FOR OUR DBUS-LESS VSN. OF AfterStep WINDOW-MANAGER!: */
+        system ("WinCommand -pattern \"^\" ontop");
+    else
+    {
+        bool on_top = aud_get_bool ("skins", "always_on_top");
+        bool mainwin_visible = mainwin->isVisible ();
+        bool equalizer_visible = equalizerwin->isVisible ();
+        bool playlist_visible = playlistwin->isVisible ();
+
+        mainwin->setWindowFlag (Qt::WindowStaysOnTopHint, on_top);
+        if (mainwin_visible)
+            mainwin->show ();
+
+
+        equalizerwin->setWindowFlag (Qt::WindowStaysOnTopHint, on_top);
+        if (equalizer_visible)
+            equalizerwin->show ();
+
+        playlistwin->setWindowFlag (Qt::WindowStaysOnTopHint, on_top);
+        if (playlist_visible)
+            playlistwin->show ();
+    }
+#else
+    if (aud_get_bool ("audacious", "afterstep2"))
+        /* JWT:SPECIAL CASE JUST FOR OUR DBUS-LESS VSN. OF AfterStep WINDOW-MANAGER!: */
+        system ("WinCommand -pattern \"^\" ontop");
 #endif
 
     mainwin_menurow->refresh ();

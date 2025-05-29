@@ -139,7 +139,7 @@ static void skins_init_main (bool restart)
     // now, the two options are floor(DPI/96) and floor(DPI/96)+1.  On screens
     // up to 191 DPI, this gives the traditional 1x and 2x scale factors.
     config.scale = aud::max (1, audgui_get_dpi () / 96) +
-     aud_get_bool ("skins", "double_size");
+            aud_get_bool ("skins", "double_size");
 
     if (restart && config.scale != old_scale)
         dock_change_scale (old_scale, config.scale);
@@ -149,8 +149,6 @@ static void skins_init_main (bool restart)
     playlistwin_create ();
 
     view_apply_skin ();
-    view_apply_on_top ();
-    view_apply_sticky ();
 
     if (aud_drct_get_playing ())
         mainwin_playback_begin ();

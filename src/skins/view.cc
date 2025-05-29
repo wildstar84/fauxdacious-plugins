@@ -43,6 +43,10 @@ void view_show_player (bool show)
 {
     if (show)
     {
+        /* JWT:NEXT 2 MOVED HERE FROM plugin.cc:skins_init_main().
+           FOR BETTER COOPORATION BETWEEN AfterStep & statusicon PLUGIN: */
+        view_apply_on_top_startup ();
+        view_apply_sticky ();
         // "Move" the window to the position it's already at. This seems
         // to work around a GTK+ bug causing the main window to end up
         // at a random position after the gtk_window_present() call.
@@ -203,13 +207,30 @@ void view_set_on_top (bool on_top)
     view_apply_on_top ();
 }
 
-void view_apply_on_top ()
+void view_apply_on_top_startup ()
 {
     bool on_top = aud_get_bool ("skins", "always_on_top");
 
     gtk_window_set_keep_above ((GtkWindow *) mainwin->gtk (), on_top);
     gtk_window_set_keep_above ((GtkWindow *) equalizerwin->gtk (), on_top);
     gtk_window_set_keep_above ((GtkWindow *) playlistwin->gtk (), on_top);
+
+    mainwin_menurow->refresh ();
+}
+
+void view_apply_on_top ()
+{
+    bool on_top = aud_get_bool ("skins", "always_on_top");
+
+    if (aud_get_bool ("audacious", "afterstep2"))
+        /* JWT:SPECIAL CASE JUST FOR OUR DBUS-LESS VSN. OF AfterStep WINDOW-MANAGER!: */
+        system ("WinCommand -pattern \"^\" ontop");
+    else
+    {
+        gtk_window_set_keep_above ((GtkWindow *) mainwin->gtk (), on_top);
+        gtk_window_set_keep_above ((GtkWindow *) equalizerwin->gtk (), on_top);
+        gtk_window_set_keep_above ((GtkWindow *) playlistwin->gtk (), on_top);
+    }
 
     mainwin_menurow->refresh ();
 }

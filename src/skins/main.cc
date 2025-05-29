@@ -111,6 +111,7 @@ static bool seeking = false;
 static int seek_start, seek_time;
 static int volume_delta = 5;
 static int step_size = 1;
+static bool was_iconified = false;
 
 static TextBox * locked_textbox = nullptr;
 static String locked_old_text;
@@ -189,7 +190,20 @@ static void mainwin_menubtn_cb (Button * button, GdkEventButton * event)
 
 static void mainwin_minimize_cb ()
 {
-    gtk_window_iconify ((GtkWindow *) mainwin->gtk ());
+    if (aud_get_bool ("audacious", "afterstep2"))
+    {
+        /* JWT:SPECIAL CASE JUST FOR OUR DBUS-LESS VSN. OF AfterStep WINDOW-MANAGER!: */
+        aud_set_bool ("skins", "_playlist_was_visible",      // SAVE STATE (see window.cc).
+                aud_get_bool ("skins", "playlist_visible"));
+        aud_set_bool ("skins", "_equalizer_was_visible",
+                aud_get_bool ("skins", "equalizer_visible"));
+        view_set_show_playlist (false);  // JWT:HIDE 'EM B/C AS ONLY ICONIFIES MAIN WINDOW!
+        view_set_show_equalizer (false); // (BUT abUSER MUST MANUALLY RESTORE 'EM THOUGH):
+        system ("WinCommand -pattern \"^\" iconify");
+        was_iconified = true;
+    }
+    else
+        gtk_window_iconify ((GtkWindow *) mainwin->gtk ());
 }
 
 static void mainwin_shade_toggle ()
@@ -201,7 +215,8 @@ static void mainwin_lock_info_text (const char * text)
 {
     if (! locked_textbox)
     {
-        locked_textbox = skin.hints.mainwin_othertext_is_status ? mainwin_othertext : mainwin_info;
+        locked_textbox = skin.hints.mainwin_othertext_is_status
+                ? mainwin_othertext : mainwin_info;
         locked_old_text = locked_textbox->get_text ();
     }
 
@@ -252,7 +267,7 @@ static void title_change ()
 {
     if (aud_drct_get_ready ())
     {
-        String newtitle = aud_drct_get_title_one_line (true);   /* JWT:ONLY CHANGE SONG TITLE IF NOT EMPTY! */
+        String newtitle = aud_drct_get_title_one_line (true);
         if (newtitle && newtitle[0] && strlen(newtitle) > 0)
             mainwin_set_song_title ((const char *) newtitle);
     }
@@ -1251,6 +1266,20 @@ void MainWindow::draw (cairo_t * cr)
 
     skin_draw_pixbuf (cr, SKIN_MAIN, 0, 0, 0, 0, width, height);
     skin_draw_mainwin_titlebar (cr, is_shaded (), is_focused ());
+    if (was_iconified)
+    {
+        was_iconified = false;
+        if (aud_get_bool ("skins", "_equalizer_was_visible"))
+        {
+            view_set_show_equalizer (true);
+            aud_set_bool ("skins", "_equalizer_was_visible", false);
+        }
+        if (aud_get_bool ("skins", "_playlist_was_visible"))
+        {
+            view_set_show_playlist (true);
+            aud_set_bool ("skins", "_playlist_was_visible", false);
+        }
+    }
 }
 
 static void mainwin_create_window ()
@@ -1265,8 +1294,8 @@ static void mainwin_create_window ()
     drag_dest_set (w);
 
     g_signal_connect (w, "drag-data-received", (GCallback) mainwin_drag_data_received, nullptr);
-    gboolean afterstep = aud_get_bool ("audacious", "afterstep");  /* JWT:HANDLE OUR RICKITY OL' WINDOWMANAGER (ie. TO NOT UNSTICK WINDOW ON FOCUS, ETC. */
-    if (! afterstep)   /* Afterstep seems to be broken handling window events */
+    if (! aud_get_bool ("audacious", "afterstep"))
+        /* Afterstep seems to be broken handling window events: */
         g_signal_connect (w, "window-state-event", (GCallback) state_cb, nullptr);
 
     hook_associate ("playback begin", (HookFunction) mainwin_playback_begin, nullptr);
