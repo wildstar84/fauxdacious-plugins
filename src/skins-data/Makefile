@@ -210,4 +210,5 @@ DATA = Skins/Classic/balance.png	\
        Skins/Lavadacious/viscolor.txt	\
        Skins/Lavadacious/volume.png \
        Skins/Glare.wsz	\
-       Skins/Winamp2.9f.wsz
+       Skins/Winamp2.9f.wsz	\
+       Skins/J_Golden_Fauxd.wsz
