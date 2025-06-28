@@ -24,6 +24,8 @@
  * SUCH DAMAGE.
  */
 
+#include <string.h>
+
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/preferences.h>
@@ -87,9 +89,12 @@ public:
 
         tuple.set_filename(filename);
         tuple.set_format(mpt.format(), mpt.channels(), mpt.rate(), 0);
-
         tuple.set_int(Tuple::Length, mpt.duration());
-        tuple.set_str(Tuple::Title, mpt.title());
+
+        const String &title = mpt.title();
+        if (strlen(title) > 0)
+            tuple.set_str(Tuple::Title, title);
+
         tuple.set_int(Tuple::Channels, mpt.channels());
 
         return true;
@@ -154,7 +159,6 @@ const PreferencesWidget MPTPlugin::widgets[] =
             WidgetInt(CFG_SECTION, SETTING_STEREO_SEPARATION, values_changed),
             { 0.0, 200.0, 1.0, N_("% (0=mono, 100=default, 200=full)") }
     ),
-
     WidgetCombo(
             N_("Interpolation:"),
             WidgetInt(CFG_SECTION, SETTING_INTERPOLATOR, values_changed),
