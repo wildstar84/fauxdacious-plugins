@@ -161,6 +161,9 @@ QVariant PlaylistModel::data (const QModelIndex &index, int role) const
         {
             tuple = aud_playlist_entry_get_tuple (m_playlist, index.row (), Playlist::NoWait);
 
+            if (col == Filename)
+                return filename (tuple);
+
             switch (tuple.get_value_type (s_fields[col]))
             {
             case Tuple::Empty:
@@ -183,15 +186,13 @@ QVariant PlaylistModel::data (const QModelIndex &index, int role) const
         case NowPlaying:
             return QVariant ();
         case EntryNumber:
-            return QString ("%1").arg (index.row () + 1);
+            return QString::number (index.row () + 1);
         case QueuePos:
             return queuePos (index.row ());
         case Length:
             return QString (str_format_time (val));
-//JWT        case Bitrate:
-//JWT            return QString ("%1 kbps").arg (val);
         default:
-            return QString ("%1").arg (val);
+            return QString::number (val);
         }
 
     case Qt::FontRole:
@@ -356,6 +357,18 @@ QString PlaylistModel::queuePos (int row) const
         return QString ();
     else
         return QString ("#%1").arg (at + 1);
+}
+
+QString PlaylistModel::filename (const Tuple & tuple) const
+{
+    String basename = tuple.get_str (Tuple::Basename);
+    String suffix = tuple.get_str (Tuple::Suffix);
+
+    return (suffix && aud_get_bool ("qtui", "filename_column_incl_ext"))
+        ? QString ("%1.%2").arg (
+            static_cast<const char *>(basename),
+            static_cast<const char *>(suffix))
+        : QString (basename);
 }
 
 /* ---------------------------------- */

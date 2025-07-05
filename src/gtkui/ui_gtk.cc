@@ -61,6 +61,7 @@ static const char * const gtkui_defaults[] = {
     "autoscroll", "TRUE",
     "playlist_columns", "title artist album queued length",
     "playlist_headers", "TRUE",
+    "filename_column_incl_ext", "TRUE",
     "show_remaining_time", "FALSE",
 
     "symbolic_icons", "FALSE",  /* JWT:TRUE=UGLY FLAT ONES! */

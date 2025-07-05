@@ -88,6 +88,7 @@ private:
     QFont m_bold;
     QVariant alignment (int col) const;
     QString queuePos (int row) const;
+    QString filename (const Tuple & tuple) const;
 };
 
 class PlaylistProxyModel : public QSortFilterProxyModel

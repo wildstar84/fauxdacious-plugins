@@ -50,6 +50,8 @@ static const PreferencesWidget gtkui_widgets[] = {
     WidgetCustomGTK (pw_col_create_chooser),
     WidgetCheck (N_("Show column headers"),
         WidgetBool ("gtkui", "playlist_headers", redisplay_playlists)),
+    WidgetCheck (N_("Include file ext. in Filename Column"),
+        WidgetBool ("gtkui", "filename_column_incl_ext", redisplay_playlists)),
     WidgetLabel (N_("<b>Miscellaneous</b>")),
     WidgetCheck (N_("Use symbolic (flat) icons in toolbar"),
         WidgetBool ("gtkui", "symbolic_icons", update_toolbar_icons)),

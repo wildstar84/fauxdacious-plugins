@@ -42,6 +42,7 @@ const char * const qtui_defaults[] = {
     "playlist_columns", DEFAULT_COLUMNS,
     "playlist_headers", "TRUE",
     "playlist_headers_bold", "TRUE",
+    "filename_column_incl_ext", "TRUE",
     "show_remaining_time", "FALSE",
 
     nullptr
@@ -54,7 +55,7 @@ static void qtui_update_playlist_settings ()
 
 static void qtui_update_playlist_headers ()
 {
-    hook_call("qtui update playlist headers", nullptr);
+    hook_call ("qtui update playlist headers", nullptr);
 }
 
 static const ComboItem playlist_tabs_options[] = {
@@ -75,8 +76,10 @@ static const PreferencesWidget qtui_widgets[] = {
     WidgetLabel (N_("<b>Playlist Columns</b>")),
     WidgetCheck (N_("Show column headers"),
         WidgetBool ("qtui", "playlist_headers", qtui_update_playlist_settings)),
-    WidgetCheck(N_("Use bold font for column headers"),
-        WidgetBool("qtui", "playlist_headers_bold", qtui_update_playlist_headers)),
+    WidgetCheck (N_("Use bold font for column headers"),
+        WidgetBool ("qtui", "playlist_headers_bold", qtui_update_playlist_headers)),
+    WidgetCheck (N_("Include file ext. in Filename Column"),
+        WidgetBool ("qtui", "filename_column_incl_ext", qtui_update_playlist_settings)),
     WidgetLabel (N_("<b>Miscellaneous</b>")),
     WidgetCheck (N_("Scroll on song change"),
         WidgetBool ("qtui", "autoscroll"))
