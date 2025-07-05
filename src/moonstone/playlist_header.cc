@@ -172,7 +172,7 @@ PlaylistHeader::PlaylistHeader (PlaylistWidget * playlist) :
     m_playlist_no = m_playlist->playlist ();
 }
 
-static void toggleColumn (int col, bool on)
+static void toggleColumn (int col, int logical_idx, bool on)
 {
     int pos = s_cols.find (col);
 
@@ -181,7 +181,11 @@ static void toggleColumn (int col, bool on)
         if (pos >= 0)
             return;
 
-        s_cols.append (col);
+/* JWT:CHGD. TO NEXT 3 LINES:        s_cols.append (col);         */
+/*     (SO WE CAN INSERT NEW COLUMN NEXT TO ONE RIGHT-CLICKED ON) */
+        int idx = s_cols.find (logical_idx - 1) + 1;
+        s_cols.insert (idx, 1);
+        s_cols[idx] = col;
     }
     else
     {
@@ -212,14 +216,15 @@ void PlaylistHeader::contextMenuEvent (QContextMenuEvent * event)
 {
     auto menu = new QMenu (this);
     QAction * actions[PlaylistModel::n_cols];
+    int logical_idx = logicalIndexAt (event->pos ());
 
     for (int col = 0; col < PlaylistModel::n_cols; col ++)
     {
         actions[col] = new QAction (_(PlaylistModel::labels[col]), menu);
         actions[col]->setCheckable (true);
 
-        connect (actions[col], & QAction::toggled, [col] (bool on) {
-            toggleColumn (col, on);
+        connect (actions[col], & QAction::toggled, [col, logical_idx] (bool on) {
+            toggleColumn (col, logical_idx, on);
         });
 
         menu->addAction (actions[col]);
