@@ -44,13 +44,13 @@ static int reorder_handler = 0;
 
 void apply_column_widths (GtkWidget * treeview)
 {
-    /* skip righthand column since it expands with the window */
-    for (int i = 0; i < pw_num_cols - 1; i ++)
+    for (int i = 0; i < pw_num_cols; i ++)
     {
         GtkTreeViewColumn * col = gtk_tree_view_get_column ((GtkTreeView *) treeview, i);
         gtk_tree_view_column_set_fixed_width (col, pw_col_widths[pw_cols[i]]);
 #ifdef USE_GTK3
-        gtk_tree_view_column_set_expand (col, false);
+        if (i < pw_num_cols - 1)  /* skip righthand column since it expands with the window: */
+            gtk_tree_view_column_set_expand (col, false);
 #endif
     }
 }
@@ -64,8 +64,7 @@ static void size_allocate_cb (GtkWidget * treeview)
 
     bool changed = false;
 
-    /* skip righthand column since it expands with the window */
-    for (int i = 0; i < pw_num_cols - 1; i ++)
+    for (int i = 0; i < pw_num_cols; i ++)
     {
         GtkTreeViewColumn * col = gtk_tree_view_get_column ((GtkTreeView *) treeview, i);
         int width = gtk_tree_view_column_get_width (col);
