@@ -139,6 +139,9 @@ QVariant PlaylistModel::alignment (int col) const
     case NowPlaying:
         return Qt::AlignCenter;
     case Length:
+    case EntryNumber:
+    case Track:
+    case Bitrate:
         return static_cast<Qt::Alignment::Int>(Qt::AlignRight | Qt::AlignVCenter);
     default:
         return static_cast<Qt::Alignment::Int>(Qt::AlignLeft | Qt::AlignVCenter);
@@ -186,13 +189,13 @@ QVariant PlaylistModel::data (const QModelIndex &index, int role) const
         case NowPlaying:
             return QVariant ();
         case EntryNumber:
-            return QString::number (index.row () + 1);
+            return QVariant (index.row () + 1);
         case QueuePos:
             return queuePos (index.row ());
         case Length:
             return QString (str_format_time (val));
         default:
-            return QString::number (val);
+            return QVariant (val);
         }
 
     case Qt::FontRole:
