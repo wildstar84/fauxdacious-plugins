@@ -214,7 +214,11 @@ void PlaylistHeader::contextMenuEvent (QContextMenuEvent * event)
 {
     auto menu = new QMenu (this);
     QAction * actions[PlaylistModel::n_cols];
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    int logical_idx = logicalIndexAt (event->position ().toPoint ());
+#else
     int logical_idx = logicalIndexAt (event->pos ());
+#endif
 
     for (int col = 0; col < PlaylistModel::n_cols; col ++)
     {
