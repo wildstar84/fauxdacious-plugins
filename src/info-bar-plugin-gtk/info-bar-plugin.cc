@@ -17,6 +17,7 @@
  * the use of this software.
  */
 
+#include <stdlib.h>
 #include <glib.h>
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
