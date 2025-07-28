@@ -143,6 +143,8 @@ src/openmpt/mptwrap.h
 src/opus/opus.cc
 src/oss4/oss.h
 src/oss4/plugin.cc
+src/playback-history-gtk/playback-history.cc
+src/playback-history-qt/playback-history.cc
 src/playlist-manager/playlist-manager.cc
 src/playlist-manager-qt/playlist-manager-qt.cc
 src/pls/pls.cc
@@ -216,6 +218,7 @@ src/vtx/info.cc
 src/vtx/vtx.cc
 src/vumeter-qt/vumeter_qt.cc
 src/vumeter-qt/vumeter_qt.h
+src/vumeter/vumeter.cc
 src/waveout/waveout.cc
 src/wavpack/wavpack.cc
 src/xsf/desmume/arm_instructions.cc
