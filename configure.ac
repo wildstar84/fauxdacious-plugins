@@ -6,8 +6,8 @@ dnl Initialize
 dnl ==========
 
 AC_PREREQ([2.59])
-AC_INIT([fauxdacious-plugins], [4.5-devel1])
-AC_COPYRIGHT([Copyright (C) 2001-2024 Jim Turner, Audacious developers and others])
+AC_INIT([fauxdacious-plugins], [4.5-final])
+AC_COPYRIGHT([Copyright (C) 2001-2025 Jim Turner, Audacious developers and others])
 
 AC_DEFINE_UNQUOTED([PACKAGE], "$PACKAGE_NAME", [Name of package])
 AC_DEFINE_UNQUOTED([VERSION], "$PACKAGE_VERSION", [Version number of package])
@@ -35,9 +35,9 @@ LIBS="$LIBS $LIBINTL"
 dnl Check for Fauxdacious
 dnl ===================
 
-PKG_CHECK_MODULES(AUDACIOUS, [fauxdacious >= 4.4],
+PKG_CHECK_MODULES(AUDACIOUS, [fauxdacious >= 4.5],
     [],
-    [AC_MSG_ERROR([Cannot find Fauxdacious 4.4; have you installed Fauxdacious yet?])]
+    [AC_MSG_ERROR([Cannot find Fauxdacious 4.5; have you installed Fauxdacious yet?])]
 )
 
 CPPFLAGS="$CPPFLAGS $AUDACIOUS_CFLAGS"
