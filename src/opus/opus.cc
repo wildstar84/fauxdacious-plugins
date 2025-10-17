@@ -31,6 +31,13 @@
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/runtime.h>
 
+enum {
+    SYNC_NO,
+    SYNC_OK,
+    SYNC_YES,
+    SYNC_ONLY
+};
+
 class OpusPlugin : public InputPlugin
 {
 public:
@@ -98,6 +105,7 @@ static OggOpusFile * open_file(VFSFile & file)
 
 static void read_tags(const OpusTags * tags, Tuple & tuple)
 {
+    int lyric_format = aud_get_int ("lyricwiki", "lyric_format");
     const char * title = opus_tags_query(tags, "TITLE", 0);
     const char * artist = opus_tags_query(tags, "ARTIST", 0);
     const char * album = opus_tags_query(tags, "ALBUM", 0);
@@ -108,6 +116,9 @@ static void read_tags(const OpusTags * tags, Tuple & tuple)
     const char * music_brainz_id = opus_tags_query(tags, "musicbrainz_trackid", 0);
     const char * publisher = opus_tags_query(tags, "publisher", 0);
     const char * catalog_num = opus_tags_query(tags, "CATALOGNUMBER", 0);
+    const char * lyrics = opus_tags_query(tags, "LYRICS", 0);
+    const char * syncedlyrics = opus_tags_query(tags, "SYNCEDLYRICS", 0);
+    const char * unsyncedlyrics = opus_tags_query(tags, "UNSYNCEDLYRICS", 0);
     const char * track = opus_tags_query(tags, "TRACKNUMBER", 0);
     const char * disc = opus_tags_query(tags, "DISCNUMBER", 0);
     const char * date = opus_tags_query(tags, "DATE", 0);
@@ -122,6 +133,34 @@ static void read_tags(const OpusTags * tags, Tuple & tuple)
     tuple.set_str(Tuple::MusicBrainzID, music_brainz_id);
     tuple.set_str(Tuple::Publisher, publisher);
     tuple.set_str(Tuple::CatalogNum, catalog_num);
+
+    if (lyric_format == SYNC_NO)
+    {
+        if (unsyncedlyrics && unsyncedlyrics[0])
+            tuple.set_str(Tuple::Lyrics, unsyncedlyrics);
+        else
+            tuple.set_str(Tuple::Lyrics, lyrics);
+    }
+    else if (lyric_format == SYNC_OK)
+    {
+        if (unsyncedlyrics && unsyncedlyrics[0])
+            tuple.set_str(Tuple::Lyrics, unsyncedlyrics);
+        else if (lyrics && lyrics[0])
+            tuple.set_str(Tuple::Lyrics, lyrics);
+        else
+            tuple.set_str(Tuple::Lyrics, syncedlyrics);
+    }
+    else if (lyric_format == SYNC_YES)
+    {
+        if (syncedlyrics && syncedlyrics[0])
+            tuple.set_str(Tuple::Lyrics, syncedlyrics);
+        else if (lyrics && lyrics[0])
+            tuple.set_str(Tuple::Lyrics, lyrics);
+        else
+            tuple.set_str(Tuple::Lyrics, unsyncedlyrics);
+    }
+    else if (lyric_format == SYNC_ONLY)
+        tuple.set_str(Tuple::Lyrics, syncedlyrics);
 
     if (track)
         tuple.set_int(Tuple::Track, std::atoi(track));
