@@ -6,7 +6,7 @@ dnl Initialize
 dnl ==========
 
 AC_PREREQ([2.59])
-AC_INIT([fauxdacious-plugins], [4.5-final])
+AC_INIT([fauxdacious-plugins], [4.5.1-devel])
 AC_COPYRIGHT([Copyright (C) 2001-2025 Jim Turner, Audacious developers and others])
 
 AC_DEFINE_UNQUOTED([PACKAGE], "$PACKAGE_NAME", [Name of package])
@@ -83,8 +83,8 @@ if test "x$USE_GTK" = "xyes" ; then
 fi
 
 if test "x$USE_QT" = "xyes" ; then
-    GENERAL_PLUGINS="$GENERAL_PLUGINS albumart-qt lyricwiki-qt playback-history-qt playlist-manager-qt search-tool-qt song-info-qt"
-    GENERAL_PLUGINS="$GENERAL_PLUGINS statusicon-qt info-bar-plugin-qt qtui skins-qt moonstone"
+    GENERAL_PLUGINS="$GENERAL_PLUGINS albumart-qt filebrowser-qt lyricwiki-qt playback-history-qt playlist-manager-qt search-tool-qt"
+    GENERAL_PLUGINS="$GENERAL_PLUGINS song-info-qt statusicon-qt info-bar-plugin-qt qtui skins-qt moonstone"
     VISUALIZATION_PLUGINS="$VISUALIZATION_PLUGINS blur_scope-qt qt-spectrum vumeter-qt"
 fi
 
