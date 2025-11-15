@@ -18,10 +18,6 @@ Candidates with problems:
   * WAVE (wav): file durations are wrong.  Some "Live_FLV" streams are wrong,
     showing 419:57:08 for duration.
 
-  * Musepack (mpc): SV7 files seem to work okay, however SV8 files
-    cause severe artifacts when seeked and under some circumstances
-    apparently cause the decoder to corrupt stack -> crash.
-
 Other notes:
 
   * AAC: FFmpeg currently only supports AAC-LC, though there have been
