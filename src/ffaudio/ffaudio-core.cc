@@ -703,7 +703,7 @@ static const struct {
     {Tuple::String, Tuple::Lyrics, {"lyrics", nullptr}},
 };
 
-static void read_metadata_dict (Tuple & tuple, AVDictionary * dict)
+static void read_metadata_dict (Tuple & tuple, const AVDictionary * dict)
 {
     for (auto & meta : metaentries)
     {
