@@ -77,8 +77,8 @@ TRANSPORT_PLUGINS="gio"
 
 if test "x$USE_GTK" = "xyes" ; then
     EFFECT_PLUGINS="$EFFECT_PLUGINS ladspa"
-    GENERAL_PLUGINS="$GENERAL_PLUGINS alarm albumart lyricwiki playback-history-gtk playlist-manager search-tool statusicon"
-    GENERAL_PLUGINS="$GENERAL_PLUGINS info-bar-plugin-gtk gtkui skins"
+    GENERAL_PLUGINS="$GENERAL_PLUGINS alarm albumart filebrowser-gtk lyricwiki playback-history-gtk"
+    GENERAL_PLUGINS="$GENERAL_PLUGINS playlist-manager search-tool statusicon info-bar-plugin-gtk gtkui skins"
     VISUALIZATION_PLUGINS="$VISUALIZATION_PLUGINS blur_scope cairo-spectrum vumeter"
 fi
 
