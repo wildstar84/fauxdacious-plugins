@@ -53,12 +53,12 @@ public:
     static const char about[];
 
     static constexpr PluginInfo info = {N_("File Browser"), PACKAGE, about,
-                                        nullptr, PluginQtOnly};
+            nullptr, PluginQtOnly};
 
     constexpr FileBrowserQt() : GeneralPlugin(info, false) {}
 
-    void * get_qt_widget();
-    int take_message(const char * code, const void * data, int size);
+    void * get_qt_widget() override;
+    int take_message(const char * code, const void * data, int size) override;
 };
 
 EXPORT FileBrowserQt aud_plugin_instance;
@@ -80,7 +80,7 @@ public:
 
 protected:
     bool filterAcceptsRow(int sourceRow,
-                          const QModelIndex & sourceParent) const override
+            const QModelIndex & sourceParent) const override
     {
         auto model = qobject_cast<QFileSystemModel *>(sourceModel());
         if (model->index(model->rootPath()) != sourceParent)
@@ -122,7 +122,7 @@ private:
     FileSystemFilterProxyModel * m_proxyModel;
     QToolButton * m_upButton;
     QLineEdit * m_filterLineEdit;
-/*  QString m_coverPath; -- JWT:THIS APPEARS TO HAVE NO USE, PARTICULARLY WITH OUR COVER-ART FEATURES. */
+/*  QString m_coverPath; -- JWT:THIS APPEARS TO HAVE LITTLE USE, PARTICULARLY WITH OUR COVER-ART FEATURES. */
 };
 
 static QPointer<FileBrowserWidget> s_widget;
@@ -142,7 +142,7 @@ FileBrowserWidget::FileBrowserWidget()
     m_fileSystemModel->setNameFilterDisables(false);
     m_fileSystemModel->setNameFilters(supportedFileExtensions());
     m_fileSystemModel->setFilter(QDir::AllDirs | QDir::Files |
-                                 QDir::NoDotAndDotDot);
+            QDir::NoDotAndDotDot);
 
     m_proxyModel = new FileSystemFilterProxyModel(this);
     m_proxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
@@ -194,9 +194,9 @@ FileBrowserWidget::FileBrowserWidget()
 void FileBrowserWidget::contextMenuEvent(QContextMenuEvent * event)
 {
     auto newAction = [this](const char * text, const char * icon,
-                            QWidget * parent, auto func) {
+            QWidget * parent, auto func) {
         auto action = new QAction(QIcon::fromTheme(icon),
-                                  audqt::translate_str(text), parent);
+                audqt::translate_str(text), parent);
         connect(action, &QAction::triggered, this, func);
         return action;
     };
@@ -204,28 +204,23 @@ void FileBrowserWidget::contextMenuEvent(QContextMenuEvent * event)
     auto menu = new QMenu(this);
 
     menu->addAction(newAction(N_("_Play"), "media-playback-start", menu,
-                              &FileBrowserWidget::replacePlaylist));
+            &FileBrowserWidget::replacePlaylist));
     menu->addAction(newAction(N_("_Create Playlist"), "document-new", menu,
-                              &FileBrowserWidget::createPlaylist));
+            &FileBrowserWidget::createPlaylist));
     menu->addAction(newAction(N_("_Add to Playlist"), "list-add", menu,
-                              &FileBrowserWidget::addToPlaylist));
+            &FileBrowserWidget::addToPlaylist));
     menu->addSeparator();
 
     menu->addAction(newAction(N_("_Copy Selected"), "edit-copy", menu,
-                              &FileBrowserWidget::copySelectedItems));
+            &FileBrowserWidget::copySelectedItems));
     if (!hasMultiSelection())
-    {
-        QModelIndexList indexes = m_treeView->selectionModel()->selectedRows();
-        QModelIndex sourceIndex = m_proxyModel->mapToSource(indexes[0]);
-        QFileInfo info = m_fileSystemModel->fileInfo(sourceIndex);
-        if (info.isDir())
-            menu->addAction(newAction(N_("_Open Folder Externally"), "folder", menu,
-                    &FileBrowserWidget::openFolder));
-    }
-/* JWT:THIS APPEARS TO HAVE NO USE, PARTICULARLY WITH OUR COVER-ART FEATURES:
+        menu->addAction(newAction(N_("_Open Folder Externally"), "folder", menu,
+                &FileBrowserWidget::openFolder));
+
+/* JWT:THIS APPEARS TO HAVE LITTLE USE, PARTICULARLY WITH OUR COVER-ART FEATURES:
     if (searchCover(m_coverPath))
         menu->addAction(newAction(N_("Open Co_ver Art"), "image-x-generic",
-                                  menu, &FileBrowserWidget::openCover));
+                menu, &FileBrowserWidget::openCover));
 */
     menu->setAttribute(Qt::WA_DeleteOnClose);
     menu->popup(event->globalPos());
@@ -292,7 +287,7 @@ void FileBrowserWidget::openFolder()
         QDesktopServices::openUrl(QUrl::fromLocalFile(path));
 }
 
-/* JWT:THIS APPEARS TO HAVE NO USE, PARTICULARLY WITH OUR COVER-ART FEATURES:
+/* JWT:THIS APPEARS TO HAVE LITTLE USE, PARTICULARLY WITH OUR COVER-ART FEATURES:
 void FileBrowserWidget::openCover()
 {
     if (QFile(m_coverPath).exists())
@@ -305,7 +300,7 @@ bool FileBrowserWidget::hasMultiSelection() const
     return m_treeView->selectionModel()->selectedRows().size() > 1;
 }
 
-/* JWT:THIS APPEARS TO HAVE NO USE, PARTICULARLY WITH OUR COVER-ART FEATURES:
+/* JWT:THIS APPEARS TO HAVE LITTLE USE, PARTICULARLY WITH OUR COVER-ART FEATURES:
 bool FileBrowserWidget::searchCover(QString & result) const
 {
     QString path = selectedPath();
@@ -374,6 +369,7 @@ QStringList FileBrowserWidget::supportedFileExtensions() const
     {
         if (!ext)
             break;
+
         extensions << QString("*.%1").arg(ext);
     }
 
