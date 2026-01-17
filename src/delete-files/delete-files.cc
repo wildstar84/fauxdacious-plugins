@@ -203,7 +203,9 @@ const char * const DeleteFiles::defaults[] = {
 
 bool DeleteFiles::init ()
 {
+#if ! GLIB_CHECK_VERSION(2, 36, 0)
     g_type_init ();
+#endif
 
     aud_config_set_defaults ("delete_files", defaults);
 
