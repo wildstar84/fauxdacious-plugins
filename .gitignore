@@ -11,6 +11,7 @@ src/mpris2/object-core.c
 src/mpris2/object-core.h
 src/mpris2/object-player.c
 src/mpris2/object-player.h
+.cache/
 .deps
 *.a
 *.dep
@@ -19,8 +20,11 @@ src/mpris2/object-player.h
 *.mo
 *.o
 *.so
-*~
 *.patch
 *.diff
 *.bundle
 *.moc
+*.bad
+*.LNG
+*.lng
+*~
