@@ -32,7 +32,6 @@
 #include <libfauxdcore/vfs.h>
 
 #include <libopenmpt/libopenmpt.h>
-#include <libopenmpt/libopenmpt_stream_callbacks_file.h>
 
 class MPTWrap
 {
