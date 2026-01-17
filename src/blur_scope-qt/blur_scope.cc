@@ -32,12 +32,11 @@
 #include <QImage>
 #include <QPainter>
 
-#include "libfauxdqt/colorbutton.h"
-
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/runtime.h>
 #include <libfauxdcore/plugin.h>
 #include <libfauxdcore/preferences.h>
+#include <libfauxdqt/colorbutton.h>
 
 static void /* QWidget */ * bscope_get_color_chooser ();
 
