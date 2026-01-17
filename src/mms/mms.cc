@@ -17,15 +17,12 @@
  * the use of this software.
  */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <libmms/mms.h>
 #include <libmms/mmsh.h>
 
-#include <libfauxdcore/runtime.h>
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/plugin.h>
+#include <libfauxdcore/runtime.h>
 
 static const char * const mms_schemes[] = {"mms"};
 
