@@ -24,7 +24,6 @@
 #include <assert.h>
 #include <pthread.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include <libfauxdcore/audstrings.h>
 #include <libfauxdcore/i18n.h>
