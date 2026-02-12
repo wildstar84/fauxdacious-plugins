@@ -77,14 +77,14 @@ TRANSPORT_PLUGINS="gio"
 
 if test "x$USE_GTK" = "xyes" ; then
     EFFECT_PLUGINS="$EFFECT_PLUGINS ladspa"
-    GENERAL_PLUGINS="$GENERAL_PLUGINS alarm albumart lyricwiki playback-history-gtk playlist-manager search-tool statusicon"
-    GENERAL_PLUGINS="$GENERAL_PLUGINS info-bar-plugin-gtk gtkui skins"
+    GENERAL_PLUGINS="$GENERAL_PLUGINS alarm albumart filebrowser lyricwiki playback-history-gtk"
+    GENERAL_PLUGINS="$GENERAL_PLUGINS playlist-manager search-tool statusicon info-bar-plugin-gtk gtkui skins"
     VISUALIZATION_PLUGINS="$VISUALIZATION_PLUGINS blur_scope cairo-spectrum vumeter"
 fi
 
 if test "x$USE_QT" = "xyes" ; then
-    GENERAL_PLUGINS="$GENERAL_PLUGINS albumart-qt lyricwiki-qt playback-history-qt playlist-manager-qt search-tool-qt song-info-qt"
-    GENERAL_PLUGINS="$GENERAL_PLUGINS statusicon-qt info-bar-plugin-qt qtui skins-qt moonstone"
+    GENERAL_PLUGINS="$GENERAL_PLUGINS albumart-qt filebrowser-qt lyricwiki-qt playback-history-qt playlist-manager-qt"
+    GENERAL_PLUGINS="$GENERAL_PLUGINS search-tool-qt song-info-qt statusicon-qt info-bar-plugin-qt qtui skins-qt moonstone"
     VISUALIZATION_PLUGINS="$VISUALIZATION_PLUGINS blur_scope-qt qt-spectrum vumeter-qt"
 fi
 
