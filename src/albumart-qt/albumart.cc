@@ -178,9 +178,6 @@ public:
         bool skip_web_art_search = aud_get_bool (nullptr, "_skip_web_art_search");
         String filename = aud_drct_get_filename ();
 
-        if (skip_web_art_search)
-        aud_set_bool (nullptr, "_skip_web_art_search", false);
-
         if (skipArtReInit)
             skipArtReInit = false;
         else
@@ -603,6 +600,7 @@ static void init_update (void *, ArtLabel * widget)
 
 static void tuple_update (void *, ArtLabel * widget)
 {
+    aud_set_bool (nullptr, "_skip_web_art_search", false);
     fromsongstartup = false;
     widget->update_art ();
 }

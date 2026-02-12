@@ -279,9 +279,6 @@ static void album_update (void *, GtkWidget * widget)
     bool skip_web_art_search = aud_get_bool (nullptr, "_skip_web_art_search");
     String filename = aud_drct_get_filename ();
 
-    if (skip_web_art_search)
-        aud_set_bool (nullptr, "_skip_web_art_search", false);
-
     if (skipArtReInit)
         skipArtReInit = false;
     else
@@ -554,6 +551,7 @@ static void album_init (void *, GtkWidget * widget)
 /* JWT:CALLED WHEN TITLE CHANGES WITHIN THE SAME SONG/STREAM ENTRY: */
 static void album_tuplechg (void *, GtkWidget * widget)
 {
+    aud_set_bool (nullptr, "_skip_web_art_search", false);
     fromsongstartup = false;
     album_update (nullptr, widget);
 }
