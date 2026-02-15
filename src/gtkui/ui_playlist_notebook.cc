@@ -552,6 +552,11 @@ void ui_playlist_notebook_position (void * data, void * user)
         audgui_list_set_highlight (playlist_get_treeview (list), row);
 }
 
+void ui_playlist_notebook_switch_to_page (int page_num)
+{
+    gtk_notebook_set_current_page ((GtkNotebook *) notebook, page_num);
+}
+
 void ui_playlist_notebook_activate (void * data, void * user)
 {
     if (! aud_playlist_update_pending ())

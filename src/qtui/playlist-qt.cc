@@ -266,6 +266,12 @@ void PlaylistWidget::keyPressEvent (QKeyEvent * event)
           case Qt::Key_Q:
             aud_quit ();
             return;
+          case Qt::Key_PageUp:
+            pl_prev();
+            return;
+          case Qt::Key_PageDown:
+            pl_next();
+            return;
         }
     }
 

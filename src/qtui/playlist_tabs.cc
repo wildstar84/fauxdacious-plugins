@@ -173,10 +173,18 @@ bool PlaylistTabs::eventFilter (QObject * obj, QEvent * e)
 {
     if (e->type() == QEvent::KeyPress)
     {
-        QKeyEvent * ke = (QKeyEvent *)e;
+        auto event = static_cast<QKeyEvent *>(e);
+        int key = event->key();
 
-        if (ke->key() == Qt::Key_Escape)
+        if (key == Qt::Key_Escape)
             return m_tabbar->cancelRename();
+
+        if (event->modifiers() & Qt::AltModifier &&
+                key >= Qt::Key_1 && key <= Qt::Key_9)
+        {
+            setCurrentIndex(key - Qt::Key_1);
+            return true;
+        }
     }
 
     return QTabWidget::eventFilter(obj, e);

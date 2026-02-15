@@ -37,6 +37,7 @@ void ui_playlist_notebook_create_tab (int playlist);
 void ui_playlist_notebook_populate ();
 void ui_playlist_notebook_empty ();
 void ui_playlist_notebook_update (void * data, void * user);
+void ui_playlist_notebook_switch_to_page (int page_num);
 void ui_playlist_notebook_activate (void * data, void * user);
 void ui_playlist_notebook_set_playing (void * data, void * user);
 void ui_playlist_notebook_position (void * data, void * user);

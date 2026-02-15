@@ -640,9 +640,13 @@ static gboolean window_keypress_cb (GtkWidget *, GdkEventKey * event)
         {
           case GDK_KEY_ISO_Left_Tab:
           case GDK_KEY_Tab:
+          case GDK_KEY_Page_Down:
             pl_next ();
             break;
 
+          case GDK_KEY_Page_Up:
+            pl_prev ();
+            break;
           default:
             return false;
         }
@@ -721,6 +725,17 @@ static gboolean window_keypress_cb (GtkWidget *, GdkEventKey * event)
               case GDK_KEY_Right:
                 if (aud_drct_get_playing ())
                     do_seek (aud_drct_get_time () + aud_get_int (0, "step_size") * 5000);
+                break;
+              case GDK_KEY_1:
+              case GDK_KEY_2:
+              case GDK_KEY_3:
+              case GDK_KEY_4:
+              case GDK_KEY_5:
+              case GDK_KEY_6:
+              case GDK_KEY_7:
+              case GDK_KEY_8:
+              case GDK_KEY_9:
+                ui_playlist_notebook_switch_to_page (event->keyval - GDK_KEY_1);
                 break;
               default:
                 return false;
