@@ -1,4 +1,4 @@
-PLUGIN = filebrowser${PLUGIN_SUFFIX}
+PLUGIN = filebrowser-gtk${PLUGIN_SUFFIX}
 
 SRCS = filebrowser-gtk.cc
 
