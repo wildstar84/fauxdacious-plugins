@@ -262,9 +262,11 @@ static void title_change ()
 {
     if (aud_drct_get_ready ())
     {
-        String newtitle = aud_drct_get_title_one_line (true);
-        if (newtitle && newtitle[0] && strlen(newtitle) > 0)
-            mainwin_set_song_title ((const char *) newtitle);
+        StringBuf newtitle = str_remove_appended_uris (
+                str_copy ((const char *) aud_drct_get_title_one_line (true)));
+        const char * newtitle_ptr = (const char *) newtitle;
+        if (newtitle_ptr && newtitle_ptr[0] && strlen(newtitle_ptr) > 0)
+            mainwin_set_song_title (newtitle_ptr);
     }
     else
         mainwin_set_song_title ("Buffering ...");

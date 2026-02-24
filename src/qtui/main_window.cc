@@ -480,10 +480,11 @@ void MainWindow::update_play_pause ()
 
 void MainWindow::title_change_cb ()
 {
-    String title = String (aud_drct_get_title_one_line (false));
+    StringBuf title = str_remove_appended_uris (
+            str_copy ((const char *) aud_drct_get_title_one_line (false)));
     if (title && title[0])
     {
-        set_title (QString ("%1 - %2").arg ((const char *)title, _("Fauxdacious")));
+        set_title (QString ("%1 - %2").arg ((const char *) title, _("Fauxdacious")));
         m_buffering_timer.stop ();
     }
 }

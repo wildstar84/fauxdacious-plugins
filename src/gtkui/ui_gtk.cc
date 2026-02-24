@@ -219,18 +219,17 @@ static void title_change ()
     StringBuf title;
 
     if (aud_drct_get_playing ())
-    {
-        if (aud_drct_get_ready ())
-            title = str_printf (_("%s - Fauxdacious"), (const char *) aud_drct_get_title_one_line (false));
-        else
-            title = str_copy (_("Buffering ..."));
-    }
+        title = (aud_drct_get_ready ())
+                ? str_remove_appended_uris (str_printf (_("%s - Fauxdacious"),
+                    (const char *) aud_drct_get_title_one_line (false)))
+                : str_copy (_("Buffering ..."));
     else
         title = str_copy (_("Fauxdacious"));
 
     String instancename = aud_get_instancename ();
     if (instancename != String ("fauxdacious"))
         str_append_printf (title, " (%s)", (const char *) instancename);
+
     gtk_window_set_title ((GtkWindow *) window, title);
 }
 
