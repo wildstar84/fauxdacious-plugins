@@ -193,6 +193,14 @@ int corlett_decode(uint8_t *input, uint32_t input_len, uint8_t **output, uint64_
 		{
 			if (data)
 			{
+				if (l >= 255)
+				{
+					// Corrupt tag
+					(*c)->tag_data[num_tags][0] = 0;
+					(*c)->tag_name[num_tags][0] = 0;
+					return AO_FAIL;
+				}
+
 				if ((*tag_dec == 0xA) || (*tag_dec == 0x00))
 				{
 					(*c)->tag_data[num_tags][l] = 0;
