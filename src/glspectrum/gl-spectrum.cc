@@ -26,7 +26,7 @@
 
 #include <libfauxdcore/i18n.h>
 #include <libfauxdcore/plugin.h>
-#include <libaudcore/runtime.h>
+#include <libfauxdcore/runtime.h>
 #include <libfauxdgui/gtk-compat.h>
 
 #include <gdk/gdk.h>
