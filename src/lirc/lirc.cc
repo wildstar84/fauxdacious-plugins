@@ -127,7 +127,7 @@ void LIRCPlugin::cleanup ()
         if (input_tag)
         {
             g_source_remove (input_tag);
-            input_tag = 0
+            input_tag = 0;
         }
 
         lirc_freeconfig (config);
