@@ -1342,6 +1342,16 @@ void activate_search_tool ()
     layout_focus (search_tool);
 }
 
+void activate_playback_history ()
+{
+    PluginHandle * history = aud_plugin_lookup_basename ("playback-history");
+    if (! history)
+        return;
+
+    aud_plugin_enable (history, true);
+    layout_focus (history);
+}
+
 void activate_playlist_manager ()
 {
     PluginHandle * manager = aud_plugin_lookup_basename ("playlist-manager");

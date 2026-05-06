@@ -101,6 +101,7 @@ static const AudguiMenuItem main_items[] = {
 
 static const AudguiMenuItem playback_items[] = {
     MenuCommand (N_("Song Info ..."), "dialog-information", 'i', NO_MOD, audgui_infowin_show_current),
+    MenuCommand (N_("Playback History ..."), nullptr, 'h', NO_MOD, action_playback_history),
     MenuSep (),
     MenuToggle (N_("Repeat"), nullptr, 'r', NO_MOD, nullptr, "repeat", nullptr, "set repeat"),
     MenuToggle (N_("Shuffle"), nullptr, 's', NO_MOD, nullptr, "shuffle", nullptr, "set shuffle"),

@@ -140,6 +140,7 @@ static const AudguiMenuItem playback_items[] = {
     MenuToggle (N_("Stop A_fter This Song"), nullptr, 'm', CTRL, nullptr, "stop_after_current_song", nullptr, "set stop_after_current_song"),
     MenuSep (),
     MenuCommand (N_("Song _Info ..."), "dialog-information", 'i', CTRL, audgui_infowin_show_current),
+    MenuCommand (N_("Playback _History ..."), nullptr, 'h', CTRL, activate_playback_history),
     MenuCommand (N_("Jump to _Time ..."), "go-jump", 'k', CTRL, audgui_jump_to_time),
     MenuCommand (N_("_Jump to Song ..."), "go-jump", 'j', CTRL, audgui_jump_to_track),
     MenuSep (),

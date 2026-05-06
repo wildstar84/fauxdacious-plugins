@@ -74,31 +74,26 @@ void action_play_file ()
 void action_play_location ()
     { audgui_show_add_url_window (true); }
 
+static void enable_and_focus_plugin (const char * name)
+{
+    PluginHandle * plugin = aud_plugin_lookup_basename (name);
+    if (plugin)
+    {
+        aud_plugin_enable (plugin, true);
+        focus_plugin_window (plugin);
+    }
+}
+
+void action_playback_history ()
+    { enable_and_focus_plugin ("playback-history"); }
 void action_playlist_manager ()
-{
-    PluginHandle * manager = aud_plugin_lookup_basename ("playlist-manager");
-    if (manager)
-    {
-        aud_plugin_enable (manager, true);
-        focus_plugin_window (manager);
-    }
-}
-
+    { enable_and_focus_plugin ("playlist-manager"); }
 void action_search_tool ()
-{
-    PluginHandle * search = aud_plugin_lookup_basename ("search-tool");
-    if (search)
-    {
-        aud_plugin_enable (search, true);
-        focus_plugin_window (search);
-    }
-}
-
+    { enable_and_focus_plugin ("search-tool"); }
 void action_playlist_rename ()
     { audgui_show_playlist_rename (ACTIVE); }
 void action_playlist_delete ()
     { audgui_confirm_playlist_delete (ACTIVE); }
-
 void action_playlist_add_url ()
     { audgui_show_add_url_window (false); }
 void action_playlist_add_files ()
