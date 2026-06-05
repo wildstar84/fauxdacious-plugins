@@ -191,7 +191,7 @@ static String get_uri ()
         return strstr (path1, "://") ? path1 : to_uri (path1);
 
     StringBuf path2 = filename_build ({g_get_home_dir (), "Music"});
-    if (g_file_test (path2, G_FILE_TEST_EXISTS))
+    if (path2 && g_file_test (path2, G_FILE_TEST_EXISTS))
         return to_uri (path2);
 
     return to_uri (g_get_home_dir ());
