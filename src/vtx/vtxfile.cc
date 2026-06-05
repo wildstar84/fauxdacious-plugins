@@ -79,7 +79,7 @@ bool ayemu_vtx_t::read_header(VFSFile &file)
 {
   char buf[2];
   int error = 0;
-  int32_t int_regdata_size;
+  int32_t int_regdata_size = 0;
 
   if (file.fread(buf, 2, 1) != 1) {
     AUDERR("Can't read from %s\n", file.filename());
