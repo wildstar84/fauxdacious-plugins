@@ -279,7 +279,7 @@ static void title_change ()
             mainwin_set_song_title (newtitle_ptr);
     }
     else
-        mainwin_set_song_title ("Buffering ...");
+        mainwin_set_song_title (_("Buffering ..."));
 }
 
 static void setup_widget (Widget * widget, int x, int y, bool show)
