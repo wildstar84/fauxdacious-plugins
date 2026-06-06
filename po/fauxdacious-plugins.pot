@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: https://redmine.audacious-media-player.org/\n"
-"POT-Creation-Date: 2025-07-21 22:55-0500\n"
+"POT-Creation-Date: 2026-06-05 20:29-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -253,14 +253,14 @@ msgstr ""
 
 #: src/alarm/interface.cc:344 src/console/plugin.cc:41
 #: src/crossfade/crossfade.cc:56 src/crossfade/crossfade.cc:62
-#: src/lirc/lirc.cc:398 src/notify/notify.cc:113 src/sid/xs_config.cc:85
+#: src/lirc/lirc.cc:382 src/notify/notify.cc:113 src/sid/xs_config.cc:85
 #: src/sid/xs_config.cc:94 src/sid/xs_config.cc:103
 #: src/vumeter-qt/vumeter_qt.cc:39 src/vumeter/vumeter.cc:77
 msgid "seconds"
 msgstr ""
 
 #: src/alarm/interface.cc:351 src/alarm/interface.cc:394
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:701
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:702
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:444
 msgid "Volume"
 msgstr ""
@@ -309,23 +309,23 @@ msgstr ""
 msgid "Album Art"
 msgstr ""
 
-#: src/albumart/albumart.cc:618 src/albumart-qt/albumart.cc:671
+#: src/albumart/albumart.cc:616 src/albumart-qt/albumart.cc:669
 msgid "<b>Albumart Configuration</b>"
 msgstr ""
 
-#: src/albumart/albumart.cc:619 src/albumart-qt/albumart.cc:672
+#: src/albumart/albumart.cc:617 src/albumart-qt/albumart.cc:670
 msgid "Look for album art on the web."
 msgstr ""
 
-#: src/albumart/albumart.cc:621 src/albumart-qt/albumart.cc:674
+#: src/albumart/albumart.cc:619 src/albumart-qt/albumart.cc:672
 msgid "Hide info bar art icon unless separate album cover fetched."
 msgstr ""
 
-#: src/albumart/albumart.cc:623 src/albumart-qt/albumart.cc:676
+#: src/albumart/albumart.cc:621 src/albumart-qt/albumart.cc:674
 msgid "Scale small images to fill."
 msgstr ""
 
-#: src/albumart/albumart.cc:625 src/albumart-qt/albumart.cc:678
+#: src/albumart/albumart.cc:623 src/albumart-qt/albumart.cc:676
 #: src/lyricwiki/lyricwiki.cc:151 src/lyricwiki-qt/lyricwiki.cc:266
 msgid "Try to save by song file-name first?"
 msgstr ""
@@ -574,7 +574,7 @@ msgstr ""
 msgid "Concave Rectangle"
 msgstr ""
 
-#: src/aosd/aosd_style.cc:69 src/openmpt/mptwrap.h:50 src/xsf/plugin.cc:436
+#: src/aosd/aosd_style.cc:69 src/openmpt/mptwrap.h:49 src/xsf/plugin.cc:436
 msgid "None"
 msgstr ""
 
@@ -886,11 +886,11 @@ msgstr ""
 msgid "Bitcrusher"
 msgstr ""
 
-#: src/blur_scope/blur_scope.cc:40 src/blur_scope-qt/blur_scope.cc:45
+#: src/blur_scope/blur_scope.cc:40 src/blur_scope-qt/blur_scope.cc:44
 msgid "<b>Color</b>"
 msgstr ""
 
-#: src/blur_scope/blur_scope.cc:56 src/blur_scope-qt/blur_scope.cc:158
+#: src/blur_scope/blur_scope.cc:56 src/blur_scope-qt/blur_scope.cc:157
 msgid "Blur Scope"
 msgstr ""
 
@@ -1250,55 +1250,55 @@ msgstr ""
 msgid "Cue Sheet Plugin"
 msgstr ""
 
-#: src/delete-files/delete-files.cc:53 src/delete-files/delete-files.cc:162
-#: src/delete-files/delete-files.cc:177
+#: src/delete-files/delete-files.cc:50 src/delete-files/delete-files.cc:159
+#: src/delete-files/delete-files.cc:174
 msgid "Delete Files"
 msgstr ""
 
-#: src/delete-files/delete-files.cc:87
+#: src/delete-files/delete-files.cc:84
 #, c-format
 msgid "Error moving %s to trash: %s."
 msgstr ""
 
-#: src/delete-files/delete-files.cc:98
+#: src/delete-files/delete-files.cc:95
 #, c-format
 msgid "Error deleting %s: %s."
 msgstr ""
 
-#: src/delete-files/delete-files.cc:129
+#: src/delete-files/delete-files.cc:126
 #, c-format
 msgid "Error deleting %s: not a local file."
 msgstr ""
 
-#: src/delete-files/delete-files.cc:139
+#: src/delete-files/delete-files.cc:136
 msgid "Do you want to move the selected files to the trash?"
 msgstr ""
 
-#: src/delete-files/delete-files.cc:140
+#: src/delete-files/delete-files.cc:137
 msgid "Move to Trash"
 msgstr ""
 
-#: src/delete-files/delete-files.cc:145
+#: src/delete-files/delete-files.cc:142
 msgid "Do you want to permanently delete the selected files?"
 msgstr ""
 
-#: src/delete-files/delete-files.cc:146
+#: src/delete-files/delete-files.cc:143
 msgid "Delete"
 msgstr ""
 
-#: src/delete-files/delete-files.cc:160 src/delete-files/delete-files.cc:182
+#: src/delete-files/delete-files.cc:157 src/delete-files/delete-files.cc:179
 msgid "Cancel"
 msgstr ""
 
-#: src/delete-files/delete-files.cc:211
+#: src/delete-files/delete-files.cc:210
 msgid "Delete Selected Files"
 msgstr ""
 
-#: src/delete-files/delete-files.cc:231
+#: src/delete-files/delete-files.cc:230
 msgid "<b>Delete Method</b>"
 msgstr ""
 
-#: src/delete-files/delete-files.cc:232
+#: src/delete-files/delete-files.cc:231
 msgid "Move to trash instead of deleting immediately"
 msgstr ""
 
@@ -1433,7 +1433,7 @@ msgstr ""
 msgid "Unoptimized vid. window resize (some WMs, ie. JWM may need)."
 msgstr ""
 
-#: src/ffaudio/ffaudio-core.cc:1861
+#: src/ffaudio/ffaudio-core.cc:1875
 msgid ""
 "Multi-format audio decoding plugin for Fauxdacious using\n"
 "FFmpeg multimedia framework (http://www.ffmpeg.org/)\n"
@@ -1444,6 +1444,83 @@ msgid ""
 "\n"
 "Video-playing capability (added 2015) by:\n"
 "Jim Turner <turnerjw784@yahoo.com>"
+msgstr ""
+
+#: src/filebrowser-gtk/filebrowser-gtk.cc:48
+#: src/filebrowser-qt/filebrowser-qt.cc:55
+msgid "File Browser"
+msgstr ""
+
+#: src/filebrowser-gtk/filebrowser-gtk.cc:63
+msgid ""
+"A dockable plugin that can be used to browse folders for music files. Right-"
+"click on a folder or file for supported actions.\n"
+"\n"
+"Copyright 2026 Thomas Lange\n"
+"\n"
+"Based on the implementation for Qmmp\n"
+"Copyright 2021-2026 Ilya Kotov"
+msgstr ""
+
+#: src/filebrowser-gtk/filebrowser-gtk.cc:529
+#: src/filebrowser-qt/filebrowser-qt.cc:217
+msgid "_Open Folder Externally"
+msgstr ""
+
+#: src/filebrowser-gtk/filebrowser-gtk.cc:602
+#: src/filebrowser-qt/filebrowser-qt.cc:206 src/gtkui/menus.cc:130
+#: src/gtkui/menus.cc:272 src/moonstone/playlist_tabs.cc:331
+#: src/qtui/menus.cc:108 src/qtui/playlist_tabs.cc:347
+#: src/search-tool-qt/search-tool-qt.cc:849 src/search-tool/search-tool.cc:696
+#: src/statusicon-qt/statusicon.cc:124 src/statusicon/statusicon.cc:301
+msgid "_Play"
+msgstr ""
+
+#: src/filebrowser-gtk/filebrowser-gtk.cc:604
+#: src/filebrowser-qt/filebrowser-qt.cc:208
+#: src/search-tool-qt/search-tool-qt.cc:850 src/search-tool/search-tool.cc:698
+msgid "_Create Playlist"
+msgstr ""
+
+#: src/filebrowser-gtk/filebrowser-gtk.cc:606
+#: src/filebrowser-qt/filebrowser-qt.cc:210
+#: src/search-tool-qt/search-tool-qt.cc:851 src/search-tool/search-tool.cc:700
+msgid "_Add to Playlist"
+msgstr ""
+
+#: src/filebrowser-gtk/filebrowser-gtk.cc:609
+#: src/filebrowser-qt/filebrowser-qt.cc:214
+msgid "_Copy Selected"
+msgstr ""
+
+#: src/filebrowser-gtk/filebrowser-gtk.cc:626
+#: src/filebrowser-qt/filebrowser-qt.cc:411 src/qtui/filter_input.cc:44
+msgid "Search"
+msgstr ""
+
+#: src/filebrowser-gtk/filebrowser-gtk.cc:627
+#, c-format
+msgid "Search in %s"
+msgstr ""
+
+#: src/filebrowser-gtk/filebrowser-gtk.cc:893
+#: src/filebrowser-qt/filebrowser-qt.cc:164
+msgid "Show the parent folder"
+msgstr ""
+
+#: src/filebrowser-qt/filebrowser-qt.cc:67
+msgid ""
+"A dockable plugin that can be used to browse folders for music files. Right-"
+"click on a folder or file for supported actions.\n"
+"\n"
+"Copyright 2025 Thomas Lange\n"
+"\n"
+"Based on the implementation for Qmmp\n"
+"Copyright 2021-2025 Ilya Kotov"
+msgstr ""
+
+#: src/filebrowser-qt/filebrowser-qt.cc:412
+msgid "Search in %1"
 msgstr ""
 
 #: src/filewriter/filewriter.cc:48
@@ -1787,7 +1864,7 @@ msgstr ""
 msgid "Invalid open mode"
 msgstr ""
 
-#: src/glspectrum/gl-spectrum.cc:52
+#: src/glspectrum/gl-spectrum.cc:57
 msgid ""
 "OpenGL Spectrum Analyzer for Audacious\n"
 "Copyright 2013 Christophe Budé, John Lindgren, and Carlo Bramini\n"
@@ -1799,7 +1876,7 @@ msgid ""
 "License: GPLv2+"
 msgstr ""
 
-#: src/glspectrum/gl-spectrum.cc:63 src/qtglspectrum/gl-spectrum.cc:53
+#: src/glspectrum/gl-spectrum.cc:68 src/qtglspectrum/gl-spectrum.cc:53
 msgid "OpenGL Spectrum Analyzer"
 msgstr ""
 
@@ -1824,8 +1901,8 @@ msgstr ""
 #: src/moonstone/playlist_model.cc:40 src/moonstone/playlist_model.cc:62
 #: src/playback-history-gtk/playback-history.cc:282
 #: src/playback-history-qt/playback-history.cc:380
-#: src/playlist-manager/playlist-manager.cc:223
-#: src/playlist-manager-qt/playlist-manager-qt.cc:184
+#: src/playlist-manager/playlist-manager.cc:243
+#: src/playlist-manager-qt/playlist-manager-qt.cc:187
 #: src/qtui/playlist_columns.cc:38 src/qtui/playlist_model.cc:36
 #: src/qtui/playlist_model.cc:58 src/streamtuner/icecast-model.cc:120
 #: src/streamtuner/ihr-model.cc:159 src/streamtuner/shoutcast-model.cc:122
@@ -2011,7 +2088,7 @@ msgstr ""
 msgid "Open _URL ..."
 msgstr ""
 
-#: src/gtkui/menus.cc:119 src/gtkui/menus.cc:276 src/qtui/menus.cc:93
+#: src/gtkui/menus.cc:119 src/gtkui/menus.cc:277 src/qtui/menus.cc:93
 msgid "_Add Files ..."
 msgstr ""
 
@@ -2027,22 +2104,14 @@ msgstr ""
 msgid "A_bout ..."
 msgstr ""
 
-#: src/gtkui/menus.cc:125 src/gtkui/menus.cc:246 src/qtui/menus.cc:100
+#: src/gtkui/menus.cc:125 src/gtkui/menus.cc:247 src/qtui/menus.cc:100
 msgid "_Settings ..."
 msgstr ""
 
-#: src/gtkui/menus.cc:126 src/gtkui/menus.cc:250 src/qtui/menus.cc:104
+#: src/gtkui/menus.cc:126 src/gtkui/menus.cc:251 src/qtui/menus.cc:104
 #: src/qtui/menus.cc:234 src/statusicon-qt/statusicon.cc:132
 #: src/statusicon/statusicon.cc:309
 msgid "_Quit"
-msgstr ""
-
-#: src/gtkui/menus.cc:130 src/gtkui/menus.cc:271
-#: src/moonstone/playlist_tabs.cc:331 src/qtui/menus.cc:108
-#: src/qtui/playlist_tabs.cc:339 src/search-tool-qt/search-tool-qt.cc:849
-#: src/search-tool/search-tool.cc:696 src/statusicon-qt/statusicon.cc:124
-#: src/statusicon/statusicon.cc:301
-msgid "_Play"
 msgstr ""
 
 #: src/gtkui/menus.cc:131 src/qtui/menus.cc:109
@@ -2085,296 +2154,300 @@ msgstr ""
 msgid "Stop A_fter This Song"
 msgstr ""
 
-#: src/gtkui/menus.cc:142 src/gtkui/menus.cc:254 src/moonstone/menus.cc:40
+#: src/gtkui/menus.cc:142 src/gtkui/menus.cc:255 src/moonstone/menus.cc:40
 #: src/qtui/menus.cc:120 src/qtui/menus.cc:243
 msgid "Song _Info ..."
 msgstr ""
 
 #: src/gtkui/menus.cc:143
-msgid "Jump to _Time ..."
+msgid "Playback _History ..."
 msgstr ""
 
 #: src/gtkui/menus.cc:144
+msgid "Jump to _Time ..."
+msgstr ""
+
+#: src/gtkui/menus.cc:145
 msgid "_Jump to Song ..."
 msgstr ""
 
-#: src/gtkui/menus.cc:146 src/qtui/menus.cc:124
+#: src/gtkui/menus.cc:147 src/qtui/menus.cc:124
 msgid "Set Repeat Point _A"
 msgstr ""
 
-#: src/gtkui/menus.cc:147 src/qtui/menus.cc:125
+#: src/gtkui/menus.cc:148 src/qtui/menus.cc:125
 msgid "Set Repeat Point _B"
 msgstr ""
 
-#: src/gtkui/menus.cc:148 src/qtui/menus.cc:126
+#: src/gtkui/menus.cc:149 src/qtui/menus.cc:126
 msgid "_Clear Repeat Points"
 msgstr ""
 
-#: src/gtkui/menus.cc:152 src/gtkui/menus.cc:160 src/gtkui/menus.cc:179
+#: src/gtkui/menus.cc:153 src/gtkui/menus.cc:161 src/gtkui/menus.cc:180
 #: src/qtui/menus.cc:130 src/qtui/menus.cc:138 src/qtui/menus.cc:157
 msgid "By _Title"
 msgstr ""
 
-#: src/gtkui/menus.cc:153 src/qtui/menus.cc:131
+#: src/gtkui/menus.cc:154 src/qtui/menus.cc:131
 msgid "By _File Name"
 msgstr ""
 
-#: src/gtkui/menus.cc:154 src/qtui/menus.cc:132
+#: src/gtkui/menus.cc:155 src/qtui/menus.cc:132
 msgid "By File _Path"
 msgstr ""
 
-#: src/gtkui/menus.cc:158 src/gtkui/menus.cc:177 src/qtui/menus.cc:136
+#: src/gtkui/menus.cc:159 src/gtkui/menus.cc:178 src/qtui/menus.cc:136
 #: src/qtui/menus.cc:155
 msgid "By Track _Number"
 msgstr ""
 
-#: src/gtkui/menus.cc:159 src/gtkui/menus.cc:178 src/qtui/menus.cc:137
+#: src/gtkui/menus.cc:160 src/gtkui/menus.cc:179 src/qtui/menus.cc:137
 #: src/qtui/menus.cc:156
 msgid "By D_isc Number"
 msgstr ""
 
-#: src/gtkui/menus.cc:161 src/gtkui/menus.cc:180 src/qtui/menus.cc:139
+#: src/gtkui/menus.cc:162 src/gtkui/menus.cc:181 src/qtui/menus.cc:139
 #: src/qtui/menus.cc:158
 msgid "By _Artist"
 msgstr ""
 
-#: src/gtkui/menus.cc:162 src/gtkui/menus.cc:181 src/qtui/menus.cc:140
+#: src/gtkui/menus.cc:163 src/gtkui/menus.cc:182 src/qtui/menus.cc:140
 #: src/qtui/menus.cc:159
 msgid "By Al_bum"
 msgstr ""
 
-#: src/gtkui/menus.cc:163 src/gtkui/menus.cc:182 src/qtui/menus.cc:141
+#: src/gtkui/menus.cc:164 src/gtkui/menus.cc:183 src/qtui/menus.cc:141
 #: src/qtui/menus.cc:160
 msgid "By Albu_m Artist"
 msgstr ""
 
-#: src/gtkui/menus.cc:164 src/gtkui/menus.cc:183 src/qtui/menus.cc:142
+#: src/gtkui/menus.cc:165 src/gtkui/menus.cc:184 src/qtui/menus.cc:142
 #: src/qtui/menus.cc:161
 msgid "By Release _Date"
 msgstr ""
 
-#: src/gtkui/menus.cc:165 src/gtkui/menus.cc:184 src/qtui/menus.cc:143
+#: src/gtkui/menus.cc:166 src/gtkui/menus.cc:185 src/qtui/menus.cc:143
 #: src/qtui/menus.cc:162
 msgid "By _Genre"
 msgstr ""
 
-#: src/gtkui/menus.cc:166 src/gtkui/menus.cc:185 src/qtui/menus.cc:144
+#: src/gtkui/menus.cc:167 src/gtkui/menus.cc:186 src/qtui/menus.cc:144
 #: src/qtui/menus.cc:163
 msgid "By _Length"
 msgstr ""
 
-#: src/gtkui/menus.cc:167 src/gtkui/menus.cc:186 src/qtui/menus.cc:145
+#: src/gtkui/menus.cc:168 src/gtkui/menus.cc:187 src/qtui/menus.cc:145
 #: src/qtui/menus.cc:164
 msgid "By _File Path"
 msgstr ""
 
-#: src/gtkui/menus.cc:168 src/gtkui/menus.cc:187 src/qtui/menus.cc:146
+#: src/gtkui/menus.cc:169 src/gtkui/menus.cc:188 src/qtui/menus.cc:146
 #: src/qtui/menus.cc:165
 msgid "By _Custom Title"
 msgstr ""
 
-#: src/gtkui/menus.cc:169 src/gtkui/menus.cc:188 src/qtui/menus.cc:147
+#: src/gtkui/menus.cc:170 src/gtkui/menus.cc:189 src/qtui/menus.cc:147
 #: src/qtui/menus.cc:166
 msgid "By C_omment"
 msgstr ""
 
-#: src/gtkui/menus.cc:170 src/gtkui/menus.cc:189 src/qtui/menus.cc:148
-#: src/qtui/menus.cc:167 src/skins/menus.cc:208 src/skins/menus.cc:225
+#: src/gtkui/menus.cc:171 src/gtkui/menus.cc:190 src/qtui/menus.cc:148
+#: src/qtui/menus.cc:167 src/skins/menus.cc:209 src/skins/menus.cc:226
 #: src/skins-qt/menus.cc:209 src/skins-qt/menus.cc:226
 msgid "By Bitrate"
 msgstr ""
 
-#: src/gtkui/menus.cc:172 src/gtkui/menus.cc:191 src/qtui/menus.cc:150
+#: src/gtkui/menus.cc:173 src/gtkui/menus.cc:192 src/qtui/menus.cc:150
 #: src/qtui/menus.cc:169
 msgid "R_everse Order"
 msgstr ""
 
-#: src/gtkui/menus.cc:173 src/gtkui/menus.cc:192 src/qtui/menus.cc:151
+#: src/gtkui/menus.cc:174 src/gtkui/menus.cc:193 src/qtui/menus.cc:151
 #: src/qtui/menus.cc:170
 msgid "_Random Order"
 msgstr ""
 
-#: src/gtkui/menus.cc:196 src/qtui/menus.cc:174
+#: src/gtkui/menus.cc:197 src/qtui/menus.cc:174
 msgid "_Play/Resume"
 msgstr ""
 
-#: src/gtkui/menus.cc:197 src/qtui/menus.cc:175
+#: src/gtkui/menus.cc:198 src/qtui/menus.cc:175
 msgid "_Refresh"
 msgstr ""
 
-#: src/gtkui/menus.cc:199 src/qtui/menus.cc:178 src/skins/menus.cc:187
+#: src/gtkui/menus.cc:200 src/qtui/menus.cc:178 src/skins/menus.cc:188
 #: src/skins-qt/menus.cc:188
 msgid "Search and Select"
 msgstr ""
 
-#: src/gtkui/menus.cc:201 src/qtui/menus.cc:180
+#: src/gtkui/menus.cc:202 src/qtui/menus.cc:180
 msgid "_Sort"
 msgstr ""
 
-#: src/gtkui/menus.cc:202 src/qtui/menus.cc:181
+#: src/gtkui/menus.cc:203 src/qtui/menus.cc:181
 msgid "Sort Se_lected"
 msgstr ""
 
-#: src/gtkui/menus.cc:203 src/qtui/menus.cc:182
+#: src/gtkui/menus.cc:204 src/qtui/menus.cc:182
 msgid "Remove _Duplicates"
 msgstr ""
 
-#: src/gtkui/menus.cc:204 src/qtui/menus.cc:183
+#: src/gtkui/menus.cc:205 src/qtui/menus.cc:183
 msgid "Remove _Unavailable Files"
 msgstr ""
 
-#: src/gtkui/menus.cc:206 src/playlist-manager/playlist-manager.cc:242
-#: src/playlist-manager-qt/playlist-manager-qt.cc:338 src/qtui/menus.cc:185
+#: src/gtkui/menus.cc:207 src/playlist-manager/playlist-manager.cc:262
+#: src/playlist-manager-qt/playlist-manager-qt.cc:360 src/qtui/menus.cc:185
 msgid "_New"
 msgstr ""
 
-#: src/gtkui/menus.cc:207 src/qtui/menus.cc:186
+#: src/gtkui/menus.cc:208 src/qtui/menus.cc:186
 msgid "Ren_ame ..."
 msgstr ""
 
-#: src/gtkui/menus.cc:208 src/gtkui/menus.cc:273
+#: src/gtkui/menus.cc:209 src/gtkui/menus.cc:274
 #: src/moonstone/playlist_tabs.cc:336 src/qtui/menus.cc:187
-#: src/qtui/playlist_tabs.cc:344
+#: src/qtui/playlist_tabs.cc:352
 msgid "Remo_ve"
 msgstr ""
 
-#: src/gtkui/menus.cc:210 src/gtkui/menus.cc:274 src/qtui/menus.cc:189
+#: src/gtkui/menus.cc:211 src/gtkui/menus.cc:275 src/qtui/menus.cc:189
 msgid "_Import ..."
 msgstr ""
 
-#: src/gtkui/menus.cc:211 src/gtkui/menus.cc:275 src/qtui/menus.cc:190
+#: src/gtkui/menus.cc:212 src/gtkui/menus.cc:276 src/qtui/menus.cc:190
 msgid "_Export ..."
 msgstr ""
 
-#: src/gtkui/menus.cc:213 src/qtui/menus.cc:192
+#: src/gtkui/menus.cc:214 src/qtui/menus.cc:192
 msgid "Playlist _Manager ..."
 msgstr ""
 
-#: src/gtkui/menus.cc:214 src/qtui/menus.cc:193
+#: src/gtkui/menus.cc:215 src/qtui/menus.cc:193
 msgid "_Queue Manager ..."
 msgstr ""
 
-#: src/gtkui/menus.cc:218 src/qtui/menus.cc:197
+#: src/gtkui/menus.cc:219 src/qtui/menus.cc:197
 msgid "Volume _Up"
 msgstr ""
 
-#: src/gtkui/menus.cc:219 src/qtui/menus.cc:198
+#: src/gtkui/menus.cc:220 src/qtui/menus.cc:198
 msgid "Volume _Down"
 msgstr ""
 
-#: src/gtkui/menus.cc:221 src/qtui/menus.cc:200
+#: src/gtkui/menus.cc:222 src/qtui/menus.cc:200
 msgid "_Equalizer ..."
 msgstr ""
 
-#: src/gtkui/menus.cc:222 src/qtui/menus.cc:201
+#: src/gtkui/menus.cc:223 src/qtui/menus.cc:201
 msgid "E_ffects ..."
 msgstr ""
 
-#: src/gtkui/menus.cc:224
+#: src/gtkui/menus.cc:225
 msgid "_Record Stream"
 msgstr ""
 
-#: src/gtkui/menus.cc:225
+#: src/gtkui/menus.cc:226
 msgid "Audio _Settings ..."
 msgstr ""
 
-#: src/gtkui/menus.cc:229 src/qtui/menus.cc:208
+#: src/gtkui/menus.cc:230 src/qtui/menus.cc:208
 msgid "Show _Menu Bar"
 msgstr ""
 
-#: src/gtkui/menus.cc:230 src/qtui/menus.cc:209
+#: src/gtkui/menus.cc:231 src/qtui/menus.cc:209
 msgid "Show I_nfo Bar"
 msgstr ""
 
-#: src/gtkui/menus.cc:231 src/qtui/menus.cc:211
+#: src/gtkui/menus.cc:232 src/qtui/menus.cc:211
 msgid "Show Info Bar _Album Art"
 msgstr ""
 
-#: src/gtkui/menus.cc:232 src/qtui/menus.cc:212
+#: src/gtkui/menus.cc:233 src/qtui/menus.cc:212
 msgid "Hide Info Bar Fallback Art"
 msgstr ""
 
-#: src/gtkui/menus.cc:233 src/qtui/menus.cc:210
+#: src/gtkui/menus.cc:234 src/qtui/menus.cc:210
 msgid "Show Info Bar Vis_ualization"
 msgstr ""
 
-#: src/gtkui/menus.cc:234 src/qtui/menus.cc:213
+#: src/gtkui/menus.cc:235 src/qtui/menus.cc:213
 msgid "Show _Status Bar"
 msgstr ""
 
-#: src/gtkui/menus.cc:236 src/qtui/menus.cc:215
+#: src/gtkui/menus.cc:237 src/qtui/menus.cc:215
 msgid "Show _Remaining Time"
 msgstr ""
 
-#: src/gtkui/menus.cc:238 src/qtui/menus.cc:217 src/skins/menus.cc:157
+#: src/gtkui/menus.cc:239 src/qtui/menus.cc:217 src/skins/menus.cc:158
 #: src/skins-qt/menus.cc:157
 msgid "_Visualizations ..."
 msgstr ""
 
-#: src/gtkui/menus.cc:242 src/qtui/menus.cc:226
+#: src/gtkui/menus.cc:243 src/qtui/menus.cc:226
 msgid "_File"
 msgstr ""
 
-#: src/gtkui/menus.cc:243 src/qtui/menus.cc:227
+#: src/gtkui/menus.cc:244 src/qtui/menus.cc:227
 msgid "_Playback"
 msgstr ""
 
-#: src/gtkui/menus.cc:244 src/qtui/menus.cc:228
+#: src/gtkui/menus.cc:245 src/qtui/menus.cc:228
 msgid "P_laylist"
 msgstr ""
 
-#: src/gtkui/menus.cc:245 src/gtkui/menus.cc:267 src/moonstone/menus.cc:53
+#: src/gtkui/menus.cc:246 src/gtkui/menus.cc:268 src/moonstone/menus.cc:53
 #: src/qtui/menus.cc:229 src/qtui/menus.cc:256
 msgid "_Services"
 msgstr ""
 
-#: src/gtkui/menus.cc:247 src/qtui/menus.cc:231
+#: src/gtkui/menus.cc:248 src/qtui/menus.cc:231
 msgid "_Output"
 msgstr ""
 
-#: src/gtkui/menus.cc:248 src/qtui/menus.cc:232
+#: src/gtkui/menus.cc:249 src/qtui/menus.cc:232
 msgid "_View"
 msgstr ""
 
-#: src/gtkui/menus.cc:255 src/moonstone/menus.cc:41 src/qtui/menus.cc:244
+#: src/gtkui/menus.cc:256 src/moonstone/menus.cc:41 src/qtui/menus.cc:244
 msgid "_Queue/Unqueue"
 msgstr ""
 
-#: src/gtkui/menus.cc:257 src/moonstone/menus.cc:43 src/qtui/menus.cc:246
+#: src/gtkui/menus.cc:258 src/moonstone/menus.cc:43 src/qtui/menus.cc:246
 msgid "_Open Containing Folder"
 msgstr ""
 
-#: src/gtkui/menus.cc:258 src/moonstone/menus.cc:44 src/qtui/menus.cc:247
-#: src/skins/menus.cc:238 src/skins-qt/menus.cc:239
+#: src/gtkui/menus.cc:259 src/moonstone/menus.cc:44 src/qtui/menus.cc:247
+#: src/skins/menus.cc:239 src/skins-qt/menus.cc:239
 msgid "_Refresh Selected"
 msgstr ""
 
-#: src/gtkui/menus.cc:260 src/moonstone/menus.cc:46 src/qtui/menus.cc:249
+#: src/gtkui/menus.cc:261 src/moonstone/menus.cc:46 src/qtui/menus.cc:249
 msgid "Cu_t"
 msgstr ""
 
-#: src/gtkui/menus.cc:261 src/moonstone/menus.cc:47 src/qtui/menus.cc:250
+#: src/gtkui/menus.cc:262 src/moonstone/menus.cc:47 src/qtui/menus.cc:250
 msgid "_Copy"
 msgstr ""
 
-#: src/gtkui/menus.cc:262 src/moonstone/menus.cc:48 src/qtui/menus.cc:251
+#: src/gtkui/menus.cc:263 src/moonstone/menus.cc:48 src/qtui/menus.cc:251
 msgid "_Paste"
 msgstr ""
 
-#: src/gtkui/menus.cc:263 src/moonstone/menus.cc:49 src/qtui/menus.cc:252
+#: src/gtkui/menus.cc:264 src/moonstone/menus.cc:49 src/qtui/menus.cc:252
 msgid "Paste at _End"
 msgstr ""
 
-#: src/gtkui/menus.cc:264 src/moonstone/menus.cc:50 src/qtui/menus.cc:253
+#: src/gtkui/menus.cc:265 src/moonstone/menus.cc:50 src/qtui/menus.cc:253
 msgid "Select _All"
 msgstr ""
 
-#: src/gtkui/menus.cc:265 src/moonstone/menus.cc:51 src/qtui/menus.cc:254
+#: src/gtkui/menus.cc:266 src/moonstone/menus.cc:51 src/qtui/menus.cc:254
 msgid "Select _None"
 msgstr ""
 
-#: src/gtkui/menus.cc:272 src/moonstone/playlist_tabs.cc:334
-#: src/qtui/playlist_tabs.cc:342
+#: src/gtkui/menus.cc:273 src/moonstone/playlist_tabs.cc:334
+#: src/qtui/playlist_tabs.cc:350
 msgid "_Rename ..."
 msgstr ""
 
@@ -2435,120 +2508,120 @@ msgstr ""
 msgid "Scroll on song change"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:83
+#: src/gtkui/ui_gtk.cc:84
 msgid "GTK3 Interface"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:85
+#: src/gtkui/ui_gtk.cc:86
 msgid "GTK2 Interface"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:224 src/skins/main.cc:256 src/skins-qt/main.cc:251
+#: src/gtkui/ui_gtk.cc:224 src/skins/main.cc:256 src/skins-qt/main.cc:261
 #, c-format
 msgid "%s - Fauxdacious"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:226 src/moonstone/main_window.cc:298
-#: src/qtui/main_window.cc:508
+#: src/gtkui/ui_gtk.cc:226 src/moonstone/main_window.cc:300
+#: src/qtui/main_window.cc:509 src/skins/main.cc:277 src/skins-qt/main.cc:282
 msgid "Buffering ..."
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:229 src/qtui/main_window.cc:486
-#: src/qtui/main_window.cc:522 src/skins/main.cc:257 src/skins/main.cc:1290
-#: src/skins-qt/main.cc:252
+#: src/gtkui/ui_gtk.cc:228 src/qtui/main_window.cc:487
+#: src/qtui/main_window.cc:523 src/skins/main.cc:257 src/skins/main.cc:1292
+#: src/skins-qt/main.cc:262
 msgid "Fauxdacious"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:513 src/gtkui/ui_gtk.cc:544 src/gtkui/ui_gtk.cc:978
-#: src/hotkey/gui.cc:73 src/info-bar-plugin-gtk/info-bar-plugin.cc:456
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:489
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:957
+#: src/gtkui/ui_gtk.cc:535 src/gtkui/ui_gtk.cc:566 src/gtkui/ui_gtk.cc:1015
+#: src/hotkey/gui.cc:73 src/info-bar-plugin-gtk/info-bar-plugin.cc:457
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:490
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:958
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:142
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:255
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:256
-#: src/moonstone/main_window.cc:122 src/moonstone/main_window.cc:259
-#: src/moonstone/main_window.cc:260 src/notify/osd.cc:85 src/qthotkey/gui.cc:67
+#: src/moonstone/main_window.cc:123 src/moonstone/main_window.cc:260
+#: src/moonstone/main_window.cc:261 src/notify/osd.cc:85 src/qthotkey/gui.cc:67
 #: src/qtui/main_window.cc:162 src/qtui/main_window.cc:470
-#: src/qtui/main_window.cc:471 src/skins/menus.cc:111 src/skins-qt/menus.cc:103
+#: src/qtui/main_window.cc:471 src/skins/menus.cc:112 src/skins-qt/menus.cc:103
 msgid "Play"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:513 src/info-bar-plugin-gtk/info-bar-plugin.cc:456
+#: src/gtkui/ui_gtk.cc:535 src/info-bar-plugin-gtk/info-bar-plugin.cc:457
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:261
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:262
-#: src/moonstone/main_window.cc:265 src/moonstone/main_window.cc:266
+#: src/moonstone/main_window.cc:266 src/moonstone/main_window.cc:267
 #: src/notify/osd.cc:82 src/qtui/main_window.cc:476 src/qtui/main_window.cc:477
-#: src/skins/menus.cc:112 src/skins-qt/menus.cc:104
+#: src/skins/menus.cc:113 src/skins-qt/menus.cc:104
 msgid "Pause"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:963 src/qtui/main_window.cc:155 src/skins/menus.cc:88
+#: src/gtkui/ui_gtk.cc:1000 src/qtui/main_window.cc:155 src/skins/menus.cc:88
 #: src/skins-qt/menus.cc:79
 msgid "Search Library"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:971 src/info-bar-plugin-gtk/info-bar-plugin.cc:675
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:939
+#: src/gtkui/ui_gtk.cc:1008 src/info-bar-plugin-gtk/info-bar-plugin.cc:676
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:940
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:118
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:418 src/qtui/main_window.cc:156
 msgid "Open Files"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:972 src/info-bar-plugin-gtk/info-bar-plugin.cc:677
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:941
+#: src/gtkui/ui_gtk.cc:1009 src/info-bar-plugin-gtk/info-bar-plugin.cc:678
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:942
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:121
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:420 src/qtui/main_window.cc:158
 msgid "Add Files"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:977 src/info-bar-plugin-gtk/info-bar-plugin.cc:956
+#: src/gtkui/ui_gtk.cc:1014 src/info-bar-plugin-gtk/info-bar-plugin.cc:957
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:140
-#: src/moonstone/main_window.cc:120 src/qtui/main_window.cc:161
-#: src/skins/menus.cc:114 src/skins-qt/menus.cc:106
+#: src/moonstone/main_window.cc:121 src/qtui/main_window.cc:161
+#: src/skins/menus.cc:115 src/skins-qt/menus.cc:106
 msgid "Previous"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:979 src/hotkey/gui.cc:75
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:958
+#: src/gtkui/ui_gtk.cc:1016 src/hotkey/gui.cc:75
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:959
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:144
-#: src/moonstone/main_window.cc:124 src/qthotkey/gui.cc:69
-#: src/qtui/main_window.cc:163 src/skins/menus.cc:113 src/skins-qt/menus.cc:105
+#: src/moonstone/main_window.cc:125 src/qthotkey/gui.cc:69
+#: src/qtui/main_window.cc:163 src/skins/menus.cc:114 src/skins-qt/menus.cc:105
 msgid "Stop"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:980 src/info-bar-plugin-gtk/info-bar-plugin.cc:959
+#: src/gtkui/ui_gtk.cc:1017 src/info-bar-plugin-gtk/info-bar-plugin.cc:960
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:151
-#: src/moonstone/main_window.cc:131 src/notify/osd.cc:89
-#: src/qtui/main_window.cc:166 src/skins/menus.cc:115 src/skins-qt/menus.cc:107
+#: src/moonstone/main_window.cc:132 src/notify/osd.cc:89
+#: src/qtui/main_window.cc:166 src/skins/menus.cc:116 src/skins-qt/menus.cc:107
 msgid "Next"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:982 src/info-bar-plugin-gtk/info-bar-plugin.cc:963
+#: src/gtkui/ui_gtk.cc:1019 src/info-bar-plugin-gtk/info-bar-plugin.cc:964
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:156
-#: src/moonstone/main_window.cc:134 src/qtui/main_window.cc:167
+#: src/moonstone/main_window.cc:135 src/qtui/main_window.cc:167
 #: src/qtui/menus.cc:203 src/skins/menus.cc:79 src/skins-qt/menus.cc:68
 msgid "Record Stream"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:1013 src/info-bar-plugin-gtk/info-bar-plugin.cc:697
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:1010
+#: src/gtkui/ui_gtk.cc:1050 src/info-bar-plugin-gtk/info-bar-plugin.cc:698
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:1011
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:172
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:440
-#: src/moonstone/main_window.cc:141 src/qtui/main_window.cc:173
-#: src/skins/menus.cc:105 src/skins-qt/menus.cc:97
+#: src/moonstone/main_window.cc:142 src/qtui/main_window.cc:173
+#: src/skins/menus.cc:106 src/skins-qt/menus.cc:97
 msgid "Repeat"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:1015 src/info-bar-plugin-gtk/info-bar-plugin.cc:699
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:1015
+#: src/gtkui/ui_gtk.cc:1052 src/info-bar-plugin-gtk/info-bar-plugin.cc:700
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:1016
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:176
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:442
-#: src/moonstone/main_window.cc:144 src/qtui/main_window.cc:175
-#: src/skins/menus.cc:106 src/skins-qt/menus.cc:98
+#: src/moonstone/main_window.cc:145 src/qtui/main_window.cc:175
+#: src/skins/menus.cc:107 src/skins-qt/menus.cc:98
 msgid "Shuffle"
 msgstr ""
 
-#: src/gtkui/ui_gtk.cc:1211 src/qtui/main_window.cc:129
+#: src/gtkui/ui_gtk.cc:1248 src/qtui/main_window.cc:129
 msgid "Menu"
 msgstr ""
 
@@ -2577,15 +2650,15 @@ msgstr ""
 msgid "%d kbps"
 msgstr ""
 
-#: src/gtkui/ui_statusbar.cc:108 src/skins/main.cc:540 src/skins-qt/main.cc:515
+#: src/gtkui/ui_statusbar.cc:108 src/skins/main.cc:542 src/skins-qt/main.cc:527
 msgid "Single mode."
 msgstr ""
 
-#: src/gtkui/ui_statusbar.cc:110 src/skins/main.cc:542 src/skins-qt/main.cc:517
+#: src/gtkui/ui_statusbar.cc:110 src/skins/main.cc:544 src/skins-qt/main.cc:529
 msgid "Playlist mode."
 msgstr ""
 
-#: src/gtkui/ui_statusbar.cc:118 src/skins/main.cc:548 src/skins-qt/main.cc:523
+#: src/gtkui/ui_statusbar.cc:118 src/skins/main.cc:550 src/skins-qt/main.cc:535
 msgid "Stopping after song."
 msgstr ""
 
@@ -2706,12 +2779,12 @@ msgid ""
 " Jeremy Tan <nsx@nsx.homeip.net>"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:624
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:625
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:360
 msgid "Mini-Fauxdacious"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:638
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:639
 msgid ""
 "Mini-Fauxdacious Plugin for Fauxdacious\n"
 "\n"
@@ -2721,98 +2794,98 @@ msgid ""
 "window is minimized, provides a minimalist Fauxdacious!"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:667
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:668
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:412
 msgid "<b>Mini-Fauxdacious Configuration</b>"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:668
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:669
 msgid "Show toolbar under info-bar?"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:671
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:672
 msgid "Audacious Moonstone-themed toolbar? (GTK-3 only)"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:674
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:675
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:417
 msgid "<b>Select toolbar-buttons:</b>"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:679
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:943
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:680
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:944
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:124
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:422
 msgid "Open Folder"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:681
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:945
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:682
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:946
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:127
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:424
 msgid "Add Folder"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:683
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:947
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:684
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:948
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:130
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:426
 msgid "Open URL"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:685
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:949
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:686
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:950
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:133
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:428
 msgid "Add URL"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:687
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:951
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:688
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:952
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:136
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:430 src/ladspa/plugin.cc:543
-#: src/moonstone/main_window.cc:116
+#: src/moonstone/main_window.cc:117
 msgid "Settings"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:689
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:690
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:432
 msgid "Playback controls (4 buttons)"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:691
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:692
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:434
 msgid "Record"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:693
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:694
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:436
 msgid "Time Slider"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:695
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:696
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:438
 msgid "Time Display"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:703
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:1047
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:704
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:1048
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:182
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:446
-#: src/moonstone/main_window.cc:148 src/skins/menus.cc:99
-#: src/skins-qt/menus.cc:90
+#: src/moonstone/main_window.cc:149 src/skins/menus.cc:99
+#: src/skins-qt/menus.cc:90 src/skins-qt/view.cc:70 src/skins/view.cc:62
 msgid "Quit"
 msgstr ""
 
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:705
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:706
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:448
 msgid "Separators"
 msgstr ""
 
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:147
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:148
-#: src/moonstone/main_window.cc:127 src/moonstone/main_window.cc:128
-#: src/qtui/main_window.cc:164 src/skins/menus.cc:109 src/skins-qt/menus.cc:101
+#: src/moonstone/main_window.cc:128 src/moonstone/main_window.cc:129
+#: src/qtui/main_window.cc:164 src/skins/menus.cc:110 src/skins-qt/menus.cc:101
 msgid "Stop After This Song"
 msgstr ""
 
@@ -2916,11 +2989,11 @@ msgstr ""
 msgid "LADSPA Host"
 msgstr ""
 
-#: src/lirc/lirc.cc:55
+#: src/lirc/lirc.cc:52
 msgid "LIRC Plugin"
 msgstr ""
 
-#: src/lirc/lirc.cc:382
+#: src/lirc/lirc.cc:366
 msgid ""
 "A simple plugin to control Fauxdacious using the LIRC remote control daemon\n"
 "\n"
@@ -2936,15 +3009,15 @@ msgid ""
 "For more information about LIRC, see http://lirc.org."
 msgstr ""
 
-#: src/lirc/lirc.cc:393
+#: src/lirc/lirc.cc:377
 msgid "<b>Connection</b>"
 msgstr ""
 
-#: src/lirc/lirc.cc:394
+#: src/lirc/lirc.cc:378
 msgid "Reconnect to LIRC server"
 msgstr ""
 
-#: src/lirc/lirc.cc:396
+#: src/lirc/lirc.cc:380
 msgid "Wait before reconnecting:"
 msgstr ""
 
@@ -3109,6 +3182,10 @@ msgstr ""
 msgid "Only 1st ts entry for HLS streams?"
 msgstr ""
 
+#: src/mac-media-keys/MacMediaKeys.mm:92
+msgid "Mac Media Keys"
+msgstr ""
+
 #: src/metronom/metronom.cc:44
 msgid "Tact Generator"
 msgstr ""
@@ -3150,11 +3227,11 @@ msgstr ""
 msgid "Output channels:"
 msgstr ""
 
-#: src/mms/mms.cc:35
+#: src/mms/mms.cc:32
 msgid "MMS Plugin"
 msgstr ""
 
-#: src/mms/mms.cc:82
+#: src/mms/mms.cc:79
 msgid "Error connecting to MMS server"
 msgstr ""
 
@@ -3267,31 +3344,31 @@ msgstr ""
 msgid "These settings will take effect when Fauxdacious is restarted."
 msgstr ""
 
-#: src/moonstone/main_window.cc:64 src/skins/menus.cc:87 src/skins/menus.cc:163
+#: src/moonstone/main_window.cc:65 src/skins/menus.cc:87 src/skins/menus.cc:164
 #: src/skins-qt/menus.cc:78 src/skins-qt/menus.cc:163
 msgid "Add URL ..."
 msgstr ""
 
-#: src/moonstone/main_window.cc:65 src/skins-qt/menus.cc:77
+#: src/moonstone/main_window.cc:66 src/skins-qt/menus.cc:77
 #: src/skins-qt/menus.cc:164
 msgid "Add Folder ..."
 msgstr ""
 
-#: src/moonstone/main_window.cc:66 src/skins/menus.cc:86 src/skins/menus.cc:164
+#: src/moonstone/main_window.cc:67 src/skins/menus.cc:86 src/skins/menus.cc:165
 #: src/skins-qt/menus.cc:76 src/skins-qt/menus.cc:165
 msgid "Add Files ..."
 msgstr ""
 
-#: src/moonstone/main_window.cc:68 src/skins/menus.cc:85
+#: src/moonstone/main_window.cc:69 src/skins/menus.cc:85
 #: src/skins-qt/menus.cc:75
 msgid "Open URL ..."
 msgstr ""
 
-#: src/moonstone/main_window.cc:69 src/skins-qt/menus.cc:74
+#: src/moonstone/main_window.cc:70 src/skins-qt/menus.cc:74
 msgid "Open Folder ..."
 msgstr ""
 
-#: src/moonstone/main_window.cc:70 src/skins/menus.cc:84
+#: src/moonstone/main_window.cc:71 src/skins/menus.cc:84
 #: src/skins-qt/menus.cc:73
 msgid "Open Files ..."
 msgstr ""
@@ -3314,15 +3391,15 @@ msgstr ""
 msgid "Q#"
 msgstr ""
 
-#: src/moonstone/playlist_tabs.cc:339 src/qtui/playlist_tabs.cc:347
+#: src/moonstone/playlist_tabs.cc:339 src/qtui/playlist_tabs.cc:355
 msgid "_Import"
 msgstr ""
 
-#: src/moonstone/playlist_tabs.cc:342 src/qtui/playlist_tabs.cc:353
+#: src/moonstone/playlist_tabs.cc:342 src/qtui/playlist_tabs.cc:361
 msgid "_Add Files"
 msgstr ""
 
-#: src/moonstone/playlist_tabs.cc:345 src/qtui/playlist_tabs.cc:356
+#: src/moonstone/playlist_tabs.cc:345 src/qtui/playlist_tabs.cc:364
 msgid "Add Playlist"
 msgstr ""
 
@@ -3492,23 +3569,23 @@ msgstr ""
 msgid "Interpolation:"
 msgstr ""
 
-#: src/openmpt/mptwrap.h:51 src/soxr/sox-resampler.cc:186 src/xsf/plugin.cc:437
+#: src/openmpt/mptwrap.h:50 src/soxr/sox-resampler.cc:186 src/xsf/plugin.cc:437
 msgid "Linear"
 msgstr ""
 
-#: src/openmpt/mptwrap.h:52
+#: src/openmpt/mptwrap.h:51
 msgid "Cubic"
 msgstr ""
 
-#: src/openmpt/mptwrap.h:53
+#: src/openmpt/mptwrap.h:52
 msgid "Windowed sinc"
 msgstr ""
 
-#: src/opus/opus.cc:39
+#: src/opus/opus.cc:49
 msgid "Opus Decoder"
 msgstr ""
 
-#: src/opus/opus.cc:374
+#: src/opus/opus.cc:441
 msgid ""
 "Opus Decoder Plugin for Audacious\n"
 "Copyright 2022 Thomas Lange"
@@ -3631,23 +3708,23 @@ msgstr ""
 msgid "<b>%s:</b> %s<br><b>Playlist:</b> %s<br><b>Entry Number:</b> %d"
 msgstr ""
 
-#: src/playlist-manager/playlist-manager.cc:38
-#: src/playlist-manager-qt/playlist-manager-qt.cc:43
+#: src/playlist-manager/playlist-manager.cc:43
+#: src/playlist-manager-qt/playlist-manager-qt.cc:45
 msgid "Playlist Manager"
 msgstr ""
 
-#: src/playlist-manager/playlist-manager.cc:224
-#: src/playlist-manager-qt/playlist-manager-qt.cc:186
+#: src/playlist-manager/playlist-manager.cc:244
+#: src/playlist-manager-qt/playlist-manager-qt.cc:189
 msgid "Entries"
 msgstr ""
 
-#: src/playlist-manager/playlist-manager.cc:244
-#: src/playlist-manager-qt/playlist-manager-qt.cc:346
+#: src/playlist-manager/playlist-manager.cc:264
+#: src/playlist-manager-qt/playlist-manager-qt.cc:368
 msgid "_Remove"
 msgstr ""
 
-#: src/playlist-manager/playlist-manager.cc:245
-#: src/playlist-manager-qt/playlist-manager-qt.cc:341
+#: src/playlist-manager/playlist-manager.cc:265
+#: src/playlist-manager-qt/playlist-manager-qt.cc:363
 msgid "Ren_ame"
 msgstr ""
 
@@ -3754,10 +3831,6 @@ msgstr ""
 msgid "Information"
 msgstr ""
 
-#: src/qtui/filter_input.cc:44
-msgid "Search"
-msgstr ""
-
 #: src/qtui/menus.cc:91
 msgid "_Open Folder ..."
 msgstr ""
@@ -3774,7 +3847,7 @@ msgstr ""
 msgid "Playback Histor_y ..."
 msgstr ""
 
-#: src/qtui/menus.cc:122 src/skins/menus.cc:120 src/skins-qt/menus.cc:112
+#: src/qtui/menus.cc:122 src/skins/menus.cc:121 src/skins-qt/menus.cc:112
 msgid "Jump to Song ..."
 msgstr ""
 
@@ -3811,7 +3884,7 @@ msgstr ""
 msgid "Custom title"
 msgstr ""
 
-#: src/qtui/playlist_tabs.cc:350
+#: src/qtui/playlist_tabs.cc:358
 msgid "_Export"
 msgstr ""
 
@@ -4027,14 +4100,6 @@ msgstr ""
 msgid "by"
 msgstr ""
 
-#: src/search-tool-qt/search-tool-qt.cc:850 src/search-tool/search-tool.cc:698
-msgid "_Create Playlist"
-msgstr ""
-
-#: src/search-tool-qt/search-tool-qt.cc:851 src/search-tool/search-tool.cc:700
-msgid "_Add to Playlist"
-msgstr ""
-
 #: src/search-tool-qt/search-tool-qt.cc:900 src/search-tool/search-tool.cc:799
 #: src/search-tool/search-tool.cc:801
 msgid "Search library"
@@ -4054,7 +4119,7 @@ msgstr ""
 msgid "Choose Folder"
 msgstr ""
 
-#: src/sid/xmms-sid.cc:44
+#: src/sid/xmms-sid.cc:43
 msgid "SID Player"
 msgstr ""
 
@@ -4200,67 +4265,67 @@ msgstr ""
 msgid "Fauxdacious Equalizer"
 msgstr ""
 
-#: src/skins/main.cc:521 src/skins-qt/main.cc:496
+#: src/skins/main.cc:523 src/skins-qt/main.cc:508
 msgid "Recording on"
 msgstr ""
 
-#: src/skins/main.cc:523 src/skins-qt/main.cc:498
+#: src/skins/main.cc:525 src/skins-qt/main.cc:510
 msgid "Recording off"
 msgstr ""
 
-#: src/skins/main.cc:550 src/skins-qt/main.cc:525
+#: src/skins/main.cc:552 src/skins-qt/main.cc:537
 msgid "Continuing after song."
 msgstr ""
 
-#: src/skins/main.cc:824 src/skins-qt/main.cc:793
+#: src/skins/main.cc:826 src/skins-qt/main.cc:824
 #, c-format
 msgid "Seek to %d:%-2.2d / %d:%-2.2d"
 msgstr ""
 
-#: src/skins/main.cc:841 src/skins-qt/main.cc:810
+#: src/skins/main.cc:843 src/skins-qt/main.cc:841
 #, c-format
 msgid "Volume: %d%%"
 msgstr ""
 
-#: src/skins/main.cc:854 src/skins-qt/main.cc:823
+#: src/skins/main.cc:856 src/skins-qt/main.cc:854
 #, c-format
 msgid "Balance: %d%% left"
 msgstr ""
 
-#: src/skins/main.cc:856 src/skins-qt/main.cc:825
+#: src/skins/main.cc:858 src/skins-qt/main.cc:856
 msgid "Balance: center"
 msgstr ""
 
-#: src/skins/main.cc:858 src/skins-qt/main.cc:827
+#: src/skins/main.cc:860 src/skins-qt/main.cc:858
 #, c-format
 msgid "Balance: %d%% right"
 msgstr ""
 
-#: src/skins/main.cc:950 src/skins-qt/main.cc:919
+#: src/skins/main.cc:952 src/skins-qt/main.cc:950
 msgid "Options Menu"
 msgstr ""
 
-#: src/skins/main.cc:954 src/skins-qt/main.cc:923
+#: src/skins/main.cc:956 src/skins-qt/main.cc:954
 msgid "Disable 'Always On Top'"
 msgstr ""
 
-#: src/skins/main.cc:956 src/skins-qt/main.cc:925
+#: src/skins/main.cc:958 src/skins-qt/main.cc:956
 msgid "Enable 'Always On Top'"
 msgstr ""
 
-#: src/skins/main.cc:959 src/skins-qt/main.cc:928
+#: src/skins/main.cc:961 src/skins-qt/main.cc:959
 msgid "Song Info Box"
 msgstr ""
 
-#: src/skins/main.cc:963 src/skins-qt/main.cc:932
+#: src/skins/main.cc:965 src/skins-qt/main.cc:963
 msgid "Disable 'Double Size'"
 msgstr ""
 
-#: src/skins/main.cc:965 src/skins-qt/main.cc:934
+#: src/skins/main.cc:967 src/skins-qt/main.cc:965
 msgid "Enable 'Double Size'"
 msgstr ""
 
-#: src/skins/main.cc:968 src/skins-qt/main.cc:937
+#: src/skins/main.cc:970 src/skins-qt/main.cc:968
 msgid "Visualizations"
 msgstr ""
 
@@ -4292,8 +4357,8 @@ msgstr ""
 msgid "View"
 msgstr ""
 
-#: src/skins/menus.cc:95 src/skins/menus.cc:161 src/skins/menus.cc:174
-#: src/skins/menus.cc:248 src/skins-qt/menus.cc:86 src/skins-qt/menus.cc:161
+#: src/skins/menus.cc:95 src/skins/menus.cc:162 src/skins/menus.cc:175
+#: src/skins/menus.cc:249 src/skins-qt/menus.cc:86 src/skins-qt/menus.cc:161
 #: src/skins-qt/menus.cc:175 src/skins-qt/menus.cc:249
 msgid "Services"
 msgstr ""
@@ -4306,252 +4371,256 @@ msgstr ""
 msgid "Settings ..."
 msgstr ""
 
-#: src/skins/menus.cc:103 src/skins/menus.cc:237 src/skins-qt/menus.cc:94
+#: src/skins/menus.cc:103 src/skins/menus.cc:238 src/skins-qt/menus.cc:94
 #: src/skins-qt/menus.cc:238
 msgid "Song Info ..."
 msgstr ""
 
-#: src/skins/menus.cc:107 src/skins-qt/menus.cc:99
+#: src/skins/menus.cc:104 src/skins-qt/menus.cc:95
+msgid "Playback History ..."
+msgstr ""
+
+#: src/skins/menus.cc:108 src/skins-qt/menus.cc:99
 msgid "Shuffle by Album"
 msgstr ""
 
-#: src/skins/menus.cc:108 src/skins-qt/menus.cc:100
+#: src/skins/menus.cc:109 src/skins-qt/menus.cc:100
 msgid "No Playlist Advance"
 msgstr ""
 
-#: src/skins/menus.cc:117 src/skins-qt/menus.cc:109
+#: src/skins/menus.cc:118 src/skins-qt/menus.cc:109
 msgid "Set A-B Repeat"
 msgstr ""
 
-#: src/skins/menus.cc:118 src/skins-qt/menus.cc:110
+#: src/skins/menus.cc:119 src/skins-qt/menus.cc:110
 msgid "Clear A-B Repeat"
 msgstr ""
 
-#: src/skins/menus.cc:121 src/skins-qt/menus.cc:114
+#: src/skins/menus.cc:122 src/skins-qt/menus.cc:114
 msgid "Jump to Time ..."
 msgstr ""
 
-#: src/skins/menus.cc:125 src/skins-qt/menus.cc:119
+#: src/skins/menus.cc:126 src/skins-qt/menus.cc:119
 msgid "Play/Resume"
 msgstr ""
 
-#: src/skins/menus.cc:127 src/skins-qt/menus.cc:121
+#: src/skins/menus.cc:128 src/skins-qt/menus.cc:121
 msgid "New Playlist"
 msgstr ""
 
-#: src/skins/menus.cc:128 src/skins-qt/menus.cc:122
+#: src/skins/menus.cc:129 src/skins-qt/menus.cc:122
 msgid "Rename Playlist ..."
 msgstr ""
 
-#: src/skins/menus.cc:129 src/skins-qt/menus.cc:123
+#: src/skins/menus.cc:130 src/skins-qt/menus.cc:123
 msgid "Remove Playlist"
 msgstr ""
 
-#: src/skins/menus.cc:131 src/skins-qt/menus.cc:125
+#: src/skins/menus.cc:132 src/skins-qt/menus.cc:125
 msgid "Previous Playlist"
 msgstr ""
 
-#: src/skins/menus.cc:132 src/skins-qt/menus.cc:126
+#: src/skins/menus.cc:133 src/skins-qt/menus.cc:126
 msgid "Next Playlist"
 msgstr ""
 
-#: src/skins/menus.cc:134 src/skins-qt/menus.cc:129
+#: src/skins/menus.cc:135 src/skins-qt/menus.cc:129
 msgid "Import Playlist ..."
 msgstr ""
 
-#: src/skins/menus.cc:135 src/skins-qt/menus.cc:130
+#: src/skins/menus.cc:136 src/skins-qt/menus.cc:130
 msgid "Export Playlist ..."
 msgstr ""
 
-#: src/skins/menus.cc:137 src/skins-qt/menus.cc:133
+#: src/skins/menus.cc:138 src/skins-qt/menus.cc:133
 msgid "Playlist Manager ..."
 msgstr ""
 
-#: src/skins/menus.cc:138 src/skins-qt/menus.cc:134
+#: src/skins/menus.cc:139 src/skins-qt/menus.cc:134
 msgid "Queue Manager ..."
 msgstr ""
 
-#: src/skins/menus.cc:140 src/skins-qt/menus.cc:136
+#: src/skins/menus.cc:141 src/skins-qt/menus.cc:136
 msgid "Refresh Playlist"
 msgstr ""
 
-#: src/skins/menus.cc:144 src/skins-qt/menus.cc:140
+#: src/skins/menus.cc:145 src/skins-qt/menus.cc:140
 msgid "Show Playlist Editor"
 msgstr ""
 
-#: src/skins/menus.cc:145 src/skins-qt/menus.cc:141
+#: src/skins/menus.cc:146 src/skins-qt/menus.cc:141
 msgid "Show Equalizer"
 msgstr ""
 
-#: src/skins/menus.cc:147 src/skins-qt/menus.cc:143
+#: src/skins/menus.cc:148 src/skins-qt/menus.cc:143
 msgid "Show Remaining Time"
 msgstr ""
 
-#: src/skins/menus.cc:149 src/skins-qt/menus.cc:145
+#: src/skins/menus.cc:150 src/skins-qt/menus.cc:145
 msgid "Double Size"
 msgstr ""
 
-#: src/skins/menus.cc:150 src/skins-qt/menus.cc:147
+#: src/skins/menus.cc:151 src/skins-qt/menus.cc:147
 msgid "Always on Top"
 msgstr ""
 
-#: src/skins/menus.cc:151 src/skins-qt/menus.cc:150
+#: src/skins/menus.cc:152 src/skins-qt/menus.cc:150
 msgid "On All Workspaces"
 msgstr ""
 
-#: src/skins/menus.cc:153 src/skins-qt/menus.cc:153
+#: src/skins/menus.cc:154 src/skins-qt/menus.cc:153
 msgid "Roll Up Player"
 msgstr ""
 
-#: src/skins/menus.cc:154 src/skins-qt/menus.cc:154
+#: src/skins/menus.cc:155 src/skins-qt/menus.cc:154
 msgid "Roll Up Playlist Editor"
 msgstr ""
 
-#: src/skins/menus.cc:155 src/skins-qt/menus.cc:155
+#: src/skins/menus.cc:156 src/skins-qt/menus.cc:155
 msgid "Roll Up Equalizer"
 msgstr ""
 
-#: src/skins/menus.cc:168 src/skins/menus.cc:197 src/skins/menus.cc:214
+#: src/skins/menus.cc:169 src/skins/menus.cc:198 src/skins/menus.cc:215
 #: src/skins-qt/menus.cc:169 src/skins-qt/menus.cc:198
 #: src/skins-qt/menus.cc:215
 msgid "By Title"
 msgstr ""
 
-#: src/skins/menus.cc:169 src/skins/menus.cc:204 src/skins/menus.cc:221
+#: src/skins/menus.cc:170 src/skins/menus.cc:205 src/skins/menus.cc:222
 #: src/skins-qt/menus.cc:170 src/skins-qt/menus.cc:205
 #: src/skins-qt/menus.cc:222
 msgid "By File Name"
 msgstr ""
 
-#: src/skins/menus.cc:170 src/skins/menus.cc:205 src/skins/menus.cc:222
+#: src/skins/menus.cc:171 src/skins/menus.cc:206 src/skins/menus.cc:223
 #: src/skins-qt/menus.cc:171 src/skins-qt/menus.cc:206
 #: src/skins-qt/menus.cc:223
 msgid "By File Path"
 msgstr ""
 
-#: src/skins/menus.cc:176 src/skins-qt/menus.cc:177
+#: src/skins/menus.cc:177 src/skins-qt/menus.cc:177
 msgid "Remove All"
 msgstr ""
 
-#: src/skins/menus.cc:177 src/skins-qt/menus.cc:178
+#: src/skins/menus.cc:178 src/skins-qt/menus.cc:178
 msgid "Clear Queue"
 msgstr ""
 
-#: src/skins/menus.cc:179 src/skins-qt/menus.cc:180
+#: src/skins/menus.cc:180 src/skins-qt/menus.cc:180
 msgid "Remove Unavailable Files"
 msgstr ""
 
-#: src/skins/menus.cc:180 src/skins-qt/menus.cc:181
+#: src/skins/menus.cc:181 src/skins-qt/menus.cc:181
 msgid "Remove Duplicates"
 msgstr ""
 
-#: src/skins/menus.cc:182 src/skins-qt/menus.cc:183
+#: src/skins/menus.cc:183 src/skins-qt/menus.cc:183
 msgid "Remove Unselected"
 msgstr ""
 
-#: src/skins/menus.cc:183 src/skins-qt/menus.cc:184
+#: src/skins/menus.cc:184 src/skins-qt/menus.cc:184
 msgid "Remove Selected"
 msgstr ""
 
-#: src/skins/menus.cc:189 src/skins-qt/menus.cc:190
+#: src/skins/menus.cc:190 src/skins-qt/menus.cc:190
 msgid "Invert Selection"
 msgstr ""
 
-#: src/skins/menus.cc:190 src/skins-qt/menus.cc:191
+#: src/skins/menus.cc:191 src/skins-qt/menus.cc:191
 msgid "Select None"
 msgstr ""
 
-#: src/skins/menus.cc:191 src/skins-qt/menus.cc:192
+#: src/skins/menus.cc:192 src/skins-qt/menus.cc:192
 msgid "Select All"
 msgstr ""
 
-#: src/skins/menus.cc:195 src/skins/menus.cc:212 src/skins-qt/menus.cc:196
+#: src/skins/menus.cc:196 src/skins/menus.cc:213 src/skins-qt/menus.cc:196
 #: src/skins-qt/menus.cc:213
 msgid "By Track Number"
 msgstr ""
 
-#: src/skins/menus.cc:196 src/skins/menus.cc:213 src/skins-qt/menus.cc:197
+#: src/skins/menus.cc:197 src/skins/menus.cc:214 src/skins-qt/menus.cc:197
 #: src/skins-qt/menus.cc:214
 msgid "By Disc Number"
 msgstr ""
 
-#: src/skins/menus.cc:198 src/skins/menus.cc:215 src/skins-qt/menus.cc:199
+#: src/skins/menus.cc:199 src/skins/menus.cc:216 src/skins-qt/menus.cc:199
 #: src/skins-qt/menus.cc:216
 msgid "By Artist"
 msgstr ""
 
-#: src/skins/menus.cc:199 src/skins/menus.cc:216 src/skins-qt/menus.cc:200
+#: src/skins/menus.cc:200 src/skins/menus.cc:217 src/skins-qt/menus.cc:200
 #: src/skins-qt/menus.cc:217
 msgid "By Album"
 msgstr ""
 
-#: src/skins/menus.cc:200 src/skins/menus.cc:217 src/skins-qt/menus.cc:201
+#: src/skins/menus.cc:201 src/skins/menus.cc:218 src/skins-qt/menus.cc:201
 #: src/skins-qt/menus.cc:218
 msgid "By Album Artist"
 msgstr ""
 
-#: src/skins/menus.cc:201 src/skins/menus.cc:218 src/skins-qt/menus.cc:202
+#: src/skins/menus.cc:202 src/skins/menus.cc:219 src/skins-qt/menus.cc:202
 #: src/skins-qt/menus.cc:219
 msgid "By Release Date"
 msgstr ""
 
-#: src/skins/menus.cc:202 src/skins/menus.cc:219 src/skins-qt/menus.cc:203
+#: src/skins/menus.cc:203 src/skins/menus.cc:220 src/skins-qt/menus.cc:203
 #: src/skins-qt/menus.cc:220
 msgid "By Genre"
 msgstr ""
 
-#: src/skins/menus.cc:203 src/skins/menus.cc:220 src/skins-qt/menus.cc:204
+#: src/skins/menus.cc:204 src/skins/menus.cc:221 src/skins-qt/menus.cc:204
 #: src/skins-qt/menus.cc:221
 msgid "By Length"
 msgstr ""
 
-#: src/skins/menus.cc:206 src/skins/menus.cc:223 src/skins-qt/menus.cc:207
+#: src/skins/menus.cc:207 src/skins/menus.cc:224 src/skins-qt/menus.cc:207
 #: src/skins-qt/menus.cc:224
 msgid "By Custom Title"
 msgstr ""
 
-#: src/skins/menus.cc:207 src/skins/menus.cc:224 src/skins-qt/menus.cc:208
+#: src/skins/menus.cc:208 src/skins/menus.cc:225 src/skins-qt/menus.cc:208
 #: src/skins-qt/menus.cc:225
 msgid "By Comment"
 msgstr ""
 
-#: src/skins/menus.cc:229 src/skins-qt/menus.cc:230
+#: src/skins/menus.cc:230 src/skins-qt/menus.cc:230
 msgid "Randomize List"
 msgstr ""
 
-#: src/skins/menus.cc:230 src/skins-qt/menus.cc:231
+#: src/skins/menus.cc:231 src/skins-qt/menus.cc:231
 msgid "Reverse List"
 msgstr ""
 
-#: src/skins/menus.cc:232 src/skins-qt/menus.cc:233
+#: src/skins/menus.cc:233 src/skins-qt/menus.cc:233
 msgid "Sort Selected"
 msgstr ""
 
-#: src/skins/menus.cc:233 src/skins-qt/menus.cc:234
+#: src/skins/menus.cc:234 src/skins-qt/menus.cc:234
 msgid "Sort List"
 msgstr ""
 
-#: src/skins/menus.cc:239 src/skins-qt/menus.cc:240
+#: src/skins/menus.cc:240 src/skins-qt/menus.cc:240
 msgid "Open Containing Folder"
 msgstr ""
 
-#: src/skins/menus.cc:241 src/skins-qt/menus.cc:242
+#: src/skins/menus.cc:242 src/skins-qt/menus.cc:242
 msgid "Cut"
 msgstr ""
 
-#: src/skins/menus.cc:242 src/skins-qt/menus.cc:243
+#: src/skins/menus.cc:243 src/skins-qt/menus.cc:243
 msgid "Copy"
 msgstr ""
 
-#: src/skins/menus.cc:243 src/skins-qt/menus.cc:244
+#: src/skins/menus.cc:244 src/skins-qt/menus.cc:244
 msgid "Paste"
 msgstr ""
 
-#: src/skins/menus.cc:244 src/skins-qt/menus.cc:245
+#: src/skins/menus.cc:245 src/skins-qt/menus.cc:245
 msgid "Paste at End"
 msgstr ""
 
-#: src/skins/menus.cc:246 src/skins-qt/menus.cc:247
+#: src/skins/menus.cc:247 src/skins-qt/menus.cc:247
 msgid "Queue/Unqueue"
 msgstr ""
 
@@ -4566,10 +4635,6 @@ msgstr ""
 
 #: src/skins/plugin.cc:53 src/skins-qt/plugin.cc:65
 msgid "Winamp Classic Interface"
-msgstr ""
-
-#: src/skins-qt/menus.cc:95
-msgid "Playback History ..."
 msgstr ""
 
 #: src/skins-qt/skins_cfg.cc:226 src/skins/skins_cfg.cc:209
@@ -4770,6 +4835,34 @@ msgstr ""
 
 #: src/skins-qt/skinselector.cc:102 src/skins/skinselector.cc:111
 msgid "Unarchived Winamp 2.x skin"
+msgstr ""
+
+#: src/skins-qt/view.cc:69 src/skins/view.cc:57
+msgid "Restart"
+msgstr ""
+
+#: src/skins-qt/view.cc:85 src/skins/view.cc:67
+msgid "Compatibility Issue"
+msgstr ""
+
+#: src/skins-qt/view.cc:87
+msgid ""
+"The Winamp interface requires windowing system features not supported by "
+"Wayland. Fauxdacious will attempt to enable Xwayland compatibility mode "
+"after restart.\n"
+"\n"
+"With the GTK or Qt interface you may disable this setting again in the "
+"Advanced category of the Fauxdacious settings."
+msgstr ""
+
+#: src/skins/view.cc:68
+msgid ""
+"The Winamp interface requires windowing system features not supported by "
+"Wayland. Fauxdacious will attempt to enable Xwayland compatibility mode "
+"after restart.\n"
+"\n"
+"With the GTK or Qt interface you may disable this setting again in the "
+"\"Advanced\" category of the Fauxdacious settings."
 msgstr ""
 
 #: src/sndfile/plugin.cc:38

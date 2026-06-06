@@ -94,6 +94,8 @@ src/delete-files/delete-files.cc
 src/dvd/dvd-ng.cc
 src/echo_plugin/echo.cc
 src/ffaudio/ffaudio-core.cc
+src/filebrowser-gtk/filebrowser-gtk.cc
+src/filebrowser-qt/filebrowser-qt.cc
 src/filewriter/filewriter.cc
 src/flac/flacng.h
 src/flac/metadata.cc
@@ -119,6 +121,7 @@ src/lirc/lirc.cc
 src/lyricwiki/lyricwiki.cc
 src/lyricwiki-qt/lyricwiki.cc
 src/m3u/m3u.cc
+src/mac-media-keys/MacMediaKeys.mm
 src/metronom/metronom.cc
 src/mixer/mixer.cc
 src/mms/mms.cc
@@ -193,8 +196,10 @@ src/skins-qt/playlistwin.cc
 src/skins-qt/plugin.cc
 src/skins-qt/skins_cfg.cc
 src/skins-qt/skinselector.cc
+src/skins-qt/view.cc
 src/skins/skins_cfg.cc
 src/skins/skinselector.cc
+src/skins/view.cc
 src/sndfile/plugin.cc
 src/sndio/sndio.cc
 src/songchange/song_change.cc
