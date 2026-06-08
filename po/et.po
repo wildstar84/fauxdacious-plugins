@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Audacious Plugins\n"
 "Report-Msgid-Bugs-To: https://redmine.audacious-media-player.org/\n"
-"POT-Creation-Date: 2026-06-05 20:29-0500\n"
+"POT-Creation-Date: 2026-06-08 16:02-0500\n"
 "PO-Revision-Date: 2018-07-29 21:54+0000\n"
 "Last-Translator: Thomas Lange\n"
 "Language-Team: Estonian (http://www.transifex.com/audacious/audacious/"
@@ -266,7 +266,7 @@ msgstr "sekundit"
 
 #: src/alarm/interface.cc:351 src/alarm/interface.cc:394
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:702
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:444
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:445
 msgid "Volume"
 msgstr "Valjus"
 
@@ -2193,7 +2193,7 @@ msgstr "Se_gatud"
 msgid "Shuffle by Albu_m"
 msgstr "Segatud albu_mi kaupa"
 
-#: src/gtkui/menus.cc:139 src/qtui/menus.cc:117
+#: src/gtkui/menus.cc:139 src/moonstone/menus.cc:42 src/qtui/menus.cc:117
 msgid "N_o Playlist Advance"
 msgstr "Esitusnimekirja ei _kasutata"
 
@@ -2447,7 +2447,7 @@ msgstr "_Esitamine"
 msgid "P_laylist"
 msgstr "E_situsnimekiri"
 
-#: src/gtkui/menus.cc:246 src/gtkui/menus.cc:268 src/moonstone/menus.cc:53
+#: src/gtkui/menus.cc:246 src/gtkui/menus.cc:268 src/moonstone/menus.cc:54
 #: src/qtui/menus.cc:229 src/qtui/menus.cc:256
 msgid "_Services"
 msgstr "_Teenused"
@@ -2464,36 +2464,36 @@ msgstr "_Vaade"
 msgid "_Queue/Unqueue"
 msgstr "_Järjekorda/järjekorrast maha"
 
-#: src/gtkui/menus.cc:258 src/moonstone/menus.cc:43 src/qtui/menus.cc:246
+#: src/gtkui/menus.cc:258 src/moonstone/menus.cc:44 src/qtui/menus.cc:246
 msgid "_Open Containing Folder"
 msgstr "Ava _faili sisaldav kaust"
 
-#: src/gtkui/menus.cc:259 src/moonstone/menus.cc:44 src/qtui/menus.cc:247
+#: src/gtkui/menus.cc:259 src/moonstone/menus.cc:45 src/qtui/menus.cc:247
 #: src/skins/menus.cc:239 src/skins-qt/menus.cc:239
 msgid "_Refresh Selected"
 msgstr "_Värskenda valituid"
 
-#: src/gtkui/menus.cc:261 src/moonstone/menus.cc:46 src/qtui/menus.cc:249
+#: src/gtkui/menus.cc:261 src/moonstone/menus.cc:47 src/qtui/menus.cc:249
 msgid "Cu_t"
 msgstr "_Lõika"
 
-#: src/gtkui/menus.cc:262 src/moonstone/menus.cc:47 src/qtui/menus.cc:250
+#: src/gtkui/menus.cc:262 src/moonstone/menus.cc:48 src/qtui/menus.cc:250
 msgid "_Copy"
 msgstr "_Kopeeri"
 
-#: src/gtkui/menus.cc:263 src/moonstone/menus.cc:48 src/qtui/menus.cc:251
+#: src/gtkui/menus.cc:263 src/moonstone/menus.cc:49 src/qtui/menus.cc:251
 msgid "_Paste"
 msgstr "_Aseta"
 
-#: src/gtkui/menus.cc:264 src/moonstone/menus.cc:49 src/qtui/menus.cc:252
+#: src/gtkui/menus.cc:264 src/moonstone/menus.cc:50 src/qtui/menus.cc:252
 msgid "Paste at _End"
 msgstr "Aseta lõ_ppu"
 
-#: src/gtkui/menus.cc:265 src/moonstone/menus.cc:50 src/qtui/menus.cc:253
+#: src/gtkui/menus.cc:265 src/moonstone/menus.cc:51 src/qtui/menus.cc:253
 msgid "Select _All"
 msgstr "Val_i kõik"
 
-#: src/gtkui/menus.cc:266 src/moonstone/menus.cc:51 src/qtui/menus.cc:254
+#: src/gtkui/menus.cc:266 src/moonstone/menus.cc:52 src/qtui/menus.cc:254
 #, fuzzy
 msgid "Select _None"
 msgstr "Tühista valik"
@@ -2578,13 +2578,13 @@ msgstr "GTK liides"
 msgid "%s - Fauxdacious"
 msgstr "%s - Audacious"
 
-#: src/gtkui/ui_gtk.cc:226 src/moonstone/main_window.cc:300
-#: src/qtui/main_window.cc:509 src/skins/main.cc:277 src/skins-qt/main.cc:282
+#: src/gtkui/ui_gtk.cc:226 src/moonstone/main_window.cc:301
+#: src/qtui/main_window.cc:511 src/skins/main.cc:277 src/skins-qt/main.cc:282
 msgid "Buffering ..."
 msgstr "Puhverdamine ..."
 
-#: src/gtkui/ui_gtk.cc:228 src/qtui/main_window.cc:487
-#: src/qtui/main_window.cc:523 src/skins/main.cc:257 src/skins/main.cc:1292
+#: src/gtkui/ui_gtk.cc:228 src/qtui/main_window.cc:489
+#: src/qtui/main_window.cc:525 src/skins/main.cc:257 src/skins/main.cc:1292
 #: src/skins-qt/main.cc:262
 #, fuzzy
 msgid "Fauxdacious"
@@ -2595,20 +2595,20 @@ msgstr "Audacious"
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:490
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:958
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:142
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:255
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:256
-#: src/moonstone/main_window.cc:123 src/moonstone/main_window.cc:260
-#: src/moonstone/main_window.cc:261 src/notify/osd.cc:85 src/qthotkey/gui.cc:67
-#: src/qtui/main_window.cc:162 src/qtui/main_window.cc:470
-#: src/qtui/main_window.cc:471 src/skins/menus.cc:112 src/skins-qt/menus.cc:103
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:257
+#: src/moonstone/main_window.cc:123 src/moonstone/main_window.cc:261
+#: src/moonstone/main_window.cc:262 src/notify/osd.cc:85 src/qthotkey/gui.cc:67
+#: src/qtui/main_window.cc:162 src/qtui/main_window.cc:472
+#: src/qtui/main_window.cc:473 src/skins/menus.cc:112 src/skins-qt/menus.cc:103
 msgid "Play"
 msgstr "Esita"
 
 #: src/gtkui/ui_gtk.cc:535 src/info-bar-plugin-gtk/info-bar-plugin.cc:457
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:261
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:262
-#: src/moonstone/main_window.cc:266 src/moonstone/main_window.cc:267
-#: src/notify/osd.cc:82 src/qtui/main_window.cc:476 src/qtui/main_window.cc:477
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:263
+#: src/moonstone/main_window.cc:267 src/moonstone/main_window.cc:268
+#: src/notify/osd.cc:82 src/qtui/main_window.cc:478 src/qtui/main_window.cc:479
 #: src/skins/menus.cc:113 src/skins-qt/menus.cc:104
 msgid "Pause"
 msgstr "Pausi"
@@ -2621,14 +2621,14 @@ msgstr "Otsi teegist"
 #: src/gtkui/ui_gtk.cc:1008 src/info-bar-plugin-gtk/info-bar-plugin.cc:676
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:940
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:118
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:418 src/qtui/main_window.cc:156
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:419 src/qtui/main_window.cc:156
 msgid "Open Files"
 msgstr "Failide avamine"
 
 #: src/gtkui/ui_gtk.cc:1009 src/info-bar-plugin-gtk/info-bar-plugin.cc:678
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:942
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:121
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:420 src/qtui/main_window.cc:158
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:421 src/qtui/main_window.cc:158
 msgid "Add Files"
 msgstr "Failide lisamine"
 
@@ -2661,25 +2661,24 @@ msgstr "Järgmine"
 msgid "Record Stream"
 msgstr "Salvesta voogu"
 
-#: src/gtkui/ui_gtk.cc:1050 src/info-bar-plugin-gtk/info-bar-plugin.cc:698
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:1011
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:172
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:440
-#: src/moonstone/main_window.cc:142 src/qtui/main_window.cc:173
-#: src/skins/menus.cc:106 src/skins-qt/menus.cc:97
-msgid "Repeat"
-msgstr "Korduv"
+#: src/gtkui/ui_gtk.cc:1051 src/info-bar-plugin-gtk/info-bar-plugin.cc:1012
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:173 src/qtui/main_window.cc:175
+msgid ""
+"Repeat\n"
+"Note: to loop 1 track, also set:\n"
+"[Playback].[No Playlist Advance]"
+msgstr ""
 
-#: src/gtkui/ui_gtk.cc:1052 src/info-bar-plugin-gtk/info-bar-plugin.cc:700
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:1016
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:176
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:442
-#: src/moonstone/main_window.cc:145 src/qtui/main_window.cc:175
+#: src/gtkui/ui_gtk.cc:1054 src/info-bar-plugin-gtk/info-bar-plugin.cc:700
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:1018
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:177
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:443
+#: src/moonstone/main_window.cc:146 src/qtui/main_window.cc:177
 #: src/skins/menus.cc:107 src/skins-qt/menus.cc:98
 msgid "Shuffle"
 msgstr "Segatud"
 
-#: src/gtkui/ui_gtk.cc:1248 src/qtui/main_window.cc:129
+#: src/gtkui/ui_gtk.cc:1250 src/qtui/main_window.cc:129
 msgid "Menu"
 msgstr ""
 
@@ -2853,7 +2852,7 @@ msgstr ""
 " Jeremy Tan <nsx@nsx.homeip.net>"
 
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:625
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:360
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:361
 #, fuzzy
 msgid "Mini-Fauxdacious"
 msgstr "Audacious"
@@ -2869,7 +2868,7 @@ msgid ""
 msgstr ""
 
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:668
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:412
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:413
 #, fuzzy
 msgid "<b>Mini-Fauxdacious Configuration</b>"
 msgstr "<b>XSF-seadistus</b>"
@@ -2883,14 +2882,14 @@ msgid "Audacious Moonstone-themed toolbar? (GTK-3 only)"
 msgstr ""
 
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:675
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:417
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:418
 msgid "<b>Select toolbar-buttons:</b>"
 msgstr ""
 
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:680
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:944
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:124
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:422
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:423
 #, fuzzy
 msgid "Open Folder"
 msgstr "Failide avamine"
@@ -2898,7 +2897,7 @@ msgstr "Failide avamine"
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:682
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:946
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:127
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:424
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:425
 #, fuzzy
 msgid "Add Folder"
 msgstr "Failide lisamine"
@@ -2906,7 +2905,7 @@ msgstr "Failide lisamine"
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:684
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:948
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:130
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:426
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:427
 #, fuzzy
 msgid "Open URL"
 msgstr "Ava URL ..."
@@ -2914,7 +2913,7 @@ msgstr "Ava URL ..."
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:686
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:950
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:133
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:428
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:429
 #, fuzzy
 msgid "Add URL"
 msgstr "Lisa U_RL ..."
@@ -2922,44 +2921,52 @@ msgstr "Lisa U_RL ..."
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:688
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:952
 #: src/info-bar-plugin-qt/info-bar-plugin.cc:136
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:430 src/ladspa/plugin.cc:543
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:431 src/ladspa/plugin.cc:543
 #: src/moonstone/main_window.cc:117
 msgid "Settings"
 msgstr "Sätted"
 
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:690
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:432
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:433
 msgid "Playback controls (4 buttons)"
 msgstr ""
 
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:692
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:434
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:435
 #, fuzzy
 msgid "Record"
 msgstr "Salvesta voogu"
 
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:694
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:436
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:437
 msgid "Time Slider"
 msgstr ""
 
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:696
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:438
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:439
 #, fuzzy
 msgid "Time Display"
 msgstr "Kuvamine:"
 
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:698
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:172
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:441
+#: src/moonstone/main_window.cc:142 src/qtui/main_window.cc:174
+#: src/skins/menus.cc:106 src/skins-qt/menus.cc:97
+msgid "Repeat"
+msgstr "Korduv"
+
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:704
-#: src/info-bar-plugin-gtk/info-bar-plugin.cc:1048
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:182
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:446
-#: src/moonstone/main_window.cc:149 src/skins/menus.cc:99
+#: src/info-bar-plugin-gtk/info-bar-plugin.cc:1050
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:183
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:447
+#: src/moonstone/main_window.cc:150 src/skins/menus.cc:99
 #: src/skins-qt/menus.cc:90 src/skins-qt/view.cc:70 src/skins/view.cc:62
 msgid "Quit"
 msgstr "Välju"
 
 #: src/info-bar-plugin-gtk/info-bar-plugin.cc:706
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:448
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:449
 msgid "Separators"
 msgstr ""
 
@@ -2970,7 +2977,7 @@ msgstr ""
 msgid "Stop After This Song"
 msgstr "Seiskamine selle loo lõppedes"
 
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:374
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:375
 msgid ""
 "Mini-Fauxdacious Plugin for Fauxdacious\n"
 "\n"
@@ -2982,11 +2989,11 @@ msgid ""
 "Our answer to Audacious's Moonstone plugin!"
 msgstr ""
 
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:413
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:414
 msgid "Show toolbar under info-bar? (toggle ignored if docked)"
 msgstr ""
 
-#: src/info-bar-plugin-qt/info-bar-plugin.cc:415
+#: src/info-bar-plugin-qt/info-bar-plugin.cc:416
 msgid "Audacious Moonstone-themed toolbar?"
 msgstr ""
 
@@ -3470,6 +3477,13 @@ msgstr ""
 #: src/skins-qt/menus.cc:73
 msgid "Open Files ..."
 msgstr "Ava fail ..."
+
+#: src/moonstone/main_window.cc:143
+msgid ""
+"Repeat\n"
+"Note: to loop 1 track, also set:\n"
+"[RightClick-Menu].[No Playlist Advance]"
+msgstr ""
 
 #: src/moonstone/moonstone.cc:46
 msgid "Moonstone"
