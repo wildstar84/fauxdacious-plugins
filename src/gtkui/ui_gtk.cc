@@ -1047,7 +1047,9 @@ bool GtkUI::init ()
     gtk_toolbar_insert ((GtkToolbar *) toolbar, gtk_separator_tool_item_new (), -1);
 
     /* repeat and shuffle buttons */
-    button_repeat = toggle_button_new ("media-playlist-repeat", _("Repeat"), toggle_repeat);
+    button_repeat = toggle_button_new ("media-playlist-repeat",
+            _("Repeat\nNote: to loop 1 track, also set:\n[Playback].[No Playlist Advance]"),
+            toggle_repeat);
     gtk_toolbar_insert ((GtkToolbar *) toolbar, button_repeat, -1);
     button_shuffle = toggle_button_new ("media-playlist-shuffle", _("Shuffle"), toggle_shuffle);
     gtk_toolbar_insert ((GtkToolbar *) toolbar, button_shuffle, -1);

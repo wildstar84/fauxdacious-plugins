@@ -169,7 +169,8 @@ MiniFauxdWin::MiniFauxdWin () :
         items[indx++] = ToolBarSeparator ();
     if (aud_get_bool ("minifauxdacious", "repeat-btn"))
         items[indx++] = ToolBarAction (
-                "media-playlist-repeat", N_("Repeat"), N_("Repeat"),
+                "media-playlist-repeat", N_("Repeat"),
+                N_("Repeat\nNote: to loop 1 track, also set:\n[Playback].[No Playlist Advance]"),
                 [](bool on) { aud_set_bool (nullptr, "repeat", on); }, &m_repeat_action);
     if (aud_get_bool ("minifauxdacious", "shuffle-btn"))
         items[indx++] = ToolBarAction (

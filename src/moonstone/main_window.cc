@@ -139,7 +139,8 @@ MainWindow::MainWindow () :
         ToolBarCustom (slider->label()),
         ToolBarSeparator (),
         ToolBarAction (
-            "media-playlist-repeat", N_("Repeat"), N_("Repeat"),
+            "media-playlist-repeat", N_("Repeat"),
+            N_("Repeat\nNote: to loop 1 track, also set:\n[RightClick-Menu].[No Playlist Advance]"),
             [](bool on) { aud_set_bool (nullptr, "repeat", on); }, &m_repeat_action),
         ToolBarAction (
             "media-playlist-shuffle", N_("Shuffle"), N_("Shuffle"),

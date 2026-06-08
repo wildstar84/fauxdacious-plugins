@@ -1008,7 +1008,9 @@ void * InfoBarPlugin::get_gtk_widget ()
     /* repeat and shuffle buttons */
     if (aud_get_bool ("minifauxdacious-gtk", "repeat-btn"))
     {
-        button_repeat = toggle_button_new ("media-playlist-repeat", _("Repeat"), toggle_repeat);
+        button_repeat = toggle_button_new ("media-playlist-repeat",
+                _("Repeat\nNote: to loop 1 track, also set:\n[Playback].[No Playlist Advance]"),
+                toggle_repeat);
         gtk_toolbar_insert ((GtkToolbar *) toolbar, button_repeat, -1);
     }
     if (aud_get_bool ("minifauxdacious-gtk", "shuffle-btn"))
