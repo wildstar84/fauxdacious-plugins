@@ -52,6 +52,7 @@
 
 #define NEON_NETBLKSIZE     (4096)
 #define NEON_ICY_BUFSIZE    (4096)
+#define NEON_PREBUFFER_RATIO 4
 #define NEON_RETRY_COUNT 6
 #define NEON_TIMEOUTSEC 10
 
@@ -135,6 +136,7 @@ EXPORT NeonTransport aud_plugin_instance;
 
 const char * const NeonTransport::defaults[] = {
     "neon_buffersz", aud::numeric_string<NEON_NETBLKSIZE>::str,
+    "neon_prebuffer_ratio", aud::numeric_string<NEON_PREBUFFER_RATIO>::str,
     "neon_retries", aud::numeric_string<NEON_RETRY_COUNT>::str,
     "neon_timeoutsec", aud::numeric_string<NEON_TIMEOUTSEC>::str,
     "ignore_ssl_certs", "0",
@@ -202,9 +204,11 @@ private:
     int m_icy_len = 0;                  /* Bytes in current metadata block */
 
     bool m_eof = false;
+    bool m_prebuffering = true;
 
     RingBuf<char> m_rb;           /* Ringbuffer for our data */
     int neon_netblksize;
+    int neon_prebuffer_ratio;
     char * buffer;
     int neon_retry_count;
     int neon_timeoutsec;
@@ -224,6 +228,7 @@ private:
     int open_request (int64_t startbyte, String * error);
     FillBufferResult fill_buffer ();
     void reader ();
+    void wait_for_prebuffer ();
     int64_t try_fread (void * ptr, int64_t size, int64_t nmemb, bool & data_read);
 
     static int server_auth_callback (void * data, const char * realm, int attempt,
@@ -242,6 +247,9 @@ NeonFile::NeonFile (const char * url) :
     neon_netblksize = aud_get_int("neon", "neon_buffersz");
     if (neon_netblksize <= 0)
         neon_netblksize = NEON_NETBLKSIZE;
+    neon_prebuffer_ratio = aud_get_int("neon", "neon_prebuffer_ratio");
+    if (neon_prebuffer_ratio < 0)
+        neon_prebuffer_ratio = NEON_PREBUFFER_RATIO;
     neon_retry_count = aud_get_int("neon", "neon_retries");
     if (neon_retry_count <= 0)
         neon_retry_count = NEON_RETRY_COUNT;
@@ -781,6 +789,28 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
     return 1;
 }
 
+void NeonFile::wait_for_prebuffer ()
+{
+    if (neon_prebuffer_ratio <= 0)
+        m_prebuffering = false;
+    else {
+        int prebuffer = aud::clamp ((int) (m_rb.size () / neon_prebuffer_ratio),
+                neon_netblksize, 128 * 1024);
+
+        pthread_mutex_lock (& m_reader_status.mutex);
+
+        while (m_reader_status.reading && m_reader_status.status == NEON_READER_RUN
+                && m_rb.len () < prebuffer)
+        {
+            pthread_cond_broadcast (& m_reader_status.cond);
+            pthread_cond_wait (& m_reader_status.cond, & m_reader_status.mutex);
+        }
+
+        m_prebuffering = false;
+        pthread_mutex_unlock (& m_reader_status.mutex);
+    }
+}
+
 FillBufferResult NeonFile::fill_buffer ()
 {
     int to_read;
@@ -1010,6 +1040,9 @@ int64_t NeonFile::try_fread (void * ptr, int64_t size, int64_t nmemb, bool & dat
         pthread_mutex_unlock (& m_reader_status.mutex);
     }
 
+    if (m_prebuffering && m_content_length < 0)
+        wait_for_prebuffer ();
+
     /* Deliver data from the buffer */
     pthread_mutex_lock (& m_reader_status.mutex);
 
@@ -1072,7 +1105,12 @@ int64_t NeonFile::try_fread (void * ptr, int64_t size, int64_t nmemb, bool & dat
         }
     }
     else
+    {
+        if (! m_rb.len () && neon_prebuffer_ratio > 0)
+            m_prebuffering = true;
+
         pthread_cond_broadcast (& m_reader_status.cond);
+    }
 
     pthread_mutex_unlock (& m_reader_status.mutex);
 
@@ -1221,6 +1259,7 @@ int NeonFile::fseek (int64_t offset, VFSSeekType whence)
     }
 
     m_rb.discard ();
+    m_prebuffering = true;
     m_icy_buf.clear ();
     m_icy_len = 0;
 
@@ -1281,6 +1320,9 @@ const PreferencesWidget NeonTransport::widgets[] = {
     WidgetSpin (N_("Network Buffer (bytes):"),
         WidgetInt ("neon", "neon_buffersz"),
         {256, 32768, 512}),
+    WidgetSpin (N_("Prebuffer ratio (1/#, 0=off):"),
+        WidgetInt ("neon", "neon_prebuffer_ratio"),
+        {0, 6, 1}),
     WidgetSpin (N_("Retries:"),
         WidgetInt ("neon", "neon_retries"),
         {2, 16, 1}),
