@@ -52,6 +52,8 @@ void action_playlist_add_files ()
     { audqt::fileopener_show (audqt::FileMode::Add); }
 void action_playlist_add_folder ()
     { audqt::fileopener_show (audqt::FileMode::AddFolder); }
+void action_add_playlist ()
+    { aud_playlist_new (); }
 void action_playlist_open_url ()
     { audqt::urlopener_show (true); }
 void action_playlist_open_files ()
@@ -65,6 +67,7 @@ static const audqt::MenuItem add_menu_items[] = {
     audqt::MenuCommand ({N_("Add URL ..."), "folder-remote"}, action_playlist_add_url),
     audqt::MenuCommand ({N_("Add Folder ..."), "list-add"}, action_playlist_add_folder),
     audqt::MenuCommand ({N_("Add Files ..."), "list-add"}, action_playlist_add_files),
+    audqt::MenuCommand ({N_("Add Playlist ..."), "document-new"}, action_add_playlist),
     audqt::MenuSep (),
     audqt::MenuCommand ({N_("Open URL ..."), "folder-remote"}, action_playlist_open_url),
     audqt::MenuCommand ({N_("Open Folder ..."), "document-open"}, action_playlist_open_folder),
