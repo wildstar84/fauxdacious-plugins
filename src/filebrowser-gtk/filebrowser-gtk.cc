@@ -83,7 +83,7 @@ static GtkTreeView * tree_view;
 static GtkTreeStore * tree_store;
 static String filter_text;
 static String current_path;
-static SimpleHash<String, String> extension_dict;
+static SimpleHash<String, bool> extension_dict;
 static int max_filename_len = 24;
 
 static void init_music_directory()
@@ -103,8 +103,7 @@ static void init_extension_dict()
         if (!ext)
             break;
 
-        String extension = String(ext);
-        extension_dict.add(extension, std::move(extension));
+        extension_dict.add(String(ext), true);
     }
 }
 
