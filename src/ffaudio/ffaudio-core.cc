@@ -507,8 +507,8 @@ static AVInputFormat * get_format_by_content (const char * name, VFSFile & file)
     else
         AUDINFO ("Probe did not match any known formats.\n");
 
-    if (file.fseek (0, VFS_SEEK_SET) < 0)
-        ; /* ignore errors here */
+    if (file && file.fseek (0, VFS_SEEK_SET) < 0)
+        AUDWARN ("w:ffmpeg content probe seek failed!\n");
 
     return f;
 }
@@ -533,6 +533,20 @@ static AVFormatContext * open_input_file (const char * name, VFSFile & file)
         AUDINFO ("-open_input_file (STDIN!)\n");
         if (LOG (avformat_open_input, & c, xname, nullptr, nullptr) < 0)
             return nullptr;
+    }
+    else if (! strncmp (name, "http", 4))
+    {
+        /* JWT:NOTE: (neon) file will be NULL for remainder of play! */
+        if (file)
+            file = VFSFile ();   // CLOSE UP Fauxdacious/neon I/O AND USE FFMPEG'S I/O!:
+
+        c = avformat_alloc_context ();
+        if (LOG (avformat_open_input, & c, xname, f, nullptr) < 0)
+        {
+            if (c)
+                avformat_free_context (c);
+            return nullptr;
+        }
     }
     else
     {
@@ -734,13 +748,15 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
         if (! ic)
             return false;
 
-        CodecInfo cinfo;
+        CodecInfo cinfo, vcinfo;
 
-        if (! find_codec (ic.get (), & cinfo, nullptr))   //CAN CHANGE play_video!
+        if (! find_codec (ic.get (), & cinfo, & vcinfo))   //CAN CHANGE play_video!
             return false;
 
-        if ((int)ic->duration != 0)
-            tuple.set_int (Tuple::Length, ic->duration / 1000);
+        if (ic->metadata)
+            read_metadata_dict (tuple, ic->metadata);
+        if (cinfo.stream->metadata)
+            read_metadata_dict (tuple, cinfo.stream->metadata);
 
         tuple.set_int (Tuple::Bitrate, ic->bit_rate / 1000);
 #if CHECK_LIBAVCODEC_VERSION(59, 37, 100, 59, 37, 100)
@@ -752,14 +768,17 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
         if (cinfo.codec->long_name)
             tuple.set_str (Tuple::Codec, cinfo.codec->long_name);
 
-        if (ic->metadata)
-            read_metadata_dict (tuple, ic->metadata);
-        if (cinfo.stream->metadata)
-            read_metadata_dict (tuple, cinfo.stream->metadata);
+        if (file)  /* JWT:open_input_file CAN NULL-ify file! */
+        {
+            if (file.fseek (0, VFS_SEEK_SET))
+                AUDERR ("e:COULD NOT SEEK TO BEGINNING!\n");
+            else if (! audtag::read_tag (file, tuple, image)
+                    && tuple.fetch_stream_info (file))
+                AUDWARN ("i:FFAudio:  No tags, but got icy stream info!\n");
+        }
 
-        if (! file.fseek (0, VFS_SEEK_SET) && ! audtag::read_tag (file, tuple, image)
-                && tuple.fetch_stream_info (file))
-            AUDDBG ("i:FFAudio:  No tags, but got icy stream info!\n");
+        if ((int)ic->duration != 0)
+            tuple.set_int (Tuple::Length, (int)(ic->duration / 1000));
 
 #if CHECK_LIBAVFORMAT_VERSION (54, 2, 100, 54, 2, 0)
         if (image && ! image->len ())
@@ -774,7 +793,6 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
                 }
             }
         }
-
 #endif
 #ifdef ALLOC_CONTEXT
         avcodec_free_context (& cinfo.context);
@@ -1237,6 +1255,20 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 
         set_playback_tuple (tuple.ref ());
     }
+    else {
+        /* JWT:HACK:CHECK & FIX BAD DURATION VALUES FROM RUMBLE.COM IN RECENT ffmpeg v7.1.5? */
+        Tuple tuple = get_playback_tuple ();
+        int tuple_length = tuple.get_int (Tuple::Length);
+        if (tuple_length > 0 && TD.ic->duration > 0)
+        {
+            int64_t tuple_length_msec = (int64_t)tuple_length * 1000;
+            /* CORRECT IF OFF BY MORE THAN +/- 30 SECONDS: */
+            if (tuple_length_msec > TD.ic->duration + 1999999
+                    || tuple_length_msec < TD.ic->duration - 1999999)
+                TD.ic->duration = tuple_length_msec;
+        }
+    }
+
     AUDDBG ("got codec %s for stream index %d, opening\n", TD.cinfo.codec->name, TD.cinfo.stream_idx);
 
     if (LOG (avcodec_open2, TD.cinfo.context, TD.cinfo.codec, nullptr) < 0)
@@ -1438,6 +1470,8 @@ breakout1:
         goto error_exit;
     }
 
+    avcodec_flush_buffers (TD.cinfo.context);
+
     if (myplay_video)  /* SET VIDEO-WINDOW TITLE (INCLUDE SONG-TITLE): */
     {
         String video_windowtitle;
@@ -1454,6 +1488,8 @@ breakout1:
         str_replace_char (titleBuf, '_', ' ');
 
         SDL_SetWindowTitle (sdl_window, (const char *) titleBuf);
+
+        avcodec_flush_buffers (TD.vcinfo.context);
 	}
 
     /* LOOP TO PROCESS QUEUED AUDIO & VIDEO PACKETS FROM THE STREAM, INTERLACE AND OUTPUT THEM: */
@@ -1736,28 +1772,27 @@ breakout1:
         seek_value = check_seek ();
         if (seek_value >= 0)
         {
+            pthread_mutex_lock (& read_mutex);  // BLOCK READING WHILST SEEKING (CHANGING POSITION)!
+
             /* JWT:FIRST, FLUSH ANY PACKETS SITTING IN THE QUEUES TO CLEAR THE QUEUES! */
             QFlush (TD.apktQ);
             QFlush (TD.pktQ);
             /* JWT: HAD TO CHANGE THIS FROM "AVSEEK_FLAG_ANY" TO AVSEEK_FLAG_BACKWARD
                 TO GET SEEK TO NOT RANDOMLY BRICK?! */
 
-            pthread_mutex_lock (& read_mutex);  // BLOCK READING WHILST SEEKING (CHANGING POSITION)!
-
             if (LOG (av_seek_frame, TD.ic, -1, (int64_t) seek_value *
                     AV_TIME_BASE / 1000, AVSEEK_FLAG_BACKWARD) >= 0)
                 TD.errcount = 0;
+            else
+                AUDERR ("e:Seek via slider FAILED!\n");
+
+            avcodec_flush_buffers (TD.cinfo.context);
+            if (myplay_video)
+                avcodec_flush_buffers (TD.vcinfo.context);
+
+            avformat_flush (TD.ic);
 
             pthread_mutex_unlock (& read_mutex);
-        }
-
-        /* JWT:CHECK FOR METADATA CHANGES, IE. SONG TITLES IN STREAMING RADIO STATIONS: */
-        if (! strncmp (filename, "http", 4))  // IF STREAM, SEE IF SONG-INFO CHANGED IN STREAM:
-        {
-            Tuple tuple = get_playback_tuple ();
-
-            if (tuple.fetch_stream_info (file))
-                set_playback_tuple (tuple.ref ());
         }
     }  // END PACKET-PROCESSING LOOP.
 
@@ -1807,6 +1842,9 @@ breakout1:
 error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
 
     AUDDBG ("end of playback.\n");
+    avcodec_flush_buffers (TD.cinfo.context);
+    if (myplay_video)
+        avcodec_flush_buffers (TD.vcinfo.context);
     if (TD.pktQ)
         destroyQueue (TD.pktQ);
     if (TD.apktQ)
