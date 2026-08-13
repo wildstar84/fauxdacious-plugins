@@ -64,6 +64,7 @@ extern "C" {
 typedef struct
 {
     int capacity;
+    int minsize;
     int size;
     int front;
     int rear;
@@ -85,20 +86,24 @@ typedef struct
     CodecInfo cinfo, vcinfo;   //AUDIO AND VIDEO CODECS
     pktQueue *pktQ = nullptr;  // QUEUE FOR VIDEO-PACKET QUEUEING.
     pktQueue *apktQ = nullptr; // QUEUE FOR AUDIO-PACKET QUEUEING.
-    AVFormatContext * ic = nullptr;  // AVstuff.
+    AVFormatContext * ic = nullptr;  // STREAM URL AVFormatContext HANDLE.
+    AVFormatContext * ic2 = nullptr;  // JWT:OPTIONAL 2ND (VIDEO-ONLY) DASH STREAM.
     int errcount = 0;
     bool videoalso;
 }
 DataShared2Thread;
 
 static int thread_exit;  // INDICATES READER-THREAD EXIT AND STATUS (0=RUNNING, 1=EOF, 2=STOPPED, -1=ERROR.
+static bool in_seeking;  // ENSURES READER-THREAD LOOP BREAKOUT UPON SEEKS.
 static int as_decor_fudge_x = 0; // MUST CAPTURE WxH OF WINDOW-DECORATIONS FOR AfterStep WM FOR PROPER WINDOW PLACEMENT!
 static int as_decor_fudge_y = 0;
 #if SDL_COMPILEDVERSION > 4600
 static bool as_decor_fudge_set = false;
 #endif
 static pthread_mutex_t read_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t vread_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int64_t last_pts;
 
 class FFaudio : public InputPlugin
 {
@@ -139,7 +144,8 @@ EXPORT FFaudio aud_plugin_instance;
 const char * const FFaudio::defaults[] = {
     "play_video", "TRUE",   // TRUE: SHOW VIDEO, FALSE: PLAY AUDIO ONLY.
     "video_codec_flag_gray", "FALSE",   // PLAY VIDEO IN BLACK & WHITE (WINDOWS-ONLY, UNLESS FFMPEG COMPILED W/--enable-gray)!
-    "video_qsize", "6",     // SET A PRETTY GOOD DEFAULT.
+    "video_qsize", "12",     // SET A PRETTY GOOD DEFAULT.
+    "video_mqsize", "6",    // SET A PRETTY GOOD DEFAULT (MUST BE < video_qsize)!
     "video_windowtitle", "Fauxdacious Video",  // APPEND TO VIDEO WINDOW-TITLE.
     "video_xmove", "1",     // RESTORE WINDOW TO PREV. SAVED POSITION.
     "video_ysize", "-1",    // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
@@ -168,8 +174,10 @@ const PreferencesWidget FFaudio::widgets[] = {
         {false},
         WIDGET_CHILD),
     WidgetLabel (N_("<b>Advanced</b>")),
-    WidgetSpin (N_("Video packet queue size"),
-        WidgetInt ("ffaudio", "video_qsize"), {2, 16, 1}),
+    WidgetSpin (N_("Video packet min. queue size"),
+        WidgetInt ("ffaudio", "video_mqsize"), {1, 16, 1}),
+    WidgetSpin (N_("Video packet max. queue size"),
+        WidgetInt ("ffaudio", "video_qsize"), {2, 24, 1}),
     WidgetSpin (N_("Reader sleep interval (millisec)"),
         WidgetInt ("ffaudio", "reader_sleep_ms"), {1, 500, 1}),
     WidgetCheck (N_("Unoptimized vid. window resize (some WMs, ie. JWM may need)."),  // WE HAVE ffmpeg COMPILED W/--enable-gray IN WINDOWS!
@@ -216,7 +224,7 @@ struct ScopedFrame
     http://www.thelearningpoint.net/computer-science/data-structures-queues--with-c-program-source-code
 */
 
-pktQueue * createQueue (int maxElements)
+pktQueue * createQueue (int minElements, int maxElements)
 {
     /* Create a Queue */
     pktQueue * Q = (pktQueue *) malloc (sizeof (pktQueue));
@@ -224,6 +232,7 @@ pktQueue * createQueue (int maxElements)
     Q->elements = (AVPacket * *) malloc (sizeof (AVPacket *) * maxElements);
     Q->size = 0;
     Q->capacity = maxElements;
+    Q->minsize = minElements;
     Q->front = 0;
     Q->rear = -1;
     /* Return the pointer */
@@ -275,7 +284,7 @@ void QFlush (pktQueue * Q)
 bool Enqueue (pktQueue * Q, AVPacket * element)
 {
     /* If the Queue is full, we cannot push an element into it as there is no space for it.*/
-    if (Q->size == Q->capacity)
+    if (in_seeking || Q->size == Q->capacity)
         return false;
     else
     {
@@ -612,77 +621,92 @@ static bool find_codec (AVFormatContext * c, CodecInfo * cinfo, CodecInfo * vcin
     if (avformat_find_stream_info (c, nullptr) < 0)
         return false;
 
+    bool have_audcodec = false;
+    bool have_vidcodec = false;
     int audioStream = av_find_best_stream (c, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
-    int videoStream = (vcinfo && play_video) ? av_find_best_stream (c, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0) : -1;
+    int videoStream = (vcinfo && play_video)
+            ? av_find_best_stream (c, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0) : -1;
 
 #ifndef ALLOC_CONTEXT
 #define codecpar codec
 #endif
-    if (audioStream < 0)   /* PUNT IF NO AUDIO SINCE AUDACIOUS IS AN *AUDIO* PLAYER! */
+    if (cinfo)
     {
-        if (videoStream >= 0)
-            AUDERR ("e:VIDEO-ONLY stream found (no audio, no play, use a video player!)\n");
-        return false;
-    }
-
-    AVCodec * codec = (AVCodec *) avcodec_find_decoder (c->streams[audioStream]->codecpar->codec_id);
-    if (codec)
-    {
-        cinfo->stream_idx = audioStream;
-        cinfo->stream = c->streams[audioStream];
-        cinfo->codec = codec;
-#ifdef ALLOC_CONTEXT
-        cinfo->context = avcodec_alloc_context3 (cinfo->codec);
-        avcodec_parameters_to_context (cinfo->context, c->streams[audioStream]->codecpar);
-#else
-        cinfo->context = c->streams[audioStream]->codec;  // AVCodecContext *
-#endif
-
-#if CHECK_LIBAVCODEC_VERSION(58, 9, 100, 255, 255, 255)
-        cinfo->context->pkt_timebase = cinfo->stream->time_base;
-#else
-        av_codec_set_pkt_timebase (cinfo->context, cinfo->stream->time_base);
-#endif
-
-        /* JWT: NOW IF USER WANTS VIDEO, SEE IF WE GOT A VIDEO STREAM TOO: */
-        if (videoStream >= 0)
+        if (audioStream < 0)  /* PUNT IF NO AUDIO SINCE AUDACIOUS IS AN *AUDIO* PLAYER! */
         {
-            AVCodec * vcodec = (AVCodec *) avcodec_find_decoder (c->streams[videoStream]->codecpar->codec_id);
-            if (vcodec)
-            {
-                vcinfo->stream_idx = videoStream;
-                vcinfo->stream = c->streams[videoStream];
-                vcinfo->codec = vcodec;
+            if (videoStream >= 0)
+                AUDERR ("e:VIDEO-ONLY stream found (no audio, no play, use a video player!)\n");
+            return false;
+        }
+
+        AVCodec * codec = (AVCodec *) avcodec_find_decoder (c->streams[audioStream]->codecpar->codec_id);
+        if (codec)
+        {
+            cinfo->stream_idx = audioStream;
+            cinfo->stream = c->streams[audioStream];
+            cinfo->codec = codec;
 #ifdef ALLOC_CONTEXT
-                vcinfo->context = avcodec_alloc_context3 (vcinfo->codec);
-                avcodec_parameters_to_context (vcinfo->context, c->streams[videoStream]->codecpar);
+            cinfo->context = avcodec_alloc_context3 (cinfo->codec);
+            avcodec_parameters_to_context (cinfo->context, c->streams[audioStream]->codecpar);
 #else
-                vcinfo->context = c->streams[videoStream]->codec;  // AVCodecContext *
+            cinfo->context = c->streams[audioStream]->codec;  // AVCodecContext *
 #endif
 
 #if CHECK_LIBAVCODEC_VERSION(58, 9, 100, 255, 255, 255)
-                vcinfo->context->pkt_timebase = vcinfo->stream->time_base;
+            cinfo->context->pkt_timebase = cinfo->stream->time_base;
 #else
-                av_codec_set_pkt_timebase (vcinfo->context, vcinfo->stream->time_base);
+            av_codec_set_pkt_timebase (cinfo->context, cinfo->stream->time_base);
 #endif
-
-                //DEPRECIATED!:JWT:AS/OF v3.8, LOW-QUALITY VIDEOS SEEM BETTER W/O THIS, BUT WE LEAVE IT AS A CONFIG. OPTION - YMMV:
-#if CHECK_LIBAVCODEC_VERSION(60, 0, 0, 255, 255, 255)
-#else
-                if (aud_get_bool ("ffaudio", "video_codec_flag_truncated") && vcodec->capabilities&AV_CODEC_CAP_TRUNCATED)
-                    vcinfo->context->flags |= AV_CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
-#endif
-                if (aud_get_bool ("ffaudio", "video_codec_flag_gray"))
-                    vcinfo->context->flags |= AV_CODEC_FLAG_GRAY; /* output in monochrome (REQUIRES FFMPEG COMPILED W/--enable-gray!) */
-            }
-            else
-                play_video = false;  /* TURN OFF VIDEO PLAYBACK, SINCE NO VIDEO CODEC! */
+            have_audcodec = true;
         }
         else
-            play_video = false;  /* TURN OFF VIDEO PLAYBACK, SINCE WE COULD NOT FIND A VIDEO STREAM! */
-
-        return true;
+            return false;
     }
+    else if (videoStream < 0)
+        return false;
+
+    /* JWT: NOW IF USER WANTS VIDEO, SEE IF WE GOT A VIDEO STREAM TOO: */
+    if (videoStream >= 0)
+    {
+        AVCodec * vcodec = (AVCodec *) avcodec_find_decoder (c->streams[videoStream]->codecpar->codec_id);
+        if (vcodec)
+        {
+            vcinfo->stream_idx = videoStream;
+            vcinfo->stream = c->streams[videoStream];
+            vcinfo->codec = vcodec;
+#ifdef ALLOC_CONTEXT
+            vcinfo->context = avcodec_alloc_context3 (vcinfo->codec);
+            avcodec_parameters_to_context (vcinfo->context, c->streams[videoStream]->codecpar);
+#else
+            vcinfo->context = c->streams[videoStream]->codec;  // AVCodecContext *
+#endif
+
+#if CHECK_LIBAVCODEC_VERSION(58, 9, 100, 255, 255, 255)
+            vcinfo->context->pkt_timebase = vcinfo->stream->time_base;
+#else
+            av_codec_set_pkt_timebase (vcinfo->context, vcinfo->stream->time_base);
+#endif
+
+            //DEPRECIATED!:JWT:AS/OF v3.8, LOW-QUALITY VIDEOS SEEM BETTER W/O THIS, BUT WE LEAVE IT AS A CONFIG. OPTION - YMMV:
+#if CHECK_LIBAVCODEC_VERSION(60, 0, 0, 255, 255, 255)
+#else
+            if (aud_get_bool ("ffaudio", "video_codec_flag_truncated") && vcodec->capabilities&AV_CODEC_CAP_TRUNCATED)
+                vcinfo->context->flags |= AV_CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+#endif
+            if (aud_get_bool ("ffaudio", "video_codec_flag_gray"))
+                vcinfo->context->flags |= AV_CODEC_FLAG_GRAY; /* output in monochrome (REQUIRES FFMPEG COMPILED W/--enable-gray!) */
+            have_vidcodec = true;
+        }
+        else
+            play_video = false;  /* TURN OFF VIDEO PLAYBACK, SINCE NO VIDEO CODEC! */
+    }
+    else if (vcinfo)
+        play_video = false;  /* TURN OFF VIDEO PLAYBACK, SINCE WE COULD NOT FIND A VIDEO STREAM! */
+
+    if (cinfo && have_audcodec)
+        return true;
+    else if (vcinfo && have_vidcodec)
+        return true;
 #undef codecpar
 
     return false;
@@ -744,13 +768,17 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
 {
     if (strncmp (filename, "stdin://", 8))  /* WE'RE NOT STDIN! */
     {
-        SmartPtr<AVFormatContext, close_input_file> ic (open_input_file (filename, file));
+        const char * sep = strstr (filename, "|");
+        String audiofn_str = sep ? String (str_printf ("%.*s", (int)(sep-filename), filename))
+                : String (filename);
+        SmartPtr<AVFormatContext, close_input_file> ic (open_input_file
+                ((const char *) audiofn_str, file));
         if (! ic)
             return false;
 
-        CodecInfo cinfo, vcinfo;
+        CodecInfo cinfo;
 
-        if (! find_codec (ic.get (), & cinfo, & vcinfo))   //CAN CHANGE play_video!
+        if (! find_codec (ic.get (), & cinfo, nullptr))   //CAN CHANGE play_video!
             return false;
 
         if (ic->metadata)
@@ -771,7 +799,7 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
         if (file)  /* JWT:open_input_file CAN NULL-ify file! */
         {
             if (file.fseek (0, VFS_SEEK_SET))
-                AUDERR ("e:COULD NOT SEEK TO BEGINNING!\n");
+                AUDERR ("e:Could not seek to beginning!\n");
             else if (! audtag::read_tag (file, tuple, image)
                     && tuple.fetch_stream_info (file))
                 AUDWARN ("i:FFAudio:  No tags, but got icy stream info!\n");
@@ -802,9 +830,7 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
 #endif
     }
     else  /* JWT:THIS STUFF DEFERRED UNTIL PLAY() FOR STDIN(nonseekable), BUT SEEMS TO HAVE TO BE HERE FOR DIRECT */
-    {
         tuple.set_filename (filename);  /* All we can do here is just get the file name. */
-    }
 
     return true;
 }
@@ -975,7 +1001,7 @@ static SDL_Texture * createSDL2Texture (SDL_Window * sdl_window, SDL_Renderer * 
     {
         texture = SDL_CreateTexture (renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING, width, height);
         if (! texture)
-            AUDERR ("e:Could not create texture (%s)\n", SDL_GetError ());
+            AUDERR ("e:Could not create texture (%s).\n", SDL_GetError ());
         else
         {
             SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
@@ -1060,7 +1086,7 @@ void save_window_xy (SDL_Window * sdl_window, int video_window_x, int video_wind
 static void * reader_thread_fn (void * data)
 {
     int ret;
-    int minbuffer = 12;
+    int64_t pts2audpts;
     AVPacket * pkt;
     DataShared2Thread * TD = (DataShared2Thread *) data;
     TD->errcount = 0;
@@ -1069,9 +1095,10 @@ static void * reader_thread_fn (void * data)
 
     sleeptime.tv_sec = 0;
     sleeptime.tv_nsec = reader_sleep_ms;
+    last_pts = 0;
 
     /* OUTER LOOP TO READ, QUEUE AND PROCESS AUDIO & VIDEO PACKETS FROM THE STREAM: */
-    while (thread_exit < 2)
+    while (thread_exit == 0)
     {
         /* READ NEXT FRAME (OR MORE) OF DATA */
         if (! (pkt = av_packet_alloc ()))
@@ -1090,7 +1117,7 @@ static void * reader_thread_fn (void * data)
             ++TD->errcount;
             if (ret == (int) AVERROR_EOF)
             {
-                AUDDBG ("eof reached\n");
+                AUDDBG ("eof reached in reader thread.\n");
                 av_packet_free (& pkt);
                 thread_exit = 1;  // EOF
                 goto THREAD_EXIT;
@@ -1119,32 +1146,37 @@ static void * reader_thread_fn (void * data)
                 do
                 {
                     nanosleep (& sleeptime, NULL);
-                    if (thread_exit == 2)
+                    if (thread_exit)
                     {
                         av_packet_free (& pkt);
                         goto THREAD_EXIT;
                     }
                 }
-                while (TD->pktQ->size > minbuffer && TD->apktQ->size > minbuffer);
+                while (TD->apktQ->size > TD->apktQ->minsize);
             }
+            last_pts = pkt->pts;
             if (! Enqueue (TD->apktQ, pkt))
                 av_packet_free (& pkt);
         }
-        else if (TD->videoalso && pkt->stream_index == TD->vcinfo.stream_idx)  /* WE READ A VIDEO PACKET: */
+        else if (! TD->ic2 && TD->videoalso && pkt->stream_index == TD->vcinfo.stream_idx)  /* WE READ A VIDEO PACKET: */
         {
             if (TD->pktQ->size == TD->pktQ->capacity)
             {
                 do
                 {
                     nanosleep (& sleeptime, NULL);
-                    if (thread_exit == 2)
+                    if (thread_exit)
                     {
                         av_packet_free (& pkt);
                         goto THREAD_EXIT;
                     }
                 }
-                while (TD->apktQ->size > minbuffer && TD->pktQ->size > minbuffer);
+                while (TD->pktQ->size > TD->pktQ->minsize);
             }
+            /* CONVERT VIDEO PACKET TIMESTAMPS TO MATCH AUDIO ONES: */
+            pts2audpts = av_rescale_q_rnd (pkt->pts, TD->vcinfo.stream->time_base,
+                    TD->cinfo.stream->time_base, AV_ROUND_NEAR_INF);
+            pkt->pts = pts2audpts;
             if (! Enqueue (TD->pktQ, pkt))
                 av_packet_free (& pkt);
         }
@@ -1155,6 +1187,111 @@ static void * reader_thread_fn (void * data)
 THREAD_EXIT:
     pthread_mutex_unlock (& queue_mutex);
     pthread_mutex_unlock (& read_mutex);
+
+    pthread_exit (nullptr);
+
+    return nullptr;
+}
+
+/* JWT:OPTIONAL 2ND READER THREAD IF FETCHING VIDEO FROM A SEPARATE, VIDEO-ONLY "DASH" URL: */
+static void * reader_vthread_fn (void * data)
+{
+    int ret;
+    int64_t pts2audpts;
+    AVPacket * pkt;
+    DataShared2Thread * TD = (DataShared2Thread *) data;
+    TD->errcount = 0;
+    long reader_sleep_ms = (long) aud_get_int ("ffaudio", "reader_sleep_ms") * 1000000L;
+    struct timespec sleeptime, loopsleep;
+
+    sleeptime.tv_sec = 0;
+    sleeptime.tv_nsec = reader_sleep_ms;
+    loopsleep.tv_sec = 0;
+    loopsleep.tv_nsec = 200000L;
+
+    /* OUTER LOOP TO READ, QUEUE AND PROCESS AUDIO & VIDEO PACKETS FROM THE STREAM: */
+    while (thread_exit == 0)
+    {
+        /* READ NEXT FRAME (OR MORE) OF DATA */
+        if (! (pkt = av_packet_alloc ()))
+        {
+            AUDERR ("FFMpeg error: could not allocate memory for packet, giving up.\n");
+            thread_exit = -1;  // ERROR
+            goto VTHREAD_EXIT;
+        }
+
+        pthread_mutex_lock (& vread_mutex);  // BLOCK READING WHILST SEEKING (CHANGING POSITION)!
+        ret = LOG (av_read_frame, TD->ic2, pkt);
+        pthread_mutex_unlock (& vread_mutex);
+
+        if (ret < 0)  // CHECK FOR EOF OR ERRORS:
+        {
+            ++TD->errcount;
+            if (ret == (int) AVERROR_EOF)
+            {
+                AUDDBG ("eof reached in DASH video-reader thread.\n");
+                av_packet_free (& pkt);
+                thread_exit = 1;  // EOF
+                goto VTHREAD_EXIT;
+            }
+            else if (TD->errcount > 4)
+            {
+                AUDERR ("av_read_frame error %d, giving up.\n", ret);
+                av_packet_free (& pkt);
+                thread_exit = -1;  // ERROR
+                goto VTHREAD_EXIT;
+            }
+            else
+            {
+                av_packet_free (& pkt);
+                continue;
+            }
+        }
+        else
+            TD->errcount = 0;
+
+        /* NOW PROCESS THE CURRENTLY-READ PACKET (THIS THREAD ONLY HANDLES DASH VIDEO PACKETS!): */
+        if (TD->videoalso && pkt->stream_index == TD->vcinfo.stream_idx)  /* WE READ A VIDEO PACKET: */
+        {
+            if (TD->pktQ->size == TD->pktQ->capacity)
+            {
+                do
+                {
+                    nanosleep (& sleeptime, NULL);
+                    if (thread_exit)
+                    {
+                        av_packet_free (& pkt);
+                        goto VTHREAD_EXIT;
+                    }
+                }
+                while (TD->pktQ->size > TD->pktQ->minsize);
+            }
+            /* CONVERT VIDEO PACKET TIMESTAMPS TO MATCH AUDIO ONES: */
+            pts2audpts = av_rescale_q_rnd (pkt->pts, TD->vcinfo.stream->time_base,
+                    TD->cinfo.stream->time_base, AV_ROUND_NEAR_INF);
+            /* VIDEO READER IS AHEAD OF AUDIO, WAIT FOR AUDIO READER TO CATCH UP!: */
+            while (pts2audpts > last_pts)
+            {
+                nanosleep (& loopsleep, NULL);
+                if (thread_exit)  /* ONE READER THREAD HAD DIED, BREAK OUT! */
+                {
+                    av_packet_free (& pkt);
+                    goto VTHREAD_EXIT;
+                }
+                else if (in_seeking)
+                    break;
+            }
+            pkt->pts = pts2audpts;
+            if (! Enqueue (TD->pktQ, pkt))
+                av_packet_free (& pkt);
+        }
+        else
+            av_packet_free (& pkt);
+    }
+
+VTHREAD_EXIT:
+    pthread_mutex_unlock (& queue_mutex);
+    pthread_mutex_unlock (& vread_mutex);
 
     pthread_exit (nullptr);
 
@@ -1181,6 +1318,7 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     int video_doreset_width = 0;   // WINDOW-SIZE BELOW WHICH WINDOW WILL SNAP BACK TO SIZE REQUESTED BY VIDEO STREAM:
     int video_doreset_height = 0;
     int video_qsize = 0;
+    int video_mqsize = 0;
     float video_aspect_ratio = 0;  // ASPECT RATIO OF VIDEO, SAVED TO PERMIT RE-ASPECTING AFTER USER RESIZES (WARPS) WINDOW.
     bool myplay_video = play_video; // WHETHER OR NOT TO DISPLAY THE VIDEO.
     bool codec_opened = false;     // TRUE IF SUCCESSFULLY OPENED CODECS:
@@ -1203,9 +1341,25 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 
     DataShared2Thread TD;
 
-    TD.ic = open_input_file (filename, file);
+    const char * sep = strstr (filename, "|");
+    String audiofn_str = sep ? String (str_printf ("%.*s", (int)(sep-filename), filename))
+            : String (filename);
+
+    TD.ic = open_input_file ((const char *) audiofn_str, file);
+    TD.ic2 = nullptr;
     if (! TD.ic)
         return false;
+
+    if (myplay_video && sep)  /* TRUE MEANS WE HAVE 2 SEPARATE AUDIO AND VIDEO URLS (DASH STREAM): */
+    {
+        AUDINFO ("i:PLAY calling 2nd open_input_file for DASH (%s)...\n", sep+1);
+        TD.ic2 = open_input_file (sep+1, file);
+        if (! TD.ic2)
+        {
+            AUDWARN ("w:PLAY could not open optional 2nd (video) in DASH stream!\n");
+            play_video = false;
+        }
+    }
 
 #if SDL_COMPILEDVERSION < 4601
     as_decor_fudge_x = 0;
@@ -1216,10 +1370,26 @@ bool FFaudio::play (const char * filename, VFSFile & file)
    AFTER HERE, WE GO TO error_exit (AND FREE STUFF)! */
 
     AVPacket * pkt;
-    if (! find_codec (TD.ic, & TD.cinfo, & TD.vcinfo))   //CAN CHANGE play_video!
+    if (sep)
     {
-        AUDERR ("No codec found for %s, can't play.\n", filename);
-        goto error_exit;
+        if (! find_codec (TD.ic, & TD.cinfo, nullptr))   //CAN CHANGE play_video!
+        {
+            AUDERR ("No dash audio codec found for %s, can't play.\n", (const char *) audiofn_str);
+            goto error_exit;
+        }
+        if (play_video && ! find_codec (TD.ic2, nullptr, & TD.vcinfo))   //CAN CHANGE play_video!
+        {
+            AUDERR ("No dash video codec found for %s, can't play.\n", sep+1);
+            play_video = false;
+        }
+    }
+    else
+    {
+        if (! find_codec (TD.ic, & TD.cinfo, & TD.vcinfo))   //CAN CHANGE play_video!
+        {
+            AUDERR ("No codec found for %s, can't play.\n", filename);
+            goto error_exit;
+        }
     }
     codec_opened = true;
     if (play_video)
@@ -1265,7 +1435,11 @@ bool FFaudio::play (const char * filename, VFSFile & file)
             /* CORRECT IF OFF BY MORE THAN +/- 30 SECONDS: */
             if (tuple_length_msec > TD.ic->duration + 1999999
                     || tuple_length_msec < TD.ic->duration - 1999999)
+            {
+                AUDWARN ("w:ic_duration OVERRIDDEN from %ld to %ld (msec)!\n",
+                        TD.ic->duration, tuple_length_msec);
                 TD.ic->duration = tuple_length_msec;
+            }
         }
     }
 
@@ -1409,17 +1583,23 @@ breakout1:
         NOT ENOUGH = JITTERY VIDEO
         TOO MANY = AUDIO/VIDEO BECOME NOTICABLY OUT OF SYNC!
     */
-    if (video_qsize < 2)
-        video_qsize = (aud_get_int ("ffaudio", "video_qsize"))
-                ? aud_get_int ("ffaudio", "video_qsize") : 6;
-    if (video_qsize < 2)
-        video_qsize = 8;
+    video_qsize = aud_get_int ("ffaudio", "video_qsize");
+    if (video_qsize <= 0)
+        video_qsize = 12;
+    else if (video_qsize < 2)
+        video_qsize = 2;
 
-    /* TYPICALLY THERE'S TWICE AS MANY AUDIO PACKETS AS VIDEO, SO THIS IS COUNTER-INTUITIVE, BUT IT WORKS BEST! */
-    TD.pktQ = createQueue (12 * video_qsize);  // ALLOW FOR A BUNCH OF VIDEO PACKETS (USUALLY AT STARTUP),
-    TD.apktQ = createQueue (12 * video_qsize); // BUT, GENERALLY THE AUDIO QUEUE WILL FILL FIRST FORCING OUTPUT:
+    video_mqsize = aud_get_int ("ffaudio", "video_mqsize");
+    if (video_mqsize <= 0)
+        video_mqsize = 6;
+    if (video_mqsize >= video_qsize)
+        video_mqsize = video_qsize / 2;
+    AUDINFO ("i:Queue-size: min=%d, MAX=%d.\n", video_mqsize, video_qsize);
+
+    /* TYPICALLY THERE'S TWICE AS MANY AUDIO PACKETS AS VIDEO, SO MAKE QUEUE AUDIO QUEUE ALWAYS 2X! */
+    TD.pktQ = createQueue (video_mqsize * 6, video_qsize * 6);  // ALLOW FOR A BUNCH OF VIDEO PACKETS (USUALLY AT STARTUP),
+    TD.apktQ = createQueue (video_mqsize * 12, video_qsize * 12); // BUT, GENERALLY THE AUDIO QUEUE WILL FILL FIRST FORCING OUTPUT:
     returnok = true;
-    AUDDBG ("i:video queue size %d\n", video_qsize);
 
     {   // SUBSCOPE FOR DECLARING SDL2 TEXTURE AS SCOPED SMARTPOINTER:
     bool windowIsStable = false;    // JWT:SAVING AND RECREATING WINDOW CAUSES POSN. TO DIFFER BY THE WINDOW DECORATION SIZES, SO WE HAVE TO FUDGE FOR THAT!
@@ -1445,16 +1625,17 @@ breakout1:
         myplay_video = false;
 
     TD.videoalso = myplay_video;
-    /* START UP READER THREAD: */
-    pthread_attr_t thread_attrs;
-    pthread_t helper_thread;
+    /* START UP READER THREAD(S): */
+    pthread_attr_t thread_attrs, vthread_attrs;
+    pthread_t helper_thread, helper_vthread;
+    thread_exit = 0;
+    in_seeking = false;
 
     if (! pthread_attr_init (& thread_attrs))
     {
         if (! pthread_attr_setdetachstate (& thread_attrs, PTHREAD_CREATE_DETACHED)
                 || ! pthread_attr_setscope (& thread_attrs, PTHREAD_SCOPE_PROCESS))
         {
-            thread_exit = 0;
             if (pthread_create (&helper_thread, nullptr, reader_thread_fn, & TD))
                 AUDERR ("s:Error creating helper thread: %s - Expect Delays!...\n", strerror (errno));
         }
@@ -1470,10 +1651,32 @@ breakout1:
         goto error_exit;
     }
 
-    avcodec_flush_buffers (TD.cinfo.context);
-
     if (myplay_video)  /* SET VIDEO-WINDOW TITLE (INCLUDE SONG-TITLE): */
     {
+        if (TD.ic2 && thread_exit == 0)
+        {
+            AUDINFO ("i:Starting 2ND reader thread for dash video stream...\n");
+            if (! pthread_attr_init (& vthread_attrs))
+            {
+                if (! pthread_attr_setdetachstate (& vthread_attrs, PTHREAD_CREATE_DETACHED)
+                        || ! pthread_attr_setscope (& vthread_attrs, PTHREAD_SCOPE_PROCESS))
+                {
+                    if (pthread_create (&helper_vthread, nullptr, reader_vthread_fn, & TD))
+                        AUDERR ("s:Error creating vhelper thread: %s - Expect Delays!...\n", strerror (errno));
+                }
+                else
+                    AUDERR ("s:Error detatching vhelper thread: %s!\n", strerror (errno));
+
+                if (pthread_attr_destroy (& vthread_attrs))
+                    AUDERR ("s:Error destroying vhelper thread attributes: %s!\n", strerror (errno));
+            }
+            else
+            {
+                AUDERR ("s:Error initializing vhelper thread attributes: %s!\n", strerror (errno));
+                goto error_exit;
+            }
+        }
+
         String video_windowtitle;
         String song_title;
         Tuple tuple = aud_drct_get_tuple ();
@@ -1488,62 +1691,48 @@ breakout1:
         str_replace_char (titleBuf, '_', ' ');
 
         SDL_SetWindowTitle (sdl_window, (const char *) titleBuf);
-
-        avcodec_flush_buffers (TD.vcinfo.context);
 	}
 
     /* LOOP TO PROCESS QUEUED AUDIO & VIDEO PACKETS FROM THE STREAM, INTERLACE AND OUTPUT THEM: */
-    while (! thread_exit)
+    int i;
+    while (thread_exit == 0)
     {
         if (myplay_video)
         {
-            if (TD.apktQ->size > 0)
-            {   // PROCESS NEXT AUDIO FRAME(S) IN QUEUE:
-                write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
-                Dequeue (TD.apktQ);
-                /* NOTE:THE HARDCODED MULTIPLES STAGGERED B/C AFTER 2X, WE HESITATE A BIT TO ADD MORE: */
-                /* (MAINTAIN THE A/V RATIO AS CLOSE TO 1:1-ISH OR THE VIDEO'S OVERALL RATIO AS POSSIBLE) */
-                if (TD.apktQ->size > int(1.1 * TD.pktQ->size))  // CLOSER TO 2X AUDIOS QUEUED THAN VIDEOS, PROCESS AN EXTRA ONE!
-                {
-                    write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
-                    Dequeue (TD.apktQ);
-                    if (TD.apktQ->size > int(2.7 * TD.pktQ->size))  // CLOSER TO 3X AUDIOS QUEUED THAN VIDEOS, PROCESS ANOTHER EXTRA ONE!
-                    {
-                        write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
-                        Dequeue (TD.apktQ);
-                        if (TD.apktQ->size > int(4.3 * TD.pktQ->size))  // CLOSER TO 4X AUDIOS QUEUED THAN VIDEOS, PROCESS ANOTHER EXTRA ONE!
-                        {
-                            write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
-                            Dequeue (TD.apktQ);
-                        }
-                    }
-                }
-            }
-            if (thread_exit == 2)  //abUser MAY HAVE KILLED FAUXDACIOUS (& SDL) WHILST WRITING AUDIO-FRAMES!:
-                break;             //IF SO, WE BREAK HERE B4 WRITING VIDEO FRAMES LEST WE SEGFAULT!
-            else if (TD.pktQ->size > 0)
-            {   // PROCESS NEXT VIDEO FRAME(S) IN QUEUE:
-                write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, TD.pktQ->elements[TD.pktQ->front],
-                        video_width, video_height, last_resized, & windowIsStable);
-                Dequeue (TD.pktQ);
-                if (TD.pktQ->size > int(1.4 * TD.apktQ->size))  // CLOSER TO 2X VIDEOS QUEUED THAN AUDIOS, PROCESS AN EXTRA ONE!
-                {
-                    write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, TD.pktQ->elements[TD.pktQ->front],
-                            video_width, video_height, last_resized, & windowIsStable);
-                    Dequeue (TD.pktQ);
-                    if (TD.pktQ->size > int(2.8 * TD.apktQ->size))  // CLOSER TO 3X VIDEOS QUEUED THAN AUDIOS, PROCESS ANOTHER EXTRA ONE!
+            for (i=0;i<6;i++)  /* JWT:SEEMS TO STREAM BETTER BY DOING A FEW IN A ROW! */
+            {
+                if (TD.apktQ->size > 0 && TD.pktQ->size > 0)
+                {   // PROCESS NEXT FRAME IN QUEUES BASED ON EARLIEST TIMESTAMP:
+                    if (TD.pktQ->elements[TD.pktQ->front]->pts < TD.apktQ->elements[TD.apktQ->front]->pts)
                     {
                         write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, TD.pktQ->elements[TD.pktQ->front],
                                 video_width, video_height, last_resized, & windowIsStable);
                         Dequeue (TD.pktQ);
-                        if (TD.pktQ->size > int(4.2 * TD.apktQ->size))  // CLOSER TO 4X VIDEOS QUEUED THAN AUDIOS, PROCESS ANOTHER EXTRA ONE!
-                        {
-                            write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, TD.pktQ->elements[TD.pktQ->front],
-                                    video_width, video_height, last_resized, & windowIsStable);
-                            Dequeue (TD.pktQ);
+                        if (TD.apktQ->size > (int)(2.3 * TD.pktQ->size)) {
+                            /* PROCESS AN EXTRA AUDIO FRAME(S) IN QUEUE (USUALLY 2x MORE OF 'EM)! */
+                            write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
+                            Dequeue (TD.apktQ);
                         }
                     }
+                    else
+                    {
+                        write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
+                        Dequeue (TD.apktQ);
+                    }
                 }
+                else if (TD.apktQ->size > 0)
+                {
+                    write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
+                    Dequeue (TD.apktQ);
+                }
+                else if (TD.pktQ->size > 0)
+                {
+                    write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, TD.pktQ->elements[TD.pktQ->front],
+                            video_width, video_height, last_resized, & windowIsStable);
+                    Dequeue (TD.pktQ);
+                }
+                else
+                    break;
             }
             if (SDL_PollEvent (& event))
             {
@@ -1773,7 +1962,10 @@ breakout1:
         if (seek_value >= 0)
         {
             pthread_mutex_lock (& read_mutex);  // BLOCK READING WHILST SEEKING (CHANGING POSITION)!
+            if (TD.ic2)
+                pthread_mutex_lock (& vread_mutex);  // BLOCK READING WHILST SEEKING (CHANGING POSITION)!
 
+            in_seeking = true;
             /* JWT:FIRST, FLUSH ANY PACKETS SITTING IN THE QUEUES TO CLEAR THE QUEUES! */
             QFlush (TD.apktQ);
             QFlush (TD.pktQ);
@@ -1782,22 +1974,39 @@ breakout1:
 
             if (LOG (av_seek_frame, TD.ic, -1, (int64_t) seek_value *
                     AV_TIME_BASE / 1000, AVSEEK_FLAG_BACKWARD) >= 0)
+            {
+                AUDINFO ("i:seek_frame returned positive (worked?)\n");
                 TD.errcount = 0;
+                last_pts = 0;
+                if (TD.ic2)
+                {
+                    if (LOG (av_seek_frame, TD.ic2, -1, (int64_t) seek_value *
+                            AV_TIME_BASE / 1000, AVSEEK_FLAG_BACKWARD) >= 0)
+                        AUDINFO ("i:seek_Vframe returned positive (worked too?)\n");
+                    else
+                        AUDERR ("e:DASH Seek via slider FAILED (returned negative)!\n");
+                }
+            }
             else
-                AUDERR ("e:Seek via slider FAILED!\n");
+                AUDERR ("e:Seek via slider FAILED (returned negative)!\n");
 
             avcodec_flush_buffers (TD.cinfo.context);
-            if (myplay_video)
+            if (TD.ic2)
                 avcodec_flush_buffers (TD.vcinfo.context);
 
-            avformat_flush (TD.ic);
+            in_seeking = false;
 
+            if (TD.ic2)
+                pthread_mutex_unlock (& vread_mutex);
             pthread_mutex_unlock (& read_mutex);
         }
     }  // END PACKET-PROCESSING LOOP.
 
     if (pthread_join (helper_thread, NULL))
         AUDERR ("Error joining thread\n");
+
+    if (myplay_video && TD.ic2 && pthread_join (helper_vthread, NULL))
+        AUDERR ("Error joining vthread\n");
 
     if (thread_exit < 0)
         returnok = false;
@@ -1821,7 +2030,7 @@ breakout1:
         {
             pkt->data=nullptr; pkt->size=0;
             write_audioframe (& TD.cinfo, pkt, out_fmt, planar);
-            if (myplay_video)  /* IF VIDEO-WINDOW STILL INTACT (NOT CLOSED BY USER PRESSING WINDOW'S CORNER [X]): */
+            if (myplay_video)
                 write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, pkt,
                         video_width, video_height, last_resized, & windowIsStable);
 
@@ -1884,6 +2093,11 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
         close_input_file (TD.ic);
         TD.ic = nullptr;
     }
+    if (TD.ic2)  // GOTTA FREE THIS!
+    {
+        close_input_file (TD.ic2);
+        TD.ic2 = nullptr;
+    }
 
     if (aud_get_bool ("ffaudio", "save_video"))
     {
@@ -1898,7 +2112,6 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
         String error;
         VFSFile file (save_video_uri, "r");
         Tuple tuple = aud_drct_get_tuple ();
-        //??? tuple.unset (Tuple::Length);
         tuple.set_int (Tuple::Length, -1);
         String song_title = tuple.get_str (Tuple::Title);
         PluginHandle * out_plugin = aud_file_find_decoder (save_video_uri, true, file, & error);
