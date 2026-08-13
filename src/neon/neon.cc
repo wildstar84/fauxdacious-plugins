@@ -189,6 +189,7 @@ protected:
 
 private:
     String m_url;               /* The URL, as passed to us */
+    String m_url0;              /* JWT:URL, if single, 1st URL if dual-URL DASH stream */
     ne_uri m_purl = ne_uri ();  /* The URL, parsed into a structure */
 
     unsigned char m_redircount = 0;     /* Redirect count for the opened URL */
@@ -244,6 +245,11 @@ NeonFile::NeonFile (const char * url) :
 {
     int buffer_kb = aud_get_int (nullptr, "net_buffer_kb");
     m_rb.alloc (1024 * aud::clamp (buffer_kb, 16, 1024));
+    const char * url0 = (const char *) m_url;
+    const char * sep = strstr (url0, "|");
+    /* JWT:sep INDICATES A 2-URL YOUTUBE DASH STREAM ("audio_url:video_url"), WE WANT 1ST ONLY! */
+    m_url0 = sep ? String (str_printf ("%.*s", (int)(sep-url0), url0)) : m_url;
+
     neon_netblksize = aud_get_int("neon", "neon_buffersz");
     if (neon_netblksize <= 0)
         neon_netblksize = NEON_NETBLKSIZE;
@@ -631,7 +637,7 @@ int NeonFile::open_request (int64_t startbyte, String * error)
     if (error)
         * error = String (ne_error ? ne_error : _("Unknown HTTP error"));
 
-    AUDERR ("<%p> Could not open URL (%s): %d (%d)\n", this, (const char *) m_url, ret, status->code);
+    AUDERR ("<%p> Could not open URL (%s): %d (%d)\n", this, (const char *) m_url0, ret, status->code);
 
     if (ne_error)
         AUDERR ("<%p> neon error string: %s\n", this, ne_error);
@@ -698,12 +704,12 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
 
     AUDDBG ("<%p> Parsing URL\n", this);
 
-    if (ne_uri_parse (m_url, & m_purl) != 0)
+    if (ne_uri_parse (m_url0, & m_purl) != 0)
     {
         if (error)
             * error = String (_("Error parsing URL"));
 
-        AUDERR ("<%p> Could not parse URL '%s'\n", this, (const char *) m_url);
+        AUDERR ("<%p> Could not parse URL '%s'\n", this, (const char *) m_url0);
         return -1;
     }
 
@@ -785,7 +791,7 @@ int NeonFile::open_handle (int64_t startbyte, String * error)
     if (error)
         * error = String (_("Too many redirects"));
 
-    AUDERR ("<%p> Redirect count exceeded for URL %s\n", this, (const char *) m_url);
+    AUDERR ("<%p> Redirect count exceeded for URL %s\n", this, (const char *) m_url0);
     return 1;
 }
 
