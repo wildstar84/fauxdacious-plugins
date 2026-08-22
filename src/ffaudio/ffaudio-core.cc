@@ -103,7 +103,7 @@ static bool as_decor_fudge_set = false;
 static pthread_mutex_t read_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t vread_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int64_t last_pts;
+static int64_t last_audio_pts;
 
 class FFaudio : public InputPlugin
 {
@@ -136,21 +136,29 @@ public:
     void write_videoframe (SDL_Renderer * renderer, CodecInfo * vcinfo, 
             SDL_Texture * bmp, AVPacket *pkt, int video_width, 
             int video_height, bool last_resized, bool * windowIsStable);
+    void demux_audio (CodecInfo cinfo, pktQueue *apktQ, pktQueue *pktQ,
+            bool adj_avsync, int out_fmt, bool planar, int vpts_offset);
+    void demux_video (CodecInfo vcinfo, pktQueue *apktQ, pktQueue *pktQ,
+            bool adj_avsync, SDL_Renderer * renderer, SDL_Texture * bmp, AVPacket *pkt,
+            int video_width, int video_height, bool last_resized, bool * windowIsStable,
+            int vpts_offset);
     bool play (const char * filename, VFSFile & file);
 };
 
 EXPORT FFaudio aud_plugin_instance;
 
 const char * const FFaudio::defaults[] = {
-    "play_video", "TRUE",   // TRUE: SHOW VIDEO, FALSE: PLAY AUDIO ONLY.
+    "play_video", "TRUE",    // TRUE: SHOW VIDEO, FALSE: PLAY AUDIO ONLY.
     "video_codec_flag_gray", "FALSE",   // PLAY VIDEO IN BLACK & WHITE (WINDOWS-ONLY, UNLESS FFMPEG COMPILED W/--enable-gray)!
-    "video_qsize", "12",     // SET A PRETTY GOOD DEFAULT.
-    "video_mqsize", "6",    // SET A PRETTY GOOD DEFAULT (MUST BE < video_qsize)!
+    "adj_avsync", "FALSE",   // TRY TO ADJUST OUT-OF-SYNC AUDIO & VIDEO TIMESTAMPS.
+    "video_mqsize", "4",     // SET A PRETTY GOOD DEFAULT (MUST BE < video_qsize)!
+    "video_qsize", "8",      // SET A PRETTY GOOD DEFAULT.
     "video_windowtitle", "Fauxdacious Video",  // APPEND TO VIDEO WINDOW-TITLE.
-    "video_xmove", "1",     // RESTORE WINDOW TO PREV. SAVED POSITION.
-    "video_ysize", "-1",    // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
-    "save_video", "FALSE",  // DUB VIDEO AS BEING PLAYED.
-    "reader_sleep_ms", "50", // TIME FOR READER THREAD TO SLEEP IN MILLISEC TO ALLOW QUEUES TO DRAIN.
+    "video_xmove", "1",      // RESTORE WINDOW TO PREV. SAVED POSITION.
+    "video_ysize", "-1",     // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
+    "save_video", "FALSE",   // DUB VIDEO AS BEING PLAYED.
+    "reader_sleep_ms", "30", // TIME FOR READER THREAD TO SLEEP IN MILLISEC TO ALLOW QUEUES TO DRAIN.
+    "vpts_offset", "-500",   // VIDEO PTS TIME_BASE OFFSET HACK.
     "noresize_optimizations", "FALSE", // SOME WMs (LIKE jwm) REQUIRE THIS TO BE TRUE FOR VIDEO WINDOW TO BE RESIZABLE.
 #ifdef _WIN32
     "save_video_file", "C:\\Temp\\lastvideo",
@@ -174,12 +182,16 @@ const PreferencesWidget FFaudio::widgets[] = {
         {false},
         WIDGET_CHILD),
     WidgetLabel (N_("<b>Advanced</b>")),
-    WidgetSpin (N_("Video packet min. queue size"),
-        WidgetInt ("ffaudio", "video_mqsize"), {1, 16, 1}),
-    WidgetSpin (N_("Video packet max. queue size"),
+    WidgetCheck (N_("Adjust a/v sync. (recommend for DASH videos)"),
+        WidgetBool ("ffaudio", "adj_avsync")),
+    WidgetSpin (N_("Adjust video timestamps (-500) msec.s"),
+        WidgetInt ("ffaudio", "vpts_offset"), {-2500, 2500, 100}),
+    WidgetSpin (N_("Minimum packet queue size (4)"),
+        WidgetInt ("ffaudio", "video_mqsize"), {1, 20, 1}),
+    WidgetSpin (N_("Maximum packet queue size (8)"),
         WidgetInt ("ffaudio", "video_qsize"), {2, 24, 1}),
-    WidgetSpin (N_("Reader sleep interval (millisec)"),
-        WidgetInt ("ffaudio", "reader_sleep_ms"), {1, 500, 1}),
+    WidgetSpin (N_("Reader sleep interval (30 millisec)"),
+        WidgetInt ("ffaudio", "reader_sleep_ms"), {1, 100, 1}),
     WidgetCheck (N_("Unoptimized vid. window resize (some WMs, ie. JWM may need)."),  // WE HAVE ffmpeg COMPILED W/--enable-gray IN WINDOWS!
         WidgetBool ("ffaudio", "noresize_optimizations")),
 };
@@ -693,8 +705,10 @@ static bool find_codec (AVFormatContext * c, CodecInfo * cinfo, CodecInfo * vcin
             if (aud_get_bool ("ffaudio", "video_codec_flag_truncated") && vcodec->capabilities&AV_CODEC_CAP_TRUNCATED)
                 vcinfo->context->flags |= AV_CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
 #endif
+#ifdef _WIN32
             if (aud_get_bool ("ffaudio", "video_codec_flag_gray"))
                 vcinfo->context->flags |= AV_CODEC_FLAG_GRAY; /* output in monochrome (REQUIRES FFMPEG COMPILED W/--enable-gray!) */
+#endif
             have_vidcodec = true;
         }
         else
@@ -1086,16 +1100,16 @@ void save_window_xy (SDL_Window * sdl_window, int video_window_x, int video_wind
 static void * reader_thread_fn (void * data)
 {
     int ret;
-    int64_t pts2audpts;
     AVPacket * pkt;
     DataShared2Thread * TD = (DataShared2Thread *) data;
     TD->errcount = 0;
-    long reader_sleep_ms = (long) aud_get_int ("ffaudio", "reader_sleep_ms") * 1000000L;
+    long reader_sleep_ns = (long) aud_get_int ("ffaudio", "reader_sleep_ms") * 1000000L;
+    int vpts_offset_hack = aud_get_int ("ffaudio", "vpts_offset");
     struct timespec sleeptime;
 
     sleeptime.tv_sec = 0;
-    sleeptime.tv_nsec = reader_sleep_ms;
-    last_pts = 0;
+    sleeptime.tv_nsec = reader_sleep_ns;
+    last_audio_pts = 0;
 
     /* OUTER LOOP TO READ, QUEUE AND PROCESS AUDIO & VIDEO PACKETS FROM THE STREAM: */
     while (thread_exit == 0)
@@ -1154,7 +1168,7 @@ static void * reader_thread_fn (void * data)
                 }
                 while (TD->apktQ->size > TD->apktQ->minsize);
             }
-            last_pts = pkt->pts;
+            last_audio_pts = pkt->pts;
             if (! Enqueue (TD->apktQ, pkt))
                 av_packet_free (& pkt);
         }
@@ -1174,9 +1188,10 @@ static void * reader_thread_fn (void * data)
                 while (TD->pktQ->size > TD->pktQ->minsize);
             }
             /* CONVERT VIDEO PACKET TIMESTAMPS TO MATCH AUDIO ONES: */
-            pts2audpts = av_rescale_q_rnd (pkt->pts, TD->vcinfo.stream->time_base,
-                    TD->cinfo.stream->time_base, AV_ROUND_NEAR_INF);
-            pkt->pts = pts2audpts;
+            /* VPTS-OFFSET HACK SINCE VIDEO SEEMS TO ALWAYS SLIGHTLY LEAD AUDIO?! */
+            pkt->pts = av_rescale_q_rnd (pkt->pts, TD->vcinfo.stream->time_base,
+                    TD->cinfo.stream->time_base, AV_ROUND_NEAR_INF)
+                    + vpts_offset_hack;
             if (! Enqueue (TD->pktQ, pkt))
                 av_packet_free (& pkt);
         }
@@ -1201,11 +1216,12 @@ static void * reader_vthread_fn (void * data)
     AVPacket * pkt;
     DataShared2Thread * TD = (DataShared2Thread *) data;
     TD->errcount = 0;
-    long reader_sleep_ms = (long) aud_get_int ("ffaudio", "reader_sleep_ms") * 1000000L;
+    long reader_sleep_ns = (long) aud_get_int ("ffaudio", "reader_sleep_ms") * 1000000L;
+    int vpts_offset_hack = aud_get_int ("ffaudio", "vpts_offset");
     struct timespec sleeptime, loopsleep;
 
     sleeptime.tv_sec = 0;
-    sleeptime.tv_nsec = reader_sleep_ms;
+    sleeptime.tv_nsec = reader_sleep_ns;
     loopsleep.tv_sec = 0;
     loopsleep.tv_nsec = 200000L;
 
@@ -1270,7 +1286,7 @@ static void * reader_vthread_fn (void * data)
             pts2audpts = av_rescale_q_rnd (pkt->pts, TD->vcinfo.stream->time_base,
                     TD->cinfo.stream->time_base, AV_ROUND_NEAR_INF);
             /* VIDEO READER IS AHEAD OF AUDIO, WAIT FOR AUDIO READER TO CATCH UP!: */
-            while (pts2audpts > last_pts)
+            while (pts2audpts > last_audio_pts)
             {
                 nanosleep (& loopsleep, NULL);
                 if (thread_exit)  /* ONE READER THREAD HAD DIED, BREAK OUT! */
@@ -1281,7 +1297,8 @@ static void * reader_vthread_fn (void * data)
                 else if (in_seeking)
                     break;
             }
-            pkt->pts = pts2audpts;
+            /* VPTS-OFFSET HACK SINCE VIDEO SEEMS TO ALWAYS SLIGHTLY LEAD AUDIO?! */
+            pkt->pts = pts2audpts + vpts_offset_hack;
             if (! Enqueue (TD->pktQ, pkt))
                 av_packet_free (& pkt);
         }
@@ -1296,6 +1313,92 @@ VTHREAD_EXIT:
     pthread_exit (nullptr);
 
     return nullptr;
+}
+
+/* JWT:WRITE OUT 1-4 AUDIO PACKETS BASED ON RATIO OF CURRENT QUEUE-SIZES: */
+/* REASON: TRY TO KEEP QUEUE-SIZES CLOSE TO EVEN (THOUGH EXPECT A/B 2:1 AUDIO:VIDEO COMING IN! */
+void FFaudio::demux_audio (CodecInfo cinfo, pktQueue *apktQ, pktQueue *pktQ,
+        bool adj_avsync, int out_fmt, bool planar, int vpts_offset)
+{
+    write_audioframe (& cinfo, apktQ->elements[apktQ->front], out_fmt, planar);
+    Dequeue (apktQ);
+    if (adj_avsync && apktQ->size > 0 && pktQ->size > 4
+            && pktQ->elements[pktQ->front]->pts
+            - apktQ->elements[apktQ->front]->pts > (1500+vpts_offset))
+    {
+        write_audioframe (& cinfo, apktQ->elements[apktQ->front], out_fmt, planar);
+        Dequeue (apktQ);
+    }
+    /* NOTE:THE HARDCODED MULTIPLES STAGGERED B/C AFTER 2X, WE HESITATE A BIT TO ADD MORE: */
+    /* (MAINTAIN THE A/V RATIO AS CLOSE TO 1:1-ISH OR THE STREAM'S OVERALL RATIO AS POSSIBLE) */
+    if (apktQ->size > int(1.1 * pktQ->size))
+    {
+        write_audioframe (& cinfo, apktQ->elements[apktQ->front], out_fmt, planar);
+        Dequeue (apktQ);
+        if (adj_avsync && apktQ->size > 0 && pktQ->size > 4
+                && pktQ->elements[pktQ->front]->pts
+                - apktQ->elements[apktQ->front]->pts > (800+vpts_offset))
+        {
+            write_audioframe (& cinfo, apktQ->elements[apktQ->front], out_fmt, planar);
+            Dequeue (apktQ);
+        }
+        if (apktQ->size > int(2.7 * pktQ->size)) // CLOSER TO 3X AUDIOS QUEUED THAN VIDEOS, PROCESS ANOTHER EXTRA ONE!
+        {
+            write_audioframe (& cinfo, apktQ->elements[apktQ->front], out_fmt, planar);
+            Dequeue (apktQ);
+            if (apktQ->size > int(4.3 * pktQ->size)) // CLOSER TO 4X AUDIOS QUEUED THAN VIDEOS, PROCESS ANOTHER EXTRA ONE!
+            {
+                write_audioframe (& cinfo, apktQ->elements[apktQ->front], out_fmt, planar);
+                Dequeue (apktQ);
+            }
+        }
+    }
+}
+
+/* JWT:WRITE OUT 1-3 VIDEO PACKETS BASED ON RATIO OF CURRENT QUEUE-SIZES: */
+void FFaudio::demux_video (CodecInfo vcinfo, pktQueue *apktQ, pktQueue *pktQ,
+        bool adj_avsync, SDL_Renderer * renderer, SDL_Texture * bmp, AVPacket *pkt,
+        int video_width, int video_height, bool last_resized, bool * windowIsStable,
+        int vpts_offset)
+{
+    write_videoframe (renderer, & vcinfo, bmp, pktQ->elements[pktQ->front],
+            video_width, video_height, last_resized, windowIsStable);
+    Dequeue (pktQ);
+    if (adj_avsync && apktQ->size > 9 && pktQ->size > 0
+            && apktQ->elements[apktQ->front]->pts
+            - pktQ->elements[pktQ->front]->pts > (750+vpts_offset))
+    {
+        write_videoframe (renderer, & vcinfo, bmp, pktQ->elements[pktQ->front],
+                video_width, video_height, last_resized, windowIsStable);
+        Dequeue (pktQ);
+    }
+    if (pktQ->size > int(1.5 * apktQ->size)) // CLOSER TO 2X VIDEOS QUEUED THAN AUDIOS, PROCESS AN EXTRA ONE!
+
+    {
+        write_videoframe (renderer, & vcinfo, bmp, pktQ->elements[pktQ->front],
+                video_width, video_height, last_resized, windowIsStable);
+        Dequeue (pktQ);
+        if (adj_avsync && apktQ->size > 9 && pktQ->size > 0
+                && apktQ->elements[apktQ->front]->pts
+                - pktQ->elements[pktQ->front]->pts > (400+vpts_offset))
+        {
+            write_videoframe (renderer, & vcinfo, bmp, pktQ->elements[pktQ->front],
+                    video_width, video_height, last_resized, windowIsStable);
+            Dequeue (pktQ);
+        }
+        if (pktQ->size > int(2.8 * apktQ->size)) // CLOSER TO 3X VIDEOS QUEUED THAN AUDIOS, PROCESS ANOTHER EXTRA ONE!
+        {
+            write_videoframe (renderer, & vcinfo, bmp, pktQ->elements[pktQ->front],
+                    video_width, video_height, last_resized, windowIsStable);
+            Dequeue (pktQ);
+            if (pktQ->size > int(4.2 * apktQ->size)) // CLOSER TO 4X VIDEOS QUEUED THAN AUDIOS, PROCESS ANOTHER EXTRA ONE!
+            {
+                write_videoframe (renderer, & vcinfo, bmp, pktQ->elements[pktQ->front],
+                        video_width, video_height, last_resized, windowIsStable);
+                Dequeue (pktQ);
+            }
+        }
+    }
 }
 
 bool FFaudio::play (const char * filename, VFSFile & file)
@@ -1317,6 +1420,8 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     int video_requested_height = 200;
     int video_doreset_width = 0;   // WINDOW-SIZE BELOW WHICH WINDOW WILL SNAP BACK TO SIZE REQUESTED BY VIDEO STREAM:
     int video_doreset_height = 0;
+    bool adj_avsync;
+    int vpts_offset;
     int video_qsize = 0;
     int video_mqsize = 0;
     float video_aspect_ratio = 0;  // ASPECT RATIO OF VIDEO, SAVED TO PERMIT RE-ASPECTING AFTER USER RESIZES (WARPS) WINDOW.
@@ -1578,6 +1683,8 @@ breakout1:
 #endif
 
     int seek_value;
+    adj_avsync = aud_get_bool ("ffaudio", "adj_avsync");
+    vpts_offset = aud_get_bool ("ffaudio", "vpts_offset");
     /* JWT:video_qsize:  MAX # PACKETS TO QUEUE UP FOR INTERLACING TO SMOOTH VIDEO
         PLAYBACK - GOOD RANGE IS 6-12, DEFAULT IS 6:
         NOT ENOUGH = JITTERY VIDEO
@@ -1585,19 +1692,19 @@ breakout1:
     */
     video_qsize = aud_get_int ("ffaudio", "video_qsize");
     if (video_qsize <= 0)
-        video_qsize = 12;
+        video_qsize = 8;
     else if (video_qsize < 2)
         video_qsize = 2;
 
     video_mqsize = aud_get_int ("ffaudio", "video_mqsize");
     if (video_mqsize <= 0)
-        video_mqsize = 6;
+        video_mqsize = 4;
     if (video_mqsize >= video_qsize)
         video_mqsize = video_qsize / 2;
     AUDINFO ("i:Queue-size: min=%d, MAX=%d.\n", video_mqsize, video_qsize);
 
     /* TYPICALLY THERE'S TWICE AS MANY AUDIO PACKETS AS VIDEO, SO MAKE QUEUE AUDIO QUEUE ALWAYS 2X! */
-    TD.pktQ = createQueue (video_mqsize * 6, video_qsize * 6);  // ALLOW FOR A BUNCH OF VIDEO PACKETS (USUALLY AT STARTUP),
+    TD.pktQ = createQueue (video_mqsize * 12, video_qsize * 12);  // ALLOW FOR A BUNCH OF VIDEO PACKETS (USUALLY AT STARTUP),
     TD.apktQ = createQueue (video_mqsize * 12, video_qsize * 12); // BUT, GENERALLY THE AUDIO QUEUE WILL FILL FIRST FORCING OUTPUT:
     returnok = true;
 
@@ -1691,49 +1798,50 @@ breakout1:
         str_replace_char (titleBuf, '_', ' ');
 
         SDL_SetWindowTitle (sdl_window, (const char *) titleBuf);
-	}
+    }
 
     /* LOOP TO PROCESS QUEUED AUDIO & VIDEO PACKETS FROM THE STREAM, INTERLACE AND OUTPUT THEM: */
-    int i;
     while (thread_exit == 0)
     {
         if (myplay_video)
         {
-            for (i=0;i<6;i++)  /* JWT:SEEMS TO STREAM BETTER BY DOING A FEW IN A ROW! */
+            if (TD.apktQ->size > 0)  // PROCESS NEXT AUDIO FRAME(S) IN QUEUE:
             {
-                if (TD.apktQ->size > 0 && TD.pktQ->size > 0)
-                {   // PROCESS NEXT FRAME IN QUEUES BASED ON EARLIEST TIMESTAMP:
-                    if (TD.pktQ->elements[TD.pktQ->front]->pts < TD.apktQ->elements[TD.apktQ->front]->pts)
+                if (TD.pktQ->size > 0)
+                {
+                    if (TD.pktQ->elements[TD.pktQ->front]->pts
+                            < TD.apktQ->elements[TD.apktQ->front]->pts)
                     {
-                        write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, TD.pktQ->elements[TD.pktQ->front],
-                                video_width, video_height, last_resized, & windowIsStable);
-                        Dequeue (TD.pktQ);
-                        if (TD.apktQ->size > (int)(2.3 * TD.pktQ->size)) {
-                            /* PROCESS AN EXTRA AUDIO FRAME(S) IN QUEUE (USUALLY 2x MORE OF 'EM)! */
-                            write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
-                            Dequeue (TD.apktQ);
-                        }
+                        demux_video (TD.vcinfo, TD.apktQ, TD.pktQ, adj_avsync,
+                                renderer.get (), bmp.get (), pkt, video_width,
+                                video_height, last_resized, & windowIsStable,
+                                vpts_offset);
+                        demux_audio (TD.cinfo, TD.apktQ, TD.pktQ, adj_avsync,
+                                out_fmt, planar, vpts_offset);
                     }
                     else
                     {
-                        write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
-                        Dequeue (TD.apktQ);
+                        demux_audio (TD.cinfo, TD.apktQ, TD.pktQ, adj_avsync,
+                                out_fmt, planar, vpts_offset);
+                        demux_video (TD.vcinfo, TD.apktQ, TD.pktQ, adj_avsync,
+                                renderer.get (), bmp.get (), pkt, video_width,
+                                video_height, last_resized, & windowIsStable,
+                                vpts_offset);
                     }
                 }
-                else if (TD.apktQ->size > 0)
-                {
-                    write_audioframe (& TD.cinfo, TD.apktQ->elements[TD.apktQ->front], out_fmt, planar);
-                    Dequeue (TD.apktQ);
-                }
-                else if (TD.pktQ->size > 0)
-                {
-                    write_videoframe (renderer.get (), & TD.vcinfo, bmpptr, TD.pktQ->elements[TD.pktQ->front],
-                            video_width, video_height, last_resized, & windowIsStable);
-                    Dequeue (TD.pktQ);
-                }
                 else
-                    break;
+                    demux_audio (TD.cinfo, TD.apktQ, TD.pktQ, adj_avsync,
+                            out_fmt, planar, vpts_offset);
             }
+            else if (TD.pktQ->size > 0)
+                demux_video (TD.vcinfo, TD.apktQ, TD.pktQ, adj_avsync,
+                        renderer.get (), bmp.get (), pkt, video_width,
+                        video_height, last_resized, & windowIsStable, vpts_offset);
+
+            if (thread_exit == 2)  //abUser MAY HAVE KILLED FAUXDACIOUS (& SDL) WHILST WRITING AUDIO-FRAMES!:
+                break;             //IF SO, WE BREAK HERE B4 WRITING VIDEO FRAMES LEST WE SEGFAULT!
+
+            /* CHECK FOR (AND HANDLE) NEXT PENDING SDL (VIDEO-SCREEN) EVENT: */
             if (SDL_PollEvent (& event))
             {
                 do {
@@ -1785,7 +1893,7 @@ breakout1:
                     }
                 } while (SDL_PollEvent (& event));
 
-                if (! last_resized)  /* IF WINDOW CHANGED SIZE (SINCE LAST RE-ASPECTING: */
+                if (! last_resized)  /* IF WINDOW CHANGED SIZE (SINCE LAST RE-ASPECTING): */
                 {
                     if (! noresize_optimizations  // OPTIMIZE MOSTLY MEANS NOT NEEDING TIMER/DELAY:
                             || difftime (time (nullptr), last_resizeevent_time) > video_resizedelay)
@@ -1850,6 +1958,7 @@ breakout1:
                     }
                 }
             }
+            /* (ONE TIME ON STARTUP BUT *AFTER* 1ST BLIT): PROPERLY PLACE VIDEO-WINDOW ON SCREEN: */
             if (needWinSzFudge && windowIsStable && aud_get_bool ("audacious", "video_display"))
             {
 #if SDL_COMPILEDVERSION < 4601
@@ -1977,7 +2086,7 @@ breakout1:
             {
                 AUDINFO ("i:seek_frame returned positive (worked?)\n");
                 TD.errcount = 0;
-                last_pts = 0;
+                last_audio_pts = 0;
                 if (TD.ic2)
                 {
                     if (LOG (av_seek_frame, TD.ic2, -1, (int64_t) seek_value *
