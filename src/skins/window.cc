@@ -194,6 +194,19 @@ void Window::move_widget (bool shaded, Widget * widget, int x, int y)
     gtk_fixed_move ((GtkFixed *) fixed, widget->gtk (), x * config.scale, y * config.scale);
 }
 
+void Window::set_stay_on_top (bool enable)
+{
+    gtk_window_set_keep_above ((GtkWindow *) gtk (), enable);
+}
+
+void Window::set_sticky (bool enable)
+{
+    if (enable)
+        gtk_window_stick ((GtkWindow *) gtk ());
+    else
+        gtk_window_unstick ((GtkWindow *) gtk ());
+}
+
 bool Window::is_focused ()
 {
     return config.active_titlebar_any ? dock_is_focused () : m_is_focused_window;

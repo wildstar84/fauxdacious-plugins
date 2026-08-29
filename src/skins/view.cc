@@ -45,6 +45,16 @@
 #include "window.h"
 #include "vis.h"
 
+/* JWT:DO EACH WINDOW SEPARATELY SINCE DOESN'T WORK IF WINDOW IS HIDDEN/ICONIFIED,
+ * ALSO, WINDOWS MUST HAVE STICKY-FLAG SET/CLEARED (HERE) AT THE TIME IT IS
+ * POPPED UP, WHICH MAY BE AFTER USER CHANGES THE OPTION!:
+ */
+void view_apply_sticky_subwindow (Window * win)
+{
+    g_usleep (1000000);  // Window managers may ignore state flags when sent too quickly!
+    win->set_sticky (aud_get_bool ("skins", "sticky"));
+}
+
 void view_show_player (bool show)
 {
 #ifdef GDK_WINDOWING_WAYLAND
@@ -88,7 +98,17 @@ void view_show_player (bool show)
         /* JWT:NEXT 2 MOVED HERE FROM plugin.cc:skins_init_main().
            FOR BETTER COOPORATION BETWEEN AfterStep & statusicon PLUGIN: */
         view_apply_on_top_startup ();
-        view_apply_sticky ();
+        g_usleep (100000);  // Window managers may ignore state flags when sent too quickly!
+        if (aud_get_bool ("audacious", "afterstep2"))
+        {
+            /* JWT:DOESN'T WORK HERE, SO JUST SYNC STICKY WITH WHATEVER AS. SET IT TO!: */
+            bool sticky = aud_get_bool ("skins", "sticky");
+            if (sticky != aud_get_bool ("skins", "assticky"))
+                view_set_sticky (! sticky);
+        }
+        else
+            view_apply_sticky ();
+
         // "Move" the window to the position it's already at. This seems
         // to work around a GTK+ bug causing the main window to end up
         // at a random position after the gtk_window_present() call.
@@ -102,8 +122,8 @@ void view_show_player (bool show)
         hide_plugin_windows ();
     }
 
-    view_apply_show_playlist ();
     view_apply_show_equalizer ();
+    view_apply_show_playlist ();
 
     start_stop_visual (false);
 }
@@ -129,6 +149,7 @@ void view_apply_show_playlist ()
         playlistwin->move (config.playlist_x, config.playlist_y);
         gtk_window_set_transient_for ((GtkWindow *) pl, (GtkWindow *) main);
         gtk_window_present ((GtkWindow *) pl);
+        view_apply_sticky_subwindow (playlistwin);
     }
     else
         playlistwin->hide ();
@@ -157,6 +178,7 @@ void view_apply_show_equalizer ()
         equalizerwin->move (config.equalizer_x, config.equalizer_y);
         gtk_window_set_transient_for ((GtkWindow *) eq, (GtkWindow *) main);
         gtk_window_present ((GtkWindow *) eq);
+        view_apply_sticky_subwindow (equalizerwin);
     }
     else
         equalizerwin->hide ();
@@ -253,9 +275,10 @@ void view_apply_on_top_startup ()
 {
     bool on_top = aud_get_bool ("skins", "always_on_top");
 
-    gtk_window_set_keep_above ((GtkWindow *) mainwin->gtk (), on_top);
-    gtk_window_set_keep_above ((GtkWindow *) equalizerwin->gtk (), on_top);
-    gtk_window_set_keep_above ((GtkWindow *) playlistwin->gtk (), on_top);
+    /* JWT:ONLY SEEMS TO WORK THE 1ST TIME (EITHER WAY) IN AfterStep?!: */
+    mainwin->set_stay_on_top (on_top);
+    equalizerwin->set_stay_on_top (on_top);
+    playlistwin->set_stay_on_top (on_top);
 
     mainwin_menurow->refresh ();
 }
@@ -265,13 +288,34 @@ void view_apply_on_top ()
     bool on_top = aud_get_bool ("skins", "always_on_top");
 
     if (aud_get_bool ("audacious", "afterstep2"))
-        /* JWT:SPECIAL CASE JUST FOR OUR DBUS-LESS VSN. OF AfterStep WINDOW-MANAGER!: */
-        system ("WinCommand -pattern \"^\" ontop");
-    else
     {
-        gtk_window_set_keep_above ((GtkWindow *) mainwin->gtk (), on_top);
-        gtk_window_set_keep_above ((GtkWindow *) equalizerwin->gtk (), on_top);
-        gtk_window_set_keep_above ((GtkWindow *) playlistwin->gtk (), on_top);
+        /* JWT:SPECIAL CASE JUST FOR OUR DBUS-LESS VSN. OF AfterStep WINDOW-MANAGER!: */
+        aud_set_bool ("skins", "_playlist_was_visible",      // SAVE STATES
+                aud_get_bool ("skins", "playlist_visible"));
+        aud_set_bool ("skins", "_equalizer_was_visible",
+                aud_get_bool ("skins", "equalizer_visible"));
+        view_set_show_playlist (true);  // JWT:SHOW 'EM ALL, WHICH MAKES THIS SEEM TO WORK!:
+        view_set_show_equalizer (true);
+        g_usleep (100000);  // Window managers may ignore state flags when sent too quickly!
+        system ("WinCommand -pattern \"^\" ontop");
+        g_usleep (100000);  // Window managers may ignore state flags when sent too quickly!
+        // JWT:NOW HIDE ONES THAT WERE OFF:
+        if (! aud_get_bool ("skins", "_equalizer_was_visible"))
+        {
+            view_set_show_equalizer (false);
+            aud_set_bool ("skins", "_equalizer_was_visible", false);
+        }
+        if (! aud_get_bool ("skins", "_playlist_was_visible"))
+        {
+            view_set_show_playlist (false);
+            aud_set_bool ("skins", "_playlist_was_visible", false);
+        }
+    }
+    else  /* NORMAL WAY (WORKS FOR EVERYONE ELSE)!: */
+    {
+        mainwin->set_stay_on_top (on_top);
+        equalizerwin->set_stay_on_top (on_top);
+        playlistwin->set_stay_on_top (on_top);
     }
 
     mainwin_menurow->refresh ();
@@ -289,18 +333,9 @@ void view_apply_sticky ()
 {
     bool sticky = aud_get_bool ("skins", "sticky");
 
-    if (sticky)
-    {
-        gtk_window_stick ((GtkWindow *) mainwin->gtk ());
-        gtk_window_stick ((GtkWindow *) equalizerwin->gtk ());
-        gtk_window_stick ((GtkWindow *) playlistwin->gtk ());
-    }
-    else
-    {
-        gtk_window_unstick ((GtkWindow *) mainwin->gtk ());
-        gtk_window_unstick ((GtkWindow *) equalizerwin->gtk ());
-        gtk_window_unstick ((GtkWindow *) playlistwin->gtk ());
-    }
+    mainwin->set_sticky (sticky);
+    equalizerwin->set_sticky (sticky);
+    playlistwin->set_sticky (sticky);
 }
 
 void view_set_show_remaining (bool remaining)

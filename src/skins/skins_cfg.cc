@@ -82,6 +82,7 @@ static const char * const skins_defaults[] = {
     "playlist_width", "275",
     "playlist_height", "232",
     "sticky", "FALSE",
+    "assticky", "FALSE",
 
     nullptr
 };
