@@ -46,35 +46,7 @@ static int64_t seek_cb (void * file, int64_t offset, int whence)
 AVIOContext * io_context_new (VFSFile & file)
 {
     void * buf = av_malloc (IOBUF);
-    if (aud_get_bool ("ffaudio", "save_video"))
-    {
-        String save_video_file = aud_get_str ("ffaudio", "save_video_file");
-        if (! save_video_file[0])
-#ifdef _WIN32
-            save_video_file = String ("C:\\Temp\\lastvideo");
-#else
-            save_video_file = String ("/tmp/lastvideo");
-#endif
-        m_savefile = ::fopen ((const char *)save_video_file, "w");
-    }
     return avio_alloc_context ((unsigned char *) buf, IOBUF, 0, & file, read_cb, nullptr, seek_cb);
-}
-
-AVIOContext * io_context_new2 (VFSFile & file)
-{
-    void * buf = av_malloc (IOBUF);
-    if (aud_get_bool ("ffaudio", "save_video"))
-    {
-        String save_video_file = aud_get_str ("ffaudio", "save_video_file");
-        if (! save_video_file[0])
-#ifdef _WIN32
-            save_video_file = String ("C:\\Temp\\lastvideo");
-#else
-            save_video_file = String ("/tmp/lastvideo");
-#endif
-        m_savefile = ::fopen ((const char *)save_video_file, "w");
-    }
-    return avio_alloc_context ((unsigned char *) buf, IOBUF, 0, & file, read_cb, nullptr, nullptr);
 }
 
 void io_context_free (AVIOContext * io)

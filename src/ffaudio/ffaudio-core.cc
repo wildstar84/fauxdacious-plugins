@@ -156,15 +156,9 @@ const char * const FFaudio::defaults[] = {
     "video_windowtitle", "Fauxdacious Video",  // APPEND TO VIDEO WINDOW-TITLE.
     "video_xmove", "1",      // RESTORE WINDOW TO PREV. SAVED POSITION.
     "video_ysize", "-1",     // ADJUST WINDOW WIDTH TO MATCH PREV. SAVED HEIGHT.
-    "save_video", "FALSE",   // DUB VIDEO AS BEING PLAYED.
     "reader_sleep_ms", "30", // TIME FOR READER THREAD TO SLEEP IN MILLISEC TO ALLOW QUEUES TO DRAIN.
     "vpts_offset", "-500",   // VIDEO PTS TIME_BASE OFFSET HACK.
     "noresize_optimizations", "FALSE", // SOME WMs (LIKE jwm) REQUIRE THIS TO BE TRUE FOR VIDEO WINDOW TO BE RESIZABLE.
-#ifdef _WIN32
-    "save_video_file", "C:\\Temp\\lastvideo",
-#else
-    "save_video_file", "/tmp/lastvideo",
-#endif
     nullptr
 };
 
@@ -175,12 +169,6 @@ const PreferencesWidget FFaudio::widgets[] = {
     WidgetCheck (N_("Show video in black & white"),  // WE HAVE ffmpeg COMPILED W/--enable-gray IN WINDOWS!
         WidgetBool ("ffaudio", "video_codec_flag_gray")),
 #endif
-    WidgetCheck (N_("Record video to file"),
-        WidgetBool ("ffaudio", "save_video")),
-    WidgetEntry (N_("Record path/filename:"),
-        WidgetString ("ffaudio", "save_video_file"),
-        {false},
-        WIDGET_CHILD),
     WidgetLabel (N_("<b>Advanced</b>")),
     WidgetCheck (N_("Adjust a/v sync. (recommend for DASH videos)"),
         WidgetBool ("ffaudio", "adj_avsync")),
@@ -421,8 +409,6 @@ void FFaudio::cleanup ()
         avformat_network_deinit ();
         initted = false;
     }
-
-    aud_set_bool ("ffaudio", "save_video", false);  // JWT:MAKE SURE WE DON'T LEAVE VIDEO RECORDING ON!
     extension_dict.clear ();
 #if ! CHECK_LIBAVCODEC_VERSION (58, 9, 100, 255, 255, 255)
     av_lockmgr_register (nullptr);
@@ -778,6 +764,57 @@ static void read_metadata_dict (Tuple & tuple, const AVDictionary * dict)
     }
 }
 
+static int get_stream_channels (const AVCodecParameters * par)
+{
+#if CHECK_LIBAVCODEC_VERSION(59, 37, 100, 255, 255, 255)
+    return par->ch_layout.nb_channels;
+#else
+    return par->channels;
+#endif
+}
+
+static int get_stream_bitrate (const AVFormatContext * ic, const AVCodecParameters * par)
+{
+    int64_t brate = par->bit_rate;
+
+    if (brate <= 0)
+        brate = ic->bit_rate;
+
+    if (brate <= 0)
+    {
+        int bits = av_get_bits_per_sample (par->codec_id);
+        int channels = get_stream_channels (par);
+
+        if (bits > 0 && channels > 0 && par->sample_rate > 0)
+            brate = (int64_t) bits * channels * par->sample_rate;
+    }
+
+    return (brate > 0 && brate / 1000 <= INT_MAX) ? brate / 1000 : 0;
+}
+
+static void set_format_tuple (Tuple & tuple, const AVFormatContext * ic,
+ const CodecInfo & cinfo)
+{
+    const AVCodecParameters * par = cinfo.stream->codecpar;
+    int channels = get_stream_channels (par);
+    int bitrate = get_stream_bitrate (ic, par);
+
+    tuple.set_format (cinfo.codec->long_name, channels, par->sample_rate, bitrate);
+
+    const AVCodecDescriptor * desc = avcodec_descriptor_get (par->codec_id);
+
+    if (desc && (desc->props & AV_CODEC_PROP_LOSSLESS))
+    {
+        String quality = tuple.get_str (Tuple::Quality);
+
+        if (quality)
+            tuple.set_str (Tuple::Quality, str_printf ("%s, %s",
+             (const char *) quality, _("lossless")));
+        else
+            tuple.set_str (Tuple::Quality, _("lossless"));
+    }
+}
+
 bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Index<char> * image)
 {
     if (strncmp (filename, "stdin://", 8))  /* WE'RE NOT STDIN! */
@@ -800,15 +837,11 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
         if (cinfo.stream->metadata)
             read_metadata_dict (tuple, cinfo.stream->metadata);
 
-        tuple.set_int (Tuple::Bitrate, ic->bit_rate / 1000);
 #if CHECK_LIBAVCODEC_VERSION(59, 37, 100, 59, 37, 100)
         tuple.set_int (Tuple::Channels, cinfo.context->ch_layout.nb_channels);
 #else
         tuple.set_int (Tuple::Channels, cinfo.context->channels);
 #endif
-
-        if (cinfo.codec->long_name)
-            tuple.set_str (Tuple::Codec, cinfo.codec->long_name);
 
         if (file)  /* JWT:open_input_file CAN NULL-ify file! */
         {
@@ -821,6 +854,8 @@ bool FFaudio::read_tag (const char * filename, VFSFile & file, Tuple & tuple, In
 
         if ((int)ic->duration != 0)
             tuple.set_int (Tuple::Length, (int)(ic->duration / 1000));
+
+        set_format_tuple (tuple, ic.get (), cinfo);
 
 #if CHECK_LIBAVFORMAT_VERSION (54, 2, 100, 54, 2, 0)
         if (image && ! image->len ())
@@ -1331,7 +1366,7 @@ void FFaudio::demux_audio (CodecInfo cinfo, pktQueue *apktQ, pktQueue *pktQ,
     }
     /* NOTE:THE HARDCODED MULTIPLES STAGGERED B/C AFTER 2X, WE HESITATE A BIT TO ADD MORE: */
     /* (MAINTAIN THE A/V RATIO AS CLOSE TO 1:1-ISH OR THE STREAM'S OVERALL RATIO AS POSSIBLE) */
-    if (apktQ->size > int(1.1 * pktQ->size))
+    if (apktQ->size > int(1.1 * pktQ->size))  // CLOSER TO 2X AUDIOS QUEUED THAN VIDEOS, PROCESS AN EXTRA ONE!
     {
         write_audioframe (& cinfo, apktQ->elements[apktQ->front], out_fmt, planar);
         Dequeue (apktQ);
@@ -1681,6 +1716,15 @@ breakout1:
 #else
     open_audio (out_fmt, TD.cinfo.context->sample_rate, TD.cinfo.context->channels);
 #endif
+
+    {
+        /* Update stream metadata now that FFmpeg has identified the stream.  This
+         * matters for network streams, whose tuple may have been created before
+         * read_tag() could fill in codec/quality/channel information. */
+        Tuple tuple = get_playback_tuple ();
+        set_format_tuple (tuple, TD.ic, TD.cinfo);
+        set_playback_tuple (std::move (tuple));
+    }
 
     int seek_value;
     adj_avsync = aud_get_bool ("ffaudio", "adj_avsync");
@@ -2206,26 +2250,6 @@ error_exit:  /* WE END UP HERE WHEN PLAYBACK IS STOPPED: */
     {
         close_input_file (TD.ic2);
         TD.ic2 = nullptr;
-    }
-
-    if (aud_get_bool ("ffaudio", "save_video"))
-    {
-        String save_video_file = aud_get_str ("ffaudio", "save_video_file");
-        if (! save_video_file[0])
-#ifdef _WIN32
-            save_video_file = String ("C:\\Temp\\lastvideo");
-#else
-            save_video_file = String ("/tmp/lastvideo");
-#endif
-        String save_video_uri = String (filename_to_uri (save_video_file));
-        String error;
-        VFSFile file (save_video_uri, "r");
-        Tuple tuple = aud_drct_get_tuple ();
-        tuple.set_int (Tuple::Length, -1);
-        String song_title = tuple.get_str (Tuple::Title);
-        PluginHandle * out_plugin = aud_file_find_decoder (save_video_uri, true, file, & error);
-        if (! aud_file_write_tuple (save_video_uri, out_plugin, tuple))
-            AUDERR ("e:Could not save metadata to recorded video file or tag file.\n");
     }
 
     return returnok;
