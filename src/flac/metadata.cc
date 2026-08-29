@@ -299,7 +299,6 @@ bool FLACng::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Ind
     char *value;
 
     tuple.set_str (Tuple::Codec, "Free Lossless Audio Codec (FLAC)");
-    tuple.set_str (Tuple::Quality, _("lossless"));
 
     chain = FLAC__metadata_chain_new();
 
@@ -377,18 +376,27 @@ bool FLACng::read_tag (const char * filename, VFSFile & file, Tuple & tuple, Ind
 
                 int64_t size = file.fsize ();
 
-                if (size < 0 || metadata->data.stream_info.total_samples == 0)
-                    tuple.set_int (Tuple::Bitrate, 0);
-                else
-                {
-                    int bitrate = 8 * size *
-                        (int64_t) metadata->data.stream_info.sample_rate / metadata->data.stream_info.total_samples;
+                int bitrate = 0;
 
-                    tuple.set_int (Tuple::Bitrate, (bitrate + 500) / 1000);
+                if (size >= 0 && metadata->data.stream_info.total_samples > 0)
+                {
+                    bitrate = 8 * size *
+                            (int64_t) metadata->data.stream_info.sample_rate
+                            / metadata->data.stream_info.total_samples;
+
+                    bitrate = (bitrate + 500) / 1000;
                 }
 
-                if (metadata->data.stream_info.channels > 0)
-                    tuple.set_int(Tuple::Channels, metadata->data.stream_info.channels);
+                tuple.set_format (nullptr, metadata->data.stream_info.channels,
+                        metadata->data.stream_info.sample_rate, bitrate);
+
+                String quality = tuple.get_str (Tuple::Quality);
+                if (quality)
+                    tuple.set_str (Tuple::Quality, str_printf (_("%s, lossless"),
+                            (const char *) quality));
+                else
+                    tuple.set_str (Tuple::Quality, _("lossless"));
+
                 break;
             }
 

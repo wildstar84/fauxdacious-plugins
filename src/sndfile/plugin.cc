@@ -126,8 +126,38 @@ static void copy_int (SNDFILE * sf, int sf_id, Tuple & tup, Tuple::Field field)
         tup.set_int (field, atoi (str));
 }
 
+static int lossless_sample_bits (int format)
+{
+    switch (format & SF_FORMAT_SUBMASK)
+    {
+    case SF_FORMAT_PCM_S8:
+    case SF_FORMAT_PCM_U8:
+        return 8;
+    case SF_FORMAT_PCM_16:
+        return 16;
+    case SF_FORMAT_PCM_24:
+        return 24;
+    case SF_FORMAT_PCM_32:
+    case SF_FORMAT_FLOAT:
+        return 32;
+    case SF_FORMAT_DOUBLE:
+        return 64;
+    default:
+        return 0;
+    }
+}
+
+static int average_bitrate (VFSFile & file, int64_t length)
+{
+    int64_t size = file.fsize ();
+    if (size <= 0 || length <= 0)
+        return 0;
+
+    return aud::rescale<int64_t> (size, 8, length);
+}
+
 bool SndfilePlugin::read_tag (const char * filename, VFSFile & file, Tuple & tuple,
- Index<char> * image)
+        Index<char> * image)
 {
     SF_INFO sfinfo {}; // must be zeroed before sf_open()
     const char *format, *subformat;
@@ -303,11 +333,30 @@ bool SndfilePlugin::read_tag (const char * filename, VFSFile & file, Tuple & tup
             format = "Unknown format";
     }
 
+    int bits = lossless_sample_bits (sfinfo.format);
+    int bitrate = 0;
+
+    if (bits > 0)
+        bitrate = (sfinfo.samplerate * sfinfo.channels * bits + 500) / 1000;
+    else if (sfinfo.samplerate > 0)
+        bitrate = average_bitrate (file, aud::rescale<int64_t> (sfinfo.frames,
+                sfinfo.samplerate, 1000));
+
     if (subformat != nullptr)
         tuple.set_format (str_printf ("%s (%s)", format, subformat),
-         sfinfo.channels, sfinfo.samplerate, 0);
+                sfinfo.channels, sfinfo.samplerate, bitrate);
     else
-        tuple.set_format (format, sfinfo.channels, sfinfo.samplerate, 0);
+        tuple.set_format (format, sfinfo.channels, sfinfo.samplerate, bitrate);
+
+    if (bits > 0)
+    {
+        String quality = tuple.get_str (Tuple::Quality);
+        if (quality)
+            tuple.set_str (Tuple::Quality, str_printf (_("%s, lossless"),
+                    (const char *) quality));
+        else
+            tuple.set_str (Tuple::Quality, _("lossless"));
+    }
 
     return true;
 }
