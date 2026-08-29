@@ -35,7 +35,6 @@
 #include <libfauxdcore/tuple.h>
 
 #include "actions-mainwin.h"
-#include "dnd.h"
 #include "drag-handle.h"
 #include "menus.h"
 #include "plugin.h"
@@ -239,42 +238,6 @@ void playlistwin_set_time (const char * minutes, const char * seconds)
     playlistwin_time_sec->set_text (seconds);
 }
 
-#if 0
-static void drag_motion (GtkWidget * widget, GdkDragContext * context, int x,
- int y, unsigned time, void * unused)
-{
-    if (! aud_get_bool ("skins", "playlist_shaded"))
-        playlistwin_list->hover (x - 12, y - 20);
-}
-
-static void drag_leave (GtkWidget * widget, GdkDragContext * context, unsigned time,
- void * unused)
-{
-    if (! aud_get_bool ("skins", "playlist_shaded"))
-        playlistwin_list->hover_end ();
-}
-
-static void drag_drop (GtkWidget * widget, GdkDragContext * context, int x,
- int y, unsigned time, void * unused)
-{
-    if (aud_get_bool ("skins", "playlist_shaded"))
-        drop_position = -1;
-    else
-    {
-        playlistwin_list->hover (x - 12, y - 20);
-        drop_position = playlistwin_list->hover_end ();
-    }
-}
-
-static void drag_data_received (GtkWidget * widget, GdkDragContext * context,
- int x, int y, GtkSelectionData * data, unsigned info, unsigned time, void * unused)
-{
-    audgui_urilist_insert (aud_playlist_get_active (), drop_position,
-     (const char *) gtk_selection_data_get_data (data));
-    drop_position = -1;
-}
-#endif
-
 static void playlistwin_hide ()
 {
     view_set_show_playlist (false);
@@ -464,17 +427,6 @@ static void playlistwin_create_window ()
     playlistwin = new PlWindow (shaded);
     playlistwin->setWindowTitle (_("Fauxdacious Playlist Editor"));
     playlistwin->setWindowRole ("playlist");
-
-#if 0
-    GtkWidget * w = playlistwin->gtk ();
-    drag_dest_set (w);
-    drop_position = -1;
-
-    g_signal_connect (w, "drag-motion", (GCallback) drag_motion, nullptr);
-    g_signal_connect (w, "drag-leave", (GCallback) drag_leave, nullptr);
-    g_signal_connect (w, "drag-drop", (GCallback) drag_drop, nullptr);
-    g_signal_connect (w, "drag-data-received", (GCallback) drag_data_received, nullptr);
-#endif
 }
 
 static void update_cb (void *, void *)

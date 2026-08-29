@@ -24,6 +24,10 @@
 #include "skins_cfg.h"
 #include "view.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0)
+#include "x11-utils.h"
+#endif
+
 #include "../ui-common/qt-compat.h"
 #include <libfauxdcore/runtime.h>
 
@@ -200,4 +204,27 @@ void Window::move_widget (bool shaded, Widget * widget, int x, int y)
 bool Window::is_focused ()
 {
     return config.active_titlebar_any ? dock_is_focused () : isActiveWindow ();
+}
+
+void Window::set_stay_on_top (bool enable)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0)
+    if (! aud_get_bool ("audacious", "afterstep2"))
+        x11_window_set_stay_on_top (this, enable);
+    else
+#endif
+    {
+        bool visible = isVisible ();
+
+        setWindowFlag (Qt::WindowStaysOnTopHint, enable);
+        if (visible)
+            show ();
+    }
+}
+
+void Window::set_sticky (bool enable)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0)
+    x11_window_set_sticky (this, enable);
+#endif
 }

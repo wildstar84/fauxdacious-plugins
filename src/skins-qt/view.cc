@@ -31,6 +31,7 @@
 #include <QMessageBox>
 #include <QPointer>
 #include <QPushButton>
+#include <QTimer>
 #include <QWindow>
 
 #include "plugin.h"
@@ -55,6 +56,19 @@ protected:
         aud_quit ();
     }
 };
+
+/* JWT:DO EACH WINDOW SEPARATELY SINCE DOESN'T WORK IF WINDOW IS HIDDEN/ICONIFIED,
+ * ALSO, WINDOWS MUST HAVE STICKY-FLAG SET/CLEARED (HERE) AT THE TIME IT IS
+ * POPPED UP, WHICH MAY BE AFTER USER CHANGES THE OPTION!:
+ */
+void view_apply_sticky_subwindow (Window * win, char wid)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0)
+    bool sticky = aud_get_bool ("skins", "sticky");
+
+    win->set_sticky (sticky);
+#endif
+}
 
 void view_show_player (bool show)
 {
@@ -103,12 +117,16 @@ void view_show_player (bool show)
 
     if (show)
     {
-        /* JWT:NEXT 2 MOVED HERE FROM plugin.cc:skins_init_main().
-           FOR BETTER COOPORATION BETWEEN AfterStep & statusicon PLUGIN: */
-        view_apply_on_top_startup ();
-        view_apply_sticky ();
         mainwin->show ();
         mainwin->activateWindow ();
+        view_apply_sticky_subwindow (mainwin, 'M');
+        if (aud_get_bool ("audacious", "afterstep2"))
+        {
+            /* JWT:DOESN'T WORK HERE, SO JUST SYNC STICKY WITH WHATEVER AS. SET IT TO!: */
+            bool sticky = aud_get_bool ("skins", "sticky");
+            if (sticky != aud_get_bool ("skins", "assticky"))
+                view_set_sticky (! sticky);
+        }
         show_plugin_windows ();
     }
     else
@@ -119,6 +137,9 @@ void view_show_player (bool show)
 
     view_apply_show_playlist ();
     view_apply_show_equalizer ();
+
+    // Window managers may ignore state flags when sent too quickly
+    QTimer::singleShot (100, view_apply_on_top);
 
     start_stop_visual (false);
 }
@@ -141,6 +162,7 @@ void view_apply_show_playlist ()
         playlistwin->windowHandle ()->setTransientParent (mainwin->windowHandle ());
         playlistwin->show ();
         playlistwin->activateWindow ();
+        view_apply_sticky_subwindow (playlistwin, 'p');
     }
     else
         playlistwin->hide ();
@@ -166,6 +188,7 @@ void view_apply_show_equalizer ()
         equalizerwin->windowHandle ()->setTransientParent (mainwin->windowHandle ());
         equalizerwin->show ();
         equalizerwin->activateWindow ();
+        view_apply_sticky_subwindow (equalizerwin, 'e');
     }
     else
         equalizerwin->hide ();
@@ -258,64 +281,19 @@ void view_set_on_top (bool on_top)
     view_apply_on_top ();
 }
 
-void view_apply_on_top_startup ()
-{
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
-    bool on_top = aud_get_bool ("skins", "always_on_top");
-    bool mainwin_visible = mainwin->isVisible ();
-    bool equalizer_visible = equalizerwin->isVisible ();
-    bool playlist_visible = playlistwin->isVisible ();
-
-    mainwin->setWindowFlag (Qt::WindowStaysOnTopHint, on_top);
-    if (mainwin_visible)
-        mainwin->show ();
-
-
-    equalizerwin->setWindowFlag (Qt::WindowStaysOnTopHint, on_top);
-    if (equalizer_visible)
-        equalizerwin->show ();
-
-    playlistwin->setWindowFlag (Qt::WindowStaysOnTopHint, on_top);
-    if (playlist_visible)
-        playlistwin->show ();
-#endif
-
-    mainwin_menurow->refresh ();
-}
-
 void view_apply_on_top ()
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
-    if (aud_get_bool ("audacious", "afterstep2"))
-        /* JWT:SPECIAL CASE JUST FOR OUR DBUS-LESS VSN. OF AfterStep WINDOW-MANAGER!: */
-        system ("WinCommand -pattern \"^\" ontop");
-    else
-    {
-        bool on_top = aud_get_bool ("skins", "always_on_top");
-        bool mainwin_visible = mainwin->isVisible ();
-        bool equalizer_visible = equalizerwin->isVisible ();
-        bool playlist_visible = playlistwin->isVisible ();
+    bool on_top = aud_get_bool ("skins", "always_on_top");
 
-        mainwin->setWindowFlag (Qt::WindowStaysOnTopHint, on_top);
-        if (mainwin_visible)
-            mainwin->show ();
-
-
-        equalizerwin->setWindowFlag (Qt::WindowStaysOnTopHint, on_top);
-        if (equalizer_visible)
-            equalizerwin->show ();
-
-        playlistwin->setWindowFlag (Qt::WindowStaysOnTopHint, on_top);
-        if (playlist_visible)
-            playlistwin->show ();
-    }
-#else
-    if (aud_get_bool ("audacious", "afterstep2"))
-        /* JWT:SPECIAL CASE JUST FOR OUR DBUS-LESS VSN. OF AfterStep WINDOW-MANAGER!: */
-        system ("WinCommand -pattern \"^\" ontop");
-#endif
+    mainwin->set_stay_on_top (on_top);
+    equalizerwin->set_stay_on_top (on_top);
+    playlistwin->set_stay_on_top (on_top);
 
     mainwin_menurow->refresh ();
+#else
+    AUDWARN ("'Always On Top' not supported by Qt < v5.9.\n");
+#endif
 }
 
 void view_set_sticky (bool sticky)
@@ -328,21 +306,14 @@ void view_set_sticky (bool sticky)
 
 void view_apply_sticky ()
 {
-#if 0
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0)
     bool sticky = aud_get_bool ("skins", "sticky");
 
-    if (sticky)
-    {
-        gtk_window_stick ((GtkWindow *) mainwin->gtk ());
-        gtk_window_stick ((GtkWindow *) equalizerwin->gtk ());
-        gtk_window_stick ((GtkWindow *) playlistwin->gtk ());
-    }
-    else
-    {
-        gtk_window_unstick ((GtkWindow *) mainwin->gtk ());
-        gtk_window_unstick ((GtkWindow *) equalizerwin->gtk ());
-        gtk_window_unstick ((GtkWindow *) playlistwin->gtk ());
-    }
+    mainwin->set_sticky (sticky);
+    equalizerwin->set_sticky (sticky);
+    playlistwin->set_sticky (sticky);
+#else
+    AUDWARN ("Sticking windows requires Qt v6.2+!\n");
 #endif
 }
 

@@ -32,7 +32,8 @@ SRCS = actions.cc \
        vis-callbacks.cc \
        vis.cc \
        widget.cc \
-       window.cc
+       window.cc \
+       x11-utils.cc
 
 include ../../buildsys.mk
 include ../../extra.mk
@@ -40,7 +41,6 @@ include ../../extra.mk
 plugindir := ${plugindir}/${GENERAL_PLUGIN_DIR}
 
 LD = ${CXX}
-
-CPPFLAGS += ${PLUGIN_CPPFLAGS} -I../.. ${GLIB_CFLAGS} ${QT_CFLAGS}
 CFLAGS += ${PLUGIN_CFLAGS}
-LIBS += -lm ${GLIB_LIBS} ${QT_LIBS} -lfauxdqt
+CPPFLAGS += ${PLUGIN_CPPFLAGS} ${QT_CFLAGS} ${QTX11EXTRAS_CFLAGS} -I../.. ${GLIB_CFLAGS} -I..
+LIBS += -lm ${GLIB_LIBS} ${QT_LIBS} ${QTX11EXTRAS_LIBS} -lX11 -lfauxdqt

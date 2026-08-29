@@ -146,9 +146,7 @@ static const audqt::MenuItem view_items[] = {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
     audqt::MenuToggle ({N_("Always on Top"), nullptr, "Ctrl+O"}, {"skins", "always_on_top", "skins set always_on_top"}, view_apply_on_top),
 #endif
-#if 0
     audqt::MenuToggle ({N_("On All Workspaces"), nullptr, "Ctrl+S"}, {"skins", "sticky", "skins set sticky"}, view_apply_sticky),
-#endif
     audqt::MenuSep (),
     audqt::MenuToggle ({N_("Roll Up Player"), nullptr, "Ctrl+W"}, {"skins", "player_shaded", "skins set player_shaded"}, view_apply_player_shaded),
     audqt::MenuToggle ({N_("Roll Up Playlist Editor"), nullptr, "Shift+Ctrl+W"}, {"skins", "playlist_shaded", "skins set playlist_shaded"}, view_apply_playlist_shaded),
