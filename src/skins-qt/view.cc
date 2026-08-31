@@ -31,7 +31,6 @@
 #include <QMessageBox>
 #include <QPointer>
 #include <QPushButton>
-#include <QTimer>
 #include <QWindow>
 
 #include "plugin.h"
@@ -138,8 +137,7 @@ void view_show_player (bool show)
     view_apply_show_playlist ();
     view_apply_show_equalizer ();
 
-    // Window managers may ignore state flags when sent too quickly
-    QTimer::singleShot (100, view_apply_on_top);
+    view_apply_on_top ();
 
     start_stop_visual (false);
 }
