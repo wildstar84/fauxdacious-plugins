@@ -106,7 +106,7 @@ SmallVis * mainwin_svis;
 // extern Index<SkinNode> skinlist;
 
 static int last_skin = -1;
-static bool skip_toggle = true;  //JWT:NEEDED SINCE mainwin_playback_begin SEEMS TO GET CALLED *TWICE* EACH TIME?!
+static int skip_randskinchg = 0;  //JWT:NEEDED TO CONTROL WHEN TO DO RANDOM SKIN-CHANGES.
 static bool seeking = false;
 static int seek_start, seek_time;
 static int volume_delta = 5;
@@ -263,6 +263,24 @@ static void mainwin_set_song_title (const char * title)
     mainwin_set_info_text ((const char *) buf);
 }
 
+static void change_to_random_skin ()
+{
+    if (skinlist.len () <= 0)
+        skinlist_update ();
+
+    if (skinlist.len () > 1)
+    {
+        int randskin = rand () % skinlist.len ();
+        while (randskin == last_skin)
+            randskin = rand () % skinlist.len ();
+
+        if (skin_load (skinlist[randskin].path))
+            view_apply_skin ();
+
+        last_skin = randskin;
+    }
+}
+
 static void title_change ()
 {
     if (aud_drct_get_ready ())
@@ -271,7 +289,24 @@ static void title_change ()
                 str_copy ((const char *) aud_drct_get_title_one_line (true)));
         const char * newtitle_ptr = (const char *) newtitle;
         if (newtitle_ptr && newtitle_ptr[0] && strlen(newtitle_ptr) > 0)
+        {
+            /* JWT:  skip_randskinchg:  0=ENTRY-CHG. 1=TITLE-CHG(SAME ENTRY). 2=SKIP SKIN-CHG. */
             mainwin_set_song_title (newtitle_ptr);
+            if (aud_get_bool ("skins", "use_random_skins"))
+            {
+                if (skip_randskinchg == 0)
+                {
+                    /* CHG. SKIN ON PLAYLIST ENTRY-CHANGE: */
+                    change_to_random_skin ();
+                    skip_randskinchg = aud_get_bool ("skins", "use_random_skins_in_streams")
+                            ? 1 : 2;
+                }
+                else if (skip_randskinchg == 1
+                        && aud_get_bool ("skins", "use_random_skins_in_streams"))
+                    /* CHG. SKIN ONLY IF "CHANGE ON ALL STREAM TITLE-CHANGES SET: */
+                    change_to_random_skin ();
+            }
+        }
     }
     else
         mainwin_set_song_title (_("Buffering ..."));
@@ -439,22 +474,7 @@ void mainwin_playback_begin ()
 {
     mainwin_update_song_info ();
 
-    if (aud_get_bool ("skins", "use_random_skins"))
-    {
-        if (skinlist.len () <= 0)
-            skinlist_update ();
-        if (! skip_toggle && skinlist.len () > 1)
-        {
-            int randskin = rand () % skinlist.len ();
-            while (randskin == last_skin)
-                randskin = rand () % skinlist.len ();
-
-            if (skin_load (skinlist[randskin].path))
-                view_apply_skin ();
-            last_skin = randskin;
-        }
-        skip_toggle = ! skip_toggle;
-    }
+    skip_randskinchg = 0;
 
     mainwin_stime_min->show ();
     mainwin_stime_sec->show ();

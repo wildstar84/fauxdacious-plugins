@@ -33,6 +33,7 @@ typedef struct {
     bool analyzer_peaks;
     bool twoway_scroll;
     bool use_random_skins;
+    bool use_random_skins_in_streams;
     int oaidu_menustyle;
     bool try_classic_hints;
     int vis_type;

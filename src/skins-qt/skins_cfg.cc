@@ -48,6 +48,7 @@ static const char * const skins_defaults[] = {
     "show_remaining_time", "FALSE",
     "twoway_scroll", "FALSE",
     "use_random_skins", "FALSE",
+    "use_random_skins_in_streams", "FALSE",
     "oaidu_menustyle", "0",
     "try_classic_hints", "FALSE",
 
@@ -97,6 +98,7 @@ static const struct skins_cfg_boolent_t {
     {"active_titlebar_any", & config.active_titlebar_any},
     {"twoway_scroll", & config.twoway_scroll},
     {"use_random_skins", & config.use_random_skins},
+    {"use_random_skins_in_streams", & config.use_random_skins_in_streams},
     {"try_classic_hints", & config.try_classic_hints},
 
     /* visualizer */
@@ -176,6 +178,11 @@ void random_skins_set_cb ()
     aud_set_bool ("skins", "use_random_skins", config.use_random_skins);
 }
 
+void random_skins2_set_cb ()
+{
+    aud_set_bool ("skins", "use_random_skins_in_streams", config.use_random_skins_in_streams);
+}
+
 static void vis_reset_cb ()
 {
     mainwin_vis->clear ();
@@ -234,6 +241,9 @@ static const PreferencesWidget skins_widgets_general[] = {
     WidgetLabel (N_("<b>Fauxdacious Extras</b>")),
     WidgetCheck (N_("Random skin on play"),
         WidgetBool (config.use_random_skins, random_skins_set_cb)),
+    WidgetCheck (N_("...and Apply to in-stream title-changes"),
+        WidgetBool (config.use_random_skins_in_streams, random_skins2_set_cb),
+        WIDGET_CHILD),
     WidgetCheck (N_("Use Classic skin hints (skin-classic.hints) if available)"),
         WidgetBool (config.try_classic_hints, try_classic_hints_cb)),
     WidgetCombo (N_("Winamp [OAIDU] menu style:"),
