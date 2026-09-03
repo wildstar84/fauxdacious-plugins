@@ -1565,23 +1565,6 @@ bool FFaudio::play (const char * filename, VFSFile & file)
 
         set_playback_tuple (tuple.ref ());
     }
-    else {
-        /* JWT:HACK:CHECK & FIX BAD DURATION VALUES FROM RUMBLE.COM IN RECENT ffmpeg v7.1.5? */
-        Tuple tuple = get_playback_tuple ();
-        int tuple_length = tuple.get_int (Tuple::Length);
-        if (tuple_length > 0 && TD.ic->duration > 0)
-        {
-            int64_t tuple_length_msec = (int64_t)tuple_length * 1000;
-            /* CORRECT IF OFF BY MORE THAN +/- 30 SECONDS: */
-            if (tuple_length_msec > TD.ic->duration + 1999999
-                    || tuple_length_msec < TD.ic->duration - 1999999)
-            {
-                AUDWARN ("w:ic_duration OVERRIDDEN from %ld to %ld (msec)!\n",
-                        TD.ic->duration, tuple_length_msec);
-                TD.ic->duration = tuple_length_msec;
-            }
-        }
-    }
 
     AUDDBG ("got codec %s for stream index %d, opening\n", TD.cinfo.codec->name, TD.cinfo.stream_idx);
 
@@ -1722,6 +1705,29 @@ breakout1:
          * matters for network streams, whose tuple may have been created before
          * read_tag() could fill in codec/quality/channel information. */
         Tuple tuple = get_playback_tuple ();
+        int tuple_length = tuple.get_int (Tuple::Length);
+
+        /* JWT:HACK:CHECK & FIX BAD DURATION VALUES FROM RUMBLE.COM IN RECENT ffmpeg v7.1.5? */
+        if (TD.ic->duration > 0L)
+        {
+            if (tuple_length > 0)
+            {
+                int64_t tuple_length_msec = (int64_t)tuple_length * 1000;
+                /* CORRECT IF OFF BY MORE THAN +/- 30 SECONDS: */
+                if (tuple_length_msec > TD.ic->duration + 1999999
+                        || tuple_length_msec < TD.ic->duration - 1999999)
+                {
+                    AUDWARN ("w:ic_duration OVERRIDDEN from %ld to %ld (msec)!\n",
+                            TD.ic->duration, tuple_length_msec);
+                    TD.ic->duration = tuple_length_msec;
+                }
+            }
+            else /* TUPLE LENGTH UNDEFINED, FORCE TO ic->duration! */
+            {
+                tuple.set_int (Tuple::Length, (int)(TD.ic->duration / 1000));
+            }
+        }
+
         set_format_tuple (tuple, TD.ic, TD.cinfo);
         set_playback_tuple (std::move (tuple));
     }
