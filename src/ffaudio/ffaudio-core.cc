@@ -83,12 +83,12 @@ CodecInfo;
 
 typedef struct
 {
-    CodecInfo cinfo, vcinfo;   //AUDIO AND VIDEO CODECS
-    pktQueue *pktQ = nullptr;  // QUEUE FOR VIDEO-PACKET QUEUEING.
-    pktQueue *apktQ = nullptr; // QUEUE FOR AUDIO-PACKET QUEUEING.
-    AVFormatContext * ic = nullptr;  // STREAM URL AVFormatContext HANDLE.
-    AVFormatContext * ic2 = nullptr;  // JWT:OPTIONAL 2ND (VIDEO-ONLY) DASH STREAM.
-    int errcount = 0;
+    CodecInfo cinfo, vcinfo; //AUDIO AND VIDEO CODECS
+    pktQueue * pktQ;         // QUEUE FOR VIDEO-PACKET QUEUEING.
+    pktQueue * apktQ;        // QUEUE FOR AUDIO-PACKET QUEUEING.
+    AVFormatContext * ic;    // STREAM URL AVFormatContext HANDLE.
+    AVFormatContext * ic2;   // JWT:OPTIONAL 2ND (VIDEO-ONLY) DASH STREAM.
+    int errcount;
     bool videoalso;
 }
 DataShared2Thread;
@@ -1480,6 +1480,11 @@ bool FFaudio::play (const char * filename, VFSFile & file)
     bool noresize_optimizations = aud_get_bool ("ffaudio", "noresize_optimizations");
 
     DataShared2Thread TD;
+    TD.pktQ = nullptr;
+    TD.apktQ = nullptr;
+    TD.ic = nullptr;
+    TD.ic2 = nullptr;
+    TD.errcount = 0;
 
     const char * sep = strstr (filename, "|");
     String audiofn_str = sep ? String (str_printf ("%.*s", (int)(sep-filename), filename))
